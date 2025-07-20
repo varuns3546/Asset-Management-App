@@ -4,11 +4,14 @@ const supabase = require('../config/supabase');
 class User {
   constructor(userData) {
     this.id = userData.id;
+    this.firstName = userData.first_name;
+    this.lastName = userData.last_name;
     this.email = userData.email;
     this.username = userData.username;
     this.password = userData.password;
-    this.firstName = userData.first_name;
-    this.lastName = userData.last_name;
+    this.org_password = userData.org_password;
+    this.is_prime_consultant = userData.is_prime_consultant
+   
     this.createdAt = userData.created_at;
     this.updatedAt = userData.updated_at;
   }

@@ -32,7 +32,6 @@ const testSupabaseConnection = async () => {
       console.error('Supabase connection error:', error.message);
       return false;
     }
-    
     console.log('Connected to Supabase successfully');
     return true;
   } catch (error) {

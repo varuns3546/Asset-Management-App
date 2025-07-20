@@ -19,14 +19,14 @@ const LoginScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-    if (!username.trim() || !password.trim()) {
+    if (!username || !password) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
 
     setLoading(true);
     try {
-      const response = await authAPI.login(username.trim(), password);
+      const response = await api.post('/auth/login', { username, password });
       
       if (response.success) {
         // Store token and user data
@@ -55,12 +55,12 @@ const LoginScreen = ({ navigation }) => {
           <Text style={styles.subtitle}>Sign in to your account</Text>
 
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Username or Email</Text>
+            <Text style={styles.label}>Username</Text>
             <TextInput
               style={styles.input}
               value={username}
               onChangeText={setUsername}
-              placeholder="Enter your username or email"
+              placeholder="Enter your username"
               autoCapitalize="none"
               autoCorrect={false}
             />

@@ -15,11 +15,11 @@ import { authAPI } from '../services/api';
 
 const RegisterScreen = ({ navigation }) => {
   const [formData, setFormData] = useState({
-    email: '',
-    username: '',
-    password: '',
     firstName: '',
     lastName: '',
+    email: '',
+    username: '',
+    password: '',    
   });
   const [loading, setLoading] = useState(false);
 
@@ -31,7 +31,7 @@ const RegisterScreen = ({ navigation }) => {
   };
 
   const validateForm = () => {
-    const { email, username, password, firstName, lastName } = formData;
+    const { firstName, lastName, email, username, password} = formData;
     
     if (!email.trim() || !username.trim() || !password.trim() || !firstName.trim() || !lastName.trim()) {
       Alert.alert('Error', 'Please fill in all fields');
@@ -62,11 +62,14 @@ const RegisterScreen = ({ navigation }) => {
     setLoading(true);
     try {
       const response = await authAPI.register({
-        email: formData.email.trim(),
-        username: formData.username.trim(),
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        username: formData.username,
         password: formData.password,
-        firstName: formData.firstName.trim(),
-        lastName: formData.lastName.trim(),
+        org_password: "test",
+        is_prime_consultant: false
+        
       });
       
       if (response.success) {

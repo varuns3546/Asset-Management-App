@@ -7,10 +7,9 @@ const router = express.Router();
 // Register route
 router.post('/register', async (req, res) => {
   try {
-    const { email, username, password, firstName, lastName } = req.body;
-
+    const { email, username, password, firstName, lastName, org_password, is_prime_consultant } = req.body;
     // Validation
-    if (!email || !username || !password || !firstName || !lastName) {
+    if (!email || !username || !password || !firstName || !lastName || !org_password) {
       return res.status(400).json({
         success: false,
         message: 'All fields are required'
@@ -48,7 +47,9 @@ router.post('/register', async (req, res) => {
       username,
       password,
       firstName,
-      lastName
+      lastName,
+      org_password,
+      is_prime_consultant
     });
 
     // Generate JWT token
@@ -87,10 +88,13 @@ router.post('/register', async (req, res) => {
 // Login route
 router.post('/login', async (req, res) => {
   try {
+    console.log('attempting login')
     const { username, password } = req.body;
 
+    console.log(req.body)
     // Validation
     if (!username || !password) {
+      console.log('!username || !password')
       return res.status(400).json({
         success: false,
         message: 'Username and password are required'
@@ -101,6 +105,7 @@ router.post('/login', async (req, res) => {
     const user = await User.findByEmailOrUsername(username);
 
     if (!user) {
+      console.log('no user')
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials'
@@ -110,6 +115,7 @@ router.post('/login', async (req, res) => {
     // Check password
     const isPasswordValid = await user.comparePassword(password);
     if (!isPasswordValid) {
+      console.log('password not valid')
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials'
@@ -122,6 +128,8 @@ router.post('/login', async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
+
+    console.log(`User logged in successfully`);
 
     res.json({
       success: true,
