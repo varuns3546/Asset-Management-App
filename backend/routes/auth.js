@@ -24,10 +24,16 @@ router.post('/register', async (req, res) => {
       });
     }
 
+    if (username.length < 3 || username.length > 30) {
+      return res.status(400).json({
+        success: false,
+        message: 'Username must be between 3 and 30 characters'
+      });
+    }
+
     // Check if user already exists
-    const existingUser = await User.findOne({
-      $or: [{ email }, { username }]
-    });
+    const existingUser = await User.findByEmailOrUsername(email) || 
+                        await User.findByEmailOrUsername(username);
 
     if (existingUser) {
       return res.status(400).json({
@@ -37,7 +43,7 @@ router.post('/register', async (req, res) => {
     }
 
     // Create new user
-    const user = new User({
+    const user = await User.create({
       email,
       username,
       password,
@@ -45,11 +51,9 @@ router.post('/register', async (req, res) => {
       lastName
     });
 
-    await user.save();
-
     // Generate JWT token
     const token = jwt.sign(
-      { userId: user._id },
+      { userId: user.id },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
@@ -58,17 +62,21 @@ router.post('/register', async (req, res) => {
       success: true,
       message: 'User registered successfully',
       token,
-      user: {
-        id: user._id,
-        email: user.email,
-        username: user.username,
-        firstName: user.firstName,
-        lastName: user.lastName
-      }
+      user: user.toJSON()
     });
 
   } catch (error) {
     console.error('Registration error:', error);
+    
+    // Handle Supabase unique constraint violations
+    if (error.code === '23505') {
+      const field = error.details?.includes('email') ? 'email' : 'username';
+      return res.status(400).json({
+        success: false,
+        message: `User with this ${field} already exists`
+      });
+    }
+
     res.status(500).json({
       success: false,
       message: 'Internal server error'
@@ -90,9 +98,7 @@ router.post('/login', async (req, res) => {
     }
 
     // Find user by username or email
-    const user = await User.findOne({
-      $or: [{ username }, { email: username }]
-    });
+    const user = await User.findByEmailOrUsername(username);
 
     if (!user) {
       return res.status(401).json({
@@ -112,7 +118,7 @@ router.post('/login', async (req, res) => {
 
     // Generate JWT token
     const token = jwt.sign(
-      { userId: user._id },
+      { userId: user.id },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
@@ -121,13 +127,7 @@ router.post('/login', async (req, res) => {
       success: true,
       message: 'Login successful',
       token,
-      user: {
-        id: user._id,
-        email: user.email,
-        username: user.username,
-        firstName: user.firstName,
-        lastName: user.lastName
-      }
+      user: user.toJSON()
     });
 
   } catch (error) {

@@ -1,6 +1,5 @@
 const express = require('express');
 const cors = require('cors');
-const mongoose = require('mongoose');
 require('dotenv').config();
 
 const authRoutes = require('./routes/auth');
@@ -20,17 +19,48 @@ app.get('/api/health', (req, res) => {
   res.json({ message: 'Server is running!' });
 });
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => {
-    console.log('Connected to MongoDB');
+// Test Supabase connection
+const testSupabaseConnection = async () => {
+  try {
+    const supabase = require('./config/supabase');
+    const { data, error } = await supabase
+      .from('users')
+      .select('count')
+      .limit(1);
+    
+    if (error) {
+      console.error('Supabase connection error:', error.message);
+      return false;
+    }
+    
+    console.log('Connected to Supabase successfully');
+    return true;
+  } catch (error) {
+    console.error('Supabase configuration error:', error.message);
+    return false;
+  }
+};
+
+// Start server
+const startServer = async () => {
+  try {
+    // Test Supabase connection
+    const isConnected = await testSupabaseConnection();
+    
+    if (!isConnected) {
+      console.warn('Warning: Supabase connection failed, but server will start anyway');
+    }
+    
     app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
     });
-  })
-  .catch((error) => {
-    console.error('MongoDB connection error:', error);
-  });
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
+};
+
+startServer();
 
 // Error handling middleware
 app.use((err, req, res, next) => {
