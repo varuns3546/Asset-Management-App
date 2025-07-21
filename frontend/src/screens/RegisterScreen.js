@@ -25,11 +25,23 @@ const RegisterScreen = ({ navigation }) => {
     orgPassword: ''
   });
   const [loading, setLoading] = useState(false);
+  const [showPasswords, setShowPasswords] = useState({
+    password: false,
+    confirmPassword: false,
+    orgPassword: false
+  });
 
   const updateField = (field, value) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
+    }));
+  };
+
+  const togglePasswordVisibility = (field) => {
+    setShowPasswords(prev => ({
+      ...prev,
+      [field]: !prev[field]
     }));
   };
 
@@ -110,6 +122,12 @@ const RegisterScreen = ({ navigation }) => {
           <Text style={styles.title}>Create Account</Text>
           <Text style={styles.subtitle}>Sign up to get started</Text>
 
+          {errorMessage && (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>{errorMessage}</Text>
+            </View>
+          )}
+
           <View style={styles.row}>
             <View style={[styles.inputContainer, styles.halfWidth]}>
               <Text style={styles.label}>First Name</Text>
@@ -158,39 +176,72 @@ const RegisterScreen = ({ navigation }) => {
               autoCorrect={false}
             />
           </View>
-
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Password</Text>
-            <TextInput
-              style={styles.input}
-              value={formData.password}
-              onChangeText={(value) => updateField('password', value)}
-              placeholder="Create a password (min 6 characters)"
-              secureTextEntry
-            />
-          </View>
-
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Confirm Password</Text>
-            <TextInput
-              style={styles.input}
-              value={formData.confirmPassword}
-              onChangeText={(value) => updateField('confirmPassword', value)}
-              placeholder="Confirm Password"
-              secureTextEntry
-            />
-          </View>
-
+          
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Organization Password</Text>
-            <TextInput
-              style={styles.input}
-              value={formData.orgPassword}
-              onChangeText={(value) => updateField('orgPassword', value)}
-              placeholder="Organization Password"
-              secureTextEntry
-            />
+            <View style={styles.passwordContainer}>
+              <TextInput
+                style={styles.passwordInput}
+                value={formData.orgPassword}
+                onChangeText={(value) => updateField('orgPassword', value)}
+                placeholder="Organization Password"
+                secureTextEntry={!showPasswords.orgPassword}
+              />
+              <TouchableOpacity 
+                style={styles.eyeButton}
+                onPress={() => togglePasswordVisibility('orgPassword')}
+              >
+                <Text style={styles.eyeText}>
+                  {showPasswords.orgPassword ? '👁️' : '👁️‍🗨️'}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
+          
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Password</Text>
+            <View style={styles.passwordContainer}>
+              <TextInput
+                style={styles.passwordInput}
+                value={formData.password}
+                onChangeText={(value) => updateField('password', value)}
+                placeholder="Create a password (min 6 characters)"
+                secureTextEntry={!showPasswords.password}
+              />
+              <TouchableOpacity 
+                style={styles.eyeButton}
+                onPress={() => togglePasswordVisibility('password')}
+              >
+                <Text style={styles.eyeText}>
+                  {showPasswords.password ? '👁️' : '👁️‍🗨️'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Confirm Password</Text>
+            <View style={styles.passwordContainer}>
+              <TextInput
+                style={styles.passwordInput}
+                value={formData.confirmPassword}
+                onChangeText={(value) => updateField('confirmPassword', value)}
+                placeholder="Confirm Password"
+                secureTextEntry={!showPasswords.confirmPassword}
+              />
+              <TouchableOpacity 
+                style={styles.eyeButton}
+                onPress={() => togglePasswordVisibility('confirmPassword')}
+              >
+                <Text style={styles.eyeText}>
+                  {showPasswords.confirmPassword ? '👁️' : '👁️‍🗨️'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          
 
           <TouchableOpacity 
             style={[styles.button, loading && styles.buttonDisabled]}
@@ -250,6 +301,19 @@ const styles = StyleSheet.create({
     marginBottom: 30,
     color: '#666',
   },
+  errorContainer: {
+    backgroundColor: '#ffebee',
+    borderColor: '#f44336',
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 20,
+  },
+  errorText: {
+    color: '#c62828',
+    fontSize: 14,
+    textAlign: 'center',
+  },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -273,6 +337,30 @@ const styles = StyleSheet.create({
     padding: 15,
     fontSize: 16,
     backgroundColor: '#f9f9f9',
+  },
+  passwordContainer: {
+    position: 'relative',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  passwordInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 10,
+    padding: 15,
+    fontSize: 16,
+    backgroundColor: '#f9f9f9',
+    paddingRight: 50,
+  },
+  eyeButton: {
+    position: 'absolute',
+    right: 15,
+    padding: 5,
+  },
+  eyeText: {
+    fontSize: 18,
+    color: '#666',
   },
   button: {
     backgroundColor: '#007AFF',
