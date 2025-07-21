@@ -1,5 +1,5 @@
-const bcrypt = require('bcryptjs');
-const supabase = require('../config/supabase');
+import bcrypt  from 'bcryptjs'
+import supabase from '../config/supabase.js'
 
 class User {
   constructor(userData) {
@@ -136,4 +136,4 @@ class User {
   }
 }
 
-module.exports = User;
+export default User

@@ -1,8 +1,12 @@
-const express = require('express');
-const cors = require('cors');
-require('dotenv').config();
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+dotenv.config();
+import {supabase} from './config/supabase.js'
 
-const authRoutes = require('./routes/auth');
+
+import authRoutes from './routes/auth.js'
+import entriesRoutes from './routes/entries.js'
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -13,6 +17,7 @@ app.use(express.json());
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/data', entriesRoutes)
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -22,7 +27,6 @@ app.get('/api/health', (req, res) => {
 // Test Supabase connection
 const testSupabaseConnection = async () => {
   try {
-    const {supabase} = require('./config/supabase');
     const { data, error } = await supabase
       .from('users')
       .select('count')

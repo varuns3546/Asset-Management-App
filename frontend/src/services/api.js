@@ -49,4 +49,33 @@ export const authAPI = {
   },
 };
 
+export const entriesAPI = {
+  getEntries: async () => {
+    try {
+      const response = await api.get('/entries');
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Network error' };
+    }
+  },
+
+  createEntry: async (entryData) => {
+    try {
+      const response = await api.post('/entries', entryData);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Network error' };
+    }
+  },
+
+  deleteEntry: async (entryId) => {
+    try {
+      const response = await api.delete(`/entries/${entryId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Network error' };
+    }
+  },
+};
+
 export default api;

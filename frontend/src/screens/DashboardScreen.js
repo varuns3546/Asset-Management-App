@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
-import { supabaseAPI } from '../services/api';
+import { entriesAPI } from '../services/api';
 
 const DashboardScreen = ({ navigation }) => {
   const [user, setUser] = useState(null);
@@ -41,7 +41,7 @@ const DashboardScreen = ({ navigation }) => {
 
   const loadEntries = async () => {
     try {
-      const { data, error } = await supabaseAPI
+      const { data, error } = await entriesAPI
         .from('entries')
         .select('*')
         .order('created_at', { ascending: false });
@@ -133,7 +133,7 @@ const DashboardScreen = ({ navigation }) => {
       const fileName = `${Date.now()}.${fileExt}`;
       const filePath = `entries/${user?.id || 'anonymous'}/${fileName}`;
 
-      const { error: uploadError } = await supabaseAPI.storage
+      const { error: uploadError } = await entriesAPI.storage
         .from('images')
         .upload(filePath, arrayBuffer, {
           contentType: `image/${fileExt}`,
@@ -145,7 +145,7 @@ const DashboardScreen = ({ navigation }) => {
       }
 
       // Get public URL
-      const { data } = supabaseAPI.storage
+      const { data } = entriesAPI.storage
         .from('images')
         .getPublicUrl(filePath);
 
@@ -176,8 +176,8 @@ const DashboardScreen = ({ navigation }) => {
         imageUrl = await uploadImage(selectedImage);
       }
 
-      // Save entry to supabaseAPI
-      const { data, error } = await supabaseAPI
+      // Save entry to entriesAPI
+      const { data, error } = await entriesAPI
         .from('entries')
         .insert([
           {
@@ -226,8 +226,8 @@ const DashboardScreen = ({ navigation }) => {
               // Find the entry to get image path for deletion
               const entryToDelete = entries.find(entry => entry.id === entryId);
               
-              // Delete from supabaseAPI
-              const { error } = await supabaseAPI
+              // Delete from entriesAPI
+              const { error } = await entriesAPI
                 .from('entries')
                 .delete()
                 .eq('id', entryId);
@@ -243,7 +243,7 @@ const DashboardScreen = ({ navigation }) => {
                 const imagePath = entryToDelete.image_url.split('/').pop();
                 const filePath = `entries/${user?.id}/${imagePath}`;
                 
-                await supabaseAPI.storage
+                await entriesAPI.storage
                   .from('images')
                   .remove([filePath]);
               }
