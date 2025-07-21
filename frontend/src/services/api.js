@@ -31,6 +31,7 @@ api.interceptors.request.use(
 export const authAPI = {
   login: async (loginData) => {
     try {
+      console.log(loginData)
       console.log('attempting login')
       const response = await api.post('/auth/login', loginData);
       return response.data;
@@ -50,32 +51,37 @@ export const authAPI = {
 };
 
 export const entriesAPI = {
-  getEntries: async () => {
+  
+  getEntries: async (userId) => {
     try {
-      const response = await api.get('/entries');
+      const response = await api.get(`/data/${userId}/entries`);
       return response.data;
     } catch (error) {
       throw error.response?.data || { message: 'Network error' };
     }
   },
 
-  createEntry: async (entryData) => {
+  
+  createEntry: async (userId, entryData) => {
     try {
-      const response = await api.post('/entries', entryData);
+      const response = await api.post(`/data/${userId}/entries`, entryData);
       return response.data;
     } catch (error) {
       throw error.response?.data || { message: 'Network error' };
     }
   },
 
-  deleteEntry: async (entryId) => {
+  deleteEntry: async (userId, entryId) => {
     try {
-      const response = await api.delete(`/entries/${entryId}`);
+      const response = await api.delete(`/data/${userId}/entries/${entryId}`);
       return response.data;
     } catch (error) {
       throw error.response?.data || { message: 'Network error' };
     }
   },
+  
 };
+
+
 
 export default api;

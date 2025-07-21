@@ -1,4 +1,5 @@
-import { supabase, getCurrentUser, signOut } from './config/supabase.js';
+import supabaseConfig from '../config/supabase.js';
+const { supabase, getCurrentUser, signOut } = supabaseConfig;
 
 class Entry {
   constructor(entryData) {
@@ -6,7 +7,6 @@ class Entry {
     this.title = entryData.title;
     this.description = entryData.description;
     this.image = entryData.image
-   
     this.createdAt = userData.created_at;
     this.updatedAt = userData.updated_at;
   }
@@ -49,15 +49,55 @@ class Entry {
       throw error;
     }
 
-    return data ? new Entry(data) : null;
+    return ? new Entry(data) : null;
   }
 
-  
+  static async findAll() {
+    const { data, error } = await supabase
+      .from('entries')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw error;
+    }
+
+    return data ? data.map(entry => new Entry(entry)) : [];
+  }
+  async update(updateData) {
+    const { data, error } = await supabase
+      .from('entries')
+      .update(updateData)
+      .eq('id', this.id)
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    // Update current instance
+    Object.assign(this, data);
+    return this;
+  }
+  async delete() {
+    const { error } = await supabase
+      .from('entries')
+      .delete()
+      .eq('id', this.id);
+
+    if (error) {
+      throw error;
+    }
+
+    return true;
+  }
   toJSON() {
     return {
       id: this.id,
       title: this.title,
       description: this.description,
+      image: this.image,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt
     };

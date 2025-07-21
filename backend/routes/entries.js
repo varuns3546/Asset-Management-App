@@ -2,20 +2,24 @@ import express from 'express';
 import User from '../models/User.js';
 const router = express.Router();
 
-
 // GET /api/auth/:userId/entries - Get all entries for a specific user
 router.get('/:userId/entries', async (req, res) => {
+    console.log('attemping get entries')
+
     try {
+
       const { userId } = req.params;
       
       // Check if the authenticated user is requesting their own entries or is authorized
+     
+     /*
       if (req.userId !== parseInt(userId)) {
         return res.status(403).json({
           success: false,
           message: 'Access denied. You can only view your own entries'
         });
       }
-  
+  */
       const entries = await Entry.findByUserId(userId);
       
       res.json({
@@ -34,10 +38,13 @@ router.get('/:userId/entries', async (req, res) => {
   
   // POST /api/auth/:userId/entries - Create a new entry for a specific user
   router.post('/:userId/entries', async (req, res) => {
+    console.log('attempting post entry')
+
     try {
       const { userId } = req.params;
       const { title, description, image_url } = req.body;
       
+      /*
       // Check if the authenticated user is creating an entry for themselves
       if (req.userId !== parseInt(userId)) {
         return res.status(403).json({
@@ -45,7 +52,7 @@ router.get('/:userId/entries', async (req, res) => {
           message: 'Access denied. You can only create entries for yourself'
         });
       }
-  
+  */
       // Validation
       if (!title || title.trim().length === 0) {
         return res.status(400).json({
@@ -82,7 +89,7 @@ router.get('/:userId/entries', async (req, res) => {
     try {
       const { userId, entryId } = req.params;
       const { title, description, image_url } = req.body;
-      
+      /*
       // Check if the authenticated user owns this entry
       if (req.userId !== parseInt(userId)) {
         return res.status(403).json({
@@ -90,7 +97,7 @@ router.get('/:userId/entries', async (req, res) => {
           message: 'Access denied. You can only update your own entries'
         });
       }
-  
+  */
       // Find the entry first to ensure it exists and belongs to the user
       const existingEntry = await Entry.findById(entryId);
       if (!existingEntry) {
@@ -99,14 +106,14 @@ router.get('/:userId/entries', async (req, res) => {
           message: 'Entry not found'
         });
       }
-  
+  /*
       if (existingEntry.user_id !== parseInt(userId)) {
         return res.status(403).json({
           success: false,
           message: 'Access denied. This entry does not belong to you'
         });
       }
-  
+  */
       // Validation
       if (!title || title.trim().length === 0) {
         return res.status(400).json({
@@ -141,7 +148,7 @@ router.get('/:userId/entries', async (req, res) => {
   router.delete('/:userId/entries/:entryId', async (req, res) => {
     try {
       const { userId, entryId } = req.params;
-      
+      /*
       // Check if the authenticated user owns this entry
       if (req.userId !== parseInt(userId)) {
         return res.status(403).json({
@@ -149,7 +156,7 @@ router.get('/:userId/entries', async (req, res) => {
           message: 'Access denied. You can only delete your own entries'
         });
       }
-  
+  */
       // Find the entry first to ensure it exists and belongs to the user
       const existingEntry = await Entry.findById(entryId);
       if (!existingEntry) {
@@ -158,14 +165,14 @@ router.get('/:userId/entries', async (req, res) => {
           message: 'Entry not found'
         });
       }
-  
+  /*
       if (existingEntry.user_id !== parseInt(userId)) {
         return res.status(403).json({
           success: false,
           message: 'Access denied. This entry does not belong to you'
         });
       }
-  
+  */
       // Delete the entry
       await Entry.delete(entryId);
   
@@ -187,7 +194,7 @@ router.get('/:userId/entries', async (req, res) => {
   router.get('/:userId/entries/:entryId', async (req, res) => {
     try {
       const { userId, entryId } = req.params;
-      
+      /*
       // Check if the authenticated user is requesting their own entry
       if (req.userId !== parseInt(userId)) {
         return res.status(403).json({
@@ -195,7 +202,7 @@ router.get('/:userId/entries', async (req, res) => {
           message: 'Access denied. You can only view your own entries'
         });
       }
-  
+  */
       const entry = await Entry.findById(entryId);
       
       if (!entry) {
@@ -204,7 +211,7 @@ router.get('/:userId/entries', async (req, res) => {
           message: 'Entry not found'
         });
       }
-  
+  /*
       // Ensure the entry belongs to the user
       if (entry.user_id !== parseInt(userId)) {
         return res.status(403).json({
@@ -212,7 +219,7 @@ router.get('/:userId/entries', async (req, res) => {
           message: 'Access denied. This entry does not belong to you'
         });
       }
-  
+  */
       res.json({
         success: true,
         entry: entry

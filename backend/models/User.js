@@ -1,5 +1,6 @@
-import bcrypt  from 'bcryptjs'
-import { supabase, getCurrentUser, signOut } from './config/supabase.js';
+import bcrypt from 'bcryptjs';
+import supabaseConfig from '../config/supabase.js';
+const { supabase, getCurrentUser, signOut } = supabaseConfig;
 
 class User {
   constructor(userData) {
@@ -59,15 +60,18 @@ class User {
 
   // Find user by email or username
   static async findByUsername(identifier) {
+    if (!identifier) {
+      return null; // or throw an error
+    }
     const { data, error } = await supabase
       .from('users')
       .select('*')
+      .eq('username', identifier) // Assuming your column is named 'username'
       .single();
-
-    if (error && error.code !== 'PGRST116') { // PGRST116 is "not found" error
+    
+    if (error && error.code !== 'PGRST116') {
       throw error;
     }
-
     return data ? new User(data) : null;
   }
 

@@ -93,7 +93,6 @@ router.post('/login', async (req, res) => {
     console.log('attempting login')
     const { username, password } = req.body;
     console.log(req.body)
-    console.log(req.body)
     // Validation
     if (!username || !password) {
       console.log('!username || !password')
@@ -104,7 +103,7 @@ router.post('/login', async (req, res) => {
     }
 
     // Find user by username or email
-    const user = await User.findByEmailOrUsername(username);
+    const user = await User.findByUsername(username);
 
     if (!user) {
       console.log('no user')

@@ -34,7 +34,7 @@ const LoginScreen = ({ navigation }) => {
         username: username,
         password: password,        
       });     
-      console.log(response.data);
+      console.log(response.user);
     
             
       if (response.success) {
@@ -47,7 +47,6 @@ const LoginScreen = ({ navigation }) => {
         navigation.navigate('Dashboard');
       }
     } catch (error) {
-      Alert.alert('Login Failed', error.message || 'An error occurred');
       console.log('login error:', error);
 
     } finally {

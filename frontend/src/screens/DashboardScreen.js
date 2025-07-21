@@ -41,21 +41,11 @@ const DashboardScreen = ({ navigation }) => {
 
   const loadEntries = async () => {
     try {
-      const { data, error } = await entriesAPI
-        .from('entries')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error loading entries:', error);
-        Alert.alert('Error', 'Failed to load entries');
-        return;
-      }
-
-      setEntries(data || []);
+        const response = await entriesAPI.getEntries({userId: user.id})
+        console.log(response)
+        setEntries(response.entries);
     } catch (error) {
       console.log('Error loading entries:', error);
-      Alert.alert('Error', 'Failed to load entries');
     }
   };
 
@@ -157,62 +147,55 @@ const DashboardScreen = ({ navigation }) => {
   };
 
   const handleSaveEntry = async () => {
+    console.log('handle save entry')
     if (!title.trim()) {
-      Alert.alert('Error', 'Please enter a title');
+      console.log('enter title')
       return;
     }
 
     if (!user?.id) {
-      Alert.alert('Error', 'User not found. Please login again.');
+      console.log('Error', 'User not found. Please login again.');
       return;
     }
 
     setLoading(true);
     try {
-      let imageUrl = null;
+      let image_url = null;
       
       // Upload image if selected
       if (selectedImage) {
-        imageUrl = await uploadImage(selectedImage);
+        image_url = await uploadImage(selectedImage);
       }
 
-      // Save entry to entriesAPI
-      const { data, error } = await entriesAPI
-        .from('entries')
-        .insert([
-          {
-            title: title.trim(),
-            description: description.trim(),
-            image_url: imageUrl,
-            user_id: user.id,
-          }
-        ])
-        .select();
+   
 
-      if (error) {
-        console.error('Save error:', error);
-        Alert.alert('Error', 'Failed to save entry');
-        return;
-      }
-
+      const response = await entriesAPI.createEntry({
+        
+        userId: user.id,
+        entryData: {
+            title: title,
+            description: description,
+            image_url: image_url
+        },        
+      });     
+      console.log(response)
       // Update local state
-      setEntries([data[0], ...entries]);
+      setEntries([response.entry, ...entries]);
 
       // Clear form
       setTitle('');
       setDescription('');
       setSelectedImage(null);
 
-      Alert.alert('Success', 'Entry saved successfully!');
+      console.log('Success', 'Entry saved successfully!');
     } catch (error) {
-      Alert.alert('Error', 'Failed to save entry');
       console.log('Save error:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const deleteEntry = async (entryId) => {
+  const deleteEntry = async (entry_id) => {
     Alert.alert(
       'Delete Entry',
       'Are you sure you want to delete this entry?',
@@ -224,19 +207,13 @@ const DashboardScreen = ({ navigation }) => {
           onPress: async () => {
             try {
               // Find the entry to get image path for deletion
-              const entryToDelete = entries.find(entry => entry.id === entryId);
+              const entryToDelete = entries.find(entry => entry.id === entry_id);
               
-              // Delete from entriesAPI
-              const { error } = await entriesAPI
-                .from('entries')
-                .delete()
-                .eq('id', entryId);
-
-              if (error) {
-                console.error('Delete error:', error);
-                Alert.alert('Error', 'Failed to delete entry');
-                return;
-              }
+              const response = await entriesAPI.deleteEntry({
+        
+                user_id: user_id,
+                entry_id: entry_id 
+              });     
 
               // Delete image from storage if exists
               if (entryToDelete?.image_url) {
@@ -249,7 +226,7 @@ const DashboardScreen = ({ navigation }) => {
               }
 
               // Update local state
-              const updatedEntries = entries.filter(entry => entry.id !== entryId);
+              const updatedEntries = entries.filter(entry => entry.id !== entry_id);
               setEntries(updatedEntries);
               
               Alert.alert('Success', 'Entry deleted successfully');
