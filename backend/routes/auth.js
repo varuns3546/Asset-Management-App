@@ -49,7 +49,7 @@ router.post('/register', async (req, res) => {
       password,
       firstName,
       lastName,
-      org_password,
+      orgPassword,
       is_prime_consultant
     });
 

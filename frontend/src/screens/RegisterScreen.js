@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Alert,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authAPI } from '../services/api';
@@ -20,10 +21,10 @@ const RegisterScreen = ({ navigation }) => {
     email: '',
     username: '',
     password: '',    
-    confirmPassword: ''.
-    orgPassword
+    confirmPassword: '',
+    orgPassword: ''
   });
-  const [loading, setLoading] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const updateField = (field, value) => {
     setFormData(prev => ({
