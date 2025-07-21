@@ -44,7 +44,7 @@ const LoginScreen = ({ navigation }) => {
         console.log('success')
         Alert.alert('Success', 'Login successful!');
         // Navigate to main app or dashboard
-        // navigation.navigate('Dashboard');
+        navigation.navigate('Dashboard');
       }
     } catch (error) {
       Alert.alert('Login Failed', error.message || 'An error occurred');
