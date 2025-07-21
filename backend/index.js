@@ -2,8 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 dotenv.config();
-import {supabase} from './config/supabase.js'
-
+import supabaseConfig from './config/supabase.js';
+const { supabase } = supabaseConfig;
 
 import authRoutes from './routes/auth.js'
 import entriesRoutes from './routes/entries.js'
@@ -27,23 +27,26 @@ app.get('/api/health', (req, res) => {
 // Test Supabase connection
 const testSupabaseConnection = async () => {
   try {
+    console.log('Testing Supabase connection...');
+    console.log('URL:', process.env.SUPABASE_URL);
+    console.log('Key exists:', !!process.env.SUPABASE_ANON_KEY);
+    
     const { data, error } = await supabase
-      .from('users')
+      .from('users')  // Make sure this table exists in your Supabase database
       .select('count')
       .limit(1);
     
     if (error) {
-      console.error('Supabase connection error:', error.message);
+      console.error('Supabase connection error:', error);
       return false;
     }
     console.log('Connected to Supabase successfully');
     return true;
   } catch (error) {
-    console.error('Supabase configuration error:', error.message);
+    console.error('Supabase configuration error:', error);
     return false;
   }
 };
-
 // Start server
 const startServer = async () => {
   try {

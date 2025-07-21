@@ -1,5 +1,5 @@
 import bcrypt  from 'bcryptjs'
-import supabase from '../config/supabase.js'
+import { supabase, getCurrentUser, signOut } from './config/supabase.js';
 
 class User {
   constructor(userData) {
@@ -58,11 +58,10 @@ class User {
   }
 
   // Find user by email or username
-  static async findByEmailOrUsername(identifier) {
+  static async findByUsername(identifier) {
     const { data, error } = await supabase
       .from('users')
       .select('*')
-      .or(`email.eq.${identifier.toLowerCase()},username.eq.${identifier}`)
       .single();
 
     if (error && error.code !== 'PGRST116') { // PGRST116 is "not found" error
