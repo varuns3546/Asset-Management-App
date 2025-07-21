@@ -22,7 +22,7 @@ app.get('/api/health', (req, res) => {
 // Test Supabase connection
 const testSupabaseConnection = async () => {
   try {
-    const supabase = require('./config/supabase');
+    const {supabase} = require('./config/supabase');
     const { data, error } = await supabase
       .from('users')
       .select('count')
