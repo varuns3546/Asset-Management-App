@@ -7,9 +7,10 @@ const router = express.Router();
 // Register route
 router.post('/register', async (req, res) => {
   try {
-    const { email, username, password, firstName, lastName, org_password, is_prime_consultant } = req.body;
+    console.log('attempting register')
+    const { email, username, password, firstName, lastName, orgPassword, is_prime_consultant } = req.body;
     // Validation
-    if (!email || !username || !password || !firstName || !lastName || !org_password) {
+    if (!email || !username || !password || !firstName || !lastName || !orgPassword) {
       return res.status(400).json({
         success: false,
         message: 'All fields are required'

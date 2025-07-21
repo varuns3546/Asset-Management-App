@@ -5,7 +5,6 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -14,15 +13,17 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authAPI } from '../services/api';
 
 const RegisterScreen = ({ navigation }) => {
+  const [errorMessage, setErrorMessage] = useState(null)
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     email: '',
     username: '',
     password: '',    
-    confirmPassword: ''
+    confirmPassword: ''.
+    orgPassword
   });
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState('');
 
   const updateField = (field, value) => {
     setFormData(prev => ({
@@ -32,31 +33,33 @@ const RegisterScreen = ({ navigation }) => {
   };
 
   const validateForm = () => {
-    const { firstName, lastName, email, username, password, confirmPassword} = formData;
+    const { firstName, lastName, email, username, password, confirmPassword, orgPassword} = formData;
     
-    if (!email || !username || !password || !firstName || !lastName || !confirmPassword) {
-      Alert.alert('Error', 'Please fill in all fields');
+    if (!email || !username || !password || !firstName || !lastName || !confirmPassword || !orgPassword) {
+      setErrorMessage('Please fill in all fields')
       return false;
     }
 
     if (password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters long');
+      setErrorMessage('Password must be at least 6 characters long')
       return false;
     }
 
     if (!email.includes('@')) {
-      Alert.alert('Error', 'Please enter a valid email address');
+      setErrorMessage('Please enter a valid email address')
+
       return false;
     }
 
     if (username.length < 3) {
-      Alert.alert('Error', 'Username must be at least 3 characters long');
+      setErrorMessage('Username must be at least 3 characters long')
+
       return false;
     }
 
     if(password!==confirmPassword)
     {
-      Alert.alert('Error', 'Password mismatch')
+      setErrorMessage('Password mismatch')
       return false
     }
 
@@ -65,7 +68,7 @@ const RegisterScreen = ({ navigation }) => {
 
   const handleRegister = async () => {
     if (!validateForm()) return;
-
+    setErrorMessage('')
     setLoading(true);
     try {
       const response = await authAPI.register({
@@ -74,7 +77,7 @@ const RegisterScreen = ({ navigation }) => {
         email: formData.email,
         username: formData.username,
         password: formData.password,
-        org_password: "test",
+        orgPassword: formData.orgPassword,
         is_prime_consultant: false
         
       });
@@ -90,6 +93,7 @@ const RegisterScreen = ({ navigation }) => {
       }
     } catch (error) {
       Alert.alert('Registration Failed', error.message || 'An error occurred');
+      console.log(error.message)
     } finally {
       setLoading(false);
     }
@@ -172,6 +176,17 @@ const RegisterScreen = ({ navigation }) => {
               value={formData.confirmPassword}
               onChangeText={(value) => updateField('confirmPassword', value)}
               placeholder="Confirm Password"
+              secureTextEntry
+            />
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Organization Password</Text>
+            <TextInput
+              style={styles.input}
+              value={formData.orgPassword}
+              onChangeText={(value) => updateField('orgPassword', value)}
+              placeholder="Organization Password"
               secureTextEntry
             />
           </View>
