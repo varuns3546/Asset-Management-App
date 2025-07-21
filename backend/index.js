@@ -8,8 +8,10 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors());
-app.use(express.json());
+app.use(cors({
+  origin: 'https://opulent-happiness-976vx9gg4wg4hx5j4-8081.app.github.dev', // frontend origin
+  credentials: true, // if you're using cookies
+}));app.use(express.json());
 
 // Routes
 app.use('/api/auth', authRoutes);

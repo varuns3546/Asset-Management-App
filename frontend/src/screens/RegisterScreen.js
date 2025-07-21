@@ -20,6 +20,7 @@ const RegisterScreen = ({ navigation }) => {
     email: '',
     username: '',
     password: '',    
+    confirmPassword: ''
   });
   const [loading, setLoading] = useState(false);
 
@@ -31,9 +32,9 @@ const RegisterScreen = ({ navigation }) => {
   };
 
   const validateForm = () => {
-    const { firstName, lastName, email, username, password} = formData;
+    const { firstName, lastName, email, username, password, confirmPassword} = formData;
     
-    if (!email.trim() || !username.trim() || !password.trim() || !firstName.trim() || !lastName.trim()) {
+    if (!email || !username || !password || !firstName || !lastName || !confirmPassword) {
       Alert.alert('Error', 'Please fill in all fields');
       return false;
     }
@@ -51,6 +52,12 @@ const RegisterScreen = ({ navigation }) => {
     if (username.length < 3) {
       Alert.alert('Error', 'Username must be at least 3 characters long');
       return false;
+    }
+
+    if(password!==confirmPassword)
+    {
+      Alert.alert('Error', 'Password mismatch')
+      return false
     }
 
     return true;
@@ -154,6 +161,17 @@ const RegisterScreen = ({ navigation }) => {
               value={formData.password}
               onChangeText={(value) => updateField('password', value)}
               placeholder="Create a password (min 6 characters)"
+              secureTextEntry
+            />
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Confirm Password</Text>
+            <TextInput
+              style={styles.input}
+              value={formData.confirmPassword}
+              onChangeText={(value) => updateField('confirmPassword', value)}
+              placeholder="Confirm Password"
               secureTextEntry
             />
           </View>

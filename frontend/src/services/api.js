@@ -31,6 +31,7 @@ api.interceptors.request.use(
 export const authAPI = {
   login: async (username, password) => {
     try {
+      console.log('attempting login')
       const response = await api.post('/auth/login', {
         username: username, password: password,
       });

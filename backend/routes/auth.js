@@ -90,7 +90,7 @@ router.post('/login', async (req, res) => {
   try {
     console.log('attempting login')
     const { username, password } = req.body;
-
+    console.log(req.body)
     console.log(req.body)
     // Validation
     if (!username || !password) {

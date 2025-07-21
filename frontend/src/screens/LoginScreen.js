@@ -19,6 +19,7 @@ const LoginScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
+
     if (!username || !password) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
@@ -26,19 +27,28 @@ const LoginScreen = ({ navigation }) => {
 
     setLoading(true);
     try {
-      const response = await api.post('/auth/login', { username, password });
-      
+    
+      const response = await authAPI.login({
+        
+        username: username,
+        password: password,        
+      });     
+      console.log(response.data);
+    
+            
       if (response.success) {
         // Store token and user data
         await AsyncStorage.setItem('token', response.token);
         await AsyncStorage.setItem('user', JSON.stringify(response.user));
-        
+        console.log('success')
         Alert.alert('Success', 'Login successful!');
         // Navigate to main app or dashboard
         // navigation.navigate('Dashboard');
       }
     } catch (error) {
       Alert.alert('Login Failed', error.message || 'An error occurred');
+      console.log('success')
+
     } finally {
       setLoading(false);
     }
