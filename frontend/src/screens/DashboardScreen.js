@@ -16,7 +16,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { entriesAPI } from '../services/api';
 
 const DashboardScreen = ({ navigation }) => {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState({});
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [selectedImage, setSelectedImage] = useState(null);
@@ -25,14 +25,22 @@ const DashboardScreen = ({ navigation }) => {
 
   useEffect(() => {
     loadUserData();
-    loadEntries();
   }, []);
+
+  useEffect(() => {
+    if (user?.id) {
+      console.log('Updated user:', user);
+      loadEntries(); // <-- move entry loading here after user is set
+    }
+  }, [user]);
 
   const loadUserData = async () => {
     try {
       const userData = await AsyncStorage.getItem('user');
+      console.log('Raw userData from storage:', userData); // Add this
       if (userData) {
         setUser(JSON.parse(userData));
+        console.log('user', user)
       }
     } catch (error) {
       console.log('Error loading user data:', error);
@@ -196,48 +204,11 @@ const DashboardScreen = ({ navigation }) => {
   };
 
   const deleteEntry = async (entry_id) => {
-    Alert.alert(
-      'Delete Entry',
-      'Are you sure you want to delete this entry?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              // Find the entry to get image path for deletion
-              const entryToDelete = entries.find(entry => entry.id === entry_id);
-              
-              const response = await entriesAPI.deleteEntry({
-        
-                user_id: user_id,
-                entry_id: entry_id 
-              });     
-
-              // Delete image from storage if exists
-              if (entryToDelete?.image_url) {
-                const imagePath = entryToDelete.image_url.split('/').pop();
-                const filePath = `entries/${user?.id}/${imagePath}`;
-                
-                await entriesAPI.storage
-                  .from('images')
-                  .remove([filePath]);
-              }
-
-              // Update local state
-              const updatedEntries = entries.filter(entry => entry.id !== entry_id);
-              setEntries(updatedEntries);
-              
-              Alert.alert('Success', 'Entry deleted successfully');
-            } catch (error) {
-              Alert.alert('Error', 'Failed to delete entry');
-              console.error('Delete error:', error);
-            }
-          },
-        },
-      ]
-    );
+    const response = await entriesAPI.deleteEntry({
+        user_id: user.id, // Changed from user_id to user.id
+        entry_id: entry_id 
+      });
+    console.log('attempted delete', response)
   };
 
   return (
