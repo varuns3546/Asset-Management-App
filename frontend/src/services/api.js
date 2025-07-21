@@ -29,12 +29,10 @@ api.interceptors.request.use(
 
 // Auth API calls
 export const authAPI = {
-  login: async (username, password) => {
+  login: async (loginData) => {
     try {
       console.log('attempting login')
-      const response = await api.post('/auth/login', {
-        username: username, password: password,
-      });
+      const response = await api.post('/auth/login', loginData);
       return response.data;
     } catch (error) {
       throw error.response?.data || { message: 'Network error' };

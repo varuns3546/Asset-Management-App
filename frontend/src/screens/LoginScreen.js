@@ -47,7 +47,7 @@ const LoginScreen = ({ navigation }) => {
       }
     } catch (error) {
       Alert.alert('Login Failed', error.message || 'An error occurred');
-      console.log('success')
+      console.log('login error:', error);
 
     } finally {
       setLoading(false);

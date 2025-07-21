@@ -29,7 +29,7 @@ class User {
 
   // Create a new user
   static async create(userData) {
-    const { email, username, password, firstName, lastName } = userData;
+    const { email, username, password, firstName, lastName, orgPassword, is_prime_consultant } = userData;
     
     // Hash password
     const hashedPassword = await this.hashPassword(password);
@@ -42,7 +42,9 @@ class User {
           username: username.trim(),
           password: hashedPassword,
           first_name: firstName.trim(),
-          last_name: lastName.trim()
+          last_name: lastName.trim(),
+          org_password: orgPassword,
+          is_prime_consultant: is_prime_consultant || false
         }
       ])
       .select()
