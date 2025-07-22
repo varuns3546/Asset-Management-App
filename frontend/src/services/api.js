@@ -32,7 +32,6 @@ export const authAPI = {
   login: async (loginData) => {
     try {
       console.log(loginData)
-      console.log('attempting login')
       const response = await api.post('/auth/login', loginData);
       return response.data;
     } catch (error) {

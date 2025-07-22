@@ -64,6 +64,7 @@ router.get('/:userId/entries', async (req, res) => {
   
       // Create new entry
       const entry = await Entry.create({
+        userId: userId,
         title: title.trim(),
         description: description ? description.trim() : null,
         image_url,

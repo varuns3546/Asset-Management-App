@@ -85,24 +85,6 @@ const DashboardScreen = ({ navigation }) => {
     }
   };
 
-  const takePhoto = async () => {
-    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
-    
-    if (permissionResult.granted === false) {
-      Alert.alert('Permission Required', 'Permission to access camera is required!');
-      return;
-    }
-
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
-    });
-
-    if (!result.canceled) {
-      setSelectedImage(result.assets[0].uri);
-    }
-  };
 
   const uploadImage = async (uri) => {
     try {
@@ -180,7 +162,7 @@ const DashboardScreen = ({ navigation }) => {
     }
   };
 
-  const deleteEntry = async (entry_id) => {
+  const handleDeleteEntry = async (entry_id) => {
     const response = await entriesAPI.deleteEntry(user_id, entry_id );
     console.log('attempted delete', response)
   };
@@ -192,7 +174,7 @@ const DashboardScreen = ({ navigation }) => {
         <View style={styles.header}>
           <View>
             <Text style={styles.welcomeText}>Welcome back,</Text>
-            <Text style={styles.userName}>{user?.username || 'User'}</Text>
+            <Text style={styles.userName}>{user?.firstName || 'User'}</Text>
           </View>
           <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
             <Text style={styles.logoutText}>Logout</Text>
@@ -231,9 +213,6 @@ const DashboardScreen = ({ navigation }) => {
           <View style={styles.photoSection}>
             <Text style={styles.label}>Photo</Text>
             <View style={styles.photoButtons}>
-              <TouchableOpacity style={styles.photoButton} onPress={takePhoto}>
-                <Text style={styles.photoButtonText}>📷 Camera</Text>
-              </TouchableOpacity>
               <TouchableOpacity style={styles.photoButton} onPress={pickImage}>
                 <Text style={styles.photoButtonText}>🖼️ Gallery</Text>
               </TouchableOpacity>
@@ -277,7 +256,7 @@ const DashboardScreen = ({ navigation }) => {
               <View key={entry.id} style={styles.entryCard}>
                 <View style={styles.entryHeader}>
                   <Text style={styles.entryTitle}>{entry.title}</Text>
-                  <TouchableOpacity onPress={() => deleteEntry(entry.id)}>
+                  <TouchableOpacity onPress={() => handleDeleteEntry(entry.id)}>
                     <Text style={styles.deleteText}>✕</Text>
                   </TouchableOpacity>
                 </View>

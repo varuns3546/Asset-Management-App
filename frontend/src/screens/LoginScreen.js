@@ -34,15 +34,12 @@ const LoginScreen = ({ navigation }) => {
         username: username,
         password: password,        
       });     
-      console.log(response.user);
+      console.log(response.data.user);
     
-            
       if (response.success) {
         // Store token and user data
         await AsyncStorage.setItem('token', response.token);
-        await AsyncStorage.setItem('user', JSON.stringify(response.user));
-        console.log('success')
-        Alert.alert('Success', 'Login successful!');
+        await AsyncStorage.setItem('user', JSON.stringify(response.data.user));
         // Navigate to main app or dashboard
         navigation.navigate('Dashboard');
       }

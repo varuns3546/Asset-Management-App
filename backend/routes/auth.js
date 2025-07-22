@@ -1,111 +1,91 @@
+// backend/routes/auth.js
 import express from 'express';
-import jwt from 'jsonwebtoken';
-import User from '../models/User.js'; // Don’t forget `.js` for ES modules
+import User from '../models/User.js';
+import { generateToken, authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
-
-// Register route
+// POST /auth/register - Register new user
 router.post('/register', async (req, res) => {
   try {
-    console.log('attempting register')
-    const { email, username, password, firstName, lastName, orgPassword, is_prime_consultant } = req.body;
+    const { email, username, password, firstName, lastName, orgPassword, isPrimeConsultant } = req.body;
+
     // Validation
-    if (!email || !username || !password || !firstName || !lastName || !orgPassword) {
+    if (!email || !username || !password || !firstName || !lastName) {
       return res.status(400).json({
         success: false,
-        message: 'All fields are required'
-      });
-    }
-
-    if (password.length < 6) {
-      return res.status(400).json({
-        success: false,
-        message: 'Password must be at least 6 characters long'
-      });
-    }
-
-    if (username.length < 3 || username.length > 30) {
-      return res.status(400).json({
-        success: false,
-        message: 'Username must be between 3 and 30 characters'
+        message: 'All required fields must be provided'
       });
     }
 
     // Check if user already exists
-    const existingUser = await User.findByUsername(username);
-
+    const existingUser = await User.findByEmail(email);
     if (existingUser) {
-      return res.status(400).json({
+      return res.status(409).json({
         success: false,
-        message: 'User with this email or username already exists'
+        message: 'User with this email already exists'
+      });
+    }
+
+    const existingUsername = await User.findByUsername(username);
+    if (existingUsername) {
+      return res.status(409).json({
+        success: false,
+        message: 'Username already taken'
       });
     }
 
     // Create new user
-    const user = await User.create({
+    const newUser = await User.create({
       email,
       username,
       password,
       firstName,
       lastName,
       orgPassword,
-      is_prime_consultant
+      isPrimeConsultant
     });
 
-    // Generate JWT token
-    const token = jwt.sign(
-      { userId: user.id },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    );
+    // Generate token
+    const token = generateToken(newUser.id);
 
     res.status(201).json({
       success: true,
-      message: 'User registered successfully',
-      token,
-      user: user.toJSON()
+      message: 'User created successfully',
+      data: {
+        user: newUser.toJSON(),
+        token
+      }
     });
 
   } catch (error) {
     console.error('Registration error:', error);
-    
-    // Handle Supabase unique constraint violations
-    if (error.code === '23505') {
-      const field = error.details?.includes('email') ? 'email' : 'username';
-      return res.status(400).json({
-        success: false,
-        message: `User with this ${field} already exists`
-      });
-    }
-
     res.status(500).json({
       success: false,
-      message: 'Internal server error'
+      message: 'Error creating user',
+      error: error.message
     });
   }
 });
 
-// Login route
+// POST /auth/login - User login
 router.post('/login', async (req, res) => {
   try {
-    console.log('attempting login')
-    const { username, password } = req.body;
-    console.log(req.body)
+    console.log('req.body', req.body)
+    const { username, password } = req.body; // identifier can be email or username
+
     // Validation
     if (!username || !password) {
-      console.log('!username || !password')
       return res.status(400).json({
         success: false,
-        message: 'Username and password are required', 
+        message: 'username and password are required'
       });
     }
-
-    // Find user by username or email
+    console.log('has usr and pwd')
+    // Find user by email or username
     const user = await User.findByUsername(username);
-
+    console.log('user', user)
     if (!user) {
-      console.log('no user')
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials'
@@ -113,36 +93,109 @@ router.post('/login', async (req, res) => {
     }
 
     // Check password
-    const isPasswordValid = await user.comparePassword(password);
-    if (!isPasswordValid) {
-      console.log('password not valid')
+    const isValidPassword = await user.comparePassword(password);
+    if (!isValidPassword) {
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials'
       });
     }
 
-    // Generate JWT token
-    const token = jwt.sign(
-      { userId: user.id },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    );
-
-    console.log(`User logged in successfully`);
-
+    console.log('generate token')
+    // Generate token
+    const token = generateToken(user.id);
+    console.log('token', token )
     res.json({
       success: true,
       message: 'Login successful',
-      token,
-      user: user.toJSON()
+      data: {
+        user: user.toJSON(),
+        token
+      }
     });
 
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({
       success: false,
-      message: 'Internal server error'
+      message: 'Login error',
+      error: error.message
+    });
+  }
+});
+
+// GET /auth/me - Get current user (requires authentication)
+router.get('/me', authenticateToken, async (req, res) => {
+  try {
+    res.json({
+      success: true,
+      data: {
+        user: req.user.toJSON()
+      }
+    });
+  } catch (error) {
+    console.error('Get current user error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching user data'
+    });
+  }
+});
+
+// POST /auth/logout - Logout user (client-side token removal)
+router.post('/logout', authenticateToken, async (req, res) => {
+  try {
+    // In a JWT-based system, logout is typically handled client-side
+    // by removing the token from storage. 
+    // Here we just confirm the logout
+    res.json({
+      success: true,
+      message: 'Logged out successfully'
+    });
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Logout error'
+    });
+  }
+});
+
+// PUT /auth/profile - Update user profile
+router.put('/profile', authenticateToken, async (req, res) => {
+  try {
+    const { firstName, lastName, email, username } = req.body;
+    
+    const updateData = {};
+    if (firstName) updateData.first_name = firstName;
+    if (lastName) updateData.last_name = lastName;
+    if (email) updateData.email = email;
+    if (username) updateData.username = username;
+
+    const updatedUser = await req.user.update(updateData);
+
+    res.json({
+      success: true,
+      message: 'Profile updated successfully',
+      data: {
+        user: updatedUser.toJSON()
+      }
+    });
+
+  } catch (error) {
+    console.error('Profile update error:', error);
+    
+    if (error.code === '23505') { // Unique constraint violation
+      return res.status(409).json({
+        success: false,
+        message: 'Email or username already exists'
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Error updating profile',
+      error: error.message
     });
   }
 });
