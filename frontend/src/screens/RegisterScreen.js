@@ -128,17 +128,7 @@ const RegisterScreen = ({ navigation }) => {
           alwaysBounceVertical={false}
           nestedScrollEnabled={true}
         >
-          {/* Header Section */}
-          <View style={styles.headerSection}>
-            <View style={styles.logoContainer}>
-              <View style={styles.logoIcon}>
-                <Text style={styles.logoText}>C</Text>
-              </View>
-              <Text style={styles.companyName}>ConsultPro</Text>
-            </View>
-            <Text style={styles.tagline}>Join Our Professional Network</Text>
-          </View>
-
+        
           {/* Form Section */}
           <View style={styles.formContainer}>
             <View style={styles.formHeader}>
@@ -233,9 +223,7 @@ const RegisterScreen = ({ navigation }) => {
                     style={styles.eyeButton}
                     onPress={() => togglePasswordVisibility('orgPassword')}
                   >
-                    <Text style={styles.eyeText}>
-                      {showPasswords.orgPassword ? '👁️' : '🙈'}
-                    </Text>
+                    <Text style={styles.eyeText}>👁️</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -256,9 +244,7 @@ const RegisterScreen = ({ navigation }) => {
                     style={styles.eyeButton}
                     onPress={() => togglePasswordVisibility('password')}
                   >
-                    <Text style={styles.eyeText}>
-                      {showPasswords.password ? '👁️' : '🙈'}
-                    </Text>
+                    <Text style={styles.eyeText}>👁️</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -279,9 +265,7 @@ const RegisterScreen = ({ navigation }) => {
                     style={styles.eyeButton}
                     onPress={() => togglePasswordVisibility('confirmPassword')}
                   >
-                    <Text style={styles.eyeText}>
-                      {showPasswords.confirmPassword ? '👁️' : '🙈'}
-                    </Text>
+                    <Text style={styles.eyeText}>👁️</Text>
                   </TouchableOpacity>
                 </View>
               </View>

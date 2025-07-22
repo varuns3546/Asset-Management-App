@@ -65,16 +65,7 @@ const LoginScreen = ({ navigation }) => {
           keyboardShouldPersistTaps="handled"
           bounces={false}
         >
-          {/* Header Section */}
-          <View style={styles.headerSection}>
-            <View style={styles.logoContainer}>
-              <View style={styles.logoIcon}>
-                <Text style={styles.logoText}>C</Text>
-              </View>
-              <Text style={styles.companyName}>ConsultPro</Text>
-            </View>
-            <Text style={styles.tagline}>Professional Consulting Platform</Text>
-          </View>
+         
 
           {/* Form Section */}
           <View style={styles.formContainer}>
@@ -114,9 +105,7 @@ const LoginScreen = ({ navigation }) => {
                     style={styles.eyeButton}
                     onPress={() => setShowPassword(!showPassword)}
                   >
-                    <Text style={styles.eyeText}>
-                      {showPassword ? '👁️' : '🙈'}
-                    </Text>
+                    <Text style={styles.eyeText}>👁️</Text>
                   </TouchableOpacity>
                 </View>
               </View>
