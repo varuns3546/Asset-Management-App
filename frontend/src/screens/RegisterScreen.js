@@ -115,8 +115,13 @@ const RegisterScreen = ({ navigation }) => {
       <KeyboardAvoidingView 
         style={styles.container} 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+
       >
-        <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+        <ScrollView 
+          contentContainerStyle={styles.scrollContainer} 
+          showsVerticalScrollIndicator={true}
+          keyboardShouldPersistTaps="handled"
+        >
           {/* Header Section */}
           <View style={styles.headerSection}>
             <View style={styles.logoContainer}>
@@ -311,26 +316,30 @@ const styles = StyleSheet.create({
     backgroundColor: '#1a1a2e',
   },
   scrollContainer: {
-    flexGrow: 1,
+    flex: 1,
+    minHeight: '100%',
+    paddingBottom: 20, 
+    height: '100vh'
+    // Add bottom padding to prevent cutoff
   },
   headerSection: {
-    paddingTop: 50,
+    paddingTop: 40, // Reduced from 50
     paddingHorizontal: 30,
-    paddingBottom: 30,
+    paddingBottom: 25, // Reduced from 30
     alignItems: 'center',
   },
   logoContainer: {
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 12, // Reduced from 16
   },
   logoIcon: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
+    width: 60, // Reduced from 70
+    height: 60, // Reduced from 70
+    borderRadius: 30, // Reduced from 35
     backgroundColor: '#4c6ef5',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 10, // Reduced from 12
     shadowColor: '#4c6ef5',
     shadowOffset: {
       width: 0,
@@ -341,18 +350,18 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   logoText: {
-    fontSize: 32,
+    fontSize: 28, // Reduced from 32
     fontWeight: '700',
     color: 'white',
   },
   companyName: {
-    fontSize: 24,
+    fontSize: 22, // Reduced from 24
     fontWeight: '700',
     color: 'white',
     letterSpacing: 1,
   },
   tagline: {
-    fontSize: 16,
+    fontSize: 14, // Reduced from 16
     color: '#a8a8b3',
     textAlign: 'center',
   },
@@ -362,8 +371,8 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     paddingHorizontal: 30,
-    paddingTop: 35,
-    paddingBottom: 30,
+    paddingTop: 30, // Reduced from 35
+    paddingBottom: 40, // Increased from 30 to ensure content isn't cut off
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -372,22 +381,23 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 10,
     elevation: 10,
+    minHeight: 600, // Ensure minimum height
   },
   formHeader: {
-    marginBottom: 35,
+    marginBottom: 25, // Reduced from 35
     alignItems: 'center',
   },
   title: {
-    fontSize: 28,
+    fontSize: 26, // Reduced from 28
     fontWeight: '700',
     color: '#1a1a2e',
-    marginBottom: 8,
+    marginBottom: 6, // Reduced from 8
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 14, // Reduced from 16
     color: '#6c757d',
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: 20, // Reduced from 24
   },
   errorContainer: {
     backgroundColor: '#fff5f5',
@@ -395,7 +405,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 12,
     padding: 16,
-    marginBottom: 24,
+    marginBottom: 20, // Reduced from 24
   },
   errorText: {
     color: '#e53e3e',
@@ -404,14 +414,14 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   inputSection: {
-    marginBottom: 32,
+    marginBottom: 25, // Reduced from 32
   },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
   inputGroup: {
-    marginBottom: 20,
+    marginBottom: 16, // Reduced from 20
   },
   halfWidth: {
     width: '48%',
@@ -420,7 +430,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#2c3e50',
-    marginBottom: 8,
+    marginBottom: 6, // Reduced from 8
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -428,7 +438,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   input: {
-    height: 52,
+    height: 48, // Reduced from 52
     borderWidth: 1,
     borderColor: '#e9ecef',
     borderRadius: 12,
@@ -461,12 +471,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   registerButton: {
-    height: 52,
+    height: 48, // Reduced from 52
     backgroundColor: '#4c6ef5',
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 20, // Reduced from 24
     shadowColor: '#4c6ef5',
     shadowOffset: {
       width: 0,
@@ -491,7 +501,7 @@ const styles = StyleSheet.create({
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 20, // Reduced from 24
   },
   dividerLine: {
     flex: 1,
@@ -508,6 +518,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+    paddingBottom: 10, // Add some bottom padding
   },
   footerText: {
     fontSize: 16,
