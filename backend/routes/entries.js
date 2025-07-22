@@ -1,5 +1,5 @@
 import express from 'express';
-import User from '../models/User.js';
+import Entry from '../models/Entry.js';
 const router = express.Router();
 
 // GET /api/auth/:userId/entries - Get all entries for a specific user
@@ -39,11 +39,13 @@ router.get('/:userId/entries', async (req, res) => {
   // POST /api/auth/:userId/entries - Create a new entry for a specific user
   router.post('/:userId/entries', async (req, res) => {
     console.log('attempting post entry')
-
+    console.log(req.body, req.params)
     try {
       const { userId } = req.params;
       const { title, description, image_url } = req.body;
-      
+      console.log(req.body, 'req.body')
+      console.log(req.params, 'req.params')
+
       /*
       // Check if the authenticated user is creating an entry for themselves
       if (req.userId !== parseInt(userId)) {

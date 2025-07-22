@@ -49,13 +49,14 @@ class Entry {
       throw error;
     }
 
-    return ? new Entry(data) : null;
+    return data ? new Entry(data) : null;
   }
 
-  static async findAll() {
+  static async findByUserId(userId) {
     const { data, error } = await supabase
       .from('entries')
       .select('*')
+      .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -104,4 +105,4 @@ class Entry {
   }
 }
 
-module.exports = Entry;
+export default Entry

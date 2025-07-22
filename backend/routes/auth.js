@@ -33,8 +33,7 @@ router.post('/register', async (req, res) => {
     }
 
     // Check if user already exists
-    const existingUser = await User.findByEmailOrUsername(email) || 
-                        await User.findByEmailOrUsername(username);
+    const existingUser = await User.findByUsername(username);
 
     if (existingUser) {
       return res.status(400).json({
@@ -98,7 +97,7 @@ router.post('/login', async (req, res) => {
       console.log('!username || !password')
       return res.status(400).json({
         success: false,
-        message: 'Username and password are required'
+        message: 'Username and password are required', 
       });
     }
 
