@@ -11,6 +11,7 @@ import {
   Platform,
   ScrollView,
   StatusBar,
+  SafeAreaView,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authAPI } from '../services/api';
@@ -52,10 +53,10 @@ const LoginScreen = ({ navigation }) => {
   };
 
   return (
-    <>
+    <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#1a1a2e" />
       <KeyboardAvoidingView 
-        style={styles.container} 
+        style={styles.keyboardContainer} 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <ScrollView 
@@ -146,7 +147,7 @@ const LoginScreen = ({ navigation }) => {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </>
+    </SafeAreaView>
   );
 };
 
@@ -154,6 +155,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#1a1a2e',
+  },
+  keyboardContainer: {
+    flex: 1,
   },
   scrollContainer: {
     flexGrow: 1,

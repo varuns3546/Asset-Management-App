@@ -207,11 +207,19 @@ const DashboardScreen = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#1a1a2e" />
       
-      {/* Fixed Header */}
-      <SafeAreaView style={styles.headerSafeArea}>
+      <ScrollView 
+        style={styles.scrollView} 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        bounces={true}
+        alwaysBounceVertical={false}
+        keyboardShouldPersistTaps="handled"
+        nestedScrollEnabled={true}
+      >
+        {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerContent}>
             <View style={styles.userInfo}>
@@ -232,18 +240,7 @@ const DashboardScreen = ({ navigation }) => {
             </TouchableOpacity>
           </View>
         </View>
-      </SafeAreaView>
 
-      {/* Scrollable Content */}
-      <ScrollView 
-        style={styles.scrollView} 
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        bounces={true}
-        alwaysBounceVertical={false}
-        keyboardShouldPersistTaps="handled"
-        nestedScrollEnabled={true}
-      >
         {/* New Entry Form */}
         <View style={styles.formContainer}>
           <View style={styles.sectionHeader}>
@@ -281,104 +278,103 @@ const DashboardScreen = ({ navigation }) => {
             </View>
           </View>
 
-          {/* Photo Section */}
-          <View style={styles.photoSection}>
-            <Text style={styles.label}>Photo</Text>
-            <View style={styles.photoButtons}>
-              <TouchableOpacity style={styles.photoButton} onPress={takePhoto}>
-                <Text style={styles.photoButtonIcon}>📷</Text>
-                <Text style={styles.photoButtonText}>Camera</Text>
+          {/* Image Selection */}
+          <View style={styles.imageSection}>
+            <Text style={styles.label}>Add Image (Optional)</Text>
+            <View style={styles.imageButtonsContainer}>
+              <TouchableOpacity style={styles.imageButton} onPress={pickImage}>
+                <Text style={styles.imageButtonText}>📷 Gallery</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.photoButton} onPress={pickImage}>
-                <Text style={styles.photoButtonIcon}>🖼️</Text>
-                <Text style={styles.photoButtonText}>Gallery</Text>
+              <TouchableOpacity style={styles.imageButton} onPress={takePhoto}>
+                <Text style={styles.imageButtonText}>📸 Camera</Text>
               </TouchableOpacity>
             </View>
-
+            
             {selectedImage && (
-              <View style={styles.imagePreview}>
-                <Image source={{ uri: selectedImage }} style={styles.previewImage} />
-                <TouchableOpacity
+              <View style={styles.selectedImageContainer}>
+                <Image source={{ uri: selectedImage }} style={styles.selectedImage} />
+                <TouchableOpacity 
                   style={styles.removeImageButton}
                   onPress={() => setSelectedImage(null)}
                 >
-                  <Text style={styles.removeImageText}>✕ Remove</Text>
+                  <Text style={styles.removeImageText}>✕</Text>
                 </TouchableOpacity>
               </View>
             )}
           </View>
 
-          <TouchableOpacity
-            style={[styles.saveButton, loading && styles.buttonDisabled]}
+          <TouchableOpacity 
+            style={[styles.submitButton, loading && styles.buttonDisabled]}
             onPress={handleSaveEntry}
             disabled={loading}
           >
             {loading ? (
-              <ActivityIndicator color="white" size="small" />
-            ) : null}
-            <Text style={[styles.saveButtonText, loading && { marginLeft: 8 }]}>
-              {loading ? 'Saving...' : 'Save Entry'}
-            </Text>
+              <ActivityIndicator size="small" color="white" />
+            ) : (
+              <Text style={styles.submitButtonText}>Add Entry</Text>
+            )}
           </TouchableOpacity>
         </View>
 
         {/* Entries List */}
         <View style={styles.entriesContainer}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>📚 Recent Entries</Text>
+            <Text style={styles.sectionTitle}>📚 Your Entries</Text>
             <Text style={styles.sectionSubtitle}>
-              {entries.length} {entries.length === 1 ? 'entry' : 'entries'}
+              {entries.length === 0 ? 'No entries yet' : `${entries.length} ${entries.length === 1 ? 'entry' : 'entries'}`}
             </Text>
           </View>
-          
+
           {entries.length === 0 ? (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyStateIcon}>📝</Text>
-              <Text style={styles.emptyStateText}>No entries yet</Text>
-              <Text style={styles.emptyStateSubtext}>Add your first entry above to get started</Text>
+              <Text style={styles.emptyStateText}>🌟 Start your journey!</Text>
+              <Text style={styles.emptyStateSubtext}>Create your first entry above</Text>
             </View>
           ) : (
-            entries.map((entry, index) => (
-              <View key={entry.id} style={[styles.entryCard, { marginBottom: index === entries.length - 1 ? 40 : 15 }]}>
-                <View style={styles.entryHeader}>
-                  <Text style={styles.entryTitle}>{entry.title}</Text>
-                  <TouchableOpacity 
-                    style={styles.deleteButton}
-                    onPress={() => deleteEntry(entry.id)}
-                  >
-                    <Text style={styles.deleteText}>✕</Text>
-                  </TouchableOpacity>
-                </View>
-                
-                {entry.description ? (
-                  <Text style={styles.entryDescription}>{entry.description}</Text>
-                ) : null}
-                
-                {entry.image_url && (
-                  <View style={styles.imageContainer}>
-                    <Image source={{ uri: entry.image_url }} style={styles.entryImage} />
+            <View style={styles.entriesList}>
+              {entries.map((entry, index) => (
+                <View key={entry.id || index} style={styles.entryCard}>
+                  <View style={styles.entryHeader}>
+                    <View style={styles.entryHeaderLeft}>
+                      <Text style={styles.entryTitle}>{entry.title}</Text>
+                      <Text style={styles.entryDate}>
+                        {new Date(entry.created_at).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </Text>
+                    </View>
+                    <TouchableOpacity 
+                      style={styles.deleteButton}
+                      onPress={() => deleteEntry(entry.id)}
+                    >
+                      <Text style={styles.deleteButtonText}>🗑️</Text>
+                    </TouchableOpacity>
                   </View>
-                )}
-                
-                <View style={styles.entryFooter}>
-                  <Text style={styles.entryTimestamp}>
-                    {new Date(entry.created_at).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric'
-                    })} at{' '}
-                    {new Date(entry.created_at).toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </Text>
+                  
+                  {entry.description && (
+                    <Text style={styles.entryDescription} numberOfLines={3}>
+                      {entry.description}
+                    </Text>
+                  )}
+                  
+                  {entry.image_url && (
+                    <Image 
+                      source={{ uri: entry.image_url }} 
+                      style={styles.entryImage}
+                      resizeMode="cover"
+                    />
+                  )}
                 </View>
-              </View>
-            ))
+              ))}
+            </View>
           )}
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -386,9 +382,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#1a1a2e',
-  },
-  headerSafeArea: {
-    backgroundColor: 'white',
   },
   scrollView: {
     flex: 1,
@@ -409,7 +402,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 3.84,
     elevation: 5,
-    zIndex: 1000,
   },
   headerContent: {
     flexDirection: 'row',
@@ -624,17 +616,24 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 10,
   },
+  entryHeaderLeft: {
+    flex: 1,
+    marginRight: 10,
+  },
   entryTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
-    flex: 1,
-    marginRight: 10,
+  },
+  entryDate: {
+    fontSize: 14,
+    color: '#999',
+    marginTop: 2,
   },
   deleteButton: {
     padding: 5,
   },
-  deleteText: {
+  deleteButtonText: {
     color: '#ff4444',
     fontSize: 18,
     fontWeight: 'bold',
@@ -659,6 +658,51 @@ const styles = StyleSheet.create({
   entryTimestamp: {
     fontSize: 14,
     color: '#999',
+  },
+  imageSection: {
+    marginBottom: 20,
+  },
+  imageButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 15,
+  },
+  imageButton: {
+    flex: 0.48,
+    backgroundColor: '#f0f8ff',
+    borderWidth: 1,
+    borderColor: '#007AFF',
+    borderRadius: 10,
+    padding: 15,
+    alignItems: 'center',
+  },
+  imageButtonText: {
+    color: '#007AFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  selectedImageContainer: {
+    alignItems: 'center',
+  },
+  selectedImage: {
+    width: '100%',
+    height: 200,
+    borderRadius: 10,
+    marginBottom: 10,
+  },
+  submitButton: {
+    backgroundColor: '#007AFF',
+    padding: 15,
+    borderRadius: 10,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 10,
+  },
+  submitButtonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: '600',
   },
 });
 
