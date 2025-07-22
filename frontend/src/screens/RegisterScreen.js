@@ -11,9 +11,12 @@ import {
   Alert,
   StatusBar,
   SafeAreaView,
+  Dimensions,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authAPI } from '../services/api';
+
+const { width } = Dimensions.get('window');
 
 const RegisterScreen = ({ navigation }) => {
   const [errorMessage, setErrorMessage] = useState(null)
@@ -32,12 +35,17 @@ const RegisterScreen = ({ navigation }) => {
     confirmPassword: false,
     orgPassword: false
   });
+  const [focusedInput, setFocusedInput] = useState(null);
 
   const updateField = (field, value) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
+    // Clear error when user starts typing
+    if (errorMessage) {
+      setErrorMessage(null);
+    }
   };
 
   const togglePasswordVisibility = (field) => {
@@ -110,9 +118,47 @@ const RegisterScreen = ({ navigation }) => {
     }
   };
 
+  const renderInputField = (field, placeholder, icon, options = {}) => {
+    const isPassword = ['password', 'confirmPassword', 'orgPassword'].includes(field);
+    return (
+      <View style={styles.inputGroup}>
+        <Text style={styles.label}>{options.label || field.charAt(0).toUpperCase() + field.slice(1)}</Text>
+        <View style={[
+          styles.inputWrapper,
+          focusedInput === field && styles.inputWrapperFocused,
+          errorMessage && !formData[field] && styles.inputWrapperError
+        ]}>
+          <View style={styles.inputIcon}>
+            <Text style={styles.iconText}>{icon}</Text>
+          </View>
+          <TextInput
+            style={[styles.input, isPassword && styles.passwordInput]}
+            value={formData[field]}
+            onChangeText={(value) => updateField(field, value)}
+            placeholder={placeholder}
+            placeholderTextColor="#64748b"
+            secureTextEntry={isPassword && !showPasswords[field]}
+            onFocus={() => setFocusedInput(field)}
+            onBlur={() => setFocusedInput(null)}
+            {...options.textInputProps}
+          />
+          {isPassword && (
+            <TouchableOpacity 
+              style={styles.eyeButton}
+              onPress={() => togglePasswordVisibility(field)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.eyeText}>{showPasswords[field] ? '👁️' : '👁️‍🗨️'}</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#1a1a2e" />
+      <StatusBar barStyle="light-content" backgroundColor="#0f172a" />
       
       <KeyboardAvoidingView 
         style={styles.keyboardContainer} 
@@ -128,6 +174,16 @@ const RegisterScreen = ({ navigation }) => {
           alwaysBounceVertical={false}
           nestedScrollEnabled={true}
         >
+          {/* Header Section */}
+          <View style={styles.headerSection}>
+            <View style={styles.logoContainer}>
+              <View style={styles.logoIcon}>
+                <Text style={styles.logoText}>🚀</Text>
+              </View>
+              <Text style={styles.companyName}>Join SecureApp</Text>
+              <Text style={styles.tagline}>Start your professional journey</Text>
+            </View>
+          </View>
         
           {/* Form Section */}
           <View style={styles.formContainer}>
@@ -138,6 +194,7 @@ const RegisterScreen = ({ navigation }) => {
 
             {errorMessage && (
               <View style={styles.errorContainer}>
+                <Text style={styles.errorIcon}>⚠️</Text>
                 <Text style={styles.errorText}>{errorMessage}</Text>
               </View>
             )}
@@ -147,138 +204,95 @@ const RegisterScreen = ({ navigation }) => {
               <View style={styles.row}>
                 <View style={[styles.inputGroup, styles.halfWidth]}>
                   <Text style={styles.label}>First Name</Text>
-                  <View style={styles.inputWrapper}>
+                  <View style={[
+                    styles.inputWrapper,
+                    focusedInput === 'firstName' && styles.inputWrapperFocused,
+                    errorMessage && !formData.firstName && styles.inputWrapperError
+                  ]}>
+                    <View style={styles.inputIcon}>
+                      <Text style={styles.iconText}>👤</Text>
+                    </View>
                     <TextInput
                       style={styles.input}
                       value={formData.firstName}
                       onChangeText={(value) => updateField('firstName', value)}
                       placeholder="John"
-                      placeholderTextColor="#8E8E93"
+                      placeholderTextColor="#64748b"
                       autoCapitalize="words"
+                      onFocus={() => setFocusedInput('firstName')}
+                      onBlur={() => setFocusedInput(null)}
                     />
                   </View>
                 </View>
 
                 <View style={[styles.inputGroup, styles.halfWidth]}>
                   <Text style={styles.label}>Last Name</Text>
-                  <View style={styles.inputWrapper}>
+                  <View style={[
+                    styles.inputWrapper,
+                    focusedInput === 'lastName' && styles.inputWrapperFocused,
+                    errorMessage && !formData.lastName && styles.inputWrapperError
+                  ]}>
+                    <View style={styles.inputIcon}>
+                      <Text style={styles.iconText}>👤</Text>
+                    </View>
                     <TextInput
                       style={styles.input}
                       value={formData.lastName}
                       onChangeText={(value) => updateField('lastName', value)}
                       placeholder="Doe"
-                      placeholderTextColor="#8E8E93"
+                      placeholderTextColor="#64748b"
                       autoCapitalize="words"
+                      onFocus={() => setFocusedInput('lastName')}
+                      onBlur={() => setFocusedInput(null)}
                     />
                   </View>
                 </View>
               </View>
 
               {/* Email */}
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Email Address</Text>
-                <View style={styles.inputWrapper}>
-                  <TextInput
-                    style={styles.input}
-                    value={formData.email}
-                    onChangeText={(value) => updateField('email', value)}
-                    placeholder="john.doe@company.com"
-                    placeholderTextColor="#8E8E93"
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                  />
-                </View>
-              </View>
+              {renderInputField('email', 'john.doe@company.com', '📧', {
+                label: 'Email Address',
+                textInputProps: {
+                  keyboardType: 'email-address',
+                  autoCapitalize: 'none',
+                  autoCorrect: false,
+                }
+              })}
 
               {/* Username */}
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Username</Text>
-                <View style={styles.inputWrapper}>
-                  <TextInput
-                    style={styles.input}
-                    value={formData.username}
-                    onChangeText={(value) => updateField('username', value)}
-                    placeholder="johndoe"
-                    placeholderTextColor="#8E8E93"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                  />
-                </View>
-              </View>
+              {renderInputField('username', 'johndoe', '🏷️', {
+                textInputProps: {
+                  autoCapitalize: 'none',
+                  autoCorrect: false,
+                }
+              })}
               
               {/* Organization Password */}
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Organization Code</Text>
-                <View style={styles.inputWrapper}>
-                  <TextInput
-                    style={[styles.input, styles.passwordInput]}
-                    value={formData.orgPassword}
-                    onChangeText={(value) => updateField('orgPassword', value)}
-                    placeholder="Organization access code"
-                    placeholderTextColor="#8E8E93"
-                    secureTextEntry={!showPasswords.orgPassword}
-                  />
-                  <TouchableOpacity 
-                    style={styles.eyeButton}
-                    onPress={() => togglePasswordVisibility('orgPassword')}
-                  >
-                    <Text style={styles.eyeText}>👁️</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
+              {renderInputField('orgPassword', 'Organization access code', '🏢', {
+                label: 'Organization Code'
+              })}
               
               {/* Password */}
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Password</Text>
-                <View style={styles.inputWrapper}>
-                  <TextInput
-                    style={[styles.input, styles.passwordInput]}
-                    value={formData.password}
-                    onChangeText={(value) => updateField('password', value)}
-                    placeholder="Minimum 6 characters"
-                    placeholderTextColor="#8E8E93"
-                    secureTextEntry={!showPasswords.password}
-                  />
-                  <TouchableOpacity 
-                    style={styles.eyeButton}
-                    onPress={() => togglePasswordVisibility('password')}
-                  >
-                    <Text style={styles.eyeText}>👁️</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
+              {renderInputField('password', 'Minimum 6 characters', '🔒')}
 
               {/* Confirm Password */}
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Confirm Password</Text>
-                <View style={styles.inputWrapper}>
-                  <TextInput
-                    style={[styles.input, styles.passwordInput]}
-                    value={formData.confirmPassword}
-                    onChangeText={(value) => updateField('confirmPassword', value)}
-                    placeholder="Re-enter your password"
-                    placeholderTextColor="#8E8E93"
-                    secureTextEntry={!showPasswords.confirmPassword}
-                  />
-                  <TouchableOpacity 
-                    style={styles.eyeButton}
-                    onPress={() => togglePasswordVisibility('confirmPassword')}
-                  >
-                    <Text style={styles.eyeText}>👁️</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
+              {renderInputField('confirmPassword', 'Re-enter your password', '🔐', {
+                label: 'Confirm Password'
+              })}
             </View>
 
             <TouchableOpacity 
               style={[styles.registerButton, loading && styles.buttonDisabled]}
               onPress={handleRegister}
               disabled={loading}
+              activeOpacity={0.8}
             >
-              <Text style={styles.registerButtonText}>
-                {loading ? 'Creating Account...' : 'Create Account'}
-              </Text>
+              <View style={styles.buttonContent}>
+                {loading && <Text style={styles.loadingSpinner}>⏳</Text>}
+                <Text style={styles.registerButtonText}>
+                  {loading ? 'Creating Account...' : 'Create Account'}
+                </Text>
+              </View>
             </TouchableOpacity>
 
             <View style={styles.divider}>
@@ -289,9 +303,16 @@ const RegisterScreen = ({ navigation }) => {
 
             <View style={styles.footer}>
               <Text style={styles.footerText}>Already have an account? </Text>
-              <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+              <TouchableOpacity 
+                onPress={() => navigation.navigate('Login')}
+                activeOpacity={0.7}
+              >
                 <Text style={styles.linkText}>Sign In</Text>
               </TouchableOpacity>
+            </View>
+
+            <View style={styles.securityNote}>
+              <Text style={styles.securityText}>🔐 By creating an account, you agree to our terms and privacy policy</Text>
             </View>
           </View>
         </ScrollView>
@@ -303,7 +324,7 @@ const RegisterScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: '#0f172a',
   },
   keyboardContainer: {
     flex: 1,
@@ -317,24 +338,24 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   headerSection: {
-    paddingTop: 40, // Reduced from 50
-    paddingHorizontal: 30,
-    paddingBottom: 25, // Reduced from 30
+    paddingTop: 60,
+    paddingHorizontal: 32,
+    paddingBottom: 30,
     alignItems: 'center',
   },
   logoContainer: {
     alignItems: 'center',
-    marginBottom: 12, // Reduced from 16
+    marginBottom: 16,
   },
   logoIcon: {
-    width: 60, // Reduced from 70
-    height: 60, // Reduced from 70
-    borderRadius: 30, // Reduced from 35
-    backgroundColor: '#4c6ef5',
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#3b82f6',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 10, // Reduced from 12
-    shadowColor: '#4c6ef5',
+    marginBottom: 16,
+    shadowColor: '#3b82f6',
     shadowOffset: {
       width: 0,
       height: 8,
@@ -344,77 +365,94 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   logoText: {
-    fontSize: 28, // Reduced from 32
+    fontSize: 36,
     fontWeight: '700',
-    color: 'white',
   },
   companyName: {
-    fontSize: 22, // Reduced from 24
-    fontWeight: '700',
+    fontSize: 28,
+    fontWeight: '800',
     color: 'white',
     letterSpacing: 1,
+    marginBottom: 6,
   },
   tagline: {
-    fontSize: 14, // Reduced from 16
-    color: '#a8a8b3',
+    fontSize: 16,
+    color: '#94a3b8',
     textAlign: 'center',
+    fontWeight: '500',
   },
   formContainer: {
     flex: 1,
     backgroundColor: 'white',
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    paddingHorizontal: 30,
-    paddingTop: 30, // Reduced from 35
-    paddingBottom: 60, // Increased to ensure content isn't cut off
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    paddingHorizontal: 32,
+    paddingTop: 36,
+    paddingBottom: 60,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: -5,
+      height: -8,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 10,
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 20,
   },
   formHeader: {
-    marginBottom: 25, // Reduced from 35
+    marginBottom: 32,
     alignItems: 'center',
   },
   title: {
-    fontSize: 26, // Reduced from 28
+    fontSize: 28,
     fontWeight: '700',
-    color: '#1a1a2e',
-    marginBottom: 6, // Reduced from 8
+    color: '#0f172a',
+    marginBottom: 8,
+    letterSpacing: 0.5,
   },
   subtitle: {
-    fontSize: 14, // Reduced from 16
-    color: '#6c757d',
+    fontSize: 16,
+    color: '#64748b',
     textAlign: 'center',
-    lineHeight: 20, // Reduced from 24
-  },
-  errorContainer: {
-    backgroundColor: '#fff5f5',
-    borderColor: '#feb2b2',
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 20, // Reduced from 24
-  },
-  errorText: {
-    color: '#e53e3e',
-    fontSize: 14,
-    textAlign: 'center',
+    lineHeight: 24,
     fontWeight: '500',
   },
+  errorContainer: {
+    backgroundColor: '#fef2f2',
+    borderColor: '#fca5a5',
+    borderWidth: 2,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#ef4444',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  errorIcon: {
+    fontSize: 20,
+    marginRight: 12,
+  },
+  errorText: {
+    color: '#dc2626',
+    fontSize: 14,
+    fontWeight: '600',
+    flex: 1,
+  },
   inputSection: {
-    marginBottom: 25, // Reduced from 32
+    marginBottom: 32,
   },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
   inputGroup: {
-    marginBottom: 16, // Reduced from 20
+    marginBottom: 20,
   },
   halfWidth: {
     width: '48%',
@@ -422,34 +460,59 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#2c3e50',
-    marginBottom: 6, // Reduced from 8
+    color: '#1e293b',
+    marginBottom: 8,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.8,
   },
   inputWrapper: {
-    position: 'relative',
-  },
-  input: {
-    height: 48, // Reduced from 52
-    borderWidth: 1,
-    borderColor: '#e9ecef',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    fontSize: 16,
-    backgroundColor: '#f8f9fa',
-    color: '#2c3e50',
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#e2e8f0',
+    borderRadius: 16,
+    backgroundColor: '#f8fafc',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 1,
+      height: 2,
     },
     shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  inputWrapperFocused: {
+    borderColor: '#3b82f6',
+    backgroundColor: '#ffffff',
+    shadowColor: '#3b82f6',
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  inputWrapperError: {
+    borderColor: '#ef4444',
+    backgroundColor: '#fef2f2',
+  },
+  inputIcon: {
+    paddingLeft: 16,
+    paddingRight: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  iconText: {
+    fontSize: 16,
+    opacity: 0.7,
+  },
+  input: {
+    flex: 1,
+    height: 52,
+    fontSize: 16,
+    color: '#1e293b',
+    fontWeight: '500',
+    paddingRight: 16,
   },
   passwordInput: {
-    paddingRight: 50,
+    paddingRight: 56,
   },
   eyeButton: {
     position: 'absolute',
@@ -458,70 +521,94 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    width: 30,
+    width: 32,
   },
   eyeText: {
     fontSize: 18,
   },
   registerButton: {
-    height: 48, // Reduced from 52
-    backgroundColor: '#4c6ef5',
-    borderRadius: 12,
+    height: 56,
+    backgroundColor: '#3b82f6',
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20, // Reduced from 24
-    shadowColor: '#4c6ef5',
+    marginBottom: 28,
+    shadowColor: '#3b82f6',
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: 6,
     },
     shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
+    shadowRadius: 12,
+    elevation: 8,
   },
   buttonDisabled: {
-    backgroundColor: '#adb5bd',
+    backgroundColor: '#94a3b8',
     shadowOpacity: 0,
     elevation: 0,
   },
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingSpinner: {
+    marginRight: 8,
+    fontSize: 16,
+  },
   registerButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     color: 'white',
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 1,
   },
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20, // Reduced from 24
+    marginBottom: 28,
   },
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#e9ecef',
+    backgroundColor: '#e2e8f0',
   },
   dividerText: {
-    marginHorizontal: 16,
+    marginHorizontal: 20,
     fontSize: 14,
-    color: '#6c757d',
-    fontWeight: '500',
+    color: '#64748b',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: 10,
-    paddingBottom: 20, // Increased bottom padding
+    marginBottom: 24,
   },
   footerText: {
     fontSize: 16,
-    color: '#6c757d',
+    color: '#64748b',
+    fontWeight: '500',
   },
   linkText: {
     fontSize: 16,
-    color: '#4c6ef5',
-    fontWeight: '600',
+    color: '#3b82f6',
+    fontWeight: '700',
+  },
+  securityNote: {
+    alignItems: 'center',
+    paddingTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#f1f5f9',
+  },
+  securityText: {
+    fontSize: 12,
+    color: '#64748b',
+    fontWeight: '500',
+    textAlign: 'center',
+    lineHeight: 18,
   },
 });
 
