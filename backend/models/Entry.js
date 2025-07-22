@@ -49,7 +49,7 @@ class Entry {
       throw error;
     }
 
-    return ? new Entry(data) : null;
+    return data ? new Entry(data) : null;
   }
 
   static async findAll() {
@@ -104,4 +104,4 @@ class Entry {
   }
 }
 
-module.exports = Entry;
+export default Entry

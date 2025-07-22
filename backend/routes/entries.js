@@ -1,5 +1,5 @@
 import express from 'express';
-import User from '../models/User.js';
+import Entry from '../models/Entry.js';
 const router = express.Router();
 
 // GET /api/auth/:userId/entries - Get all entries for a specific user
