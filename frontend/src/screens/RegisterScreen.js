@@ -110,20 +110,22 @@ const RegisterScreen = ({ navigation }) => {
   };
 
   return (
-    <>
+    <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#1a1a2e" />
       
       <KeyboardAvoidingView 
-        style={styles.container} 
+        style={styles.keyboardContainer} 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
         <ScrollView 
+          style={styles.scrollView}
           contentContainerStyle={styles.scrollContainer} 
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           bounces={true}
           alwaysBounceVertical={false}
+          nestedScrollEnabled={true}
         >
           {/* Header Section */}
           <View style={styles.headerSection}>
@@ -309,7 +311,7 @@ const RegisterScreen = ({ navigation }) => {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </>
+    </View>
   );
 };
 
@@ -318,9 +320,16 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#1a1a2e',
   },
+  keyboardContainer: {
+    flex: 1,
+  },
+  scrollView: {
+    flex: 1,
+  },
   scrollContainer: {
     flexGrow: 1,
-    paddingBottom: 40, // Ensure content isn't cut off
+    minHeight: '100%',
+    paddingBottom: 40,
   },
   headerSection: {
     paddingTop: 40, // Reduced from 50
