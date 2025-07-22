@@ -120,8 +120,10 @@ const RegisterScreen = ({ navigation }) => {
       >
         <ScrollView 
           contentContainerStyle={styles.scrollContainer} 
-          showsVerticalScrollIndicator={true}
+          showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          bounces={true}
+          alwaysBounceVertical={false}
         >
           {/* Header Section */}
           <View style={styles.headerSection}>
@@ -317,11 +319,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#1a1a2e',
   },
   scrollContainer: {
-    flex: 1,
-    minHeight: '100%',
-    paddingBottom: 20, 
-    height: '100vh'
-    // Add bottom padding to prevent cutoff
+    flexGrow: 1,
+    paddingBottom: 40, // Ensure content isn't cut off
   },
   headerSection: {
     paddingTop: 40, // Reduced from 50
@@ -373,7 +372,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 30,
     paddingHorizontal: 30,
     paddingTop: 30, // Reduced from 35
-    paddingBottom: 40, // Increased from 30 to ensure content isn't cut off
+    paddingBottom: 60, // Increased to ensure content isn't cut off
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -382,7 +381,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 10,
     elevation: 10,
-    minHeight: 600, // Ensure minimum height
   },
   formHeader: {
     marginBottom: 25, // Reduced from 35
@@ -519,7 +517,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingBottom: 10, // Add some bottom padding
+    paddingTop: 10,
+    paddingBottom: 20, // Increased bottom padding
   },
   footerText: {
     fontSize: 16,

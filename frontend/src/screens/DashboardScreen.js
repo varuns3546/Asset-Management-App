@@ -238,6 +238,8 @@ const DashboardScreen = ({ navigation }) => {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         bounces={true}
+        alwaysBounceVertical={false}
+        keyboardShouldPersistTaps="handled"
       >
         {/* New Entry Form */}
         <View style={styles.formContainer}>
@@ -334,7 +336,7 @@ const DashboardScreen = ({ navigation }) => {
             </View>
           ) : (
             entries.map((entry, index) => (
-              <View key={entry.id} style={[styles.entryCard, { marginBottom: index === entries.length - 1 ? 30 : 15 }]}>
+              <View key={entry.id} style={[styles.entryCard, { marginBottom: index === entries.length - 1 ? 40 : 15 }]}>
                 <View style={styles.entryHeader}>
                   <Text style={styles.entryTitle}>{entry.title}</Text>
                   <TouchableOpacity 
@@ -387,7 +389,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 30,
+    paddingBottom: 50, // Increased bottom padding to prevent cutoff
   },
   header: {
     backgroundColor: 'white',
