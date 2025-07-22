@@ -58,28 +58,7 @@ const DashboardScreen = ({ navigation }) => {
   };
 
   const handleLogout = async () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Logout',
-          onPress: async () => {
-            try {
-              await AsyncStorage.removeItem('token');
-              await AsyncStorage.removeItem('user');
-              navigation.navigate('Login');
-            } catch (error) {
-              console.log('Logout error:', error);
-            }
-          },
-        },
-      ]
-    );
+    navigation.navigate('Login');
   };
 
   const pickImage = async () => {
