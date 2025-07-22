@@ -33,8 +33,9 @@ const LoginScreen = ({ navigation }) => {
         
         username: username,
         password: password,        
-      });     
-      console.log(response.user);
+      }); 
+      console.log('response', response)    
+      console.log('response.user in loginscreen',response.user);
     
             
       if (response.success) {

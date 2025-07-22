@@ -2,7 +2,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Update this URL to match your backend server
-const BASE_URL = 'http://localhost:3000/api';
+const BASE_URL = 'https://opulent-happiness-976vx9gg4wg4hx5j4-8081.app.github.dev/api';
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -31,9 +31,10 @@ api.interceptors.request.use(
 export const authAPI = {
   login: async (loginData) => {
     try {
-      console.log(loginData)
+      console.log('loginData in api.js', loginData)
       console.log('attempting login')
       const response = await api.post('/auth/login', loginData);
+      console.log('response in api.js', response)
       return response.data;
     } catch (error) {
       throw error.response?.data || { message: 'Network error' };

@@ -106,7 +106,7 @@ const RegisterScreen = ({ navigation }) => {
       }
     } catch (error) {
       Alert.alert('Registration Failed', error.message || 'An error occurred');
-      console.log(error.message)
+      console.log('error message in register screen', error.message)
     } finally {
       setLoading(false);
     }
