@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import {
   View,
@@ -36,12 +37,10 @@ const LoginScreen = ({ navigation }) => {
       console.log('response.user in loginscreen',response.user);
             
       if (response.success) {
-        // Store token and user data
         await AsyncStorage.setItem('token', response.token);
         await AsyncStorage.setItem('user', JSON.stringify(response.user));
         console.log('success')
         Alert.alert('Success', 'Login successful!');
-        // Navigate to main app or dashboard
         navigation.navigate('Dashboard');
       }
     } catch (error) {
@@ -59,7 +58,12 @@ const LoginScreen = ({ navigation }) => {
         style={styles.container} 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <ScrollView 
+          contentContainerStyle={styles.scrollContainer}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          bounces={false}
+        >
           {/* Header Section */}
           <View style={styles.headerSection}>
             <View style={styles.logoContainer}>
@@ -153,12 +157,14 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flexGrow: 1,
+    minHeight: '100%',
   },
   headerSection: {
     paddingTop: 60,
     paddingHorizontal: 30,
     paddingBottom: 40,
     alignItems: 'center',
+    flex: 0,
   },
   logoContainer: {
     alignItems: 'center',
@@ -204,7 +210,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 30,
     paddingHorizontal: 30,
     paddingTop: 40,
-    paddingBottom: 30,
+    paddingBottom: 40,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,

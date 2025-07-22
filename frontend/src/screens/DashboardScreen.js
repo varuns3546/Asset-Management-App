@@ -31,14 +31,14 @@ const DashboardScreen = ({ navigation }) => {
   useEffect(() => {
     if (user?.id) {
       console.log('Updated user:', user);
-      loadEntries(); // <-- move entry loading here after user is set
+      loadEntries();
     }
   }, [user]);
 
   const loadUserData = async () => {
     try {
       const userData = await AsyncStorage.getItem('user');
-      console.log('Raw userData from storage:', userData); // Add this
+      console.log('Raw userData from storage:', userData);
       if (userData) {
         setUser(JSON.parse(userData));
         console.log('user', user)
@@ -122,7 +122,6 @@ const DashboardScreen = ({ navigation }) => {
         throw new Error('Failed to upload image');
       }
 
-      // Get public URL
       const { data } = entriesAPI.storage
         .from('images')
         .getPublicUrl(filePath);
@@ -150,7 +149,6 @@ const DashboardScreen = ({ navigation }) => {
     try {
       let image_url = null;
       
-      // Upload image if selected
       if (selectedImage) {
         image_url = await uploadImage(selectedImage);
       }
@@ -164,10 +162,9 @@ const DashboardScreen = ({ navigation }) => {
         },        
       });     
       console.log(response)
-      // Update local state
+      
       setEntries([response.entry, ...entries]);
 
-      // Clear form
       setTitle('');
       setDescription('');
       setSelectedImage(null);
@@ -197,7 +194,6 @@ const DashboardScreen = ({ navigation }) => {
                 entry_id: entry_id 
               });
               console.log('attempted delete', response);
-              // Remove from local state
               setEntries(entries.filter(entry => entry.id !== entry_id));
               Alert.alert('Success', 'Entry deleted successfully!');
             } catch (error) {
@@ -211,168 +207,173 @@ const DashboardScreen = ({ navigation }) => {
   };
 
   return (
-    <>
+    <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#1a1a2e" />
-      <SafeAreaView style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerContent}>
-            <View style={styles.userInfo}>
-              <View style={styles.userAvatar}>
-                <Text style={styles.avatarText}>
-                  {(user?.firstName?.charAt(0) || user?.username?.charAt(0) || 'U').toUpperCase()}
-                </Text>
-              </View>
-              <View style={styles.welcomeContainer}>
-                <Text style={styles.welcomeText}>Welcome back,</Text>
-                <Text style={styles.userName}>
-                  {user?.firstName ? `${user.firstName} ${user.lastName}` : user?.username || 'User'}
-                </Text>
-              </View>
+      
+      {/* Fixed Header */}
+      <View style={styles.header}>
+        <View style={styles.headerContent}>
+          <View style={styles.userInfo}>
+            <View style={styles.userAvatar}>
+              <Text style={styles.avatarText}>
+                {(user?.firstName?.charAt(0) || user?.username?.charAt(0) || 'U').toUpperCase()}
+              </Text>
             </View>
-            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-              <Text style={styles.logoutText}>Logout</Text>
-            </TouchableOpacity>
+            <View style={styles.welcomeContainer}>
+              <Text style={styles.welcomeText}>Welcome back,</Text>
+              <Text style={styles.userName}>
+                {user?.firstName ? `${user.firstName} ${user.lastName}` : user?.username || 'User'}
+              </Text>
+            </View>
           </View>
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <Text style={styles.logoutText}>Logout</Text>
+          </TouchableOpacity>
         </View>
+      </View>
 
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-          {/* New Entry Form */}
-          <View style={styles.formContainer}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>📝 Add New Entry</Text>
-              <Text style={styles.sectionSubtitle}>Create a new journal entry</Text>
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Title</Text>
-              <View style={styles.inputWrapper}>
-                <TextInput
-                  style={styles.input}
-                  value={title}
-                  onChangeText={setTitle}
-                  placeholder="Enter entry title"
-                  placeholderTextColor="#8E8E93"
-                  autoCapitalize="sentences"
-                />
-              </View>
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Description</Text>
-              <View style={styles.inputWrapper}>
-                <TextInput
-                  style={[styles.input, styles.textArea]}
-                  value={description}
-                  onChangeText={setDescription}
-                  placeholder="What's on your mind? (optional)"
-                  placeholderTextColor="#8E8E93"
-                  multiline
-                  numberOfLines={4}
-                  textAlignVertical="top"
-                />
-              </View>
-            </View>
-
-            {/* Photo Section */}
-            <View style={styles.photoSection}>
-              <Text style={styles.label}>Photo</Text>
-              <View style={styles.photoButtons}>
-                <TouchableOpacity style={styles.photoButton} onPress={takePhoto}>
-                  <Text style={styles.photoButtonIcon}>📷</Text>
-                  <Text style={styles.photoButtonText}>Camera</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.photoButton} onPress={pickImage}>
-                  <Text style={styles.photoButtonIcon}>🖼️</Text>
-                  <Text style={styles.photoButtonText}>Gallery</Text>
-                </TouchableOpacity>
-              </View>
-
-              {selectedImage && (
-                <View style={styles.imagePreview}>
-                  <Image source={{ uri: selectedImage }} style={styles.previewImage} />
-                  <TouchableOpacity
-                    style={styles.removeImageButton}
-                    onPress={() => setSelectedImage(null)}
-                  >
-                    <Text style={styles.removeImageText}>✕ Remove</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-            </View>
-
-            <TouchableOpacity
-              style={[styles.saveButton, loading && styles.buttonDisabled]}
-              onPress={handleSaveEntry}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator color="white" size="small" />
-              ) : null}
-              <Text style={[styles.saveButtonText, loading && { marginLeft: 8 }]}>
-                {loading ? 'Saving...' : 'Save Entry'}
-              </Text>
-            </TouchableOpacity>
+      {/* Scrollable Content */}
+      <ScrollView 
+        style={styles.scrollView} 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        bounces={true}
+      >
+        {/* New Entry Form */}
+        <View style={styles.formContainer}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>📝 Add New Entry</Text>
+            <Text style={styles.sectionSubtitle}>Create a new journal entry</Text>
           </View>
 
-          {/* Entries List */}
-          <View style={styles.entriesContainer}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>📚 Recent Entries</Text>
-              <Text style={styles.sectionSubtitle}>
-                {entries.length} {entries.length === 1 ? 'entry' : 'entries'}
-              </Text>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Title</Text>
+            <View style={styles.inputWrapper}>
+              <TextInput
+                style={styles.input}
+                value={title}
+                onChangeText={setTitle}
+                placeholder="Enter entry title"
+                placeholderTextColor="#8E8E93"
+                autoCapitalize="sentences"
+              />
             </View>
-            
-            {entries.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyStateIcon}>📝</Text>
-                <Text style={styles.emptyStateText}>No entries yet</Text>
-                <Text style={styles.emptyStateSubtext}>Add your first entry above to get started</Text>
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Description</Text>
+            <View style={styles.inputWrapper}>
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                value={description}
+                onChangeText={setDescription}
+                placeholder="What's on your mind? (optional)"
+                placeholderTextColor="#8E8E93"
+                multiline
+                numberOfLines={4}
+                textAlignVertical="top"
+              />
+            </View>
+          </View>
+
+          {/* Photo Section */}
+          <View style={styles.photoSection}>
+            <Text style={styles.label}>Photo</Text>
+            <View style={styles.photoButtons}>
+              <TouchableOpacity style={styles.photoButton} onPress={takePhoto}>
+                <Text style={styles.photoButtonIcon}>📷</Text>
+                <Text style={styles.photoButtonText}>Camera</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.photoButton} onPress={pickImage}>
+                <Text style={styles.photoButtonIcon}>🖼️</Text>
+                <Text style={styles.photoButtonText}>Gallery</Text>
+              </TouchableOpacity>
+            </View>
+
+            {selectedImage && (
+              <View style={styles.imagePreview}>
+                <Image source={{ uri: selectedImage }} style={styles.previewImage} />
+                <TouchableOpacity
+                  style={styles.removeImageButton}
+                  onPress={() => setSelectedImage(null)}
+                >
+                  <Text style={styles.removeImageText}>✕ Remove</Text>
+                </TouchableOpacity>
               </View>
-            ) : (
-              entries.map((entry, index) => (
-                <View key={entry.id} style={[styles.entryCard, { marginBottom: index === entries.length - 1 ? 30 : 15 }]}>
-                  <View style={styles.entryHeader}>
-                    <Text style={styles.entryTitle}>{entry.title}</Text>
-                    <TouchableOpacity 
-                      style={styles.deleteButton}
-                      onPress={() => deleteEntry(entry.id)}
-                    >
-                      <Text style={styles.deleteText}>✕</Text>
-                    </TouchableOpacity>
-                  </View>
-                  
-                  {entry.description ? (
-                    <Text style={styles.entryDescription}>{entry.description}</Text>
-                  ) : null}
-                  
-                  {entry.image_url && (
-                    <View style={styles.imageContainer}>
-                      <Image source={{ uri: entry.image_url }} style={styles.entryImage} />
-                    </View>
-                  )}
-                  
-                  <View style={styles.entryFooter}>
-                    <Text style={styles.entryTimestamp}>
-                      {new Date(entry.created_at).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric'
-                      })} at{' '}
-                      {new Date(entry.created_at).toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </Text>
-                  </View>
-                </View>
-              ))
             )}
           </View>
-        </ScrollView>
-      </SafeAreaView>
-    </>
+
+          <TouchableOpacity
+            style={[styles.saveButton, loading && styles.buttonDisabled]}
+            onPress={handleSaveEntry}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="white" size="small" />
+            ) : null}
+            <Text style={[styles.saveButtonText, loading && { marginLeft: 8 }]}>
+              {loading ? 'Saving...' : 'Save Entry'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Entries List */}
+        <View style={styles.entriesContainer}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>📚 Recent Entries</Text>
+            <Text style={styles.sectionSubtitle}>
+              {entries.length} {entries.length === 1 ? 'entry' : 'entries'}
+            </Text>
+          </View>
+          
+          {entries.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateIcon}>📝</Text>
+              <Text style={styles.emptyStateText}>No entries yet</Text>
+              <Text style={styles.emptyStateSubtext}>Add your first entry above to get started</Text>
+            </View>
+          ) : (
+            entries.map((entry, index) => (
+              <View key={entry.id} style={[styles.entryCard, { marginBottom: index === entries.length - 1 ? 30 : 15 }]}>
+                <View style={styles.entryHeader}>
+                  <Text style={styles.entryTitle}>{entry.title}</Text>
+                  <TouchableOpacity 
+                    style={styles.deleteButton}
+                    onPress={() => deleteEntry(entry.id)}
+                  >
+                    <Text style={styles.deleteText}>✕</Text>
+                  </TouchableOpacity>
+                </View>
+                
+                {entry.description ? (
+                  <Text style={styles.entryDescription}>{entry.description}</Text>
+                ) : null}
+                
+                {entry.image_url && (
+                  <View style={styles.imageContainer}>
+                    <Image source={{ uri: entry.image_url }} style={styles.entryImage} />
+                  </View>
+                )}
+                
+                <View style={styles.entryFooter}>
+                  <Text style={styles.entryTimestamp}>
+                    {new Date(entry.created_at).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric'
+                    })} at{' '}
+                    {new Date(entry.created_at).toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </Text>
+                </View>
+              </View>
+            ))
+          )}
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
@@ -381,20 +382,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#1a1a2e',
   },
-  scrollContainer: {
-    flexGrow: 1,
-    minHeight: '100%',
-    paddingBottom: 20, // Add bottom padding to prevent cutoff
-  },
   scrollView: {
     flex: 1,
   },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 30,
+  },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
     backgroundColor: 'white',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -403,219 +401,40 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 3.84,
     elevation: 5,
+    zIndex: 1000,
   },
-  headerSection: {
-    paddingTop: 40, // Reduced from 50
-    paddingHorizontal: 30,
-    paddingBottom: 25, // Reduced from 30
-    alignItems: 'center',
-  },
-  logoContainer: {
-    alignItems: 'center',
-    marginBottom: 12, // Reduced from 16
-  },
-  welcomeText: {
-    fontSize: 16,
-    color: '#666',
-  },logoIcon: {
-    width: 60, // Reduced from 70
-    height: 60, // Reduced from 70
-    borderRadius: 30, // Reduced from 35
-    backgroundColor: '#4c6ef5',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 10, // Reduced from 12
-    shadowColor: '#4c6ef5',
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  logoText: {
-    fontSize: 28, // Reduced from 32
-    fontWeight: '700',
-    color: 'white',
-  },
-  formContainer: {
-    flex: 1,
-    backgroundColor: 'white',
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    paddingHorizontal: 30,
-    paddingTop: 30, // Reduced from 35
-    paddingBottom: 40, // Increased from 30 to ensure content isn't cut off
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: -5,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 10,
-    minHeight: 600, // Ensure minimum height
-  },
-  formHeader: {
-    marginBottom: 25, // Reduced from 35
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 26, // Reduced from 28
-    fontWeight: '700',
-    color: '#1a1a2e',
-    marginBottom: 6, // Reduced from 8
-  },
-  subtitle: {
-    fontSize: 14, // Reduced from 16
-    color: '#6c757d',
-    textAlign: 'center',
-    lineHeight: 20, // Reduced from 24
-  },
-  errorContainer: {
-    backgroundColor: '#fff5f5',
-    borderColor: '#feb2b2',
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 20, // Reduced from 24
-  },
-  errorText: {
-    color: '#e53e3e',
-    fontSize: 14,
-    textAlign: 'center',
-    fontWeight: '500',
-  },
-  inputSection: {
-    marginBottom: 25, // Reduced from 32
-  },
-  row: {
+  headerContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-  },
-  inputGroup: {
-    marginBottom: 16, // Reduced from 20
-  },
-  halfWidth: {
-    width: '48%',
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#2c3e50',
-    marginBottom: 6, // Reduced from 8
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  inputWrapper: {
-    position: 'relative',
-  },
-  input: {
-    height: 48, // Reduced from 52
-    borderWidth: 1,
-    borderColor: '#e9ecef',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    fontSize: 16,
-    backgroundColor: '#f8f9fa',
-    color: '#2c3e50',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  passwordInput: {
-    paddingRight: 50,
-  },
-  eyeButton: {
-    position: 'absolute',
-    right: 16,
-    top: 0,
-    bottom: 0,
-    justifyContent: 'center',
     alignItems: 'center',
-    width: 30,
   },
-  eyeText: {
-    fontSize: 18,
+  userInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  registerButton: {
-    height: 48, // Reduced from 52
+  userAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: '#4c6ef5',
-    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20, // Reduced from 24
-    shadowColor: '#4c6ef5',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
+    marginRight: 12,
   },
-  buttonDisabled: {
-    backgroundColor: '#adb5bd',
-    shadowOpacity: 0,
-    elevation: 0,
-  },
-  registerButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+  avatarText: {
     color: 'white',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    fontSize: 16,
+    fontWeight: 'bold',
   },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20, // Reduced from 24
-  },
-  dividerLine: {
+  welcomeContainer: {
     flex: 1,
-    height: 1,
-    backgroundColor: '#e9ecef',
   },
-  dividerText: {
-    marginHorizontal: 16,
+  welcomeText: {
     fontSize: 14,
-    color: '#6c757d',
-    fontWeight: '500',
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingBottom: 10, // Add some bottom padding
-  },
-  footerText: {
-    fontSize: 16,
-    color: '#6c757d',
-  },
-  linkText: {
-    fontSize: 16,
-    color: '#4c6ef5',
-    fontWeight: '600',
-  },
-  companyName: {
-    fontSize: 22, // Reduced from 24
-    fontWeight: '700',
-    color: 'white',
-    letterSpacing: 1,
-  },
-  tagline: {
-    fontSize: 14, // Reduced from 16
-    color: '#a8a8b3',
-    textAlign: 'center',
+    color: '#666',
   },
   userName: {
-    fontSize: 24,
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#333',
   },
@@ -644,13 +463,20 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
   },
+  sectionHeader: {
+    marginBottom: 20,
+  },
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 20,
+    marginBottom: 5,
   },
-  inputContainer: {
+  sectionSubtitle: {
+    fontSize: 14,
+    color: '#666',
+  },
+  inputGroup: {
     marginBottom: 20,
   },
   label: {
@@ -658,6 +484,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 8,
     color: '#333',
+  },
+  inputWrapper: {
+    position: 'relative',
   },
   input: {
     borderWidth: 1,
@@ -670,6 +499,7 @@ const styles = StyleSheet.create({
   textArea: {
     height: 100,
     paddingTop: 15,
+    textAlignVertical: 'top',
   },
   photoSection: {
     marginBottom: 20,
@@ -687,6 +517,10 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 15,
     alignItems: 'center',
+  },
+  photoButtonIcon: {
+    fontSize: 20,
+    marginBottom: 5,
   },
   photoButtonText: {
     color: '#007AFF',
@@ -718,6 +552,8 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 10,
     alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
     marginTop: 10,
   },
   buttonDisabled: {
@@ -729,7 +565,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   entriesContainer: {
-    margin: 20,
+    marginHorizontal: 20,
     marginTop: 0,
   },
   emptyState: {
@@ -745,6 +581,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 3.84,
     elevation: 5,
+  },
+  emptyStateIcon: {
+    fontSize: 40,
+    marginBottom: 10,
   },
   emptyStateText: {
     fontSize: 18,
@@ -783,11 +623,13 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 10,
   },
+  deleteButton: {
+    padding: 5,
+  },
   deleteText: {
     color: '#ff4444',
     fontSize: 18,
     fontWeight: 'bold',
-    padding: 5,
   },
   entryDescription: {
     fontSize: 16,
@@ -795,16 +637,20 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     lineHeight: 22,
   },
+  imageContainer: {
+    marginBottom: 10,
+  },
   entryImage: {
     width: '100%',
     height: 200,
     borderRadius: 10,
-    marginBottom: 10,
+  },
+  entryFooter: {
+    alignItems: 'flex-end',
   },
   entryTimestamp: {
     fontSize: 14,
     color: '#999',
-    textAlign: 'right',
   },
 });
 

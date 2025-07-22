@@ -112,6 +112,7 @@ const RegisterScreen = ({ navigation }) => {
   return (
     <>
       <StatusBar barStyle="light-content" backgroundColor="#1a1a2e" />
+      
       <KeyboardAvoidingView 
         style={styles.container} 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

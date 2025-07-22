@@ -66,7 +66,7 @@ A full-stack authentication app with an Expo (React Native) frontend and Express
    npm start
    ```
 
-   The server will run on `http://localhost:3000`
+   The server will run on `http://localhost:3001`
 
 ### 2. Frontend Setup
 
