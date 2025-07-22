@@ -14,7 +14,7 @@ class Entry {
 
   // Create a new user
   static async create(entryData) {
-    const { title, description, image } = entryData;
+    const { userId, title, description, imageUrl } = entryData;
     
     // Hash password
     
@@ -24,7 +24,7 @@ class Entry {
         {
           title: title,
           description: description,
-          image: image
+          imageUrl: imageUrl
         }
       ])
       .select()

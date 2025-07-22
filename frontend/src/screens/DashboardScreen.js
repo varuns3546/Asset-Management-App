@@ -29,7 +29,6 @@ const DashboardScreen = ({ navigation }) => {
 
   useEffect(() => {
     if (user?.id) {
-      console.log('Updated user:', user);
       loadEntries(); // <-- move entry loading here after user is set
     }
   }, [user]);
@@ -40,7 +39,6 @@ const DashboardScreen = ({ navigation }) => {
       console.log('Raw userData from storage:', userData); // Add this
       if (userData) {
         setUser(JSON.parse(userData));
-        console.log('user', user)
       }
     } catch (error) {
       console.log('Error loading user data:', error);
@@ -58,28 +56,13 @@ const DashboardScreen = ({ navigation }) => {
   };
 
   const handleLogout = async () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Logout',
-          onPress: async () => {
-            try {
-              await AsyncStorage.removeItem('token');
-              await AsyncStorage.removeItem('user');
-              navigation.navigate('Login');
-            } catch (error) {
-              console.log('Logout error:', error);
-            }
-          },
-        },
-      ]
-    );
+    try {
+      await AsyncStorage.removeItem('token');
+      await AsyncStorage.removeItem('user');
+      navigation.navigate('Login');
+    } catch (error) {
+      console.log('Logout error:', error);
+    }
   };
 
   const pickImage = async () => {
@@ -155,9 +138,7 @@ const DashboardScreen = ({ navigation }) => {
   };
 
   const handleSaveEntry = async () => {
-    console.log('handle save entry')
     if (!title.trim()) {
-      console.log('enter title')
       return;
     }
 
@@ -176,17 +157,13 @@ const DashboardScreen = ({ navigation }) => {
       }
 
    
+      entryData = {title: title,
+        description: description,
+        image_url: image_url}
 
-      const response = await entriesAPI.createEntry({
-        
-        userId: user.id,
-        entryData: {
-            title: title,
-            description: description,
-            image_url: image_url
-        },        
-      });     
-      console.log(response)
+        console.log(entryData)
+      const response = await entriesAPI.createEntry( user.id, entryData);      
+      console.log('response', response)
       // Update local state
       setEntries([response.entry, ...entries]);
 
@@ -204,10 +181,7 @@ const DashboardScreen = ({ navigation }) => {
   };
 
   const deleteEntry = async (entry_id) => {
-    const response = await entriesAPI.deleteEntry({
-        user_id: user.id, // Changed from user_id to user.id
-        entry_id: entry_id 
-      });
+    const response = await entriesAPI.deleteEntry(user_id, entry_id );
     console.log('attempted delete', response)
   };
 

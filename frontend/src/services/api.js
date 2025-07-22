@@ -63,6 +63,7 @@ export const entriesAPI = {
 
   
   createEntry: async (userId, entryData) => {
+    console.log(userId, entryData, 'create')
     try {
       const response = await api.post(`/data/${userId}/entries`, entryData);
       return response.data;

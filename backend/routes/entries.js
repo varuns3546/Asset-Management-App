@@ -39,7 +39,6 @@ router.get('/:userId/entries', async (req, res) => {
   // POST /api/auth/:userId/entries - Create a new entry for a specific user
   router.post('/:userId/entries', async (req, res) => {
     console.log('attempting post entry')
-    console.log(req.body, req.params)
     try {
       const { userId } = req.params;
       const { title, description, image_url } = req.body;
