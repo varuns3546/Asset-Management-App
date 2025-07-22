@@ -207,30 +207,32 @@ const DashboardScreen = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#1a1a2e" />
       
       {/* Fixed Header */}
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <View style={styles.userInfo}>
-            <View style={styles.userAvatar}>
-              <Text style={styles.avatarText}>
-                {(user?.firstName?.charAt(0) || user?.username?.charAt(0) || 'U').toUpperCase()}
-              </Text>
+      <SafeAreaView style={styles.headerSafeArea}>
+        <View style={styles.header}>
+          <View style={styles.headerContent}>
+            <View style={styles.userInfo}>
+              <View style={styles.userAvatar}>
+                <Text style={styles.avatarText}>
+                  {(user?.firstName?.charAt(0) || user?.username?.charAt(0) || 'U').toUpperCase()}
+                </Text>
+              </View>
+              <View style={styles.welcomeContainer}>
+                <Text style={styles.welcomeText}>Welcome back,</Text>
+                <Text style={styles.userName}>
+                  {user?.firstName ? `${user.firstName} ${user.lastName}` : user?.username || 'User'}
+                </Text>
+              </View>
             </View>
-            <View style={styles.welcomeContainer}>
-              <Text style={styles.welcomeText}>Welcome back,</Text>
-              <Text style={styles.userName}>
-                {user?.firstName ? `${user.firstName} ${user.lastName}` : user?.username || 'User'}
-              </Text>
-            </View>
+            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+              <Text style={styles.logoutText}>Logout</Text>
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <Text style={styles.logoutText}>Logout</Text>
-          </TouchableOpacity>
         </View>
-      </View>
+      </SafeAreaView>
 
       {/* Scrollable Content */}
       <ScrollView 
@@ -240,6 +242,7 @@ const DashboardScreen = ({ navigation }) => {
         bounces={true}
         alwaysBounceVertical={false}
         keyboardShouldPersistTaps="handled"
+        nestedScrollEnabled={true}
       >
         {/* New Entry Form */}
         <View style={styles.formContainer}>
@@ -375,7 +378,7 @@ const DashboardScreen = ({ navigation }) => {
           )}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -384,12 +387,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#1a1a2e',
   },
+  headerSafeArea: {
+    backgroundColor: 'white',
+  },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 50, // Increased bottom padding to prevent cutoff
+    paddingBottom: 50,
   },
   header: {
     backgroundColor: 'white',
