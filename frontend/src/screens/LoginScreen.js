@@ -4,7 +4,6 @@ import {
   Text, 
   TextInput, 
   TouchableOpacity, 
-  StyleSheet, 
   Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -12,12 +11,9 @@ import {
   ScrollView
 } from 'react-native'
 import {useSelector, useDispatch} from 'react-redux'
-// import { Ionicons } from '@expo/vector-icons'
 import { login, reset } from '../features/auth/authSlice'
 import Spinner from '../components/Spinner'
-
-
-
+import { screenStyles, componentStyles } from '../styles'
 
 const LoginScreen = ({navigation}) => {
     const [formData, setFormData] = useState({
@@ -64,21 +60,21 @@ const LoginScreen = ({navigation}) => {
     }
     return (
     <KeyboardAvoidingView 
-        style={styles.container}
+        style={screenStyles.loginScreen.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-        <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.heading}>
-            <View style={styles.titleContainer}>
-                <Text style={styles.title}>Login</Text>
+        <ScrollView contentContainerStyle={screenStyles.loginScreen.scrollContent}>
+        <View style={screenStyles.loginScreen.heading}>
+            <View style={screenStyles.loginScreen.titleContainer}>
+                <Text style={screenStyles.loginScreen.title}>Login</Text>
             </View>
         </View>
 
-        <View style={styles.form}>
+        <View style={screenStyles.loginScreen.form}>
 
-            <View style={styles.formGroup}>
+            <View style={screenStyles.loginScreen.formGroup}>
                 <TextInput
-                    style={styles.input}
+                    style={screenStyles.loginScreen.input}
                     placeholder="Email"
                     value={formData.email}
                     onChangeText={(value) => updateField('email', value)}
@@ -89,10 +85,10 @@ const LoginScreen = ({navigation}) => {
                     autoComplete="email"
                 />
             </View>
-            <View style={styles.formGroup}>
-                <View style={styles.inputContainer}>
+            <View style={screenStyles.loginScreen.formGroup}>
+                <View style={screenStyles.loginScreen.inputContainer}>
                     <TextInput
-                        style={styles.input}
+                        style={screenStyles.loginScreen.input}
                         placeholder="Password"
                         value={formData.password}
                         onChangeText={(value) => updateField('password', value)}
@@ -102,24 +98,24 @@ const LoginScreen = ({navigation}) => {
                         autoComplete="password"
                     />
                     <TouchableOpacity 
-                        style={styles.eyeIcon}
+                        style={screenStyles.loginScreen.eyeIcon}
                         onPress={() => setShowPassword(!showPassword)}
                     >
                         <Text 
-                            style={styles.eyeIconText}
+                            style={screenStyles.loginScreen.eyeIconText}
                         >
                             {showPassword ? "🙈" : "👁️"}
                         </Text>
                     </TouchableOpacity>
                 </View>
             </View>
-            <TouchableOpacity style={styles.button} onPress={onSubmit}>
-            <Text style={styles.buttonText}>Submit</Text>
+            <TouchableOpacity style={screenStyles.loginScreen.button} onPress={onSubmit}>
+            <Text style={screenStyles.loginScreen.buttonText}>Submit</Text>
             </TouchableOpacity>
-            <View style={styles.footer}>
-                <Text style={styles.footerText}>Don't have an account? </Text>
+            <View style={screenStyles.loginScreen.footer}>
+                <Text style={screenStyles.loginScreen.footerText}>Don't have an account? </Text>
                 <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-                    <Text style={styles.linkText}>Sign Up</Text>
+                    <Text style={screenStyles.loginScreen.linkText}>Sign Up</Text>
                 </TouchableOpacity>
             </View>
         </View>
@@ -127,100 +123,5 @@ const LoginScreen = ({navigation}) => {
     </KeyboardAvoidingView>
     )
 }
-    
-const styles = StyleSheet.create({
-    container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    },
-    scrollContent: {
-    flexGrow: 1,
-    padding: 20,
-    justifyContent: 'center',
-    },
-    loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    },
-    heading: {
-    alignItems: 'center',
-    marginBottom: 40,
-    },
-    titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-    },
-    title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginLeft: 10,
-    color: '#333',
-    },
-    subtitle: {
-    fontSize: 16,
-    color: '#666',
-    },
-    form: {
-    width: '100%',
-    },
-    formGroup: {
-    marginBottom: 20,
-    },
-    input: {
-    backgroundColor: '#f9f9f9',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    fontSize: 16,
-    flex: 1,
-    },
-    inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f9f9f9',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    },
-    eyeIcon: {
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    },
-    eyeIconText: {
-        fontSize: 20,
-        color: '#666',
-    },
-    button: {
-    backgroundColor: '#007AFF',
-    borderRadius: 8,
-    paddingVertical: 15,
-    alignItems: 'center',
-    marginTop: 10,
-    },
-    buttonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-    },
-     footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 30,
-    },
-     footerText: {
-    fontSize: 16,
-    color: '#666',
-    },
-    linkText: {
-    fontSize: 16,
-    color: '#007AFF',
-    fontWeight: '600',
-    },
-})
-    
 
 export default LoginScreen;

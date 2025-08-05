@@ -5,6 +5,7 @@ import bodyParser from 'body-parser'
 import userRoutes from "./routes/userRoutes.js";
 import entryRoutes from './routes/entryRoutes.js'
 import uploadRoutes from './routes/uploadRoutes.js'
+import mapRoutes from './routes/mapRoutes.js'
 
 dotenv.config();
 
@@ -16,6 +17,7 @@ app.use(bodyParser.urlencoded({ extended: true })); // Parse URL-encoded forms
 app.use("/api/users", userRoutes);
 app.use('/api/entries', entryRoutes);
 app.use('/api/uploads', uploadRoutes)
+app.use('/api/maps', mapRoutes)
 
 app.get("/", (req, res) => {
   res.send("API is running");

@@ -1,8 +1,9 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 // import { Ionicons } from '@expo/vector-icons';
-import CreateEntryScreen from './CreateEntryScreen';
+import EntryScreen from './EntryScreen';
 import UploadScreen from './UploadScreen';
+import MapScreen from './MapScreen';
 import { Text } from 'react-native';
 
 const Tab = createBottomTabNavigator();
@@ -14,10 +15,12 @@ const MainTabScreen = ({ navigation }) => {
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;
 
-          if (route.name === 'CreateEntries') {
+           if (route.name === 'Entries') {
             iconName = focused ? '➕' : '➕';
           } else if (route.name === 'Upload') {
             iconName = focused ? '☁️' : '☁️';
+          } else if (route.name === 'Map') {
+            iconName = focused ? '🗺️' : '🗺️';
           }
 
           return <Text style={{ fontSize: size, color: color }}>{iconName}</Text>;
@@ -36,11 +39,19 @@ const MainTabScreen = ({ navigation }) => {
       })}
     >
       <Tab.Screen 
-        name="CreateEntries" 
-        component={CreateEntryScreen}
+          name="Entries" 
+        component={EntryScreen}
         options={{
           title: 'Create Entries',
           tabBarLabel: 'Entries',
+        }}
+      />
+      <Tab.Screen 
+        name="Map" 
+        component={MapScreen}
+        options={{
+          title: 'Interactive Map',
+          tabBarLabel: 'Map',
         }}
       />
       <Tab.Screen 
