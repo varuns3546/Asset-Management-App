@@ -89,15 +89,15 @@ export const getPhoto = createAsyncThunk(
     }
 )
 // Upload document
-export const uploadDocument = createAsyncThunk(
-    'uploads/uploadDocument',
+export const uploadDocuments = createAsyncThunk(
+    'uploads/uploadDocuments',
     async (documentData, thunkAPI) => {
         try {
             const user = thunkAPI.getState().auth.user
             if (!user || !user.token) {
                 throw new Error('No authentication token available')
             }
-            return await uploadService.uploadDocument(documentData, user.token)
+            return await uploadService.uploadDocuments(documentData, user.token)
         } catch (error) {
             const message =
                 (error.response &&
@@ -110,15 +110,15 @@ export const uploadDocument = createAsyncThunk(
     }
 )
 
-export const uploadPhoto = createAsyncThunk(
-    'uploads/uploadPhoto',
+export const uploadPhotos = createAsyncThunk(
+    'uploads/uploadPhotos',
     async (photoData, thunkAPI) => {
         try {
             const user = thunkAPI.getState().auth.user
             if (!user || !user.token) {
                 throw new Error('No authentication token available')
             }
-            return await uploadService.uploadPhoto(photoData, user.token)
+            return await uploadService.uploadPhotos(photoData, user.token)
         } catch (error) {
             const message =
                 (error.response &&
@@ -215,28 +215,42 @@ export const uploadSlice = createSlice({
             state.isError = true
             state.message = action.payload
         })
-        .addCase(uploadDocument.pending, (state) => {
+        .addCase(uploadDocuments.pending, (state) => {
             state.isLoadingDocuments = true
         })
-        .addCase(uploadDocument.fulfilled, (state, action) => {
+        .addCase(uploadDocuments.fulfilled, (state, action) => {
             state.isLoadingDocuments = false
             state.isSuccess = true
-            state.documents.push(action.payload)
+            // Handle both single file and multiple files response
+            if (Array.isArray(action.payload)) {
+                // Multiple files uploaded
+                state.documents = [...state.documents, ...action.payload]
+            } else {
+                // Single file uploaded (backward compatibility)
+                state.documents.push(action.payload)
+            }
         })
-        .addCase(uploadDocument.rejected, (state, action) => {
+        .addCase(uploadDocuments.rejected, (state, action) => {
             state.isLoadingDocuments = false
             state.isError = true
             state.message = action.payload
         })
-        .addCase(uploadPhoto.pending, (state) => {
+        .addCase(uploadPhotos.pending, (state) => {
             state.isLoadingPhotos = true
         })
-        .addCase(uploadPhoto.fulfilled, (state, action) => {
+        .addCase(uploadPhotos.fulfilled, (state, action) => {
             state.isLoadingPhotos = false
             state.isSuccess = true
-            state.photos.push(action.payload)
+            // Handle both single file and multiple files response
+            if (Array.isArray(action.payload)) {
+                // Multiple files uploaded
+                state.photos = [...state.photos, ...action.payload]
+            } else {
+                // Single file uploaded (backward compatibility)
+                state.photos.push(action.payload)
+            }
         })
-        .addCase(uploadPhoto.rejected, (state, action) => {
+        .addCase(uploadPhotos.rejected, (state, action) => {
             state.isLoadingPhotos = false
             state.isError = true
             state.message = action.payload

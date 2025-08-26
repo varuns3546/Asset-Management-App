@@ -24,6 +24,14 @@ const storage = multer.memoryStorage();
 const fileFilter = (req, file, cb) => {
   const fileExtension = '.' + file.originalname.split('.').pop().toLowerCase();
   
+  console.log('File filter check:', {
+    routePath: req.route?.path,
+    originalName: file.originalname,
+    fileExtension,
+    isDocumentRoute: req.route?.path?.includes('document'),
+    isPhotoRoute: req.route?.path?.includes('photo')
+  });
+  
   if (req.route.path.includes('document')) {
     if (allowedDocumentExtensions.includes(fileExtension)) {
       cb(null, true);
@@ -52,6 +60,15 @@ const upload = multer({
   fileFilter: fileFilter,
   limits: {
     fileSize: 50 * 1024 * 1024, // 50MB limit
+  }
+});
+
+// Debug multer configuration
+console.log('Multer configuration:', {
+  storage: storage.name || 'memoryStorage',
+  fileFilter: fileFilter.name || 'anonymous',
+  limits: {
+    fileSize: '50MB'
   }
 });
 
@@ -286,7 +303,7 @@ const getPhoto = asyncHandler(async (req, res) => {
       throw error;
     }
     
-    const file = data.find(f => f.name === id);
+    const file = data.find(f => f.name === fileName);
     
     if (!file) {
       return res.status(404).json({
@@ -321,44 +338,53 @@ const getPhoto = asyncHandler(async (req, res) => {
   }
 });
 
-// Upload document with multer middleware
-const uploadDocument = [
-  upload.single('document'),
+// Upload documents with multer middleware (supports multiple files)
+const uploadDocuments = [
+  upload.array('documents', 100),
   asyncHandler(async (req, res) => {
     try {
-      console.log('Upload document request:', {
+      console.log('Upload documents request:', {
         body: req.body,
-        file: req.file ? {
-          originalname: req.file.originalname,
-          mimetype: req.file.mimetype,
-          size: req.file.size
-        } : null,
+        files: req.files ? req.files.map(file => ({
+          originalname: file.originalname,
+          mimetype: file.mimetype,
+          size: file.size
+        })) : null,
         headers: req.headers,
         contentType: req.headers['content-type']
       });
       
-      if (!req.file) {
+      if (!req.files || req.files.length === 0) {
         return res.status(400).json({
           success: false,
-          message: 'No document file provided'
+          message: 'No document files provided'
         });
       }
       
       const userId = req.user.id;
-      const uploadResult = await uploadToSupabase(req.file, req.body.title, userId, 'documents', req.supabase);
+      const uploadPromises = req.files.map(async (file, index) => {
+        // Use title from body if provided, otherwise use original filename
+        const title = req.body.titles && req.body.titles[index] ? req.body.titles[index] : null;
+        return await uploadToSupabase(file, title, userId, 'documents', req.supabase);
+      });
+      
+      const uploadResults = await Promise.all(uploadPromises);
+      
+      const uploadedFiles = uploadResults.map(uploadResult => ({
+        id: uploadResult.fileName, // Use fileName as id for consistency
+        name: uploadResult.fileName,
+        size: uploadResult.fileSize,
+        sizeFormatted: uploadResult.fileSizeFormatted,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        type: 'document'
+      }));
       
       res.status(201).json({
         success: true,
-        message: 'Document uploaded successfully',
-        data: {
-          id: uploadResult.fileName, // Use fileName as id for consistency
-          name: uploadResult.fileName,
-          size: uploadResult.fileSize,
-          sizeFormatted: uploadResult.fileSizeFormatted,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          type: 'document'
-        }
+        message: `${uploadedFiles.length} document(s) uploaded successfully`,
+        data: uploadedFiles,
+        count: uploadedFiles.length
       });
     } catch (error) {
       console.error('Document upload error:', error);
@@ -372,6 +398,12 @@ const uploadDocument = [
   // Error handling middleware for multer
   (error, req, res, next) => {
     console.error('Multer error:', error);
+    console.error('Multer error details:', {
+      code: error.code,
+      field: error.field,
+      message: error.message,
+      stack: error.stack
+    });
     if (error instanceof multer.MulterError) {
       return res.status(400).json({
         success: false,
@@ -387,42 +419,72 @@ const uploadDocument = [
   }
 ];
 
-// Upload photo with multer middleware
-const uploadPhoto = [
-  upload.single('photo'),
+// Upload photos with multer middleware (supports multiple files)
+const uploadPhotos = [
+  (req, res, next) => {
+    console.log('Before multer middleware:', {
+      contentType: req.headers['content-type'],
+      contentLength: req.headers['content-length']
+    });
+    next();
+  },
+  upload.array('photos', 300), // Allow up to 300 photos at once
+  (req, res, next) => {
+    console.log('After multer middleware:', {
+      filesCount: req.files ? req.files.length : 0,
+      bodyKeys: Object.keys(req.body),
+      files: req.files ? req.files.map(file => ({
+        originalname: file.originalname,
+        mimetype: file.mimetype,
+        size: file.size
+      })) : null
+    });
+    next();
+  },
   asyncHandler(async (req, res) => {
     try {
-      console.log('Upload photo request:', {
+      console.log('Upload photos request:', {
         body: req.body,
-        file: req.file ? {
-          originalname: req.file.originalname,
-          mimetype: req.file.mimetype,
-          size: req.file.size
-        } : null
+        files: req.files ? req.files.map(file => ({
+          originalname: file.originalname,
+          mimetype: file.mimetype,
+          size: file.size
+        })) : null,
+        filesCount: req.files ? req.files.length : 0,
+        contentType: req.headers['content-type']
       });
       
-      if (!req.file) {
+      if (!req.files || req.files.length === 0) {
         return res.status(400).json({
           success: false,
-          message: 'No photo file provided'
+          message: 'No photo files provided'
         });
       }
       
       const userId = req.user.id;
-      const uploadResult = await uploadToSupabase(req.file, req.body.title, userId, 'photos', req.supabase);
+      const uploadPromises = req.files.map(async (file, index) => {
+        // Use title from body if provided, otherwise use original filename
+        const title = req.body.titles && req.body.titles[index] ? req.body.titles[index] : null;
+        return await uploadToSupabase(file, title, userId, 'photos', req.supabase);
+      });
+      
+      const uploadResults = await Promise.all(uploadPromises);
+      
+      const uploadedFiles = uploadResults.map(uploadResult => ({
+        id: uploadResult.fileName, // Use fileName as id for consistency
+        name: uploadResult.fileName,
+        size: uploadResult.fileSize,
+        sizeFormatted: uploadResult.fileSizeFormatted,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        type: 'photo'
+      }));
       
       res.status(201).json({
         success: true,
-        message: 'Photo uploaded successfully',
-        data: {
-          id: uploadResult.fileName, // Use fileName as id for consistency
-          name: uploadResult.fileName,
-          size: uploadResult.fileSize,
-          sizeFormatted: uploadResult.fileSizeFormatted,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          type: 'photo'
-        }
+        message: `${uploadedFiles.length} photo(s) uploaded successfully`,
+        data: uploadedFiles,
+        count: uploadedFiles.length
       });
     } catch (error) {
       console.error('Photo upload error:', error);
@@ -436,6 +498,12 @@ const uploadPhoto = [
   // Error handling middleware for multer
   (error, req, res, next) => {
     console.error('Multer error:', error);
+    console.error('Multer error details:', {
+      code: error.code,
+      field: error.field,
+      message: error.message,
+      stack: error.stack
+    });
     if (error instanceof multer.MulterError) {
       return res.status(400).json({
         success: false,
@@ -564,8 +632,8 @@ export default {
   getPhotos,
   getDocument,
   getPhoto,
-  uploadDocument,
-  uploadPhoto,
+  uploadDocuments,
+  uploadPhotos,
   deleteDocument,
   deletePhoto,
   // Export multer middleware for use in routes if needed

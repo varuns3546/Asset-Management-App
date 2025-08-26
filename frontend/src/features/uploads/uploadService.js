@@ -3,7 +3,7 @@ import {API_BASE_URL} from '@env'
 //const API_URL = API_BASE_URL+'/api/entries/'
 const API_URL = `${API_BASE_URL}/api/uploads/`
 
-const uploadPhoto = async (photoData, token) => {
+const uploadPhotos = async (photoData, token) => {
     const config = {
         headers: {
             Authorization: `Bearer ${token}`,
@@ -15,7 +15,7 @@ const uploadPhoto = async (photoData, token) => {
     return response.data.data || response.data
 }
 
-const uploadDocument = async (documentData, token) => {
+const uploadDocuments = async (documentData, token) => {
     const config = {
         headers: {
             Authorization: `Bearer ${token}`,
@@ -92,8 +92,8 @@ const uploadService = {
     getPhotos,
     getDocument,
     getPhoto,
-    uploadDocument,
-    uploadPhoto,
+    uploadDocuments,
+    uploadPhotos,
     deleteDocument,
     deletePhoto
 }
