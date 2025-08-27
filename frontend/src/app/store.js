@@ -3,6 +3,7 @@ import authReducer from '../features/auth/authSlice'
 import entryReducer from '../features/entries/entrySlice'
 import uploadReducer from '../features/uploads/uploadSlice'
 import mapReducer from '../features/maps/mapSlice'
+import geopackageReducer from '../features/geopackage/geopackageSlice'
 
 export const store = configureStore({
     reducer: {
@@ -10,6 +11,7 @@ export const store = configureStore({
         entries: entryReducer,
         uploads: uploadReducer,
         maps: mapReducer,
+        geopackage: geopackageReducer,
     },
 })
 

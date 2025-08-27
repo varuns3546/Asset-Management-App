@@ -63,15 +63,6 @@ const upload = multer({
   }
 });
 
-// Debug multer configuration
-console.log('Multer configuration:', {
-  storage: storage.name || 'memoryStorage',
-  fileFilter: fileFilter.name || 'anonymous',
-  limits: {
-    fileSize: '50MB'
-  }
-});
-
 const formatFileSize = (bytes) => {
   if (bytes === 0) return '0 KB';
   

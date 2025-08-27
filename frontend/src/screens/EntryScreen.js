@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import {ScrollView, View, Text, SafeAreaView} from 'react-native'
+import {ScrollView, View, Text, SafeAreaView, TouchableOpacity} from 'react-native'
 import {useSelector, useDispatch} from 'react-redux'
 import EntryForm from '../components/EntryForm'
 import EntryItem from '../components/EntryItem'
@@ -55,9 +55,17 @@ const EntryScreen = ({navigation}) => {
                     <View style={screenStyles.entryScreen.section}>
                         <View style={screenStyles.entryScreen.sectionHeader}>
                             <Text style={screenStyles.entryScreen.sectionTitle}>Entries</Text>
-                            {entries?.length > 0 && (
-                                <Text style={screenStyles.entryScreen.entryCount}>{entries.length} entries</Text>
-                            )}
+                            <View style={screenStyles.entryScreen.sectionHeaderRight}>
+                                {entries?.length > 0 && (
+                                    <Text style={screenStyles.entryScreen.entryCount}>{entries.length} entries</Text>
+                                )}
+                                <TouchableOpacity 
+                                    style={screenStyles.entryScreen.exportButton}
+                                    onPress={() => navigation.navigate('Export')}
+                                >
+                                    <Text style={screenStyles.entryScreen.exportButtonText}>📦 Export</Text>
+                                </TouchableOpacity>
+                            </View>
                         </View>
                         
                        {entries?.length > 0 ? (

@@ -159,6 +159,11 @@ const screenStyles = StyleSheet.create({
       alignItems: 'center',
       marginBottom: 15,
     },
+    sectionHeaderRight: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
     sectionTitle: {
       fontSize: 20,
       fontWeight: '700',
@@ -169,6 +174,17 @@ const screenStyles = StyleSheet.create({
       fontSize: 14,
       color: commonStyles.colors.text.secondary,
       fontWeight: '500',
+    },
+    exportButton: {
+      backgroundColor: commonStyles.colors.primary,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 6,
+    },
+    exportButtonText: {
+      color: commonStyles.colors.white,
+      fontSize: 12,
+      fontWeight: '600',
     },
     formContainer: {
       backgroundColor: commonStyles.colors.white,
@@ -428,6 +444,20 @@ const screenStyles = StyleSheet.create({
     },
     buttonText: {
       ...commonStyles.buttonText.primary,
+    },
+  },
+
+  // GeoPackageScreen styles
+  geopackageScreen: {
+    container: {
+      flex: 1,
+      backgroundColor: commonStyles.colors.background,
+    },
+    scrollView: {
+      flex: 1,
+    },
+    content: {
+      paddingBottom: 20,
     },
   },
 });

@@ -311,6 +311,114 @@ const componentStyles = StyleSheet.create({
       fontWeight: '600',
     },
   },
+
+  // GeoPackage Export component styles
+  geopackageExport: {
+    container: {
+      backgroundColor: commonStyles.colors.white,
+      borderRadius: 12,
+      padding: 20,
+      margin: 16,
+      ...commonStyles.shadows.medium,
+    },
+    title: {
+      fontSize: 24,
+      fontWeight: 'bold',
+      color: commonStyles.colors.text.primary,
+      marginBottom: 20,
+      textAlign: 'center',
+    },
+    statsSection: {
+      marginBottom: 24,
+      padding: 16,
+      backgroundColor: commonStyles.colors.gray.light,
+      borderRadius: 8,
+    },
+    statsHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 12,
+    },
+    statsTitle: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: commonStyles.colors.text.primary,
+    },
+    refreshButton: {
+      backgroundColor: commonStyles.colors.primary,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 6,
+    },
+    refreshButtonText: {
+      color: commonStyles.colors.white,
+      fontSize: 12,
+      fontWeight: '600',
+    },
+    statsText: {
+      fontSize: 16,
+      color: commonStyles.colors.text.secondary,
+      marginBottom: 8,
+    },
+    totalText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: commonStyles.colors.primary,
+    },
+    exportSection: {
+      marginBottom: 24,
+    },
+    sectionTitle: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: commonStyles.colors.text.primary,
+      marginBottom: 12,
+    },
+    description: {
+      fontSize: 14,
+      color: commonStyles.colors.text.secondary,
+      lineHeight: 20,
+      marginBottom: 16,
+    },
+    exportButton: {
+      backgroundColor: commonStyles.colors.primary,
+      paddingVertical: 16,
+      borderRadius: 8,
+      alignItems: 'center',
+      marginBottom: 12,
+    },
+    disabledButton: {
+      backgroundColor: commonStyles.colors.gray.medium,
+    },
+    exportButtonText: {
+      color: commonStyles.colors.white,
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    loadingText: {
+      fontSize: 14,
+      color: commonStyles.colors.text.secondary,
+      textAlign: 'center',
+      fontStyle: 'italic',
+    },
+    infoSection: {
+      padding: 16,
+      backgroundColor: commonStyles.colors.gray.light,
+      borderRadius: 8,
+    },
+    infoTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: commonStyles.colors.text.primary,
+      marginBottom: 8,
+    },
+    infoText: {
+      fontSize: 14,
+      color: commonStyles.colors.text.secondary,
+      lineHeight: 20,
+    },
+  },
 });
 
 export default componentStyles; 

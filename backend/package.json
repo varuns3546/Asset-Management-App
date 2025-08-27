@@ -12,9 +12,11 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@ngageoint/geopackage": "^4.2.6",
     "@supabase/supabase-js": "^2.52.1",
     "base64-arraybuffer": "^1.0.2",
     "bcrypt": "^6.0.0",
+    "better-sqlite3": "^12.2.0",
     "body-parser": "^2.2.0",
     "consolidate": "^0.16.0",
     "cors": "^2.8.5",
@@ -26,6 +28,7 @@
     "multer": "^2.0.2",
     "pg": "^8.16.3",
     "postgres": "^3.4.7",
+    "sqlite3": "^5.1.7",
     "uuidv4": "^6.2.13"
   },
   "devDependencies": {

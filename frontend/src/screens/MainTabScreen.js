@@ -4,6 +4,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import EntryScreen from './EntryScreen';
 import UploadScreen from './UploadScreen';
 import MapScreen from './MapScreen';
+import GeoPackageScreen from './GeoPackageScreen';
 import { Text } from 'react-native';
 
 const Tab = createBottomTabNavigator();
@@ -21,6 +22,8 @@ const MainTabScreen = ({ navigation }) => {
             iconName = focused ? '☁️' : '☁️';
           } else if (route.name === 'Map') {
             iconName = focused ? '🗺️' : '🗺️';
+          } else if (route.name === 'Export') {
+            iconName = focused ? '📦' : '📦';
           }
 
           return <Text style={{ fontSize: size, color: color }}>{iconName}</Text>;
@@ -60,6 +63,14 @@ const MainTabScreen = ({ navigation }) => {
         options={{
           title: 'Upload',
           tabBarLabel: 'Upload',
+        }}
+      />
+      <Tab.Screen 
+        name="Export" 
+        component={GeoPackageScreen}
+        options={{
+          title: 'Export Data',
+          tabBarLabel: 'Export',
         }}
       />
     </Tab.Navigator>
