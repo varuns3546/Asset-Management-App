@@ -77,7 +77,7 @@ const formatFileSize = (bytes) => {
 };
 
 // Helper function to upload file to Supabase
-const uploadToSupabase = async (file, title, userId, folder = 'uploads', supabaseClient) => {
+const uploadToSupabase = async (file, title, projectId, folder = 'uploads', supabaseClient) => {
   try {
     // Convert buffer to base64 then to ArrayBuffer
     const fileBase64 = decode(file.buffer.toString('base64'));
@@ -97,7 +97,7 @@ const uploadToSupabase = async (file, title, userId, folder = 'uploads', supabas
     }
     
     const fileName = `${timestamp}-${baseFileName}`;
-    const filePath = `${userId}/${folder}/${fileName}`;
+    const filePath = `${projectId}/${folder}/${fileName}`;
     
     // Upload to Supabase Storage using authenticated client
     const { data, error } = await supabaseClient.storage
@@ -127,15 +127,37 @@ const uploadToSupabase = async (file, title, userId, folder = 'uploads', supabas
   }
 };
 
-// Get all documents for the authenticated user
+// Get all documents for the specified project
 const getDocuments = asyncHandler(async (req, res) => {
   try {
-    const userId = req.user.id;
+    const { project_id } = req.query;
+    
+    if (!project_id) {
+      return res.status(400).json({
+        success: false,
+        error: 'Project ID is required'
+      });
+    }
+
+    // Verify the project belongs to the authenticated user
+    const { data: project, error: projectError } = await req.supabase
+      .from('projects')
+      .select('id')
+      .eq('id', project_id)
+      .eq('user_id', req.user.id)
+      .single();
+
+    if (projectError || !project) {
+      return res.status(404).json({
+        success: false,
+        error: 'Project not found or access denied'
+      });
+    }
     
     // List files in the documents folder
     const { data, error } = await req.supabase.storage
       .from('uploads')
-      .list(`${userId}/documents`, {
+      .list(`${project_id}/documents`, {
         limit: 100,
         offset: 0
       });
@@ -175,15 +197,37 @@ const getDocuments = asyncHandler(async (req, res) => {
   }
 });
 
-// Get all photos for the authenticated user
+// Get all photos for the specified project
 const getPhotos = asyncHandler(async (req, res) => {
   try {
-    const userId = req.user.id;
+    const { project_id } = req.query;
+    
+    if (!project_id) {
+      return res.status(400).json({
+        success: false,
+        error: 'Project ID is required'
+      });
+    }
+
+    // Verify the project belongs to the authenticated user
+    const { data: project, error: projectError } = await req.supabase
+      .from('projects')
+      .select('id')
+      .eq('id', project_id)
+      .eq('user_id', req.user.id)
+      .single();
+
+    if (projectError || !project) {
+      return res.status(404).json({
+        success: false,
+        error: 'Project not found or access denied'
+      });
+    }
     
     // List files in the photos folder
     const { data, error } = await req.supabase.storage
       .from('uploads')
-      .list(`${userId}/photos`, {
+      .list(`${project_id}/photos`, {
         limit: 100,
         offset: 0
       });
@@ -227,12 +271,34 @@ const getPhotos = asyncHandler(async (req, res) => {
 const getDocument = asyncHandler(async (req, res) => {
   try {
     const { fileName } = req.params; // This will be just the filename
-    const userId = req.user.id;
+    const { project_id } = req.query;
+    
+    if (!project_id) {
+      return res.status(400).json({
+        success: false,
+        error: 'Project ID is required'
+      });
+    }
+
+    // Verify the project belongs to the authenticated user
+    const { data: project, error: projectError } = await req.supabase
+      .from('projects')
+      .select('id')
+      .eq('id', project_id)
+      .eq('user_id', req.user.id)
+      .single();
+
+    if (projectError || !project) {
+      return res.status(404).json({
+        success: false,
+        error: 'Project not found or access denied'
+      });
+    }
     
     // Get file from documents folder
     const { data, error } = await req.supabase.storage
       .from('uploads')
-      .list(`${userId}/documents`, {
+      .list(`${project_id}/documents`, {
         limit: 100,
         offset: 0
       });
@@ -251,7 +317,7 @@ const getDocument = asyncHandler(async (req, res) => {
     }
     
     const fileSize = file.metadata?.size || 0;
-    const filePath = `${userId}/documents/${file.name}`;
+    const filePath = `${project_id}/documents/${file.name}`;
     
     res.status(200).json({
       success: true,
@@ -280,12 +346,34 @@ const getDocument = asyncHandler(async (req, res) => {
 const getPhoto = asyncHandler(async (req, res) => {
   try {
     const { fileName } = req.params; // This will be just the filename
-    const userId = req.user.id;
+    const { project_id } = req.query;
+    
+    if (!project_id) {
+      return res.status(400).json({
+        success: false,
+        error: 'Project ID is required'
+      });
+    }
+
+    // Verify the project belongs to the authenticated user
+    const { data: project, error: projectError } = await req.supabase
+      .from('projects')
+      .select('id')
+      .eq('id', project_id)
+      .eq('user_id', req.user.id)
+      .single();
+
+    if (projectError || !project) {
+      return res.status(404).json({
+        success: false,
+        error: 'Project not found or access denied'
+      });
+    }
     
     // Get file from photos folder
     const { data, error } = await req.supabase.storage
       .from('uploads')
-      .list(`${userId}/photos`, {
+      .list(`${project_id}/photos`, {
         limit: 100,
         offset: 0
       });
@@ -304,7 +392,7 @@ const getPhoto = asyncHandler(async (req, res) => {
     }
     
     const fileSize = file.metadata?.size || 0;
-    const filePath = `${userId}/photos/${file.name}`;
+    const filePath = `${project_id}/photos/${file.name}`;
     
     res.status(200).json({
       success: true,
@@ -351,12 +439,35 @@ const uploadDocuments = [
           message: 'No document files provided'
         });
       }
+
+      const { project_id } = req.body;
       
-      const userId = req.user.id;
+      if (!project_id) {
+        return res.status(400).json({
+          success: false,
+          error: 'Project ID is required'
+        });
+      }
+
+      // Verify the project belongs to the authenticated user
+      const { data: project, error: projectError } = await req.supabase
+        .from('projects')
+        .select('id')
+        .eq('id', project_id)
+        .eq('user_id', req.user.id)
+        .single();
+
+      if (projectError || !project) {
+        return res.status(404).json({
+          success: false,
+          error: 'Project not found or access denied'
+        });
+      }
+      
       const uploadPromises = req.files.map(async (file, index) => {
         // Use title from body if provided, otherwise use original filename
         const title = req.body.titles && req.body.titles[index] ? req.body.titles[index] : null;
-        return await uploadToSupabase(file, title, userId, 'documents', req.supabase);
+        return await uploadToSupabase(file, title, project_id, 'documents', req.supabase);
       });
       
       const uploadResults = await Promise.all(uploadPromises);
@@ -451,12 +562,35 @@ const uploadPhotos = [
           message: 'No photo files provided'
         });
       }
+
+      const { project_id } = req.body;
       
-      const userId = req.user.id;
+      if (!project_id) {
+        return res.status(400).json({
+          success: false,
+          error: 'Project ID is required'
+        });
+      }
+
+      // Verify the project belongs to the authenticated user
+      const { data: project, error: projectError } = await req.supabase
+        .from('projects')
+        .select('id')
+        .eq('id', project_id)
+        .eq('user_id', req.user.id)
+        .single();
+
+      if (projectError || !project) {
+        return res.status(404).json({
+          success: false,
+          error: 'Project not found or access denied'
+        });
+      }
+      
       const uploadPromises = req.files.map(async (file, index) => {
         // Use title from body if provided, otherwise use original filename
         const title = req.body.titles && req.body.titles[index] ? req.body.titles[index] : null;
-        return await uploadToSupabase(file, title, userId, 'photos', req.supabase);
+        return await uploadToSupabase(file, title, project_id, 'photos', req.supabase);
       });
       
       const uploadResults = await Promise.all(uploadPromises);
@@ -514,12 +648,34 @@ const uploadPhotos = [
 const deleteDocument = asyncHandler(async (req, res) => {
   try {
     const { fileName } = req.params; // This will be just the filename
-    const userId = req.user.id;
+    const { project_id } = req.query;
+    
+    if (!project_id) {
+      return res.status(400).json({
+        success: false,
+        error: 'Project ID is required'
+      });
+    }
+
+    // Verify the project belongs to the authenticated user
+    const { data: project, error: projectError } = await req.supabase
+      .from('projects')
+      .select('id')
+      .eq('id', project_id)
+      .eq('user_id', req.user.id)
+      .single();
+
+    if (projectError || !project) {
+      return res.status(404).json({
+        success: false,
+        error: 'Project not found or access denied'
+      });
+    }
     
     // Get file from documents folder
     const { data, error } = await req.supabase.storage
       .from('uploads')
-      .list(`${userId}/documents`, {
+      .list(`${project_id}/documents`, {
         limit: 100,
         offset: 0
       });
@@ -538,7 +694,7 @@ const deleteDocument = asyncHandler(async (req, res) => {
     }
     
     // Delete the file using the full path
-    const filePath = `${userId}/documents/${file.name}`;
+    const filePath = `${project_id}/documents/${file.name}`;
     const { error: deleteError } = await req.supabase.storage
       .from('uploads')
       .remove([filePath]);
@@ -568,12 +724,34 @@ const deleteDocument = asyncHandler(async (req, res) => {
 const deletePhoto = asyncHandler(async (req, res) => {
   try {
     const { fileName } = req.params; // This will be just the filename
-    const userId = req.user.id;
+    const { project_id } = req.query;
+    
+    if (!project_id) {
+      return res.status(400).json({
+        success: false,
+        error: 'Project ID is required'
+      });
+    }
+
+    // Verify the project belongs to the authenticated user
+    const { data: project, error: projectError } = await req.supabase
+      .from('projects')
+      .select('id')
+      .eq('id', project_id)
+      .eq('user_id', req.user.id)
+      .single();
+
+    if (projectError || !project) {
+      return res.status(404).json({
+        success: false,
+        error: 'Project not found or access denied'
+      });
+    }
     
     // Get file from photos folder
     const { data, error } = await req.supabase.storage
       .from('uploads')
-      .list(`${userId}/photos`, {
+      .list(`${project_id}/photos`, {
         limit: 100,
         offset: 0
       });
@@ -592,7 +770,7 @@ const deletePhoto = asyncHandler(async (req, res) => {
     }
     
     // Delete the file using the full path
-    const filePath = `${userId}/photos/${file.name}`;
+    const filePath = `${project_id}/photos/${file.name}`;
     const { error: deleteError } = await req.supabase.storage
       .from('uploads')
       .remove([filePath]);

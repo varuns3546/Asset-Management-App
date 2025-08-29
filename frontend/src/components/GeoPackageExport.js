@@ -71,21 +71,6 @@ const GeoPackageExport = () => {
       return;
     }
 
-    // First, let's test a simple download
-    if (Platform.OS === 'web') {
-      console.log('Testing simple download...');
-      const testBlob = new Blob(['{"test": "data"}'], { type: 'application/geopackage+sqlite3' });
-      const url = window.URL.createObjectURL(testBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = 'test.gpkg';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      console.log('Test download completed');
-    }
-
     // Start export immediately
     console.log('Starting export...');
     dispatch(exportGeoPackage());

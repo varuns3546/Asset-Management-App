@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import bodyParser from 'body-parser'
 import userRoutes from "./routes/userRoutes.js";
+import projectRoutes from './routes/projectRoutes.js'
 import entryRoutes from './routes/entryRoutes.js'
 import uploadRoutes from './routes/uploadRoutes.js'
 import mapRoutes from './routes/mapRoutes.js'
@@ -16,6 +17,7 @@ app.use(bodyParser.json()); // Parse JSON bodies
 app.use(bodyParser.urlencoded({ extended: true })); // Parse URL-encoded forms
 
 app.use("/api/users", userRoutes);
+app.use('/api/projects', projectRoutes);
 app.use('/api/entries', entryRoutes);
 app.use('/api/uploads', uploadRoutes)
 app.use('/api/maps', mapRoutes)

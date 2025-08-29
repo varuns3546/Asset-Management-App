@@ -419,6 +419,203 @@ const componentStyles = StyleSheet.create({
       lineHeight: 20,
     },
   },
+
+  // ProjectNavbar component styles
+  projectNavbar: {
+    container: {
+      backgroundColor: commonStyles.colors.white,
+      borderBottomWidth: 1,
+      borderBottomColor: commonStyles.colors.gray.light,
+      ...commonStyles.shadows.small,
+    },
+    collapsedHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+    },
+    expandedContent: {
+      paddingHorizontal: 16,
+      paddingBottom: 12,
+      borderTopWidth: 1,
+      borderTopColor: commonStyles.colors.gray.light,
+    },
+    currentProject: {
+      flex: 1,
+    },
+    currentProjectLabel: {
+      fontSize: 12,
+      color: commonStyles.colors.text.light,
+      marginBottom: 4,
+    },
+    currentProjectName: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      color: commonStyles.colors.text.primary,
+    },
+    toggleButton: {
+      backgroundColor: commonStyles.colors.gray.light,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: 6,
+      marginLeft: 12,
+    },
+    toggleButtonText: {
+      fontSize: 16,
+      color: commonStyles.colors.text.primary,
+      fontWeight: '600',
+    },
+    actions: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      gap: 12,
+    },
+    createButton: {
+      flex: 1,
+      backgroundColor: commonStyles.colors.primary,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      borderRadius: 8,
+      alignItems: 'center',
+    },
+    createButtonText: {
+      color: commonStyles.colors.white,
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    openButton: {
+      flex: 1,
+      backgroundColor: commonStyles.colors.secondary,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      borderRadius: 8,
+      alignItems: 'center',
+    },
+    openButtonText: {
+      color: commonStyles.colors.white,
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 20,
+    },
+    modalContent: {
+      backgroundColor: commonStyles.colors.white,
+      borderRadius: 12,
+      padding: 24,
+      width: '100%',
+      maxWidth: 400,
+      maxHeight: '80%',
+    },
+    modalTitle: {
+      fontSize: 20,
+      fontWeight: 'bold',
+      color: commonStyles.colors.text.primary,
+      marginBottom: 20,
+      textAlign: 'center',
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: commonStyles.colors.gray.medium,
+      borderRadius: 8,
+      padding: 12,
+      fontSize: 16,
+      marginBottom: 16,
+      backgroundColor: commonStyles.colors.white,
+    },
+    textArea: {
+      height: 80,
+      textAlignVertical: 'top',
+    },
+    modalActions: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      gap: 12,
+    },
+    cancelButton: {
+      flex: 1,
+      backgroundColor: commonStyles.colors.gray.medium,
+      paddingVertical: 12,
+      borderRadius: 8,
+      alignItems: 'center',
+    },
+    cancelButtonText: {
+      color: commonStyles.colors.text.primary,
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    confirmButton: {
+      flex: 1,
+      backgroundColor: commonStyles.colors.primary,
+      paddingVertical: 12,
+      borderRadius: 8,
+      alignItems: 'center',
+    },
+    confirmButtonText: {
+      color: commonStyles.colors.white,
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    projectList: {
+      maxHeight: 300,
+      marginBottom: 20,
+    },
+    projectItem: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: 16,
+      borderWidth: 1,
+      borderColor: commonStyles.colors.gray.light,
+      borderRadius: 8,
+      marginBottom: 8,
+      backgroundColor: commonStyles.colors.white,
+    },
+    projectItemActive: {
+      borderColor: commonStyles.colors.primary,
+      backgroundColor: commonStyles.colors.primary + '10',
+    },
+    projectInfo: {
+      flex: 1,
+    },
+    projectName: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: commonStyles.colors.text.primary,
+      marginBottom: 4,
+    },
+    projectDescription: {
+      fontSize: 14,
+      color: commonStyles.colors.text.secondary,
+      marginBottom: 4,
+    },
+    projectDate: {
+      fontSize: 12,
+      color: commonStyles.colors.text.light,
+    },
+    deleteButton: {
+      padding: 8,
+    },
+    deleteButtonText: {
+      fontSize: 18,
+    },
+    closeButton: {
+      backgroundColor: commonStyles.colors.gray.medium,
+      paddingVertical: 12,
+      borderRadius: 8,
+      alignItems: 'center',
+    },
+    closeButtonText: {
+      color: commonStyles.colors.text.primary,
+      fontSize: 16,
+      fontWeight: '600',
+    },
+  },
 });
 
 export default componentStyles; 

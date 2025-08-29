@@ -12,7 +12,6 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@ngageoint/geopackage": "^4.2.6",
     "@supabase/supabase-js": "^2.52.1",
     "base64-arraybuffer": "^1.0.2",
     "bcrypt": "^6.0.0",
