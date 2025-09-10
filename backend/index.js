@@ -5,6 +5,7 @@ import bodyParser from 'body-parser'
 
 import userRoutes from './routes/userRoutes.js'
 import hierarchyRoutes from './routes/hierarchyRoutes.js'
+import projectRoutes from './routes/projectRoutes.js'
 
 dotenv.config();
 
@@ -15,6 +16,7 @@ app.use(bodyParser.urlencoded({ extended: true })); // Parse URL-encoded forms
 
 app.use('/api/users', userRoutes);
 app.use('/api/hierarchies', hierarchyRoutes);
+app.use('/api/projects', projectRoutes);
 app.get("/", (req, res) => {
   res.send("API is running");
 });
