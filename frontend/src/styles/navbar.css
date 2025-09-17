@@ -1,0 +1,39 @@
+.container{
+    display: flex;
+    flex-direction: row;
+    
+}
+
+.button{
+   
+}
+
+.button:hover{
+   
+   
+}
+
+.button:active{
+   
+}
+
+.button:focus{
+  
+}
+
+/* Specific styles for Share and Logout buttons */
+.share-button, .logout-button {
+    
+}
+
+.share-button:hover, .logout-button:hover {
+    
+}
+
+.logout-button {
+    
+}
+
+.logout-button:hover {
+    
+}

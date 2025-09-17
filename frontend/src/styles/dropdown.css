@@ -1,0 +1,61 @@
+.container{
+   position: relative;
+   display: inline-block;
+}
+
+.button{
+   
+}
+
+.button:hover{
+   
+}
+
+.button:active{
+    
+}
+
+.button:focus{
+  
+}
+
+/* Specific styles for Share and Logout buttons */
+.share-button, .logout-button {
+
+   
+}
+
+.share-button:hover, .logout-button:hover {
+  
+}
+
+.logout-button {
+    
+}
+
+.logout-button:hover {
+   
+}
+
+.options{
+  position: absolute;
+  top: 100%;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 100%;
+  z-index: 1000;
+}
+
+.options button{
+
+}
+
+.options button:hover{
+}
+
+.options button:active{
+}
+
+.options button:not(:last-child){
+}              
