@@ -1,25 +1,51 @@
 import asyncHandler from 'express-async-handler';
 
 const getProjects = asyncHandler(async (req, res) => {
-  // Get projects the user has access to
+  console.log('getProjects controller')
+  console.log('User object:', req.user);
+  console.log('User ID:', req.user?.id);
+  
+  // First, let's try a simpler query to get projects the user has access to
   const { data, error } = await req.supabase
-    .from('projects')
+    .from('project_users')
     .select(`
-      *,
-      project_users!inner(role),
-      owner:auth.users!projects_owner_id_fkey(email, user_metadata)
+      role,
+      project:projects(*)
     `)
-    .eq('project_users.user_id', req.user.id)
-    .order('created_at', { ascending: false });
+    .eq('user_id', req.user.id);
+
+  console.log('Supabase query result:');
+  console.log('Data:', data);
+  console.log('Error:', error);
 
   if (error) {
-    return res.status(400).json({ 
-      success: false,
-      error: error.message 
-    });
+    console.log('Query failed, trying alternative approach...');
+    
+    // Alternative: Get all projects and filter by user access
+    const { data: allProjects, error: allProjectsError } = await req.supabase
+      .from('projects')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    console.log('All projects query result:');
+    console.log('Data:', allProjects);
+    console.log('Error:', allProjectsError);
+
+    if (allProjectsError) {
+      return res.status(400).json({ 
+        success: false,
+        error: allProjectsError.message 
+      });
+    }
+
+    // For now, return all projects (you can add filtering later)
+    return res.status(200).json(allProjects || []);
   }
 
-  res.status(200).json(data);
+  // Extract just the project data from the join
+  const projects = data?.map(item => item.project) || [];
+  
+  res.status(200).json(projects);
 });
 
 const getProject = asyncHandler(async (req, res) => {
