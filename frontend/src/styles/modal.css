@@ -1,42 +1,44 @@
-.modal-overlay {
+.overlay {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(0, 0, 0, 0.7); /* Made darker for better visibility */
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 1000;
+    z-index: 9999; /* Increased z-index */
 }
 
-.modal-content {
+.content {
     background: white;
     border-radius: 8px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3); /* Stronger shadow */
     max-width: 600px;
     width: 90%;
     max-height: 80vh;
     overflow-y: auto;
+    border: 2px solid #3b82f6; /* Added border for visibility */
 }
 
-.modal-header {
+.header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 20px 24px;
     border-bottom: 1px solid #e5e7eb;
+    background-color: #f8fafc; /* Added background color */
 }
 
-.modal-title {
+.title {
     margin: 0;
     font-size: 1.5rem;
     font-weight: 600;
     color: #1f2937;
 }
 
-.modal-close-btn {
+.close-btn {
     background: none;
     border: none;
     font-size: 1.5rem;
@@ -47,11 +49,12 @@
     transition: background-color 0.2s;
 }
 
-.modal-close-btn:hover {
+.close-btn:hover {
     background-color: #f3f4f6;
     color: #374151;
 }
 
-.modal-body {
+.body {
     padding: 24px;
+    background-color: white; /* Ensure white background */
 }
