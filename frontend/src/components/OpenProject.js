@@ -7,6 +7,7 @@ const OpenProject = () => {
     const dispatch = useDispatch()
     const [selectedProjectId, setSelectedProjectId] = useState('')
     const [searchTerm, setSearchTerm] = useState('')
+    const [showAdvancedSearch, setShowAdvancedSearch] = useState(false)
     
     const { projects, isLoading, isError, message } = useSelector((state) => state.projects)
     const { user } = useSelector((state) => state.auth)
@@ -51,10 +52,41 @@ const OpenProject = () => {
         dispatch(getProjects())
     }
 
-    // Filter projects based on search term
+    const clearSearch = () => {
+        setSearchTerm('')
+        setSelectedProjectId('')
+    }
+
+    // Enhanced filtering with multiple search criteria
     const filteredProjects = projects.filter(project => {
-        const title = project.title || project.name || ''
-        return title.toLowerCase().includes(searchTerm.toLowerCase())
+        if (!searchTerm) return true
+        
+        const searchLower = searchTerm.toLowerCase()
+        const title = (project.title || project.name || '').toLowerCase()
+        const description = (project.description || '').toLowerCase()
+        
+        // Search in title, name, and description
+        return title.includes(searchLower) || 
+               description.includes(searchLower) ||
+               (project.id && project.id.toLowerCase().includes(searchLower))
+    })
+
+    // Sort projects by relevance (exact matches first, then partial matches)
+    const sortedProjects = filteredProjects.sort((a, b) => {
+        const aTitle = (a.title || a.name || '').toLowerCase()
+        const bTitle = (b.title || b.name || '').toLowerCase()
+        const searchLower = searchTerm.toLowerCase()
+        
+        // Exact match gets highest priority
+        if (aTitle === searchLower && bTitle !== searchLower) return -1
+        if (bTitle === searchLower && aTitle !== searchLower) return 1
+        
+        // Starts with search term gets second priority
+        if (aTitle.startsWith(searchLower) && !bTitle.startsWith(searchLower)) return -1
+        if (bTitle.startsWith(searchLower) && !aTitle.startsWith(searchLower)) return 1
+        
+        // Alphabetical order for the rest
+        return aTitle.localeCompare(bTitle)
     })
 
     if (isLoading) {
@@ -121,20 +153,51 @@ const OpenProject = () => {
 
     return (
         <div>
+            {/* Search Section */}
             <div className="form-group">
                 <label htmlFor="project-search" className="form-label">
                     Search Projects:
                 </label>
-                <input 
-                    type="text" 
-                    id="project-search"
-                    placeholder="Enter project name..."
-                    className="form-input"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                />
+                <div style={{ position: 'relative' }}>
+                    <input 
+                        type="text" 
+                        id="project-search"
+                        placeholder="Search by project name, description, or ID..."
+                        className="form-input"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        style={{ paddingRight: searchTerm ? '40px' : '12px' }}
+                    />
+                    {searchTerm && (
+                        <button
+                            onClick={clearSearch}
+                            style={{
+                                position: 'absolute',
+                                right: '8px',
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                fontSize: '16px',
+                                color: '#6b7280'
+                            }}
+                            title="Clear search"
+                        >
+                            ×
+                        </button>
+                    )}
+                </div>
+                
+                {/* Search Results Info */}
+                {searchTerm && (
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+                        {filteredProjects.length} of {projects.length} projects match "{searchTerm}"
+                    </div>
+                )}
             </div>
             
+            {/* Projects Dropdown */}
             <div className="form-group">
                 <label htmlFor="project-list" className="form-label">
                     Available Projects ({projects.length} total):
@@ -144,21 +207,54 @@ const OpenProject = () => {
                     className="form-select"
                     value={selectedProjectId}
                     onChange={(e) => setSelectedProjectId(e.target.value)}
+                    size={Math.min(sortedProjects.length + 1, 8)} // Show up to 8 options
                 >
                     <option value="">Select a project...</option>
-                    {filteredProjects.length > 0 ? (
-                        filteredProjects.map((project) => (
+                    {sortedProjects.length > 0 ? (
+                        sortedProjects.map((project) => (
                             <option key={project.id || project._id} value={project.id || project._id}>
                                 {project.title || project.name || `Project ${project.id || project._id}`}
+                                {project.description && ` - ${project.description.substring(0, 50)}${project.description.length > 50 ? '...' : ''}`}
                             </option>
                         ))
                     ) : (
                         <option value="" disabled>
-                            {projects.length === 0 ? 'No projects found' : 'No projects match your search'}
+                            {projects.length === 0 ? 'No projects found' : `No projects match "${searchTerm}"`}
                         </option>
                     )}
                 </select>
             </div>
+
+            {/* Selected Project Info */}
+            {selectedProjectId && (
+                <div className="form-group">
+                    <div style={{ 
+                        padding: '12px', 
+                        background: '#f0f9ff', 
+                        border: '1px solid #0ea5e9', 
+                        borderRadius: '4px',
+                        fontSize: '14px'
+                    }}>
+                        <strong>Selected Project:</strong>
+                        <div style={{ marginTop: '4px' }}>
+                            {(() => {
+                                const selected = projects.find(p => p.id === selectedProjectId)
+                                return selected ? (
+                                    <>
+                                        <div><strong>Title:</strong> {selected.title || selected.name}</div>
+                                        {selected.description && (
+                                            <div><strong>Description:</strong> {selected.description}</div>
+                                        )}
+                                        {selected.created_at && (
+                                            <div><strong>Created:</strong> {new Date(selected.created_at).toLocaleDateString()}</div>
+                                        )}
+                                    </>
+                                ) : null
+                            })()}
+                        </div>
+                    </div>
+                </div>
+            )}
             
             <div className="button-group">
                 <button className="btn btn-secondary" onClick={handleCancel}>
