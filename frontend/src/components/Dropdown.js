@@ -1,21 +1,32 @@
 import { useNavigate } from 'react-router-dom'
+import React from 'react'
+import OpenProject from './OpenProject'
+import CreateProject from './CreateProject'
 import '../styles/dropdown.css'
 
-const Dropdown = ({title, options, isOpen, onToggle}) => {
+const Dropdown = ({title, options, isOpen, onToggle, onOpenModal}) => {
     const navigate = useNavigate()
     
     const handleOptionClick = (option) => {
-        // Map options to routes based on your available screens
-        const routeMap = {
-            'Asset Hierarchy': '/hierarchies',
-            'Open Project': '/projects',
-            // Add more mappings as needed for other options
+        // Handle modal options only for Projects dropdown
+        if (onOpenModal && (option === 'Open Project' || option === 'Create Project')) {
+            if (option === 'Open Project') {
+                onOpenModal(<OpenProject />, 'Open Project')
+            } else if (option === 'Create Project') {
+                onOpenModal(<CreateProject />, 'Create Project')
+            }
+        } else {
+            // Map other options to routes
+            const routeMap = {
+                'Asset Hierarchy': '/hierarchies',
+                // Add more mappings as needed for other options
+            }
+            
+            if (routeMap[option]) {
+                navigate(routeMap[option])
+            }
         }
-        
-        if (routeMap[option]) {
-            navigate(routeMap[option])
-        }
-        onToggle() // Close dropdown after navigation
+        onToggle() // Close dropdown after action
     }
     
     return (
