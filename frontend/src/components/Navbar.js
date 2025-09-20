@@ -1,10 +1,13 @@
 import { useState, useEffect, useRef } from 'react'
+import { useDispatch } from 'react-redux'
+import { logout } from '../features/auth/authSlice'
 import '../styles/navbar.css'
 import Dropdown from './Dropdown'
 
-const Navbar = () => {
+const Navbar = ({ onOpenModal }) => {
     const [openDropdown, setOpenDropdown] = useState(null)
     const navbarRef = useRef(null)
+    const dispatch = useDispatch()
     
     const toggleDropdown = (dropdownName) => {
         setOpenDropdown(openDropdown === dropdownName ? null : dropdownName)
@@ -29,6 +32,10 @@ const Navbar = () => {
         }
     }, [openDropdown])
     
+    const handleLogout = () => {
+        dispatch(logout())
+    }
+
     return (
         <div className="container" ref={navbarRef}>
             <Dropdown 
@@ -36,6 +43,7 @@ const Navbar = () => {
                 options={['Open Project', 'Create Project']} 
                 isOpen={openDropdown === 'projects'}
                 onToggle={() => toggleDropdown('projects')}
+                onOpenModal={onOpenModal}
             />
             <Dropdown 
                 title="View" 
@@ -62,7 +70,7 @@ const Navbar = () => {
                 onToggle={() => toggleDropdown('generate')}
             />
             <button className="button">Share</button>
-            <button className="button">Logout</button>
+            <button className="button" onClick={handleLogout}>Logout</button>
         </div>
     )
 }
