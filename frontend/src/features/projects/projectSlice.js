@@ -3,6 +3,7 @@ import projectService from './projectService'
 
 const initialState = {
     projects: [],
+    selectedProject: null,
     isError: false,
     isSuccess: false,
     isLoading: false,
@@ -109,7 +110,10 @@ export const projectSlice = createSlice({
     name: 'projects',
     initialState,
     reducers: {
-        reset: (state) => initialState
+        reset: (state) => initialState,
+        setSelectedProject: (state, action) => {
+            state.selectedProject = action.payload
+        }
     },
     extraReducers: (builder) => {
         builder
@@ -181,5 +185,5 @@ export const projectSlice = createSlice({
     }
 })
 
-export const {reset} = projectSlice.actions
+export const {reset, setSelectedProject} = projectSlice.actions
 export default projectSlice.reducer

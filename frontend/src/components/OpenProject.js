@@ -1,9 +1,10 @@
 import '../styles/projectComponents.css'
 import { useEffect, useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
-import { getProjects } from '../features/projects/projectSlice'
+import { getProjects, setSelectedProject } from '../features/projects/projectSlice'
+import { loadUser } from '../features/auth/authSlice'
 
-const OpenProject = () => {
+const OpenProject = ({ onClose }) => {
     const dispatch = useDispatch()
     const [selectedProjectId, setSelectedProjectId] = useState('')
     const [searchTerm, setSearchTerm] = useState('')
@@ -13,10 +14,19 @@ const OpenProject = () => {
     const { user } = useSelector((state) => state.auth)
 
     useEffect(() => {
-        console.log('OpenProject: User state:', user)
-        console.log('OpenProject: Dispatching getProjects')
-        dispatch(getProjects())
+        // Load user from localStorage when component mounts
+        dispatch(loadUser())
     }, [dispatch])
+
+    useEffect(() => {
+        console.log('OpenProject: User state:', user)
+        if (user && user.token) {
+            console.log('OpenProject: Dispatching getProjects')
+            dispatch(getProjects())
+        } else {
+            console.log('OpenProject: No user or token, cannot fetch projects')
+        }
+    }, [dispatch, user])
 
     // Debug logging
     useEffect(() => {
@@ -31,25 +41,36 @@ const OpenProject = () => {
 
     const handleOpenProject = () => {
         if (!selectedProjectId) {
-            alert('Please select a project first')
             return
         }
         
         const selectedProject = projects.find(p => p.id === selectedProjectId)
-        console.log('Opening project:', selectedProject)
+        
+        // Set the selected project in global state
+        dispatch(setSelectedProject(selectedProject))
+        
+        // Close the modal
+        if (onClose) {
+            onClose()
+        }
         
         // TODO: Add logic to actually open the project
-        alert(`Opening project: ${selectedProject?.title || selectedProject?.name}`)
     }
 
     const handleCancel = () => {
         console.log('Cancel clicked')
-        // TODO: Close the modal
+        if (onClose) {
+            onClose()
+        }
     }
 
     const handleRetry = () => {
         console.log('Retrying getProjects')
-        dispatch(getProjects())
+        if (user && user.token) {
+            dispatch(getProjects())
+        } else {
+            console.log('No user token available for retry')
+        }
     }
 
     const clearSearch = () => {
@@ -219,7 +240,9 @@ const OpenProject = () => {
                         ))
                     ) : (
                         <option value="" disabled>
-                            {projects.length === 0 ? 'No projects found' : `No projects match "${searchTerm}"`}
+                            {!user ? 'Please log in first' : 
+                             isError && message.includes('token') ? 'Authentication error - please log in again' :
+                             projects.length === 0 ? 'No projects found' : `No projects match "${searchTerm}"`}
                         </option>
                     )}
                 </select>

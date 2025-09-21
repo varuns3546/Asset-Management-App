@@ -1,62 +1,61 @@
 import axios from 'axios'
 
-const API_URL = `${process.env.API_BASE_URL}/api/hierarchies/`
-
+const API_URL = 'http://localhost:3001/api/hierarchies/'
 // Get user entries
-const getHierarchies = async (token) => {
+const getHierarchies = async (projectId, token) => {
     const config = {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     }
   
-    const response = await axios.get(API_URL, config)
+    const response = await axios.get(`${API_URL}?project_id=${projectId}`, config)
     return response.data
   }
 
   
-const getHierarchy = async (hierarchyId, token) => {
+const getHierarchy = async (hierarchyId, projectId, token) => {
     const config = {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     }
   
-    const response = await axios.get(API_URL + hierarchyId, config)
+    const response = await axios.get(`${API_URL}/${hierarchyId}?project_id=${projectId}`, config);
     return response.data
   }
 
-const createHierarchy = async (hierarchyData, token) => {
+const createHierarchy = async (hierarchyData, projectId, token) => {
   const config = {
     headers: {
       Authorization: `Bearer ${token}`,
     },
   }
 
-  const response = await axios.post(API_URL, hierarchyData, config)
+  const response = await axios.post(`${API_URL}?project_id=${projectId}`, hierarchyData, config);
   return response.data
 }
 
-const updateHierarchy = async (hierarchyId, hierarchyData, token) => {
+const updateHierarchy = async (hierarchyId, projectId, hierarchyData, token) => {
     const config = {
         headers: {
             Authorization: `Bearer ${token}`,
         },
     }
 
-    const response = await axios.put(API_URL + hierarchyId, hierarchyData, config)
+    const response = await axios.put(`${API_URL}/${hierarchyId}?project_id=${projectId}`, hierarchyData, config);
     return response.data
 }
 
 // Delete user entry
-const deleteHierarchy = async (hierarchyId, token) => {
+const deleteHierarchy = async (hierarchyId, projectId, token) => {
     const config = {
         headers: {
             Authorization: `Bearer ${token}`,
         },
     }
 
-    const response = await axios.delete(API_URL + hierarchyId, config)
+    const response = await axios.delete(`${API_URL}/${hierarchyId}?project_id=${projectId}`, config);
     return response.data
 }
 

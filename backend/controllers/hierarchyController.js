@@ -10,34 +10,54 @@ const getHierarchies = asyncHandler(async (req, res) => {
     });
   }
 
-  // Verify the project belongs to the authenticated user
-  const { data: project, error: projectError } = await req.supabase
-    .from('projects')
-    .select('id')
-    .eq('id', project_id)
+  // Verify the user has access to the project through project_users table
+  const { data: projectUser, error: projectUserError } = await req.supabase
+    .from('project_users')
+    .select('id, role')
+    .eq('project_id', project_id)
     .eq('user_id', req.user.id)
     .single();
 
-  if (projectError || !project) {
-    return res.status(404).json({
-      success: false,
-      error: 'Project not found or access denied'
-    });
+  console.log('Project user check:', { project_id, user_id: req.user.id, projectUser, projectUserError });
+
+  // If not found in project_users, check if user is the owner directly
+  if (projectUserError || !projectUser) {
+    console.log('Not found in project_users, checking direct ownership...');
+    const { data: project, error: projectError } = await req.supabase
+      .from('projects')
+      .select('id, owner_id')
+      .eq('id', project_id)
+      .eq('owner_id', req.user.id)
+      .single();
+
+    console.log('Direct ownership check:', { project, projectError });
+
+    if (projectError || !project) {
+      return res.status(404).json({
+        success: false,
+        error: 'Project not found or access denied'
+      });
+    }
   }
 
+  // Query the hierarchies table from the public schema
   const { data, error } = await req.supabase
     .from('hierarchies')
     .select('*')
     .eq('project_id', project_id)
     .order('created_at', { ascending: false });
 
+
+
   if (error) {
+    console.log('Hierarchies query error:', error);
     return res.status(400).json({ 
       success: false,
       error: error.message 
     });
   }
 
+  console.log('Returning hierarchies:', data);
   res.status(200).json(data);
 });
 
@@ -59,19 +79,29 @@ const getHierarchy = asyncHandler(async (req, res) => {
     });
   }
 
-  // Verify the project belongs to the authenticated user
-  const { data: project, error: projectError } = await req.supabase
-    .from('projects')
-    .select('id')
-    .eq('id', project_id)
+  // Verify the user has access to the project through project_users table
+  const { data: projectUser, error: projectUserError } = await req.supabase
+    .from('project_users')
+    .select('id, role')
+    .eq('project_id', project_id)
     .eq('user_id', req.user.id)
     .single();
 
-  if (projectError || !project) {
-    return res.status(404).json({
-      success: false,
-      error: 'Project not found or access denied'
-    });
+  // If not found in project_users, check if user is the owner directly
+  if (projectUserError || !projectUser) {
+    const { data: project, error: projectError } = await req.supabase
+      .from('projects')
+      .select('id, owner_id')
+      .eq('id', project_id)
+      .eq('owner_id', req.user.id)
+      .single();
+
+    if (projectError || !project) {
+      return res.status(404).json({
+        success: false,
+        error: 'Project not found or access denied'
+      });
+    }
   }
 
   const { data, error } = await req.supabase
@@ -109,19 +139,29 @@ const createHierarchy = asyncHandler(async (req, res) => {
     });
   }
 
-  // Verify the project belongs to the authenticated user
-  const { data: project, error: projectError } = await req.supabase
-    .from('projects')
-    .select('id')
-    .eq('id', project_id)
+  // Verify the user has access to the project through project_users table
+  const { data: projectUser, error: projectUserError } = await req.supabase
+    .from('project_users')
+    .select('id, role')
+    .eq('project_id', project_id)
     .eq('user_id', req.user.id)
     .single();
 
-  if (projectError || !project) {
-    return res.status(404).json({
-      success: false,
-      error: 'Project not found or access denied'
-    });
+  // If not found in project_users, check if user is the owner directly
+  if (projectUserError || !projectUser) {
+    const { data: project, error: projectError } = await req.supabase
+      .from('projects')
+      .select('id, owner_id')
+      .eq('id', project_id)
+      .eq('owner_id', req.user.id)
+      .single();
+
+    if (projectError || !project) {
+      return res.status(404).json({
+        success: false,
+        error: 'Project not found or access denied'
+      });
+    }
   }
 
   const { data, error } = await req.supabase
@@ -170,19 +210,29 @@ const updateHierarchy = asyncHandler(async (req, res) => {
     });
   }
 
-  // Verify the project belongs to the authenticated user
-  const { data: project, error: projectError } = await req.supabase
-    .from('projects')
-    .select('id')
-    .eq('id', project_id)
+  // Verify the user has access to the project through project_users table
+  const { data: projectUser, error: projectUserError } = await req.supabase
+    .from('project_users')
+    .select('id, role')
+    .eq('project_id', project_id)
     .eq('user_id', req.user.id)
     .single();
 
-  if (projectError || !project) {
-    return res.status(404).json({
-      success: false,
-      error: 'Project not found or access denied'
-    });
+  // If not found in project_users, check if user is the owner directly
+  if (projectUserError || !projectUser) {
+    const { data: project, error: projectError } = await req.supabase
+      .from('projects')
+      .select('id, owner_id')
+      .eq('id', project_id)
+      .eq('owner_id', req.user.id)
+      .single();
+
+    if (projectError || !project) {
+      return res.status(404).json({
+        success: false,
+        error: 'Project not found or access denied'
+      });
+    }
   }
 
   // Build update object with only provided fields
@@ -226,19 +276,29 @@ const deleteHierarchy = asyncHandler(async (req, res) => {
     });
   }
 
-  // Verify the project belongs to the authenticated user
-  const { data: project, error: projectError } = await req.supabase
-    .from('projects')
-    .select('id')
-    .eq('id', project_id)
+  // Verify the user has access to the project through project_users table
+  const { data: projectUser, error: projectUserError } = await req.supabase
+    .from('project_users')
+    .select('id, role')
+    .eq('project_id', project_id)
     .eq('user_id', req.user.id)
     .single();
 
-  if (projectError || !project) {
-    return res.status(404).json({
-      success: false,
-      error: 'Project not found or access denied'
-    });
+  // If not found in project_users, check if user is the owner directly
+  if (projectUserError || !projectUser) {
+    const { data: project, error: projectError } = await req.supabase
+      .from('projects')
+      .select('id, owner_id')
+      .eq('id', project_id)
+      .eq('owner_id', req.user.id)
+      .single();
+
+    if (projectError || !project) {
+      return res.status(404).json({
+        success: false,
+        error: 'Project not found or access denied'
+      });
+    }
   }
 
   const { error } = await req.supabase

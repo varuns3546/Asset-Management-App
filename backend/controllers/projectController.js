@@ -1,9 +1,6 @@
 import asyncHandler from 'express-async-handler';
 
 const getProjects = asyncHandler(async (req, res) => {
-  console.log('getProjects controller')
-  console.log('User object:', req.user);
-  console.log('User ID:', req.user?.id);
   
   // First, let's try a simpler query to get projects the user has access to
   const { data, error } = await req.supabase

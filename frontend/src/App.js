@@ -1,9 +1,10 @@
 // App.js
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import { useState } from "react";
-import LoginScreen from "./screens/loginScreen";
-import HierarchyScreen from "./screens/hierarchyScreen";
-import RegisterScreen from "./screens/registerScreen";
+import LoginScreen from "./screens/LoginScreen";
+import RegisterScreen from "./screens/RegisterScreen";
+import HomeScreen from "./screens/HomeScreen";
+import HierarchyScreen from "./screens/HierarchyScreen";
 import Navbar from "./components/Navbar";
 import Modal from "./components/Modal";
 
@@ -37,10 +38,11 @@ function AppContent() {
 
   return (
     <>
-      {showNavbar && <Navbar onOpenModal={openModal} />}
+      {showNavbar && <Navbar onOpenModal={openModal} onCloseModal={closeModal} />}
       <Routes>
         <Route path="/" element={<LoginScreen />} />
         <Route path="/register" element={<RegisterScreen />} />
+        <Route path="/home" element={<HomeScreen />} />
         <Route path="/hierarchies" element={<HierarchyScreen />} />
       </Routes>
       
