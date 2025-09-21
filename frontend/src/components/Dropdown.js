@@ -4,7 +4,7 @@ import OpenProject from './OpenProject'
 import CreateProject from './CreateProject'
 import '../styles/dropdown.css'
 
-const Dropdown = ({title, options, isOpen, onToggle, onOpenModal}) => {
+const Dropdown = ({title, options, isOpen, onToggle, onOpenModal, onCloseModal}) => {
     const navigate = useNavigate()
     
     const handleOptionClick = (option) => {
@@ -14,9 +14,9 @@ const Dropdown = ({title, options, isOpen, onToggle, onOpenModal}) => {
         if (onOpenModal && (option === 'Open Project' || option === 'Create Project')) {
             console.log('Opening modal for:', option) // Debug log
             if (option === 'Open Project') {
-                onOpenModal(<OpenProject />, 'Open Project')
+                onOpenModal(<OpenProject onClose={onCloseModal} />, 'Open Project')
             } else if (option === 'Create Project') {
-                onOpenModal(<CreateProject />, 'Create Project')
+                onOpenModal(<CreateProject onClose={onCloseModal} />, 'Create Project')
             }
         } else {
             // Map other options to routes

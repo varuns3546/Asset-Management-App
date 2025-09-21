@@ -2,7 +2,7 @@ import '../styles/projectComponents.css'
 import { createProject } from '../features/projects/projectSlice'
 import { useDispatch } from 'react-redux'
 import { useState } from 'react'
-const CreateProject = () => {
+const CreateProject = ({ onClose }) => {
     const dispatch = useDispatch()
     const [formData, setFormData] = useState({
         title: '',
@@ -20,6 +20,10 @@ const CreateProject = () => {
                 title: '',
                 description: ''
             })
+            // Close the modal after creating project
+            if (onClose) {
+                onClose()
+            }
         }
     }
     return (
@@ -52,7 +56,7 @@ const CreateProject = () => {
                 />
             </div>        
             <div className="button-group">
-                <button className="btn btn-secondary">
+                <button className="btn btn-secondary" onClick={() => onClose && onClose()}>
                     Cancel
                 </button>
                 <button className="btn btn-success" onClick={handleCreateProject}>

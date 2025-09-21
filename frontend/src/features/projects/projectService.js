@@ -1,7 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:3001/api/projects';
-
+const API_URL = 'http://localhost:3001/api/projects/'
 const getProject = async (projectId, token) => {
     const config = {
         headers: {

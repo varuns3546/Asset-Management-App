@@ -1,14 +1,15 @@
 import { useState, useEffect, useRef } from 'react'
 import { useDispatch } from 'react-redux'
+import { useNavigate } from 'react-router-dom'
 import { logout } from '../features/auth/authSlice'
 import '../styles/navbar.css'
 import Dropdown from './Dropdown'
 
-const Navbar = ({ onOpenModal }) => {
+const Navbar = ({ onOpenModal, onCloseModal }) => {
     const [openDropdown, setOpenDropdown] = useState(null)
     const navbarRef = useRef(null)
     const dispatch = useDispatch()
-    
+    const navigate = useNavigate()
     const toggleDropdown = (dropdownName) => {
         setOpenDropdown(openDropdown === dropdownName ? null : dropdownName)
     }
@@ -34,6 +35,7 @@ const Navbar = ({ onOpenModal }) => {
     
     const handleLogout = () => {
         dispatch(logout())
+        navigate('/')
     }
 
     return (
@@ -44,6 +46,7 @@ const Navbar = ({ onOpenModal }) => {
                 isOpen={openDropdown === 'projects'}
                 onToggle={() => toggleDropdown('projects')}
                 onOpenModal={onOpenModal}
+                onCloseModal={onCloseModal}
             />
             <Dropdown 
                 title="View" 

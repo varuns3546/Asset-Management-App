@@ -1,7 +1,6 @@
 import axios from 'axios'
 
-const API_URL = `http://localhost:3001/api/users/`
-// Register user
+const API_URL = 'http://localhost:3001/api/users/'
 const register = async (userData) => {
 
   try {
@@ -9,7 +8,7 @@ const register = async (userData) => {
   
     
     if (response.data) {
-    await localStorage.setItem('user', JSON.stringify(response.data))
+      await localStorage.setItem('user', JSON.stringify(response.data))
     }
     return response.data
   }

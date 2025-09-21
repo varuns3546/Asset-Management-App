@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { register, reset } from '../features/auth/authSlice'
 import { useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
+import Spinner from '../components/Spinner'
 const RegisterScreen = () => {
     const dispatch = useDispatch()
     const navigate = useNavigate()
@@ -13,10 +14,10 @@ const RegisterScreen = () => {
            console.log('error', message) 
         }
         if(isSuccess || user){
-            navigate('/projects')
+            navigate('/home')
         }
         dispatch(reset())
-    }, [user, isError, isSuccess, message, dispatch])
+    }, [user, isError, isSuccess, message, dispatch, navigate])
 
     const [formData, setFormData] = useState({
         firstName: '', 
@@ -99,6 +100,7 @@ const RegisterScreen = () => {
                 />
                 <button type="submit">Register</button>
             </form>
+            {isLoading && <Spinner />}
             <div>Already have an account? <a href="/">Login</a></div>
         </div>
     )

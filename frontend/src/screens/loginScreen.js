@@ -27,11 +27,11 @@ const LoginScreen = () => {
         }
 
         if (isSuccess || user) {
-            navigate('/projects')
+            navigate('/home')
         }
 
         dispatch(reset())
-    }, [user, isError, isSuccess, message, dispatch])
+    }, [user, isError, isSuccess, message, dispatch, navigate])
     const updateField = (field, value) => {
         setFormData(prev => ({
             ...prev,
@@ -65,6 +65,7 @@ const LoginScreen = () => {
                 />
                 <button type="submit">Login</button>
             </form>
+            {isLoading && <Spinner />}
         </div>
         <div>Don't have an account? <a href="/register">Sign up</a></div>
     </div>

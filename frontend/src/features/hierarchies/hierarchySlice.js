@@ -11,10 +11,10 @@ const initialState = {
 // Create new hierarchy
 export const createHierarchy = createAsyncThunk(
   'hierarchies/create',
-  async (hierarchyData, thunkAPI) => {
+  async ({ hierarchyData, projectId }, thunkAPI) => {
     try {
       const token = thunkAPI.getState().auth.user.token
-      return await hierarchyService.createHierarchy(hierarchyData, token)
+      return await hierarchyService.createHierarchy(hierarchyData, projectId, token)
     } catch (error) {
       const message =
         (error.response &&
@@ -29,11 +29,11 @@ export const createHierarchy = createAsyncThunk(
 
 // Get user hierarchies
 export const getHierarchies = createAsyncThunk(
-  'hierarchies/getAll',
-  async (_, thunkAPI) => {
+  'hierarchies/getAll', 
+  async (projectId, thunkAPI) => {
     try {
       const token = thunkAPI.getState().auth.user.token
-      return await hierarchyService.getHierarchies(token)
+      return await hierarchyService.getHierarchies(projectId, token)
     } catch (error) {
       const message =
         (error.response &&
@@ -49,10 +49,10 @@ export const getHierarchies = createAsyncThunk(
 // Delete user hierarchy
 export const deleteHierarchy = createAsyncThunk(
   'hierarchies/delete',
-  async (id, thunkAPI) => {
+  async ({ id, projectId }, thunkAPI) => {
     try {
       const token = thunkAPI.getState().auth.user.token
-      const data = await hierarchyService.deleteHierarchy(id, token)
+      const data = await hierarchyService.deleteHierarchy(id, projectId, token)
       console.log('delete hierarchy result', data)
       return data
     } catch (error) {
