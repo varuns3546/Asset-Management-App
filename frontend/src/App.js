@@ -1,18 +1,46 @@
 // App.js
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { loadUser } from "./features/auth/authSlice";
+import { setSelectedProject } from "./features/projects/projectSlice";
 import LoginScreen from "./screens/LoginScreen";
 import RegisterScreen from "./screens/RegisterScreen";
 import HomeScreen from "./screens/HomeScreen";
 import HierarchyScreen from "./screens/HierarchyScreen";
 import Navbar from "./components/Navbar";
 import Modal from "./components/Modal";
+import "./utils/axiosInterceptor"; // Initialize axios interceptor
 
 
 function AppContent() {
+  const dispatch = useDispatch();
   const location = useLocation();
+  const { user } = useSelector((state) => state.auth);
+  const { selectedProject } = useSelector((state) => state.projects);
+  
   const hideNavbarRoutes = ['/', '/register'];
   const showNavbar = !hideNavbarRoutes.includes(location.pathname);
+  
+  // Load user from localStorage on app start
+  useEffect(() => {
+    dispatch(loadUser());
+  }, [dispatch]);
+  
+  // Load selected project from localStorage when user is loaded
+  useEffect(() => {
+    if (user) {
+      try {
+        const savedProject = localStorage.getItem('selectedProject');
+        if (savedProject) {
+          const project = JSON.parse(savedProject);
+          dispatch(setSelectedProject(project));
+        }
+      } catch (error) {
+        console.error('Error loading selected project:', error);
+      }
+    }
+  }, [user, dispatch]);
   
   const [modalState, setModalState] = useState({
     isOpen: false,

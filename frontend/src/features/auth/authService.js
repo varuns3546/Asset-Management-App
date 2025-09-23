@@ -1,10 +1,10 @@
-import axios from 'axios'
+import api from '../../utils/axiosInterceptor'
 
 const API_URL = 'http://localhost:3001/api/users/'
 const register = async (userData) => {
 
   try {
-    const response = await axios.post(API_URL, userData)
+    const response = await api.post(API_URL, userData)
   
     
     if (response.data) {
@@ -21,12 +21,12 @@ const register = async (userData) => {
 // Login user
 const login = async (userData) => {
 
-  const response = await axios.post(API_URL + 'login', userData)
+  const response = await api.post(API_URL + 'login', userData)
 
   if (response.data) {
     await localStorage.setItem('user', JSON.stringify(response.data))
   }
-
+  console.log('Login response:', response.data)
   return response.data
 }
 
