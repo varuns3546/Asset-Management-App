@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { getHierarchies, createHierarchy, updateHierarchy, deleteHierarchy, reset } from '../features/hierarchies/hierarchySlice';
+import { getHierarchy, updateHierarchy, deleteHierarchy, reset } from '../features/hierarchies/hierarchySlice';
 import { loadUser } from '../features/auth/authSlice';
 import { useNavigate } from 'react-router-dom';
 import HierarchyTree from '../components/HierarchyTree';
@@ -11,8 +11,6 @@ const HierarchyScreen = () => {
     const { selectedProject } = useSelector((state) => state.projects);
     const { user } = useSelector((state) => state.auth);
     const [editingForm, setEditingForm] = useState({
-        title: '',
-        description: '',
         items: []
     });
     const [newItemTitle, setNewItemTitle] = useState('');
@@ -34,7 +32,12 @@ const HierarchyScreen = () => {
 
     useEffect(() => {
         if (selectedProject && user) {
-            dispatch(getHierarchies(selectedProject.id))
+            // Clear form and reset loading flag when switching projects
+            setEditingForm({ items: [] });
+            hasLoadedData.current = false;
+            // Clear Redux state and fetch new hierarchy
+            dispatch(reset());
+            dispatch(getHierarchy(selectedProject.id));
         }
         return () => {
             dispatch(reset())
@@ -60,13 +63,17 @@ const HierarchyScreen = () => {
     // Get the hierarchy items for this project
     const hierarchyItems = hierarchies || [];
 
-    // Auto-populate form when hierarchy data changes (only on initial load)
+    // Update form when hierarchy data changes
     useEffect(() => {
-        if (!hasLoadedData.current) {
+        if (hierarchyItems && Array.isArray(hierarchyItems)) {
             setEditingForm({
-                title: 'Asset Hierarchy',
-                description: 'Hierarchy items for this project',
                 items: hierarchyItems
+            });
+            hasLoadedData.current = true;
+        } else if (hierarchyItems && hierarchyItems.length === 0) {
+            // Handle empty array case
+            setEditingForm({
+                items: []
             });
             hasLoadedData.current = true;
         }
@@ -79,8 +86,6 @@ const HierarchyScreen = () => {
         }
 
         const hierarchyData = {
-            title: editingForm.title,
-            description: editingForm.description,
             items: editingForm.items.map(item => ({
                 id: item.id,
                 title: item.title,
@@ -90,7 +95,6 @@ const HierarchyScreen = () => {
         
         // Always update the hierarchy items
         dispatch(updateHierarchy({ 
-            hierarchyId: 'update',
             projectId: selectedProject.id,
             hierarchyData
         }));

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
-import { createHierarchy } from '../features/hierarchies/hierarchySlice'
+import { updateHierarchy } from '../features/hierarchies/hierarchySlice'
 import '../styles/hierarchyForm.css'
 
 const HierarchyForm = () => {
@@ -10,8 +10,6 @@ const HierarchyForm = () => {
     
     // Form state
     const [formData, setFormData] = useState({
-        title: '',
-        description: '',
         items: []
     })
     
@@ -64,7 +62,7 @@ const HierarchyForm = () => {
     }
     
     
-    const handleCreateHierarchy = (e) => {
+    const handleUpdateHierarchy = (e) => {
         e.preventDefault()
         
         if (!selectedProject) {
@@ -88,7 +86,7 @@ const HierarchyForm = () => {
         
         console.log('Sending hierarchy data:', hierarchyData)
         
-        dispatch(createHierarchy({ 
+        dispatch(updateHierarchy({ 
             hierarchyData, 
             projectId: selectedProject.id 
         }))
@@ -103,37 +101,7 @@ const HierarchyForm = () => {
     
     return (
         <div className="hierarchy-form">
-            <h2>Create New Hierarchy</h2>
-            <form onSubmit={handleCreateHierarchy}>
-                {/* Hierarchy Title */}
-                <div className="form-group">
-                    <label htmlFor="title">Hierarchy Title *</label>
-                    <input
-                        type="text"
-                        id="title"
-                        name="title"
-                        value={formData.title}
-                        onChange={handleInputChange}
-                        placeholder="Enter hierarchy title"
-                        required
-                        className="form-input"
-                    />
-                </div>
-                
-                {/* Hierarchy Description */}
-                <div className="form-group">
-                    <label htmlFor="description">Description</label>
-                    <textarea
-                        id="description"
-                        name="description"
-                        value={formData.description}
-                        onChange={handleInputChange}
-                        placeholder="Enter hierarchy description"
-                        rows="3"
-                        className="form-textarea"
-                    />
-                </div>
-                
+            <form onSubmit={handleUpdateHierarchy}>
                 {/* Add New Item Section */}
                 <div className="add-item-section">
                     <h3>Add Items</h3>
