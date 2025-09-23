@@ -1,7 +1,15 @@
+import { useSelector } from 'react-redux'
+
 const HomeScreen = () => {
+    const { selectedProject } = useSelector((state) => state.projects)
+    
     return (
         <div>
-            <h1>Home</h1>
+            {selectedProject ? (
+                <h1>{selectedProject.title}</h1>
+            ) : (
+                <p>No project selected</p>
+            )}
         </div>
     )
 }

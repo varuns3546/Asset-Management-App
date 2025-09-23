@@ -1,67 +1,33 @@
-import axios from 'axios'
+import api from '../../utils/axiosInterceptor'
 
-const API_URL = 'http://localhost:3001/api/hierarchies/'
-// Get user entries
+const API_URL = 'http://localhost:3001/api/projects/'
+
+// Get hierarchy for a project
 const getHierarchies = async (projectId, token) => {
-    const config = {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
-  
-    const response = await axios.get(`${API_URL}?project_id=${projectId}`, config)
+    const response = await api.get(`${API_URL}${projectId}/hierarchy`)
     return response.data
-  }
+}
 
-  
-const getHierarchy = async (hierarchyId, projectId, token) => {
-    const config = {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
-  
-    const response = await axios.get(`${API_URL}/${hierarchyId}?project_id=${projectId}`, config);
-    return response.data
-  }
-
+// Create hierarchy for a project
 const createHierarchy = async (hierarchyData, projectId, token) => {
-  const config = {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  }
-
-  const response = await axios.post(`${API_URL}?project_id=${projectId}`, hierarchyData, config);
-  return response.data
-}
-
-const updateHierarchy = async (hierarchyId, projectId, hierarchyData, token) => {
-    const config = {
-        headers: {
-            Authorization: `Bearer ${token}`,
-        },
-    }
-
-    const response = await axios.put(`${API_URL}/${hierarchyId}?project_id=${projectId}`, hierarchyData, config);
+    const response = await api.post(`${API_URL}${projectId}/hierarchy`, hierarchyData);
     return response.data
 }
 
-// Delete user entry
-const deleteHierarchy = async (hierarchyId, projectId, token) => {
-    const config = {
-        headers: {
-            Authorization: `Bearer ${token}`,
-        },
-    }
+// Update hierarchy for a project
+const updateHierarchy = async (hierarchyId, projectId, hierarchyData, token) => {
+    const response = await api.put(`${API_URL}${projectId}/hierarchy`, hierarchyData);
+    return response.data
+}
 
-    const response = await axios.delete(`${API_URL}/${hierarchyId}?project_id=${projectId}`, config);
+// Delete hierarchy for a project
+const deleteHierarchy = async (hierarchyId, projectId, token) => {
+    const response = await api.delete(`${API_URL}${projectId}/hierarchy`);
     return response.data
 }
 
 const hierarchyService = {
     getHierarchies,
-    getHierarchy,
     createHierarchy,
     updateHierarchy,
     deleteHierarchy,

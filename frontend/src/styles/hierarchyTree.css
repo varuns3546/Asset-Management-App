@@ -1,0 +1,296 @@
+.hierarchy-tree {
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.tree-controls {
+    background: #f8f9fa;
+    border-bottom: 1px solid #ddd;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.zoom-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.zoom-button {
+    background: #6c757d;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 500;
+    transition: background-color 0.2s;
+    min-width: 32px;
+}
+
+.zoom-button:hover:not(:disabled) {
+    background: #545b62;
+}
+
+.zoom-button:disabled {
+    background: #adb5bd;
+    cursor: not-allowed;
+}
+
+.zoom-level {
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+    min-width: 40px;
+    text-align: center;
+}
+
+.reset-zoom-button {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    transition: background-color 0.2s;
+}
+
+.reset-zoom-button:hover {
+    background: #218838;
+}
+
+.tree-toggle-button {
+    background: #6c757d;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background-color 0.2s;
+    min-width: 40px;
+}
+
+.tree-toggle-button:hover {
+    background: #545b62;
+}
+
+.tree-content {
+    padding: 20px;
+    max-height: 70vh;
+    overflow: auto;
+    position: relative;
+}
+
+.tree-content .horizontal-children {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.tree-node {
+    margin-bottom: 8px;
+}
+
+.horizontal-node {
+    top: 5px;
+    display: inline-block;
+    margin-right: 15px;
+    margin-bottom: 15px;
+    vertical-align: top;
+    position: relative;
+}
+
+/* Vertical lines pointing to each child */
+.horizontal-node::before {
+    content: '';
+    position: absolute;
+    margin-top: -5px;
+    left: 50%;
+    width: 2px;
+    height: 5px;
+    background-color: #6c757d;
+    z-index: 1;
+    display: block;
+}
+
+/* Hide vertical lines for single children */
+.horizontal-children:not(:has(.horizontal-node:nth-child(2))) .horizontal-node::before {
+    display: none;
+}
+
+/* Hide vertical lines for root nodes (nodes without parent) */
+.tree-content > .horizontal-node::before {
+    display: none;
+}
+
+.node-content {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    transition: background-color 0.2s;
+    min-width: 120px;
+    justify-content: space-between;
+    position: relative;
+    z-index: 2;
+}
+
+.node-content::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    width: 2px;
+    height: 10px;
+    background-color: #6c757d;
+    z-index: 1;
+    display: none;
+}
+
+/* Show vertical line from parent only if it has children */
+.horizontal-node:has(.horizontal-children) .node-content::after {
+    display: block;
+}
+
+/* Hide vertical line for nodes without children */
+.horizontal-node:not(:has(.horizontal-children)) .node-content::after {
+    display: none !important;
+}
+
+.node-content:hover {
+    background: #e9ecef;
+}
+
+.node-title {
+    font-weight: 500;
+    color: #333;
+    font-size: 14px;
+    flex: 1;
+}
+
+.has-children-indicator {
+    color: #6c757d;
+    font-size: 12px;
+    margin-left: 8px;
+}
+
+.children {
+    margin-left: 20px;
+    margin-top: 5px;
+}
+
+.horizontal-children {
+    display: flex;
+    flex-wrap: wrap;
+    margin-left: 0;
+    margin-top: 10px;
+    gap: 10px;
+    position: relative;
+}
+
+.horizontal-children::before {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: 20px;
+    right: 20px;
+    height: 2px;
+    background-color: #6c757d;
+    z-index: 1;
+    display: none;
+}
+
+.horizontal-children::after {
+    content: '';
+    position: absolute;
+    top: -15px;
+    left: 50%;
+    width: 2px;
+    height: 8px;
+    padding-bottom: 3px;
+    background-color: #6c757d;
+    z-index: 1;
+}
+
+/* Show horizontal line only if there are multiple children */
+.horizontal-children:has(.horizontal-node:nth-child(2))::before {
+    display: block;
+}
+
+.no-hierarchy {
+    text-align: center;
+    padding: 40px 20px;
+    color: #666;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 2px dashed #ddd;
+}
+
+.no-hierarchy p {
+    margin: 0;
+    font-size: 1rem;
+}
+
+/* Tree Structure Styling */
+.tree-node:last-child {
+    margin-bottom: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .tree-controls {
+        padding: 12px 15px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .zoom-controls {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .tree-content {
+        padding: 15px;
+        max-height: 60vh;
+    }
+    
+    .node-content {
+        padding: 6px 10px;
+    }
+    
+    .node-title {
+        font-size: 13px;
+    }
+    
+    .children {
+        margin-left: 15px;
+    }
+    
+    .horizontal-node {
+        display: block;
+        margin-right: 0;
+        margin-bottom: 10px;
+    }
+    
+    .horizontal-children {
+        display: block;
+        gap: 0;
+    }
+    
+    .node-content {
+        min-width: auto;
+    }
+}

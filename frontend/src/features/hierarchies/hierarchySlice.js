@@ -46,6 +46,27 @@ export const getHierarchies = createAsyncThunk(
   }
 )
 
+// Update user hierarchy
+export const updateHierarchy = createAsyncThunk(
+  'hierarchies/update',
+  async ({ hierarchyId, projectId, hierarchyData }, thunkAPI) => {
+    try {
+      const token = thunkAPI.getState().auth.user.token
+      const data = await hierarchyService.updateHierarchy(hierarchyId, projectId, hierarchyData, token)
+      console.log('update hierarchy result', data)
+      return data
+    } catch (error) {
+      const message =
+        (error.response &&
+          error.response.data &&
+          error.response.data.message) ||
+        error.message ||
+        error.toString()
+      return thunkAPI.rejectWithValue(message)
+    }
+  }
+)
+
 // Delete user hierarchy
 export const deleteHierarchy = createAsyncThunk(
   'hierarchies/delete',
@@ -84,6 +105,24 @@ export const deleteHierarchy = createAsyncThunk(
         state.hierarchies.push(action.payload)
       })
       .addCase(createHierarchy.rejected, (state, action) => {
+        state.isLoading = false
+        state.isError = true
+        state.message = action.payload
+      })
+      .addCase(updateHierarchy.pending, (state) => {
+        state.isLoading = true
+      })
+      .addCase(updateHierarchy.fulfilled, (state, action) => {
+        state.isLoading = false
+        state.isSuccess = true
+        const index = state.hierarchies.findIndex(hierarchy => hierarchy.id === action.payload.id)
+        if (index !== -1) {
+          state.hierarchies[index] = action.payload
+        } else {
+          state.hierarchies.push(action.payload)
+        }
+      })
+      .addCase(updateHierarchy.rejected, (state, action) => {
         state.isLoading = false
         state.isError = true
         state.message = action.payload

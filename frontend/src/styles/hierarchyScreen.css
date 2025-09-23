@@ -1,0 +1,368 @@
+.hierarchy-screen {
+    padding: 20px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.hierarchy-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+.hierarchy-header {
+    margin-bottom: 20px;
+    border-bottom: 2px solid #e0e0e0;
+    padding-bottom: 15px;
+}
+
+.hierarchy-title {
+    margin: 0;
+    color: #333;
+    font-size: 1.8rem;
+}
+
+.hierarchy-loading {
+    color: #666;
+    font-style: italic;
+    margin: 10px 0 0 0;
+}
+
+.hierarchy-layout {
+    display: flex;
+    gap: 20px;
+    flex: 1;
+    min-height: 0;
+}
+
+.hierarchy-left-panel {
+    flex: 1;
+    min-width: 400px;
+    max-width: 500px;
+    overflow-y: auto;
+}
+
+.hierarchy-right-panel {
+    flex: 1;
+    min-width: 400px;
+    overflow-y: auto;
+    border-left: 2px solid #e0e0e0;
+    padding-left: 20px;
+}
+
+/* Edit Container */
+.hierarchy-edit-container {
+    background: #f9f9f9;
+    border-radius: 8px;
+    padding: 20px;
+    border: 1px solid #ddd;
+}
+
+.hierarchy-edit-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #ddd;
+}
+
+.hierarchy-edit-header h3 {
+    margin: 0;
+    color: #333;
+    font-size: 1.2rem;
+}
+
+
+/* Edit Form */
+.hierarchy-edit-form {
+    background: white;
+    border-radius: 6px;
+    padding: 20px;
+    border: 1px solid #e9ecef;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+    color: #333;
+    font-size: 0.9rem;
+}
+
+.form-input, .form-textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 14px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    box-sizing: border-box;
+}
+
+.form-input:focus, .form-textarea:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.form-textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.save-button {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background-color 0.2s;
+}
+
+.save-button:hover {
+    background: #218838;
+}
+
+
+
+/* Error Container */
+.error-container {
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    border-radius: 5px;
+    padding: 15px;
+    margin-top: 20px;
+    color: #721c24;
+}
+
+.retry-button {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+.retry-button:hover {
+    background: #c82333;
+}
+
+/* Tree Panel */
+.hierarchy-tree-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.hierarchy-tree-header {
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #ddd;
+}
+
+.hierarchy-tree-title {
+    margin: 0 0 8px 0;
+    color: #333;
+    font-size: 1.3rem;
+    font-weight: 600;
+}
+
+.hierarchy-tree-description {
+    margin: 0;
+    color: #666;
+    font-size: 0.95rem;
+    line-height: 1.4;
+}
+
+.hierarchy-tree-content {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.no-hierarchy-selected {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    text-align: center;
+    color: #666;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 2px dashed #ddd;
+}
+
+.no-hierarchy-selected h3 {
+    margin: 0 0 10px 0;
+    color: #333;
+}
+
+.no-hierarchy-selected p {
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+/* No Project */
+.no-project {
+    text-align: center;
+    padding: 60px 20px;
+    color: #666;
+}
+
+.no-project h2 {
+    margin: 0 0 15px 0;
+    color: #333;
+}
+
+.no-project p {
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .hierarchy-layout {
+        flex-direction: column;
+    }
+    
+    .hierarchy-left-panel,
+    .hierarchy-right-panel {
+        min-width: unset;
+        max-width: unset;
+    }
+    
+    .hierarchy-right-panel {
+        border-left: none;
+        border-top: 2px solid #e0e0e0;
+        padding-left: 0;
+        padding-top: 20px;
+    }
+}
+
+/* Add Item Form Styles */
+.add-item-form {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.add-item-form input {
+    flex: 1;
+    min-width: 150px;
+}
+
+.add-item-form select {
+    flex: 1;
+    min-width: 120px;
+}
+
+.add-button {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    white-space: nowrap;
+}
+
+.add-button:hover {
+    background-color: #218838;
+}
+
+/* Items List Styles */
+.items-list {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 10px;
+    background-color: #f9f9f9;
+}
+
+.item-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.item-row:last-child {
+    border-bottom: none;
+}
+
+.item-title {
+    flex: 1;
+    font-weight: 500;
+}
+
+.remove-button {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+
+.remove-button:hover {
+    background-color: #c82333;
+}
+
+.form-select {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    background-color: white;
+}
+
+.form-select:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+@media (max-width: 768px) {
+    .hierarchy-screen {
+        padding: 10px;
+    }
+    
+    .hierarchy-actions {
+        flex-direction: column;
+    }
+    
+    .create-button, .retry-button {
+        width: 100%;
+    }
+    
+    .add-item-form {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .add-item-form input,
+    .add-item-form select {
+        min-width: auto;
+    }
+}

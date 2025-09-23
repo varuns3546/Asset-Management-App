@@ -1,9 +1,20 @@
 import {createSlice, createAsyncThunk} from '@reduxjs/toolkit'          
 import projectService from './projectService'
 
+// Load selected project from localStorage on initialization
+const getInitialSelectedProject = () => {
+    try {
+        const savedProject = localStorage.getItem('selectedProject')
+        return savedProject ? JSON.parse(savedProject) : null
+    } catch (error) {
+        console.error('Error loading selected project from localStorage:', error)
+        return null
+    }
+}
+
 const initialState = {
     projects: [],
-    selectedProject: null,
+    selectedProject: getInitialSelectedProject(),
     isError: false,
     isSuccess: false,
     isLoading: false,
@@ -27,6 +38,7 @@ export const createProject = createAsyncThunk(
         }
     }
 )
+
 export const getProject = createAsyncThunk(
     'projects/getOne',
     async (projectId, thunkAPI) => {
@@ -105,14 +117,37 @@ export const updateProject = createAsyncThunk(
     }
 )
 
+// Helper function to save selected project to localStorage
+const saveSelectedProjectToStorage = (project) => {
+    try {
+        if (project) {
+            localStorage.setItem('selectedProject', JSON.stringify(project))
+        } else {
+            localStorage.removeItem('selectedProject')
+        }
+    } catch (error) {
+        console.error('Error saving selected project to localStorage:', error)
+    }
+}
 
 export const projectSlice = createSlice({
     name: 'projects',
     initialState,
     reducers: {
-        reset: (state) => initialState,
+        reset: (state) => {
+            // Don't reset selectedProject on reset, keep it persistent
+            state.isError = false
+            state.isSuccess = false
+            state.isLoading = false
+            state.message = ''
+        },
         setSelectedProject: (state, action) => {
             state.selectedProject = action.payload
+            saveSelectedProjectToStorage(action.payload)
+        },
+        clearSelectedProject: (state) => {
+            state.selectedProject = null
+            saveSelectedProjectToStorage(null)
         }
     },
     extraReducers: (builder) => {
@@ -124,6 +159,8 @@ export const projectSlice = createSlice({
                 state.isLoading = false
                 state.isSuccess = true
                 state.projects.push(action.payload)
+                state.selectedProject = action.payload
+                saveSelectedProjectToStorage(action.payload)
             })
             .addCase(createProject.rejected, (state, action) => {
                 state.isLoading = false
@@ -163,6 +200,11 @@ export const projectSlice = createSlice({
                 state.isLoading = false
                 state.isSuccess = true
                 state.projects = state.projects.filter((project) => project.id !== action.payload)
+                // If the deleted project was selected, clear the selection
+                if (state.selectedProject && state.selectedProject.id === action.payload) {
+                    state.selectedProject = null
+                    saveSelectedProjectToStorage(null)
+                }
             })
             .addCase(deleteProject.rejected, (state, action) => {
                 state.isLoading = false
@@ -176,6 +218,11 @@ export const projectSlice = createSlice({
                 state.isLoading = false
                 state.isSuccess = true
                 state.projects = state.projects.map((project) => project.id === action.payload.id ? action.payload : project)
+                // Update selectedProject if it was the one being updated
+                if (state.selectedProject && state.selectedProject.id === action.payload.id) {
+                    state.selectedProject = action.payload
+                    saveSelectedProjectToStorage(action.payload)
+                }
             })
             .addCase(updateProject.rejected, (state, action) => {
                 state.isLoading = false
@@ -185,5 +232,5 @@ export const projectSlice = createSlice({
     }
 })
 
-export const {reset, setSelectedProject} = projectSlice.actions
+export const {reset, setSelectedProject, clearSelectedProject} = projectSlice.actions
 export default projectSlice.reducer
