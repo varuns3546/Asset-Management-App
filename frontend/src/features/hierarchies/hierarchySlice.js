@@ -13,7 +13,7 @@ const initialState = {
 
 // Get user hierarchies
 export const getHierarchy = createAsyncThunk(
-  'hierarchies/get', 
+  'hierarchies/getOne', 
   async (projectId, thunkAPI) => {
     try {
       const token = thunkAPI.getState().auth.user.token
