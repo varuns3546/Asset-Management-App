@@ -9,31 +9,15 @@ const initialState = {
 }
 
 // Create new hierarchy
-export const createHierarchy = createAsyncThunk(
-  'hierarchies/create',
-  async ({ hierarchyData, projectId }, thunkAPI) => {
-    try {
-      const token = thunkAPI.getState().auth.user.token
-      return await hierarchyService.createHierarchy(hierarchyData, projectId, token)
-    } catch (error) {
-      const message =
-        (error.response &&
-          error.response.data &&
-          error.response.data.message) ||
-        error.message ||
-        error.toString()
-      return thunkAPI.rejectWithValue(message)
-    }
-  }
-)
+
 
 // Get user hierarchies
-export const getHierarchies = createAsyncThunk(
-  'hierarchies/getAll', 
+export const getHierarchy = createAsyncThunk(
+  'hierarchies/get', 
   async (projectId, thunkAPI) => {
     try {
       const token = thunkAPI.getState().auth.user.token
-      return await hierarchyService.getHierarchies(projectId, token)
+      return await hierarchyService.getHierarchy(projectId, token)
     } catch (error) {
       const message =
         (error.response &&
@@ -49,11 +33,10 @@ export const getHierarchies = createAsyncThunk(
 // Update user hierarchy
 export const updateHierarchy = createAsyncThunk(
   'hierarchies/update',
-  async ({ hierarchyId, projectId, hierarchyData }, thunkAPI) => {
+  async ({ projectId, hierarchyData }, thunkAPI) => {
     try {
       const token = thunkAPI.getState().auth.user.token
-      const data = await hierarchyService.updateHierarchy(hierarchyId, projectId, hierarchyData, token)
-      console.log('update hierarchy result', data)
+      const data = await hierarchyService.updateHierarchy(projectId, hierarchyData, token)
       return data
     } catch (error) {
       const message =
@@ -70,10 +53,10 @@ export const updateHierarchy = createAsyncThunk(
 // Delete user hierarchy
 export const deleteHierarchy = createAsyncThunk(
   'hierarchies/delete',
-  async ({ id, projectId }, thunkAPI) => {
+  async ({ projectId }, thunkAPI) => {
     try {
       const token = thunkAPI.getState().auth.user.token
-      const data = await hierarchyService.deleteHierarchy(id, projectId, token)
+      const data = await hierarchyService.deleteHierarchy(projectId, token)
       console.log('delete hierarchy result', data)
       return data
     } catch (error) {
@@ -96,46 +79,32 @@ export const deleteHierarchy = createAsyncThunk(
   },
   extraReducers: (builder) => {
     builder
-      .addCase(createHierarchy.pending, (state) => {
-        state.isLoading = true
-      })
-      .addCase(createHierarchy.fulfilled, (state, action) => {
-        state.isLoading = false
-        state.isSuccess = true
-        state.hierarchies.push(action.payload)
-      })
-      .addCase(createHierarchy.rejected, (state, action) => {
-        state.isLoading = false
-        state.isError = true
-        state.message = action.payload
-      })
       .addCase(updateHierarchy.pending, (state) => {
         state.isLoading = true
       })
       .addCase(updateHierarchy.fulfilled, (state, action) => {
         state.isLoading = false
         state.isSuccess = true
-        const index = state.hierarchies.findIndex(hierarchy => hierarchy.id === action.payload.id)
-        if (index !== -1) {
-          state.hierarchies[index] = action.payload
-        } else {
-          state.hierarchies.push(action.payload)
-        }
+        // Fix: Extract the data array from the API response and replace all hierarchies
+        state.hierarchies = action.payload.data || []
       })
       .addCase(updateHierarchy.rejected, (state, action) => {
         state.isLoading = false
         state.isError = true
         state.message = action.payload
       })
-      .addCase(getHierarchies.pending, (state) => {
+      .addCase(getHierarchy.pending, (state) => {
         state.isLoading = true
+        // Clear previous hierarchies immediately when starting to fetch new ones
+        state.hierarchies = []
       })
-      .addCase(getHierarchies.fulfilled, (state, action) => {
+      .addCase(getHierarchy.fulfilled, (state, action) => {
         state.isLoading = false
         state.isSuccess = true
-        state.hierarchies = action.payload
+        // Fix: Extract the data array from the API response
+        state.hierarchies = action.payload.data || []
       })
-      .addCase(getHierarchies.rejected, (state, action) => {
+      .addCase(getHierarchy.rejected, (state, action) => {
         state.isLoading = false
         state.isError = true
         state.message = action.payload
