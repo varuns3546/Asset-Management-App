@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
-import hierarchyService from './hierarchyService'
+import {getHierarchy, updateHierarchy, deleteHierarchy} from '../projects/projectService'
 const initialState = {  
   hierarchies: [],
   isError: false,

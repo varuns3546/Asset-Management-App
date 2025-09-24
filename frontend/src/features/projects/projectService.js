@@ -26,13 +26,33 @@ const updateProject = async (projectId, projectData, token) => {
     return response.data;
 }
 
+const getHierarchy = async (projectId, token) => {
+    const response = await api.get(`${API_URL}${projectId}/hierarchy`)
+    return response.data
+}
+
+// Update hierarchy for a project
+const updateHierarchy = async (projectId, hierarchyData, token) => {
+    const response = await api.put(`${API_URL}${projectId}/hierarchy`, hierarchyData);
+    return response.data
+}
+
+// Delete hierarchy for a project
+const deleteHierarchy = async (projectId, token) => {
+    const response = await api.delete(`${API_URL}${projectId}/hierarchy`);
+    return response.data
+}
+
 
 const projectService = {
     getProject,
     getProjects,        
     createProject,
-    deleteProject,
-    updateProject
+    deleteProject,  
+    updateProject,
+    getHierarchy,
+    updateHierarchy,
+    deleteHierarchy
 }   
 
 export default projectService

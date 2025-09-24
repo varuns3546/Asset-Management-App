@@ -1,14 +1,13 @@
 import { useEffect, useState, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { getHierarchy, updateHierarchy, deleteHierarchy, reset } from '../features/hierarchies/hierarchySlice';
+import { getHierarchy, updateHierarchy, deleteHierarchy, reset } from '../features/projects/projectSlice';
 import { loadUser } from '../features/auth/authSlice';
 import { useNavigate } from 'react-router-dom';
 import HierarchyTree from '../components/HierarchyTree';
 import '../styles/hierarchyScreen.css';
 
 const HierarchyScreen = () => {
-    const { hierarchies, isLoading, isError, message } = useSelector((state) => state.hierarchies);
-    const { selectedProject } = useSelector((state) => state.projects);
+    const { selectedProject, hierarchies, isLoading, isError, message } = useSelector((state) => state.projects);
     const { user } = useSelector((state) => state.auth);
     const [editingForm, setEditingForm] = useState({
         items: []
