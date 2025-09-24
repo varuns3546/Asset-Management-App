@@ -15,6 +15,8 @@ const getInitialSelectedProject = () => {
 const initialState = {
     projects: [],
     selectedProject: getInitialSelectedProject(),
+    // Add hierarchy state
+    hierarchies: [],
     isError: false,
     isSuccess: false,
     isLoading: false,
@@ -106,6 +108,65 @@ export const updateProject = createAsyncThunk(
             return await projectService.updateProject(projectId, projectData, token)
         } catch (error) {
 
+            const message =
+                (error.response &&
+                    error.response.data &&
+                    error.response.data.message) ||
+                error.message ||
+                error.toString()
+            return thunkAPI.rejectWithValue(message)
+        }
+    }
+)
+
+// Add these after your existing thunks
+
+// Get project hierarchy
+export const getHierarchy = createAsyncThunk(
+    'projects/getHierarchy',
+    async (projectId, thunkAPI) => {
+        try {
+            const token = thunkAPI.getState().auth.user.token
+            return await projectService.getHierarchy(projectId, token)
+        } catch (error) {
+            const message =
+                (error.response &&
+                    error.response.data &&
+                    error.response.data.message) ||
+                error.message ||
+                error.toString()
+            return thunkAPI.rejectWithValue(message)
+        }
+    }
+)
+
+// Update project hierarchy
+export const updateHierarchy = createAsyncThunk(
+    'projects/updateHierarchy',
+    async ({ projectId, hierarchyData }, thunkAPI) => {
+        try {
+            const token = thunkAPI.getState().auth.user.token
+            return await projectService.updateHierarchy(projectId, hierarchyData, token)
+        } catch (error) {
+            const message =
+                (error.response &&
+                    error.response.data &&
+                    error.response.data.message) ||
+                error.message ||
+                error.toString()
+            return thunkAPI.rejectWithValue(message)
+        }
+    }
+)
+
+// Delete project hierarchy
+export const deleteHierarchy = createAsyncThunk(
+    'projects/deleteHierarchy',
+    async ({ projectId }, thunkAPI) => {
+        try {
+            const token = thunkAPI.getState().auth.user.token
+            return await projectService.deleteHierarchy(projectId, token)
+        } catch (error) {
             const message =
                 (error.response &&
                     error.response.data &&
@@ -225,6 +286,48 @@ export const projectSlice = createSlice({
                 }
             })
             .addCase(updateProject.rejected, (state, action) => {
+                state.isLoading = false
+                state.isError = true
+                state.message = action.payload
+            })
+            .addCase(getHierarchy.pending, (state) => {
+                state.isLoading = true
+                state.hierarchies = [] // Clear previous hierarchies
+            })
+            .addCase(getHierarchy.fulfilled, (state, action) => {
+                state.isLoading = false
+                state.isSuccess = true
+                state.hierarchies = action.payload.data || []
+            })
+            .addCase(getHierarchy.rejected, (state, action) => {
+                state.isLoading = false
+                state.isError = true
+                state.message = action.payload
+            })
+            .addCase(updateHierarchy.pending, (state) => {
+                state.isLoading = true
+            })
+            .addCase(updateHierarchy.fulfilled, (state, action) => {
+                state.isLoading = false
+                state.isSuccess = true
+                state.hierarchies = action.payload.data || []
+            })
+            .addCase(updateHierarchy.rejected, (state, action) => {
+                state.isLoading = false
+                state.isError = true
+                state.message = action.payload
+            })
+            .addCase(deleteHierarchy.pending, (state) => {
+                state.isLoading = true
+            })
+            .addCase(deleteHierarchy.fulfilled, (state, action) => {
+                state.isLoading = false
+                state.isSuccess = true
+                state.hierarchies = state.hierarchies.filter(
+                    (hierarchy) => hierarchy.id !== action.payload
+                )
+            })
+            .addCase(deleteHierarchy.rejected, (state, action) => {
                 state.isLoading = false
                 state.isError = true
                 state.message = action.payload

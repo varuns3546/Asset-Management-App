@@ -1,12 +1,11 @@
 import { useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
-import { updateHierarchy } from '../features/hierarchies/hierarchySlice'
+import { updateHierarchy } from '../features/projects/projectSlice'
 import '../styles/hierarchyForm.css'
 
 const HierarchyForm = () => {
     const dispatch = useDispatch()
-    const { selectedProject } = useSelector((state) => state.projects)
-    const { isLoading } = useSelector((state) => state.hierarchies)
+    const { selectedProject, isLoading } = useSelector((state) => state.projects)
     
     // Form state
     const [formData, setFormData] = useState({

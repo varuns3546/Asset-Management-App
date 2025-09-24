@@ -84,28 +84,43 @@
     background: #545b62;
 }
 
+/* Add CSS custom properties support to tree-content */
 .tree-content {
     padding: 20px;
     max-height: 70vh;
     overflow: auto;
     position: relative;
+    /* Default values that will be overridden by JavaScript */
+    --node-min-width: 120px;
+    --node-gap: 18px;
+    --node-padding: 8px;
+    --node-font-size: 14px;
+    /* Allow content to expand beyond normal bounds when scaled */
+    transform-origin: top left;
+    box-sizing: border-box;
 }
 
-.tree-content .horizontal-children {
+/* Update horizontal-children to use dynamic gap */
+.horizontal-children {
     display: flex;
     flex-wrap: wrap;
-    gap: 15px;
+    margin-left: 0;
+    margin-top: 10px;
+    gap: var(--node-gap); /* Use dynamic gap instead of fixed 10px */
+    position: relative;
+    /* Add a bit more horizontal spacing between parent nodes */
+    column-gap: calc(var(--node-gap) + 5px); /* Extra 5px horizontal spacing */
+    /* Use full available width */
+    width: 100%;
+    justify-content: flex-start;
 }
 
-.tree-node {
-    margin-bottom: 8px;
-}
-
+/* Update horizontal-node to use dynamic spacing */
 .horizontal-node {
     top: 5px;
     display: inline-block;
-    margin-right: 15px;
-    margin-bottom: 15px;
+    margin-right: 0; /* Remove fixed margin, use gap instead */
+    margin-bottom: var(--node-gap); /* Use dynamic spacing */
     vertical-align: top;
     position: relative;
 }
@@ -133,15 +148,16 @@
     display: none;
 }
 
+/* Update node-content to use dynamic values */
 .node-content {
     display: flex;
     align-items: center;
-    padding: 8px 12px;
+    padding: var(--node-padding) calc(var(--node-padding) * 1.5); /* Dynamic padding */
     background: #f8f9fa;
     border: 1px solid #e9ecef;
     border-radius: 6px;
     transition: background-color 0.2s;
-    min-width: 120px;
+    min-width: var(--node-min-width); /* Dynamic min-width */
     justify-content: space-between;
     position: relative;
     z-index: 2;
@@ -173,10 +189,11 @@
     background: #e9ecef;
 }
 
+/* Update node-title to use dynamic font size */
 .node-title {
     font-weight: 500;
     color: #333;
-    font-size: 14px;
+    font-size: var(--node-font-size); /* Dynamic font size */
     flex: 1;
 }
 

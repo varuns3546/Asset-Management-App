@@ -27,6 +27,19 @@ const HierarchyTree = ({ hierarchy }) => {
     const [zoomLevel, setZoomLevel] = useState(100)
     const treeContentRef = useRef(null)
 
+    // Calculate dynamic spacing and sizing based on zoom level
+    const getDynamicStyles = () => {
+        const scale = zoomLevel / 100
+        return {
+            nodeMinWidth: Math.max(80, 120 * scale),
+            nodeGap: Math.max(10, 18 * scale), // Increased from 15 to 18 for more spacing
+            nodePadding: Math.max(4, 8 * scale),
+            fontSize: Math.max(10, 14 * scale),
+            verticalGap: Math.max(12, 20 * scale),
+        }
+    }
+
+    const dynamicStyles = getDynamicStyles()
     
     if (!hierarchy || !hierarchy.hierarchy_item_types || hierarchy.hierarchy_item_types.length === 0) {
         return <div className="no-hierarchy">No items in this hierarchy</div>
@@ -111,7 +124,15 @@ const HierarchyTree = ({ hierarchy }) => {
                     className="tree-content"
                     style={{ 
                         transform: `scale(${zoomLevel / 100})`,
-                        transformOrigin: 'top left'
+                        transformOrigin: 'top left',
+                        '--node-min-width': `${dynamicStyles.nodeMinWidth}px`,
+                        '--node-gap': `${dynamicStyles.nodeGap}px`,
+                        '--node-padding': `${dynamicStyles.nodePadding}px`,
+                        '--node-font-size': `${dynamicStyles.fontSize}px`,
+                        '--vertical-gap': `${dynamicStyles.verticalGap}px`,
+                        // Expand the content area when zoomed out to fill available space
+                        width: `${100 / (zoomLevel / 100)}%`, // Inverse scale the width
+                        height: `${100 / (zoomLevel / 100)}%`, // Inverse scale the height
                     }}
                 >
                     {treeData.map(rootNode => (
