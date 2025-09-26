@@ -8,7 +8,6 @@ const Dropdown = ({title, options, isOpen, onToggle, onOpenModal, onCloseModal})
     const navigate = useNavigate()
     
     const handleOptionClick = (option) => {
-        console.log('Option clicked:', option, 'onOpenModal:', !!onOpenModal) // Debug log
         
         // Handle modal options only for Projects dropdown
         if (onOpenModal && (option === 'Open Project' || option === 'Create Project')) {

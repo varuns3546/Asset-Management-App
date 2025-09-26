@@ -2,7 +2,6 @@ import React from 'react'
 import '../styles/modal.css'
 
 const Modal = ({ isOpen, onClose, children, title }) => {
-    console.log('Modal render - isOpen:', isOpen, 'title:', title) // Debug log
     
     if (!isOpen) return null
 
