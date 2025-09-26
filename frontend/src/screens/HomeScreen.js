@@ -1,8 +1,7 @@
 import { useSelector } from 'react-redux'
-
 const HomeScreen = () => {
     const { selectedProject } = useSelector((state) => state.projects)
-    
+
     return (
         <div>
             {selectedProject ? (

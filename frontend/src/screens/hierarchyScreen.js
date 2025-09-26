@@ -8,7 +8,7 @@ import '../styles/hierarchyScreen.css';
 
 const HierarchyScreen = () => {
     const { selectedProject, hierarchies, isLoading, isError, message } = useSelector((state) => state.projects);
-    const { user } = useSelector((state) => state.auth);
+    const { user, isLoading: authLoading } = useSelector((state) => state.auth);
     const [editingForm, setEditingForm] = useState({
         items: []
     });
@@ -22,12 +22,6 @@ const HierarchyScreen = () => {
         dispatch(loadUser())
     }, [dispatch])
 
-    useEffect(() => {
-        if (!user) {
-            navigate('/')
-            return
-        }
-    }, [user, navigate])
 
     useEffect(() => {
         if (selectedProject && user) {
@@ -43,21 +37,7 @@ const HierarchyScreen = () => {
         }
     }, [selectedProject, user, dispatch])
 
-    useEffect(() => {
-        if (isError) {
-            console.log('Hierarchy Error:', message)
-        }
-    }, [isError, message])
-
-    // Debug: Log hierarchies data
-    useEffect(() => {
-        console.log('Hierarchies data:', hierarchies);
-    }, [hierarchies])
-
-    // Debug: Log editing form changes
-    useEffect(() => {
-        console.log('Editing form updated:', editingForm);
-    }, [editingForm])
+   
 
     // Get the hierarchy items for this project
     const hierarchyItems = hierarchies || [];

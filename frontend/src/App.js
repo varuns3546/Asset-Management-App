@@ -1,24 +1,36 @@
 // App.js
-import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
+
 import { loadUser } from "./features/auth/authSlice";
-import { setSelectedProject } from "./features/projects/projectSlice";
+import { setSelectedProject } from "./features/projects/projectSlice"
+import "./utils/axiosInterceptor"; // Initialize axios interceptor
 import LoginScreen from "./screens/LoginScreen";
 import RegisterScreen from "./screens/RegisterScreen";
 import HomeScreen from "./screens/HomeScreen";
 import HierarchyScreen from "./screens/HierarchyScreen";
 import Navbar from "./components/Navbar";
 import Modal from "./components/Modal";
-import "./utils/axiosInterceptor"; // Initialize axios interceptor
 
 
 function AppContent() {
+  
   const dispatch = useDispatch();
   const location = useLocation();
-  const { user } = useSelector((state) => state.auth);
+  const navigate = useNavigate();
   const { selectedProject } = useSelector((state) => state.projects);
-  
+  const { user, isLoading } = useSelector((state) => state.auth);
+  useEffect(() => {
+    // Give time for user to load on refresh
+    const timer = setTimeout(() => {
+        if (user === null && !isLoading) {
+            navigate('/');
+        }
+    }, 100);
+
+    return () => clearTimeout(timer);
+}, [user, isLoading, navigate]);
   const hideNavbarRoutes = ['/', '/register'];
   const showNavbar = !hideNavbarRoutes.includes(location.pathname);
   

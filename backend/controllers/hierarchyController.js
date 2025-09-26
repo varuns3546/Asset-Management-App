@@ -70,7 +70,8 @@ const getHierarchy = asyncHandler(async (req, res) => {
 });
 
 const updateHierarchy = asyncHandler(async (req, res) => {
-  const { project_id, items } = req.body;
+  const { items } = req.body;
+  const { id: project_id } = req.params; // Fix: use 'id' from route params and rename to project_id
 
   if (!project_id) {
     return res.status(400).json({
