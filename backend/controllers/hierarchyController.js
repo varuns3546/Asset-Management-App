@@ -184,6 +184,28 @@ const updateHierarchy = asyncHandler(async (req, res) => {
       }
     }
 
+    // Third pass: Delete items that are no longer in the frontend data
+    const frontendItemTitles = new Set(items.map(item => item.title.toLowerCase()));
+    const itemsToDelete = existingItems.filter(existingItem => 
+      !frontendItemTitles.has(existingItem.title.toLowerCase())
+    );
+
+    if (itemsToDelete.length > 0) {
+      const deleteIds = itemsToDelete.map(item => item.id);
+      
+      const { error: deleteError } = await supabaseAdmin
+        .from('hierarchy_item_types')
+        .delete()
+        .in('id', deleteIds);
+        
+      if (deleteError) {
+        console.error('Error deleting removed hierarchy items:', deleteError);
+        // Continue execution - don't fail the entire operation
+      } else {
+        console.log(`Deleted ${itemsToDelete.length} removed hierarchy items`);
+      }
+    }
+
     // Fetch the complete updated hierarchy with items
     const { data: completeHierarchy, error: fetchError } = await req.supabase
       .from('hierarchy_item_types')

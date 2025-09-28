@@ -76,6 +76,7 @@
 
 /* Edit Form */
 .hierarchy-edit-form {
+
     background: white;
     border-radius: 6px;
     padding: 20px;
@@ -117,6 +118,7 @@
 
 .form-actions {
     display: flex;
+    justify-content: center;
     gap: 10px;
     margin-top: 20px;
 }
@@ -192,7 +194,9 @@
 
 .hierarchy-tree-content {
     flex: 1;
-    overflow-y: auto;
+    position: relative;
+    min-width: 0;
+    min-height: 0;
 }
 
 .no-hierarchy-selected {
@@ -258,6 +262,7 @@
 /* Add Item Form Styles */
 .add-item-form {
     display: flex;
+    flex-direction: column; 
     gap: 10px;
     align-items: center;
     flex-wrap: wrap;

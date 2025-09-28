@@ -119,25 +119,25 @@ const HierarchyTree = ({ hierarchy }) => {
                 </button>
             </div>
             {isTreeExpanded && (
-                <div 
-                    ref={treeContentRef}
-                    className="tree-content"
-                    style={{ 
-                        transform: `scale(${zoomLevel / 100})`,
-                        transformOrigin: 'top left',
-                        '--node-min-width': `${dynamicStyles.nodeMinWidth}px`,
-                        '--node-gap': `${dynamicStyles.nodeGap}px`,
-                        '--node-padding': `${dynamicStyles.nodePadding}px`,
-                        '--node-font-size': `${dynamicStyles.fontSize}px`,
-                        '--vertical-gap': `${dynamicStyles.verticalGap}px`,
-                        // Expand the content area when zoomed out to fill available space
-                        width: `${100 / (zoomLevel / 100)}%`, // Inverse scale the width
-                        height: `${100 / (zoomLevel / 100)}%`, // Inverse scale the height
-                    }}
-                >
-                    {treeData.map(rootNode => (
-                        <TreeNode key={rootNode.id} node={rootNode} />
-                    ))}
+                <div className="tree-scroll-wrapper">
+                    <div 
+                        ref={treeContentRef}
+                        className="tree-content"
+                        style={{ 
+                            '--node-min-width': `${dynamicStyles.nodeMinWidth}px`,
+                            '--node-gap': `${dynamicStyles.nodeGap}px`,
+                            '--node-padding': `${dynamicStyles.nodePadding}px`,
+                            '--node-font-size': `${dynamicStyles.fontSize}px`,
+                            '--vertical-gap': `${dynamicStyles.verticalGap}px`,
+                            transform: `scale(${zoomLevel / 100})`,
+                            width: `${100 / (zoomLevel / 100)}%`,
+                            height: `${100 / (zoomLevel / 100)}%`,
+                        }}
+                    >
+                        {treeData.map(rootNode => (
+                            <TreeNode key={rootNode.id} node={rootNode} />
+                        ))}
+                    </div>
                 </div>
             )}
         </div>

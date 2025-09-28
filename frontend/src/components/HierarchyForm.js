@@ -1,194 +1,172 @@
-import { useState } from 'react'
-import { useSelector, useDispatch } from 'react-redux'
-import { updateHierarchy } from '../features/projects/projectSlice'
-import '../styles/hierarchyForm.css'
+import { useState, useEffect } from 'react';
 
-const HierarchyForm = () => {
-    const dispatch = useDispatch()
-    const { selectedProject, isLoading } = useSelector((state) => state.projects)
-    
-    // Form state
+const HierarchyForm = ({ 
+    hierarchyItems = [], 
+    onSaveHierarchy, 
+    onUpdateItems 
+}) => {
     const [formData, setFormData] = useState({
         items: []
-    })
-    
-    // Individual item state for adding new items
+    });
     const [newItem, setNewItem] = useState({
         title: '',
+        itemType: '',
         parentId: null
-    })
-    
-    const handleInputChange = (e) => {
-        setFormData(prev => ({
-            ...prev,
-            [e.target.name]: e.target.value
-        }))
-    }
-    
+    });
+
+    // Update form when hierarchy data changes from parent
+    useEffect(() => {
+        if (hierarchyItems && Array.isArray(hierarchyItems)) {
+            setFormData({
+                items: hierarchyItems
+            });
+        } else if (hierarchyItems && hierarchyItems.length === 0) {
+            // Handle empty array case
+            setFormData({
+                items: []
+            });
+        }
+    }, [hierarchyItems]);
+
     const handleNewItemChange = (e) => {
         setNewItem(prev => ({
             ...prev,
             [e.target.name]: e.target.value
         }))
     }
-    
-    const addItem = () => {
-        if (newItem.title.trim()) {
-            const item = {
-                id: Date.now(), // temporary ID for frontend
-                title: newItem.title,
-                parentId: newItem.parentId ? parseInt(newItem.parentId) : null
-            }
-            
-            setFormData(prev => ({
+
+    const handleAddItem = () => {
+        if (!newItem.title.trim()) {
+            alert('Please enter an item title');
+            return;
+        }
+
+        const itemToAdd = {
+            id: Date.now().toString(), // Temporary ID for frontend
+            title: newItem.title,
+            item_type: newItem.itemType,
+            parent_item_id: newItem.parentId || null
+        };
+
+        console.log('New item created:', itemToAdd);
+
+        setFormData(prev => {
+            const updatedItems = [...prev.items, itemToAdd];
+            console.log('Updated items:', updatedItems);
+            return {
                 ...prev,
-                items: [...prev.items, item]
-            }))
-            
-            // Reset new item form
-            setNewItem({
-                title: '',
-                parentId: null
-            })
+                items: updatedItems
+            };
+        });
+
+        // Notify parent component of the change
+        if (onUpdateItems) {
+            const updatedItems = [...formData.items, itemToAdd];
+            onUpdateItems(updatedItems);
         }
-    }
-    
-    const removeItem = (itemId) => {
-        setFormData(prev => ({
-            ...prev,
-            items: prev.items.filter(item => item.id !== itemId)
-        }))
-    }
-    
-    
-    const handleUpdateHierarchy = (e) => {
-        e.preventDefault()
-        
-        if (!selectedProject) {
-            alert('Please select a project first')
-            return
-        }
-        
-        if (!formData.title.trim()) {
-            alert('Please enter a hierarchy title')
-            return
-        }
-        
-        const hierarchyData = {
-            title: formData.title,
-            description: formData.description,
-            items: formData.items.map(item => ({
-                title: item.title,
-                parentId: item.parentId
-            }))
-        }
-        
-        console.log('Sending hierarchy data:', hierarchyData)
-        
-        dispatch(updateHierarchy({ 
-            hierarchyData, 
-            projectId: selectedProject.id 
-        }))
-        
-        // Reset form after successful creation
-        setFormData({
+
+        setNewItem({
             title: '',
-            description: '',
-            items: []
-        })
+            itemType: '',
+            parentId: newItem.parentId
+        });
     }
-    
+
+    const handleRemoveItem = (itemId) => {
+        setFormData(prev => {
+            const updatedItems = prev.items.filter(item => item.id !== itemId);
+            return {
+                ...prev,
+                items: updatedItems
+            };
+        });
+
+        // Notify parent component of the change
+        if (onUpdateItems) {
+            const updatedItems = formData.items.filter(item => item.id !== itemId);
+            onUpdateItems(updatedItems);
+        }
+    }
+
+    const handleSaveHierarchy = () => {
+        if (onSaveHierarchy) {
+            onSaveHierarchy(formData.items);
+        }
+    }
+
     return (
-        <div className="hierarchy-form">
-            <form onSubmit={handleUpdateHierarchy}>
-                {/* Add New Item Section */}
-                <div className="add-item-section">
-                    <h3>Add Items</h3>
-                    
-                    <div className="form-group">
-                        <label htmlFor="itemTitle">Item Title *</label>
-                        <input
-                            type="text"
-                            id="itemTitle"
-                            name="title"
-                            value={newItem.title}
-                            onChange={handleNewItemChange}
-                            placeholder="Enter item title"
-                            className="form-input"
-                        />
-                    </div>
-                    
-                    <div className="form-group">
-                        <label htmlFor="parentItem">Parent Item (Optional)</label>
-                        <select
-                            id="parentItem"
-                            name="parentId"
-                            value={newItem.parentId || ''}
-                            onChange={handleNewItemChange}
-                            className="form-select"
-                        >
-                            <option value="">No parent (root item)</option>
-                            {formData.items.map(item => (
-                                <option key={item.id} value={item.id}>
-                                    {item.title}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                    
-                    <button
-                        type="button"
-                        onClick={addItem}
-                        className="add-item-button"
+        <div className="hierarchy-edit-form">
+            <div className="form-group">
+                <label htmlFor="newItemTitle">Add New Item</label>
+                <div className="add-item-form">
+                    <input
+                        type="text"
+                        id="itemTitle"
+                        name="title"
+                        value={newItem.title}
+                        onChange={handleNewItemChange}
+                        placeholder="Enter item title"
+                        className="form-input"
+                    />
+                    <select
+                        id="itemType"
+                        name="itemType"
+                        value={newItem.itemType}
+                        onChange={handleNewItemChange}
+                        className="form-select"
                     >
+                        <option value="">Select item type</option>
+                        <option value="asset">Asset</option>
+                        <option value="location">Location</option>
+                        <option value="department">Department</option>
+                        <option value="category">Category</option>
+                        <option value="subcategory">Subcategory</option>
+                        <option value="item">Item</option>
+                    </select>
+                    <select
+                        id="parentId"
+                        name="parentId"
+                        value={newItem.parentId}
+                        onChange={handleNewItemChange}
+                        className="form-select"
+                    >
+                        <option value="">No parent (root item)</option>
+                        {formData.items.map(item => (
+                            <option key={item.id} value={item.id}>
+                                {item.title}
+                            </option>
+                        ))}
+                    </select>
+                    <button onClick={handleAddItem} className="add-button">
                         Add Item
                     </button>
                 </div>
-                
-                {/* Display Added Items */}
-                {formData.items.length > 0 && (
-                    <div className="added-items">
-                        <h3>Added Items ({formData.items.length})</h3>
-                        <div className="items-list">
-                            {formData.items.map(item => {
-                                const parentItem = item.parentId ? 
-                                    formData.items.find(p => p.id === item.parentId) : null;
-                                
-                                return (
-                                    <div key={item.id} className="item-card">
-                                        <div className="item-info">
-                                            <span className="item-title">{item.title}</span>
-                                            {parentItem && (
-                                                <span className="item-parent">
-                                                    (Child of: {parentItem.title})
-                                                </span>
-                                            )}
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={() => removeItem(item.id)}
-                                            className="remove-item-button"
-                                        >
-                                            Remove
-                                        </button>
-                                    </div>
-                                )
-                            })}
+            </div>
+
+            <div className="form-group">
+                <label>Current Items</label>
+                <div className="items-list">
+                    {formData.items.map(item => (
+                        <div key={item.id} className="item-row">
+                            <span className="item-title">{item.title}</span>
+                            <button 
+                                onClick={() => handleRemoveItem(item.id)}
+                                className="remove-button"
+                            >
+                                Remove
+                            </button>
                         </div>
-                    </div>
-                )}
-                
-                {/* Submit Button */}
-                <button
-                    type="submit"
-                    disabled={isLoading}
-                    className="submit-button"
-                >
-                    {isLoading ? 'Creating...' : 'Create Hierarchy'}
+                    ))}
+                </div>
+            </div>
+            
+            <div className="form-actions">
+                <button onClick={handleSaveHierarchy} className="save-button">
+                    Save Hierarchy
                 </button>
-            </form>
+            </div>
         </div>
     )
 }
 
-export default HierarchyForm
+export default HierarchyForm;
