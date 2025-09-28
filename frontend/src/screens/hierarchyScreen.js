@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { getHierarchy, updateHierarchy, deleteHierarchy, reset } from '../features/projects/projectSlice';
+import { getHierarchy, updateHierarchy, deleteHierarchy, getHierarchyItemTypes, reset } from '../features/projects/projectSlice';
 import { loadUser } from '../features/auth/authSlice';
 import { useNavigate } from 'react-router-dom';
 import HierarchyTree from '../components/HierarchyTree';
@@ -8,10 +8,10 @@ import HierarchyForm from '../components/HierarchyForm';
 import '../styles/hierarchyScreen.css';
 
 const HierarchyScreen = () => {
-    const { selectedProject, hierarchies, isLoading} = useSelector((state) => state.projects);
+    const { selectedProject, currentHierarchy, currentItemTypes, isLoading, isError, message} = useSelector((state) => state.projects);
     const { user, isLoading: authLoading } = useSelector((state) => state.auth);
     const [formData, setFormData] = useState({
-        items: []
+        items: currentHierarchy || []
     });
 
     const hasLoadedData = useRef(false);
@@ -25,11 +25,13 @@ const HierarchyScreen = () => {
     useEffect(() => {
         if (selectedProject && user) {
             // Clear form and reset loading flag when switching projects
-            setFormData({ items: [] });
+            setFormData({ items: currentHierarchy || [] });
+            console.log('currentHierarchy', currentHierarchy);
             hasLoadedData.current = false;
             // Clear Redux state and fetch new hierarchy
             dispatch(reset());
             dispatch(getHierarchy(selectedProject.id));
+            dispatch(getHierarchyItemTypes(selectedProject.id));
         }
         return () => {
             dispatch(reset())
@@ -37,31 +39,18 @@ const HierarchyScreen = () => {
     }, [selectedProject, user, dispatch])
 
     // Get the hierarchy items for this project
-    const hierarchyItems = hierarchies || [];
+    const hierarchyItems = currentHierarchy || [];
 
-    // Update form when hierarchy data changes
+    // Update form only when hierarchy data is first loaded (not on every change)
     useEffect(() => {
-        if (hierarchyItems && Array.isArray(hierarchyItems)) {
-            setFormData({
-                items: hierarchyItems
-            });
-            hasLoadedData.current = true;
-        } else if (hierarchyItems && hierarchyItems.length === 0) {
-            // Handle empty array case
-            setFormData({
-                items: []
-            });
+        if (currentHierarchy && Array.isArray(currentHierarchy) && currentHierarchy.length > 0 && !hasLoadedData.current) {
+            setFormData({ items: currentHierarchy });
             hasLoadedData.current = true;
         }
-    }, [hierarchyItems]);
+    }, [currentHierarchy]);
 
-    // Callback for when form data changes
-    const handleFormDataChange = (updatedItems) => {
-        setFormData(prev => ({
-            ...prev,
-            items: updatedItems
-        }));
-    };
+
+
 
     // Callback for saving hierarchy
     const handleSaveHierarchy = (items) => {
@@ -74,8 +63,8 @@ const HierarchyScreen = () => {
             items: items.map(item => ({
                 id: item.id,
                 title: item.title,
-                itemType: item.itemType,
-                parentId: item.parentId
+                item_type_id: item.item_type_id,
+                parent_id: item.parent_id
             }))
         };
         
@@ -86,9 +75,6 @@ const HierarchyScreen = () => {
         }));
     };
     
-
-   
-
     return (
         <div className="hierarchy-screen">
             {selectedProject ? (
@@ -96,57 +82,66 @@ const HierarchyScreen = () => {
                     <div className="hierarchy-header">
                         <h2 className="hierarchy-title">Asset Hierarchy - {selectedProject.title}</h2>
                         {isLoading && <p className="hierarchy-loading">Loading hierarchy...</p>}
+                        {isError && <p className="hierarchy-error">Error: {message}</p>}
                     </div>
                     
                     <div className="hierarchy-layout">
                         {/* Left side - Edit Form */}
                         <div className="hierarchy-left-panel">
                             <div className="hierarchy-edit-container">
-                                <HierarchyForm 
-                                    hierarchyItems={formData.items}
-                                    onSaveHierarchy={handleSaveHierarchy}
-                                    onUpdateItems={handleFormDataChange}
-                                />
+                                {console.log('formData', formData)}
+                                {isLoading && !currentItemTypes ? (
+                                    <div className="form-loading-state">
+                                        <div className="loading-spinner"></div>
+                                        <p>Loading form data...</p>
+                                    </div>
+                                ) : (
+                                    <HierarchyForm 
+                                        hierarchyItems={formData.items}
+                                        itemTypes={currentItemTypes}
+                                        onSaveHierarchy={handleSaveHierarchy}
+                                        onUpdateItems={(updatedItems) => setFormData({ items: updatedItems })}
+                                        isLoading={isLoading}
+                                        isSaving={isLoading}
+                                    />
+                                )}
                             </div>
                         </div>
                         
                         {/* Right side - Tree (always visible) */}
                         <div className="hierarchy-right-panel">
-                            {formData.items.length > 0 ? (
+                            {isLoading ? (
+                                <div className="hierarchy-loading-state">
+                                    <div className="loading-spinner"></div>
+                                    <h3>Loading Hierarchy...</h3>
+                                    <p>Fetching hierarchy data from server</p>
+                                </div>
+                            ) : formData.items.length > 0 ? (
                                 <div className="hierarchy-tree-container">
-                                    <div className="hierarchy-tree-header">
-                                        <h3 className="hierarchy-tree-title">{formData.title}</h3>
-                                        {formData.description && (
-                                            <p className="hierarchy-tree-description">
-                                                {formData.description}
-                                            </p>
-                                        )}
-                                    </div>
                                     <div className="hierarchy-tree-content">
-                                        <HierarchyTree hierarchy={{ 
-                                            title: formData.title,
-                                            description: formData.description,
-                                            hierarchy_item_types: formData.items
-                                        }} />
+                                        <HierarchyTree hierarchyItems={formData.items}/>
                                     </div>
                                 </div>
                             ) : (
                                 <div className="no-hierarchy-selected">
                                     <h3>No Items</h3>
-                                    <p>Add items to see the hierarchy tree structure.</p>
+                                    <p>Add items to see the hierarchy tree</p>
                                 </div>
                             )}
                         </div>
                     </div>
                 </div>
             ) : (
-                <div className="no-project">
-                    <h2>Asset Hierarchy</h2>
-                    <p>Please select a project first using the "Open Project" option.</p>
+                <div className="no-project-selected">
+                    <h2>No Project Selected</h2>
+                    <p>Please select a project to view its hierarchy</p>
+                    <button onClick={() => navigate('/')} className="btn-primary">
+                        Go to Projects
+                    </button>
                 </div>
             )}
         </div>
-    )
-}
+    );
+};
 
 export default HierarchyScreen;

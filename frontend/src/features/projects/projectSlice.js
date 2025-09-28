@@ -12,11 +12,26 @@ const getInitialSelectedProject = () => {
     }
 }
 
+// Helper function to save selected project to localStorage
+const saveSelectedProjectToStorage = (project) => {
+    try {
+        if (project) {
+            localStorage.setItem('selectedProject', JSON.stringify(project))
+        } else {
+            localStorage.removeItem('selectedProject')
+        }
+    } catch (error) {
+        console.error('Error saving selected project to localStorage:', error)
+    }
+}
+
 const initialState = {
     projects: [],
     selectedProject: getInitialSelectedProject(),
-    // Add hierarchy state
-    hierarchies: [],
+    // Single hierarchy object instead of array
+    currentHierarchy: null,
+    // Item types for the current project
+    currentItemTypes: [],
     isError: false,
     isSuccess: false,
     isLoading: false,
@@ -49,14 +64,14 @@ export const getProject = createAsyncThunk(
             return await projectService.getProject(projectId, token)
         } catch (error) {
             const message =
-                (error.response &&
+                (error.response && 
                     error.response.data &&
                     error.response.data.message) ||
                 error.message ||
                 error.toString()
             return thunkAPI.rejectWithValue(message)
         }
-    }   
+    }
 )
 
 export const getProjects = createAsyncThunk(
@@ -64,11 +79,10 @@ export const getProjects = createAsyncThunk(
     async (_, thunkAPI) => {
         try {
             const token = thunkAPI.getState().auth.user.token
-
             return await projectService.getProjects(token)
         } catch (error) {
             const message =
-                (error.response &&
+                (error.response && 
                     error.response.data &&
                     error.response.data.message) ||
                 error.message ||
@@ -78,9 +92,25 @@ export const getProjects = createAsyncThunk(
     }
 )
 
+export const updateProject = createAsyncThunk(
+    'projects/update',
+    async ({projectId, projectData}, thunkAPI) => {
+        try {
+            const token = thunkAPI.getState().auth.user.token
+            return await projectService.updateProject(projectId, projectData, token)
+        } catch (error) {
+            const message =
+                (error.response && 
+                    error.response.data &&
+                    error.response.data.message) ||
+                error.message ||
+                error.toString()
+            return thunkAPI.rejectWithValue(message)
+        }
+    }
+)
 
 export const deleteProject = createAsyncThunk(
-
     'projects/delete',
     async (projectId, thunkAPI) => {
         try {
@@ -88,7 +118,7 @@ export const deleteProject = createAsyncThunk(
             return await projectService.deleteProject(projectId, token)
         } catch (error) {
             const message =
-                (error.response &&
+                (error.response && 
                     error.response.data &&
                     error.response.data.message) ||
                 error.message ||
@@ -97,29 +127,6 @@ export const deleteProject = createAsyncThunk(
         }
     }
 )
-
-
-export const updateProject = createAsyncThunk(
-
-    'projects/update',
-    async ({projectId, projectData}, thunkAPI) => {
-        try {
-            const token = thunkAPI.getState().auth.user.token
-            return await projectService.updateProject(projectId, projectData, token)
-        } catch (error) {
-
-            const message =
-                (error.response &&
-                    error.response.data &&
-                    error.response.data.message) ||
-                error.message ||
-                error.toString()
-            return thunkAPI.rejectWithValue(message)
-        }
-    }
-)
-
-// Add these after your existing thunks
 
 // Get project hierarchy
 export const getHierarchy = createAsyncThunk(
@@ -130,7 +137,7 @@ export const getHierarchy = createAsyncThunk(
             return await projectService.getHierarchy(projectId, token)
         } catch (error) {
             const message =
-                (error.response &&
+                (error.response && 
                     error.response.data &&
                     error.response.data.message) ||
                 error.message ||
@@ -143,7 +150,7 @@ export const getHierarchy = createAsyncThunk(
 // Update project hierarchy
 export const updateHierarchy = createAsyncThunk(
     'projects/updateHierarchy',
-    async ({ projectId, hierarchyData }, thunkAPI) => {
+    async ({projectId, hierarchyData}, thunkAPI) => {
         try {
             const token = thunkAPI.getState().auth.user.token
             return await projectService.updateHierarchy(projectId, hierarchyData, token)
@@ -178,28 +185,124 @@ export const deleteHierarchy = createAsyncThunk(
     }
 )
 
-// Helper function to save selected project to localStorage
-const saveSelectedProjectToStorage = (project) => {
-    try {
-        if (project) {
-            localStorage.setItem('selectedProject', JSON.stringify(project))
-        } else {
-            localStorage.removeItem('selectedProject')
+export const getHierarchyItemTypes = createAsyncThunk(
+    'projects/getHierarchyItemTypes',
+    async (projectId, thunkAPI) => {
+        try {
+            const token = thunkAPI.getState().auth.user.token
+            return await projectService.getHierarchyItemTypes(projectId, token)
+        } catch (error) {
+            const message =
+                (error.response && 
+                    error.response.data &&
+                    error.response.data.message) ||
+                error.message ||
+                error.toString()
+            return thunkAPI.rejectWithValue(message)
         }
-    } catch (error) {
-        console.error('Error saving selected project to localStorage:', error)
     }
-}
+)
+
+// Create hierarchy item type
+export const createHierarchyItemType = createAsyncThunk(
+    'projects/createHierarchyItemType',
+    async ({ projectId, itemTypeData }, thunkAPI) => {
+        try {
+            const token = thunkAPI.getState().auth.user.token
+            return await projectService.createHierarchyItemType(projectId, itemTypeData, token)
+        } catch (error) {
+            const message =
+                (error.response && 
+                    error.response.data &&
+                    error.response.data.message) ||
+                error.message ||
+                error.toString()
+            return thunkAPI.rejectWithValue(message)
+        }
+    }
+)
+
+// Delete hierarchy item type
+export const deleteHierarchyItemType = createAsyncThunk(
+    'projects/deleteHierarchyItemType',
+    async ({ projectId, itemTypeId }, thunkAPI) => {
+        try {
+            const token = thunkAPI.getState().auth.user.token
+            return await projectService.deleteItemType(projectId, itemTypeId, token)
+        } catch (error) {
+            const message =
+                (error.response && 
+                    error.response.data &&
+                    error.response.data.message) ||
+                error.message ||
+                error.toString()
+            return thunkAPI.rejectWithValue(message)
+        }
+    }
+)
+
+export const getProjectUsers = createAsyncThunk(
+    'projects/getProjectUsers',
+    async (projectId, thunkAPI) => {
+        try {
+            const token = thunkAPI.getState().auth.user.token
+            return await projectService.getProjectUsers(projectId, token)
+        } catch (error) {
+            const message =
+                (error.response &&
+                    error.response.data &&
+                    error.response.data.message) ||
+                error.message ||
+                error.toString()
+            return thunkAPI.rejectWithValue(message)
+        }
+    }
+)
+
+export const addUserToProject = createAsyncThunk(
+    'projects/addUserToProject',
+    async ({projectId, userData}, thunkAPI) => {
+        try {
+            const token = thunkAPI.getState().auth.user.token
+            return await projectService.addUserToProject(projectId, userData, token)
+        } catch (error) {
+            const message =
+                (error.response && 
+                    error.response.data &&
+                    error.response.data.message) ||
+                error.message ||
+                error.toString()
+            return thunkAPI.rejectWithValue(message)
+        }
+    }
+)
+
+export const removeUserFromProject = createAsyncThunk(
+    'projects/removeUserFromProject',
+    async ({projectId, userId}, thunkAPI) => {
+        try {
+            const token = thunkAPI.getState().auth.user.token
+            return await projectService.removeUserFromProject(projectId, userId, token)
+        } catch (error) {
+            const message =
+                (error.response && 
+                    error.response.data &&
+                    error.response.data.message) ||
+                error.message ||
+                error.toString()
+            return thunkAPI.rejectWithValue(message)
+        }
+    }
+)
 
 export const projectSlice = createSlice({
     name: 'projects',
     initialState,
     reducers: {
         reset: (state) => {
-            // Don't reset selectedProject on reset, keep it persistent
-            state.isError = false
-            state.isSuccess = false
             state.isLoading = false
+            state.isSuccess = false
+            state.isError = false
             state.message = ''
         },
         setSelectedProject: (state, action) => {
@@ -209,6 +312,9 @@ export const projectSlice = createSlice({
         clearSelectedProject: (state) => {
             state.selectedProject = null
             saveSelectedProjectToStorage(null)
+        },
+        setCurrentHierarchy: (state, action) => {
+            state.currentHierarchy = action.payload 
         }
     },
     extraReducers: (builder) => {
@@ -228,19 +334,6 @@ export const projectSlice = createSlice({
                 state.isError = true
                 state.message = action.payload
             })
-            .addCase(getProject.pending, (state) => {
-                state.isLoading = true
-            })
-            .addCase(getProject.fulfilled, (state, action) => {
-                state.isLoading = false
-                state.isSuccess = true
-                state.project = action.payload
-            })
-            .addCase(getProject.rejected, (state, action) => {
-                state.isLoading = false
-                state.isError = true
-                state.message = action.payload
-            })
             .addCase(getProjects.pending, (state) => {
                 state.isLoading = true
             })
@@ -254,20 +347,15 @@ export const projectSlice = createSlice({
                 state.isError = true
                 state.message = action.payload
             })
-            .addCase(deleteProject.pending, (state) => {
+            .addCase(getProject.pending, (state) => {
                 state.isLoading = true
             })
-            .addCase(deleteProject.fulfilled, (state, action) => {
+            .addCase(getProject.fulfilled, (state, action) => {
                 state.isLoading = false
                 state.isSuccess = true
-                state.projects = state.projects.filter((project) => project.id !== action.payload)
-                // If the deleted project was selected, clear the selection
-                if (state.selectedProject && state.selectedProject.id === action.payload) {
-                    state.selectedProject = null
-                    saveSelectedProjectToStorage(null)
-                }
+                state.selectedProject = action.payload
             })
-            .addCase(deleteProject.rejected, (state, action) => {
+            .addCase(getProject.rejected, (state, action) => {
                 state.isLoading = false
                 state.isError = true
                 state.message = action.payload
@@ -278,11 +366,11 @@ export const projectSlice = createSlice({
             .addCase(updateProject.fulfilled, (state, action) => {
                 state.isLoading = false
                 state.isSuccess = true
-                state.projects = state.projects.map((project) => project.id === action.payload.id ? action.payload : project)
-                // Update selectedProject if it was the one being updated
+                state.projects = state.projects.map(project => 
+                    project.id === action.payload.id ? action.payload : project
+                )
                 if (state.selectedProject && state.selectedProject.id === action.payload.id) {
                     state.selectedProject = action.payload
-                    saveSelectedProjectToStorage(action.payload)
                 }
             })
             .addCase(updateProject.rejected, (state, action) => {
@@ -290,14 +378,30 @@ export const projectSlice = createSlice({
                 state.isError = true
                 state.message = action.payload
             })
+            .addCase(deleteProject.pending, (state) => {
+                state.isLoading = true
+            })
+            .addCase(deleteProject.fulfilled, (state, action) => {
+                state.isLoading = false
+                state.isSuccess = true
+                state.projects = state.projects.filter(project => project.id !== action.payload.id)
+                if (state.selectedProject && state.selectedProject.id === action.payload.id) {
+                    state.selectedProject = null
+                }
+            })
+            .addCase(deleteProject.rejected, (state, action) => {
+                state.isLoading = false
+                state.isError = true
+                state.message = action.payload
+            })
             .addCase(getHierarchy.pending, (state) => {
                 state.isLoading = true
-                state.hierarchies = [] // Clear previous hierarchies
+                state.currentHierarchy = null // Clear previous hierarchy
             })
             .addCase(getHierarchy.fulfilled, (state, action) => {
                 state.isLoading = false
                 state.isSuccess = true
-                state.hierarchies = action.payload.data || []
+                state.currentHierarchy = action.payload.data
             })
             .addCase(getHierarchy.rejected, (state, action) => {
                 state.isLoading = false
@@ -310,7 +414,7 @@ export const projectSlice = createSlice({
             .addCase(updateHierarchy.fulfilled, (state, action) => {
                 state.isLoading = false
                 state.isSuccess = true
-                state.hierarchies = action.payload.data || []
+                state.currentHierarchy = action.payload.data
             })
             .addCase(updateHierarchy.rejected, (state, action) => {
                 state.isLoading = false
@@ -323,11 +427,92 @@ export const projectSlice = createSlice({
             .addCase(deleteHierarchy.fulfilled, (state, action) => {
                 state.isLoading = false
                 state.isSuccess = true
-                state.hierarchies = state.hierarchies.filter(
-                    (hierarchy) => hierarchy.id !== action.payload
-                )
+                state.currentHierarchy = null
             })
             .addCase(deleteHierarchy.rejected, (state, action) => {
+                state.isLoading = false
+                state.isError = true
+                state.message = action.payload
+            })
+            // Item Types reducers
+            .addCase(getHierarchyItemTypes.pending, (state) => {
+                state.isLoading = true
+            })
+            .addCase(getHierarchyItemTypes.fulfilled, (state, action) => {
+                state.isLoading = false
+                state.isSuccess = true
+                state.currentItemTypes = action.payload.data || []
+            })
+            .addCase(getHierarchyItemTypes.rejected, (state, action) => {
+                state.isLoading = false
+                state.isError = true
+                state.message = action.payload
+            })
+            .addCase(createHierarchyItemType.pending, (state) => {
+                state.isLoading = true
+            })
+            .addCase(createHierarchyItemType.fulfilled, (state, action) => {
+                state.isLoading = false
+                state.isSuccess = true
+                state.currentItemTypes.push(action.payload.data)
+            })
+            .addCase(createHierarchyItemType.rejected, (state, action) => {
+                state.isLoading = false
+                state.isError = true
+                state.message = action.payload
+            })
+            .addCase(deleteHierarchyItemType.pending, (state) => {
+                state.isLoading = true
+            })
+            .addCase(deleteHierarchyItemType.fulfilled, (state, action) => {
+                state.isLoading = false
+                state.isSuccess = true
+                state.currentItemTypes = state.currentItemTypes.filter(
+                    itemType => itemType.id !== action.payload.id
+                )
+            })
+            .addCase(deleteHierarchyItemType.rejected, (state, action) => {
+                state.isLoading = false
+                state.isError = true
+                state.message = action.payload
+            })
+            .addCase(getProjectUsers.pending, (state) => {
+                state.isLoading = true
+            })
+            .addCase(getProjectUsers.fulfilled, (state, action) => {
+                state.isLoading = false
+                state.isSuccess = true
+                state.projectUsers = action.payload.data || []
+            })
+            .addCase(getProjectUsers.rejected, (state, action) => {
+                state.isLoading = false
+                state.isError = true
+                state.message = action.payload
+            })
+            .addCase(addUserToProject.pending, (state) => {
+                state.isLoading = true
+            })
+            .addCase(addUserToProject.fulfilled, (state, action) => {
+                state.isLoading = false
+                state.isSuccess = true
+                state.projectUsers.push(action.payload.data)
+            })
+            .addCase(addUserToProject.rejected, (state, action) => {
+                state.isLoading = false
+                state.isError = true
+                state.message = action.payload
+            })
+            .addCase(removeUserFromProject.pending, (state) => {
+                state.isLoading = true
+            })
+            .addCase(removeUserFromProject.fulfilled, (state, action) => {
+                state.isLoading = false
+                state.isSuccess = true
+                state.projectUsers = state.projectUsers.filter(
+                    user => user.id !== action.payload.id
+                )
+            })
+            .addCase(removeUserFromProject.rejected, (state, action) => {
                 state.isLoading = false
                 state.isError = true
                 state.message = action.payload
@@ -335,5 +520,5 @@ export const projectSlice = createSlice({
     }
 })
 
-export const {reset, setSelectedProject, clearSelectedProject} = projectSlice.actions
+export const { reset, setSelectedProject, clearSelectedProject, setCurrentHierarchy } = projectSlice.actions
 export default projectSlice.reducer

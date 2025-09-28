@@ -22,10 +22,11 @@ const TreeNode = ({ node, level = 0 }) => {
     )
 }
 
-const HierarchyTree = ({ hierarchy }) => {
+const HierarchyTree = ({ hierarchyItems }) => {
     const [isTreeExpanded, setIsTreeExpanded] = useState(true)
     const [zoomLevel, setZoomLevel] = useState(100)
     const treeContentRef = useRef(null)
+
 
     // Calculate dynamic spacing and sizing based on zoom level
     const getDynamicStyles = () => {
@@ -41,7 +42,7 @@ const HierarchyTree = ({ hierarchy }) => {
 
     const dynamicStyles = getDynamicStyles()
     
-    if (!hierarchy || !hierarchy.hierarchy_item_types || hierarchy.hierarchy_item_types.length === 0) {
+    if (!hierarchyItems || hierarchyItems.length === 0) {
         return <div className="no-hierarchy">No items in this hierarchy</div>
     }
 
@@ -57,8 +58,8 @@ const HierarchyTree = ({ hierarchy }) => {
 
         // Build parent-child relationships
         items.forEach(item => {
-            if (item.parent_item_id && itemMap.has(item.parent_item_id)) {
-                itemMap.get(item.parent_item_id).children.push(itemMap.get(item.id))
+            if (item.parent_id && itemMap.has(item.parent_id)) {
+                itemMap.get(item.parent_id).children.push(itemMap.get(item.id))
             } else {
                 rootItems.push(itemMap.get(item.id))
             }
@@ -79,7 +80,7 @@ const HierarchyTree = ({ hierarchy }) => {
         setZoomLevel(100)
     }
 
-    const treeData = buildTree(hierarchy.hierarchy_item_types)
+    const treeData = buildTree(hierarchyItems)
 
     return (
         <div className="hierarchy-tree">

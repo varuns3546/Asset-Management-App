@@ -1,0 +1,1 @@
+users in project_users should be able to access projects. currently only owners can access
