@@ -94,6 +94,7 @@
 
 /* Add CSS custom properties support to tree-content */
 .tree-content {
+    
     padding: 20px;
     position: relative;
     /* Default values that will be overridden by JavaScript */

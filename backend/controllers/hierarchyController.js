@@ -1,7 +1,4 @@
 import asyncHandler from 'express-async-handler';
-import supabaseClient from '../config/supabaseClient.js';
-const { supabaseAdmin } = supabaseClient;
-
 
 const getHierarchy = asyncHandler(async (req, res) => {
   const { id: project_id } = req.params; // Fix: use 'id' from route params and rename to project_id
@@ -41,10 +38,10 @@ const getHierarchy = asyncHandler(async (req, res) => {
   try {
     // Get all hierarchy items for this project
     const { data: hierarchyItems, error } = await req.supabase
-      .from('hierarchy_item_types')
+      .from('hierarchy_entries')
       .select('*')
       .eq('project_id', project_id)
-      .order('title');
+      .order('created_at');
 
     if (error) {
       console.error('Error fetching hierarchy items:', error);
@@ -53,7 +50,7 @@ const getHierarchy = asyncHandler(async (req, res) => {
         error: 'Failed to fetch hierarchy items' 
       });
     }
-
+    
     // Return the hierarchy items (empty array if none exist)
     res.status(200).json({
       success: true,
@@ -61,7 +58,7 @@ const getHierarchy = asyncHandler(async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error in getHierarchy:', error);
+    console.error('Error fetching hierarchy:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error while fetching hierarchy'
@@ -113,10 +110,10 @@ const updateHierarchy = asyncHandler(async (req, res) => {
   }
 
   try {
-    // Get existing hierarchy items for this project to avoid duplicates
+    // Get existing hierarchy items for this project
     const { data: existingItems, error: existingError } = await req.supabase
-      .from('hierarchy_item_types')
-      .select('id, title, parent_item_id, project_id')
+      .from('hierarchy_entries')
+      .select('*')
       .eq('project_id', project_id);
 
     if (existingError) {
@@ -127,13 +124,11 @@ const updateHierarchy = asyncHandler(async (req, res) => {
       });
     }
 
-    // Create a map of existing items by title to avoid duplicates
+    // Create a map of existing items by title for quick lookup
     const existingItemsMap = new Map();
-    if (existingItems) {
-      existingItems.forEach(item => {
-        existingItemsMap.set(item.title.toLowerCase(), item);
-      });
-    }
+    existingItems.forEach(item => {
+      existingItemsMap.set(item.title.toLowerCase(), item);
+    });
 
     // Create a map of frontend IDs to backend UUIDs for parent relationships
     const itemIdMap = new Map();
@@ -149,12 +144,13 @@ const updateHierarchy = asyncHandler(async (req, res) => {
         continue;
       }
 
-      const { data: hierarchyItem, error: itemError } = await supabaseAdmin
-        .from('hierarchy_item_types')
+      const { data: hierarchyItem, error: itemError } = await req.supabase
+        .from('hierarchy_entries')
         .insert({
           title: item.title,
+          item_type_id: item.item_type_id,
           project_id: project_id,
-          parent_item_id: null // Will be updated in second pass
+          parent_id: null // Will be updated in second pass
         })
         .select()
         .single();
@@ -176,10 +172,14 @@ const updateHierarchy = asyncHandler(async (req, res) => {
         const parentBackendId = itemIdMap.get(item.parentId);
         
         if (backendItemId && parentBackendId) {
-          await supabaseAdmin
-            .from('hierarchy_item_types')
-            .update({ parent_item_id: parentBackendId })
+          const { error: updateError } = await req.supabase
+            .from('hierarchy_entries')
+            .update({ parent_id: parentBackendId })
             .eq('id', backendItemId);
+            
+          if (updateError) {
+            console.error('Error updating parent relationship:', updateError);
+          }
         }
       }
     }
@@ -193,25 +193,23 @@ const updateHierarchy = asyncHandler(async (req, res) => {
     if (itemsToDelete.length > 0) {
       const deleteIds = itemsToDelete.map(item => item.id);
       
-      const { error: deleteError } = await supabaseAdmin
-        .from('hierarchy_item_types')
+      const { error: deleteError } = await req.supabase
+        .from('hierarchy_entries')
         .delete()
         .in('id', deleteIds);
         
       if (deleteError) {
         console.error('Error deleting removed hierarchy items:', deleteError);
         // Continue execution - don't fail the entire operation
-      } else {
-        console.log(`Deleted ${itemsToDelete.length} removed hierarchy items`);
       }
     }
 
     // Fetch the complete updated hierarchy with items
     const { data: completeHierarchy, error: fetchError } = await req.supabase
-      .from('hierarchy_item_types')
+      .from('hierarchy_entries')
       .select('*')
       .eq('project_id', project_id)
-      .order('title');
+      .order('created_at');
 
     if (fetchError) {
       console.error('Error fetching complete hierarchy:', fetchError);
@@ -238,15 +236,7 @@ const updateHierarchy = asyncHandler(async (req, res) => {
 });
 
 const deleteHierarchy = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-  const { project_id } = req.query;
-
-  if (!id) {
-    return res.status(400).json({
-      success: false,
-      error: 'Hierarchy ID is required'
-    });
-  }
+  const { id: project_id } = req.params;
 
   if (!project_id) {
     return res.status(400).json({
@@ -255,7 +245,7 @@ const deleteHierarchy = asyncHandler(async (req, res) => {
     });
   }
 
-  // Verify the user has access to the project through project_users table
+  // Verify the user has access to the project
   const { data: projectUser, error: projectUserError } = await req.supabase
     .from('project_users')
     .select('id, role')
@@ -263,7 +253,6 @@ const deleteHierarchy = asyncHandler(async (req, res) => {
     .eq('user_id', req.user.id)
     .single();
 
-  // If not found in project_users, check if user is the owner directly
   if (projectUserError || !projectUser) {
     const { data: project, error: projectError } = await req.supabase
       .from('projects')
@@ -280,24 +269,37 @@ const deleteHierarchy = asyncHandler(async (req, res) => {
     }
   }
 
-  const { error } = await req.supabase
-    .from('hierarchies')
-    .delete()
-    .eq('id', id)
-    .eq('project_id', project_id);
+  try {
+    // Delete all hierarchy items for this project
+    const { error } = await req.supabase
+      .from('hierarchy_entries')
+      .delete()
+      .eq('project_id', project_id);
 
-  if (error) {
-    return res.status(400).json({ 
+    if (error) {
+      console.error('Error deleting hierarchy items:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to delete hierarchy items'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Hierarchy deleted successfully'
+    });
+
+  } catch (error) {
+    console.error('Error deleting hierarchy:', error);
+    res.status(500).json({
       success: false,
-      error: error.message 
+      error: 'Internal server error while deleting hierarchy'
     });
   }
-
-  res.status(200).json(id);
 });
 
 export default {
-    getHierarchy,
-    deleteHierarchy,
-    updateHierarchy,
+  getHierarchy,
+  updateHierarchy,
+  deleteHierarchy
 };

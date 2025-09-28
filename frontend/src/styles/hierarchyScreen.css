@@ -172,26 +172,6 @@
     flex-direction: column;
 }
 
-.hierarchy-tree-header {
-    margin-bottom: 20px;
-    padding-bottom: 15px;
-    border-bottom: 1px solid #ddd;
-}
-
-.hierarchy-tree-title {
-    margin: 0 0 8px 0;
-    color: #333;
-    font-size: 1.3rem;
-    font-weight: 600;
-}
-
-.hierarchy-tree-description {
-    margin: 0;
-    color: #666;
-    font-size: 0.95rem;
-    line-height: 1.4;
-}
-
 .hierarchy-tree-content {
     flex: 1;
     position: relative;
@@ -370,4 +350,50 @@
     .add-item-form select {
         min-width: auto;
     }
+}
+
+/* Loading States */
+.hierarchy-loading-state,
+.form-loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    text-align: center;
+    color: #666;
+}
+
+.hierarchy-loading-state {
+    min-height: 300px;
+}
+
+.form-loading-state {
+    min-height: 200px;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 20px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.hierarchy-loading-state h3,
+.form-loading-state p {
+    margin: 10px 0;
+    font-weight: 500;
+}
+
+.hierarchy-loading-state p {
+    color: #888;
+    font-size: 14px;
 }
