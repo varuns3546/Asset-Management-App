@@ -4,16 +4,16 @@ import { getHierarchy, updateHierarchy, deleteHierarchy, reset } from '../featur
 import { loadUser } from '../features/auth/authSlice';
 import { useNavigate } from 'react-router-dom';
 import HierarchyTree from '../components/HierarchyTree';
+import HierarchyForm from '../components/HierarchyForm';
 import '../styles/hierarchyScreen.css';
 
 const HierarchyScreen = () => {
-    const { selectedProject, hierarchies, isLoading, isError, message } = useSelector((state) => state.projects);
+    const { selectedProject, hierarchies, isLoading} = useSelector((state) => state.projects);
     const { user, isLoading: authLoading } = useSelector((state) => state.auth);
-    const [editingForm, setEditingForm] = useState({
+    const [formData, setFormData] = useState({
         items: []
     });
-    const [newItemTitle, setNewItemTitle] = useState('');
-    const [newItemParentId, setNewItemParentId] = useState('');
+
     const hasLoadedData = useRef(false);
     const dispatch = useDispatch();
     const navigate = useNavigate()  
@@ -22,11 +22,10 @@ const HierarchyScreen = () => {
         dispatch(loadUser())
     }, [dispatch])
 
-
     useEffect(() => {
         if (selectedProject && user) {
             // Clear form and reset loading flag when switching projects
-            setEditingForm({ items: [] });
+            setFormData({ items: [] });
             hasLoadedData.current = false;
             // Clear Redux state and fetch new hierarchy
             dispatch(reset());
@@ -37,38 +36,46 @@ const HierarchyScreen = () => {
         }
     }, [selectedProject, user, dispatch])
 
-   
-
     // Get the hierarchy items for this project
     const hierarchyItems = hierarchies || [];
 
     // Update form when hierarchy data changes
     useEffect(() => {
         if (hierarchyItems && Array.isArray(hierarchyItems)) {
-            setEditingForm({
+            setFormData({
                 items: hierarchyItems
             });
             hasLoadedData.current = true;
         } else if (hierarchyItems && hierarchyItems.length === 0) {
             // Handle empty array case
-            setEditingForm({
+            setFormData({
                 items: []
             });
             hasLoadedData.current = true;
         }
     }, [hierarchyItems]);
 
-    const handleSaveHierarchy = () => {
+    // Callback for when form data changes
+    const handleFormDataChange = (updatedItems) => {
+        setFormData(prev => ({
+            ...prev,
+            items: updatedItems
+        }));
+    };
+
+    // Callback for saving hierarchy
+    const handleSaveHierarchy = (items) => {
         if (!selectedProject) {
             alert('Please select a project first');
             return;
         }
 
         const hierarchyData = {
-            items: editingForm.items.map(item => ({
+            items: items.map(item => ({
                 id: item.id,
                 title: item.title,
-                parentId: item.parent_item_id
+                itemType: item.itemType,
+                parentId: item.parentId
             }))
         };
         
@@ -77,43 +84,8 @@ const HierarchyScreen = () => {
             projectId: selectedProject.id,
             hierarchyData
         }));
-    }
-
-    const handleAddItem = () => {
-        console.log('Adding item:', newItemTitle, 'Parent:', newItemParentId);
-        
-        if (!newItemTitle.trim()) {
-            alert('Please enter an item title');
-            return;
-        }
-
-        const newItem = {
-            id: Date.now().toString(), // Temporary ID for frontend
-            title: newItemTitle,
-            parent_item_id: newItemParentId || null
-        };
-
-        console.log('New item created:', newItem);
-
-        setEditingForm(prev => {
-            const updatedItems = [...prev.items, newItem];
-            console.log('Updated items:', updatedItems);
-            return {
-                ...prev,
-                items: updatedItems
-            };
-        });
-
-        setNewItemTitle('');
-        setNewItemParentId('');
-    }
-
-    const handleRemoveItem = (itemId) => {
-        setEditingForm(prev => ({
-            ...prev,
-            items: prev.items.filter(item => item.id !== itemId)
-        }));
-    }
+    };
+    
 
    
 
@@ -130,79 +102,31 @@ const HierarchyScreen = () => {
                         {/* Left side - Edit Form */}
                         <div className="hierarchy-left-panel">
                             <div className="hierarchy-edit-container">
-                                <div className="hierarchy-edit-form">
-                                    <div className="form-group">
-                                        <label htmlFor="newItemTitle">Add New Item</label>
-                                        <div className="add-item-form">
-                                            <input
-                                                type="text"
-                                                id="newItemTitle"
-                                                value={newItemTitle}
-                                                onChange={(e) => setNewItemTitle(e.target.value)}
-                                                placeholder="Enter item title"
-                                                className="form-input"
-                                            />
-                                            <select
-                                                value={newItemParentId}
-                                                onChange={(e) => setNewItemParentId(e.target.value)}
-                                                className="form-select"
-                                            >
-                                                <option value="">No parent (root item)</option>
-                                                {editingForm.items.map(item => (
-                                                    <option key={item.id} value={item.id}>
-                                                        {item.title}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                            <button onClick={handleAddItem} className="add-button">
-                                                Add Item
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <div className="form-group">
-                                        <label>Current Items</label>
-                                        <div className="items-list">
-                                            {editingForm.items.map(item => (
-                                                <div key={item.id} className="item-row">
-                                                    <span className="item-title">{item.title}</span>
-                                                    <button 
-                                                        onClick={() => handleRemoveItem(item.id)}
-                                                        className="remove-button"
-                                                    >
-                                                        Remove
-                                                    </button>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                    
-                                    <div className="form-actions">
-                                        <button onClick={handleSaveHierarchy} className="save-button">
-                                            Save Hierarchy
-                                        </button>
-                                    </div>
-                                </div>
+                                <HierarchyForm 
+                                    hierarchyItems={formData.items}
+                                    onSaveHierarchy={handleSaveHierarchy}
+                                    onUpdateItems={handleFormDataChange}
+                                />
                             </div>
                         </div>
                         
                         {/* Right side - Tree (always visible) */}
                         <div className="hierarchy-right-panel">
-                            {editingForm.items.length > 0 ? (
+                            {formData.items.length > 0 ? (
                                 <div className="hierarchy-tree-container">
                                     <div className="hierarchy-tree-header">
-                                        <h3 className="hierarchy-tree-title">{editingForm.title}</h3>
-                                        {editingForm.description && (
+                                        <h3 className="hierarchy-tree-title">{formData.title}</h3>
+                                        {formData.description && (
                                             <p className="hierarchy-tree-description">
-                                                {editingForm.description}
+                                                {formData.description}
                                             </p>
                                         )}
                                     </div>
                                     <div className="hierarchy-tree-content">
                                         <HierarchyTree hierarchy={{ 
-                                            title: editingForm.title,
-                                            description: editingForm.description,
-                                            hierarchy_item_types: editingForm.items
+                                            title: formData.title,
+                                            description: formData.description,
+                                            hierarchy_item_types: formData.items
                                         }} />
                                     </div>
                                 </div>
