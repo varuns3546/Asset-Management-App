@@ -56,7 +56,7 @@ const Navbar = ({ onOpenModal, onCloseModal }) => {
             />
             <Dropdown 
                 title="Structure" 
-                options={['Asset Hierarchy']} 
+                options={['Asset Hierarchy', 'Item Types']} 
                 isOpen={openDropdown === 'structure'}
                 onToggle={() => toggleDropdown('structure')}
             />
@@ -72,8 +72,8 @@ const Navbar = ({ onOpenModal, onCloseModal }) => {
                 isOpen={openDropdown === 'generate'}
                 onToggle={() => toggleDropdown('generate')}
             />
-            <button className="button">Share</button>
-            <button className="button" onClick={handleLogout}>Logout</button>
+            <button className="button share-button">Share</button>
+            <button className="button logout-button" onClick={handleLogout}>Logout</button>
         </div>
     )
 }

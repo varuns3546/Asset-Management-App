@@ -14,7 +14,7 @@ const HierarchyForm = ({
     const [newItem, setNewItem] = useState({
         title: '',
         item_type_id: null,
-        parentId: null
+        parent_id: null
     });
     const hasLoadedInitialData = useRef(false);
 
@@ -43,7 +43,7 @@ const HierarchyForm = ({
             id: Date.now().toString(), // Temporary ID for frontend
             title: newItem.title,
             item_type_id: newItem.item_type_id || null,
-            parent_id: newItem.parentId || null
+            parent_id: newItem.parent_id || null
         };
 
         setFormData(prev => {
@@ -63,7 +63,7 @@ const HierarchyForm = ({
         setNewItem({
             title: '',
             item_type_id: null,
-            parentId: newItem.parentId || null
+            parent_id: newItem.parent_id || null
         });
     }
 
@@ -109,14 +109,14 @@ const HierarchyForm = ({
                         <option value="">No item type (optional)</option>
                         {itemTypes.map(itemType => (
                             <option key={itemType.id} value={itemType.id}>
-                                {itemType.name}
+                                {itemType.title}
                             </option>
                         ))}
                     </select>
                     <select
-                        id="parentId"
-                        name="parentId"
-                        value={newItem.parentId}
+                        id="parent_id"
+                        name="parent_id"
+                        value={newItem.parent_id}
                         onChange={handleNewItemChange}
                         className="form-select"
                         disabled={isLoading}

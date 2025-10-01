@@ -21,7 +21,7 @@ const Dropdown = ({title, options, isOpen, onToggle, onOpenModal, onCloseModal})
             // Map other options to routes
             const routeMap = {
                 'Asset Hierarchy': '/hierarchies',
-                // Add more mappings as needed for other options
+                'Item Types': '/item-types',
             }
             
             if (routeMap[option]) {

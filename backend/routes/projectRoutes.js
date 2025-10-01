@@ -1,12 +1,10 @@
 import express from 'express';
 import projectController from '../controllers/projectController.js';
 import hierarchyController from '../controllers/hierarchyController.js';
-import itemTypeController from '../controllers/itemTypeController.js';
 import supabaseClient from '../config/supabaseClient.js';
 
 const { getProjects, getProject, createProject, deleteProject, updateProject, getProjectUsers, addUserToProject, removeUserFromProject } = projectController;
-const { getHierarchy, updateHierarchy, deleteHierarchy } = hierarchyController;
-const { getItemTypes, createItemType, deleteItemType } = itemTypeController;
+const { getHierarchy, updateHierarchy, deleteHierarchy, getItemTypes, updateItemTypes, createItemType, deleteItemType } = hierarchyController;
 const { authenticateUser } = supabaseClient;
 const router = express.Router();
 
@@ -30,6 +28,7 @@ router.delete('/:id/hierarchy', deleteHierarchy);
 
 // Item types routes
 router.get('/:id/hierarchy/item-types', getItemTypes);
+router.put('/:id/hierarchy/item-types', updateItemTypes);
 router.post('/:id/hierarchy/item-types', createItemType);
 router.delete('/:id/hierarchy/item-types/:itemTypeId', deleteItemType);
 
