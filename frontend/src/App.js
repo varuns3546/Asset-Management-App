@@ -25,13 +25,13 @@ function AppContent() {
   useEffect(() => {
     // Give time for user to load on refresh
     const timer = setTimeout(() => {
-        if (user === null && !isLoading) {
+        if (user === null && !isLoading && location.pathname !== '/register') {
             navigate('/');
         }
     }, 100);
 
     return () => clearTimeout(timer);
-}, [user, isLoading, navigate]);
+}, [user, isLoading, navigate, location.pathname]);
   const hideNavbarRoutes = ['/', '/register'];
   const showNavbar = !hideNavbarRoutes.includes(location.pathname);
   
