@@ -1,83 +1,75 @@
 import { useEffect, useState, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { getHierarchy, updateHierarchy, deleteHierarchy, getHierarchyItemTypes, reset } from '../features/projects/projectSlice';
+import { getHierarchyItemTypes, updateHierarchyItemTypes, deleteHierarchyItemType, reset } from '../features/projects/projectSlice';
 import { loadUser } from '../features/auth/authSlice';
 import { useNavigate } from 'react-router-dom';
-import HierarchyTree from '../components/structure/HierarchyTree';
-import HierarchyForm from '../components/structure/HierarchyForm';
+import ItemTypeForm from '../components/structure/ItemTypeForm';
+import ItemTypeTree from '../components/structure/ItemTypeTree';
 import '../styles/structureScreen.css';
-const HierarchyScreen = () => {
-    const { selectedProject, currentHierarchy, currentItemTypes, isLoading, isError, message} = useSelector((state) => state.projects);
+const ItemTypeScreen = () => {
+    const { selectedProject, currentItemTypes, isLoading, isError, message} = useSelector((state) => state.projects);
     const { user, isLoading: authLoading } = useSelector((state) => state.auth);
     const [formData, setFormData] = useState({
-        items: currentHierarchy || []
+        itemTypes: currentItemTypes || []
     });
-
     const hasLoadedData = useRef(false);
     const dispatch = useDispatch();
     const navigate = useNavigate()  
-    
+
     useEffect(() => {
         dispatch(loadUser())
     }, [dispatch])
 
     useEffect(() => {
         if (selectedProject && user) {
-            // Clear form and reset loading flag when switching projects
-            setFormData({ items: currentHierarchy || [] });
+            setFormData({ itemTypes: currentItemTypes || [] });
             hasLoadedData.current = false;
-            // Clear Redux state and fetch new hierarchy
             dispatch(reset());
-            dispatch(getHierarchy(selectedProject.id));
             dispatch(getHierarchyItemTypes(selectedProject.id));
+
         }
         return () => {
             dispatch(reset())
         }
-    }, [selectedProject, user, dispatch])
+    }, [selectedProject, user, dispatch]);
 
-
-    // Update form only when hierarchy data is first loaded (not on every change)
     useEffect(() => {
-        if (currentHierarchy && Array.isArray(currentHierarchy) && currentHierarchy.length > 0 && !hasLoadedData.current) {
-            setFormData({ items: currentHierarchy });
+        if (currentItemTypes && Array.isArray(currentItemTypes) && currentItemTypes.length > 0 && !hasLoadedData.current) {
+            setFormData({ itemTypes: currentItemTypes });
             hasLoadedData.current = true;
         }
-    }, [currentHierarchy]);
+    }, [currentItemTypes]);
 
-
-
-
-    // Callback for saving hierarchy
-    const handleSaveHierarchy = (items) => {
+       // Callback for saving hierarchy
+    const handleSaveItemTypes = (itemTypes) => {
+        console.log('itemTypes', itemTypes);
         if (!selectedProject) {
             alert('Please select a project first');
             return;
         }
 
-        const hierarchyData = {
-            items: items.map(item => ({
-                id: item.id,
-                title: item.title,
-                item_type_id: item.item_type_id,
-                parent_id: item.parent_id
+        const itemTypesData = {
+            itemTypes: formData.itemTypes.map(itemType => ({
+                id: itemType.id,
+                title: itemType.title,
+                description: itemType.description,
+                parent_id: itemType.parent_id
             }))
         };
         
         // Always update the hierarchy items
-        dispatch(updateHierarchy({ 
+        dispatch(updateHierarchyItemTypes({ 
             projectId: selectedProject.id,
-            hierarchyData
+            itemTypesData
         }));
     };
-    
     return (
         <div className="hierarchy-screen">
             {selectedProject ? (
                 <div className="hierarchy-container">
                     <div className="hierarchy-header">
                         <h2 className="hierarchy-title">Asset Hierarchy - {selectedProject.title}</h2>
-                        {isLoading && <p className="hierarchy-loading">Loading hierarchy...</p>}
+                        {isLoading && <p className="hierarchy-loading">Loading items...</p>}
                         {isError && <p className="hierarchy-error">Error: {message}</p>}
                     </div>
                     
@@ -92,11 +84,10 @@ const HierarchyScreen = () => {
                                         <p>Loading form data...</p>
                                     </div>
                                 ) : (
-                                    <HierarchyForm 
-                                        hierarchyItems={formData.items}
-                                        itemTypes={currentItemTypes}
-                                        onSaveHierarchy={handleSaveHierarchy}
-                                        onUpdateItems={(updatedItems) => setFormData({ items: updatedItems })}
+                                    <ItemTypeForm 
+                                        itemTypes={formData.itemTypes}
+                                        onSaveItemTypes={handleSaveItemTypes}
+                                        onUpdateItemTypes={(updatedItemTypes) => setFormData({ itemTypes: updatedItemTypes })}
                                         isLoading={isLoading}
                                     />
                                 )}
@@ -108,13 +99,13 @@ const HierarchyScreen = () => {
                             {isLoading ? (
                                 <div className="hierarchy-loading-state">
                                     <div className="loading-spinner"></div>
-                                    <h3>Loading Hierarchy...</h3>
+                                    <h3>Loading Items...</h3>
                                     <p>Fetching hierarchy data from server</p>
                                 </div>
-                            ) : formData.items.length > 0 ? (
+                            ) : formData.itemTypes.length > 0 ? (
                                 <div className="hierarchy-tree-container">
                                     <div className="hierarchy-tree-content">
-                                        <HierarchyTree hierarchyItems={formData.items}/>
+                                        <ItemTypeTree itemTypes={formData.itemTypes}/>
                                     </div>
                                 </div>
                             ) : (
@@ -137,6 +128,6 @@ const HierarchyScreen = () => {
             )}
         </div>
     );
-};
+}
 
-export default HierarchyScreen;
+export default ItemTypeScreen;

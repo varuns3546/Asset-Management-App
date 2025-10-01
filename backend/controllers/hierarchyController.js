@@ -167,9 +167,9 @@ const updateHierarchy = asyncHandler(async (req, res) => {
 
     // Second pass: update parent relationships for all items (existing and new)
     for (const item of items) {
-      if (item.parentId && itemIdMap.has(item.parentId)) {
+      if (item.parent_id && itemIdMap.has(item.parent_id)) {
         const backendItemId = itemIdMap.get(item.id);
-        const parentBackendId = itemIdMap.get(item.parentId);
+        const parentBackendId = itemIdMap.get(item.parent_id);
         
         if (backendItemId && parentBackendId) {
           const { error: updateError } = await req.supabase
@@ -298,8 +298,394 @@ const deleteHierarchy = asyncHandler(async (req, res) => {
   }
 });
 
+const getItemTypes = asyncHandler(async (req, res) => {
+  const { id: project_id } = req.params;
+
+  if (!project_id) {
+    return res.status(400).json({
+      success: false,
+      error: 'Project ID is required'
+    });
+  }
+
+  // Verify the user has access to the project through project_users table
+  const { data: projectUser, error: projectUserError } = await req.supabase
+    .from('project_users')
+    .select('id, role')
+    .eq('project_id', project_id)
+    .eq('user_id', req.user.id)
+    .single();
+
+  // If not found in project_users, check if user is the owner directly
+  if (projectUserError || !projectUser) {
+    const { data: project, error: projectError } = await req.supabase
+      .from('projects')
+      .select('id, owner_id')
+      .eq('id', project_id)
+      .eq('owner_id', req.user.id)
+      .single();
+
+    if (projectError || !project) {
+      return res.status(404).json({
+        success: false,
+        error: 'Project not found or access denied'
+      });
+    }
+  }
+
+  try {
+    // Get all item types for this project
+    const { data: itemTypes, error } = await req.supabase
+      .from('hierarchy_item_types')
+      .select('*')
+      .eq('project_id', project_id)
+      .order('created_at');
+
+    if (error) {
+      console.error('Error fetching item types:', error);
+      return res.status(500).json({ 
+        success: false,
+        error: 'Failed to fetch item types' 
+      });
+    }
+
+    // Return the item types (empty array if none exist)
+    res.status(200).json({
+      success: true,
+      data: itemTypes || []
+    });
+
+  } catch (error) {
+    console.error('Error in getItemTypes:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error while fetching item types'
+    });
+  }
+});
+
+const updateItemTypes = asyncHandler(async (req, res) => {
+  const { itemTypes } = req.body;
+  const { id: project_id } = req.params; // Fix: use 'id' from route params and rename to project_id
+
+  if (!project_id) {
+    return res.status(400).json({
+      success: false,
+      error: 'Project ID is required'
+    });
+  }
+
+  if (!itemTypes || !Array.isArray(itemTypes) || itemTypes.length === 0) {
+    return res.status(400).json({
+      success: false,
+      error: 'Item types array is required'
+    });
+  }
+
+  // Verify the user has access to the project through project_users table
+  const { data: projectUser, error: projectUserError } = await req.supabase
+    .from('project_users')
+    .select('id, role')
+    .eq('project_id', project_id)
+    .eq('user_id', req.user.id)
+    .single();
+
+  // If not found in project_users, check if user is the owner directly
+  if (projectUserError || !projectUser) {
+    const { data: project, error: projectError } = await req.supabase
+      .from('projects')
+      .select('id, owner_id')
+      .eq('id', project_id)
+      .eq('owner_id', req.user.id)
+      .single();
+
+    if (projectError || !project) {
+      return res.status(404).json({
+        success: false,
+        error: 'Project not found or access denied'
+      });
+    }
+  }
+
+  try {
+    // Get existing hierarchy itemTypes for this project
+    const { data: existingItemTypes, error: existingError } = await req.supabase
+      .from('hierarchy_item_types')
+      .select('*')
+      .eq('project_id', project_id);
+
+    if (existingError) {
+      console.error('Error fetching existing hierarchy itemTypes:', existingError);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to fetch existing hierarchy itemTypes'
+      });
+    }
+
+    // Create a map of existing items by title for quick lookup
+    const existingItemTypesMap = new Map();
+    existingItemTypes.forEach(itemType => {
+      existingItemTypesMap.set(itemType.title.toLowerCase(), itemType);
+    });
+
+    // Create a map of frontend IDs to backend UUIDs for parent relationships
+    const itemTypeIdMap = new Map();
+    const createdItemTypes = [];
+    
+    // First pass: create new items (skip existing ones) and map frontend IDs to backend UUIDs
+    for (const itemType of itemTypes) {
+      // Check if itemType already exists
+      const existingItemType = existingItemTypesMap.get(itemType.title.toLowerCase());
+      if (existingItemType) {
+        // Map existing item ID
+        itemTypeIdMap.set(itemType.id, existingItemType.id);
+        continue;
+      }
+
+      const { data: hierarchyItemType, error: itemTypeError } = await req.supabase
+        .from('hierarchy_item_types')
+        .insert({
+          title: itemType.title,
+          description: itemType.description,
+          project_id: project_id,
+          parent_id: null // Will be updated in second pass
+        })
+        .select()
+        .single();
+
+      if (itemTypeError) {
+        console.error('Error creating hierarchy itemType:', itemTypeError);
+        continue;
+      }
+
+      // Map frontend ID to backend UUID
+      itemTypeIdMap.set(itemType.id, hierarchyItemType.id);
+      createdItemTypes.push(hierarchyItemType);
+    }
+
+    // Second pass: update parent relationships for all items (existing and new)
+    for (const itemType of itemTypes) {
+      if (itemType.parent_id && itemTypeIdMap.has(itemType.parent_id)) {
+        const backendItemTypeId = itemTypeIdMap.get(itemType  .id);
+        const parentBackendId = itemTypeIdMap.get(itemType.parent_id);
+        
+        if (backendItemTypeId && parentBackendId) {
+          const { error: updateError } = await req.supabase
+            .from('hierarchy_entries')
+            .update({ parent_id: parentBackendId })
+            .eq('id', backendItemTypeId);
+            
+          if (updateError) {
+            console.error('Error updating parent relationship:', updateError);
+          }
+        }
+      }
+    }
+
+    // Third pass: Delete items that are no longer in the frontend data
+    const frontendItemTypeTitles = new Set(itemTypes.map(itemType => itemType.title.toLowerCase()));
+    const itemTypesToDelete = existingItemTypes.filter(existingItemType => 
+      !frontendItemTypeTitles.has(existingItemType.title.toLowerCase())
+    );
+
+    if (itemTypesToDelete.length > 0) {
+      const deleteIds = itemTypesToDelete.map(itemType => itemType.id);
+      
+      const { error: deleteError } = await req.supabase
+        .from('hierarchy_item_types')
+        .delete()
+        .in('id', deleteIds);
+        
+      if (deleteError) {
+        console.error('Error deleting removed hierarchy itemTypes:', deleteError);
+        // Continue execution - don't fail the entire operation
+      }
+    }
+
+    // Fetch the complete updated hierarchy with items
+    const { data: completeHierarchyItemTypes, error: fetchError } = await req.supabase
+      .from('hierarchy_item_types')
+      .select('*')
+      .eq('project_id', project_id)
+      .order('created_at');
+
+    if (fetchError) {
+      console.error('Error fetching complete hierarchy itemTypes:', fetchError);
+      return res.status(500).json({
+        success: false,
+        error: 'Hierarchy itemTypes were processed but failed to fetch updated results',
+        data: createdItemTypes
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Hierarchy itemTypes updated successfully',
+      data: completeHierarchyItemTypes
+    });
+
+  } catch (error) {
+    console.error('Error updating hierarchy itemTypes:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error while updating hierarchy itemTypes'
+    });
+  }
+});
+
+const createItemType = asyncHandler(async (req, res) => {
+  const { name, description } = req.body;
+  const { id: project_id } = req.params;
+
+  if (!project_id) {
+    return res.status(400).json({
+      success: false,
+      error: 'Project ID is required'
+    });
+  }
+
+  if (!name || !name.trim()) {
+    return res.status(400).json({
+      success: false,
+      error: 'Item type name is required'
+    });
+  }
+
+  // Verify the user has access to the project through project_users table
+  const { data: projectUser, error: projectUserError } = await req.supabase
+    .from('project_users')
+    .select('id, role')
+    .eq('project_id', project_id)
+    .eq('user_id', req.user.id)
+    .single();
+
+  // If not found in project_users, check if user is the owner directly
+  if (projectUserError || !projectUser) {
+    const { data: project, error: projectError } = await req.supabase
+      .from('projects')
+      .select('id, owner_id')
+      .eq('id', project_id)
+      .eq('owner_id', req.user.id)
+      .single();
+
+    if (projectError || !project) {
+      return res.status(404).json({
+        success: false,
+        error: 'Project not found or access denied'
+      });
+    }
+  }
+
+  try {
+    const { data: itemType, error } = await req.supabase
+      .from('hierarchy_item_types')
+      .insert({
+        name: name.trim(),
+        description: description || null,
+        project_id: project_id
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating item type:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to create item type'
+      });
+    }
+
+    res.status(201).json({
+      success: true,
+      data: itemType
+    });
+
+  } catch (error) {
+    console.error('Error in createItemType:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error while creating item type'
+    });
+  }
+});
+
+const deleteItemType = asyncHandler(async (req, res) => {
+  const { id: project_id, itemTypeId } = req.params;
+
+  if (!project_id) {
+    return res.status(400).json({
+      success: false,
+      error: 'Project ID is required'
+    });
+  }
+
+  if (!itemTypeId) {
+    return res.status(400).json({
+      success: false,
+      error: 'Item type ID is required'
+    });
+  }
+
+  // Verify the user has access to the project through project_users table
+  const { data: projectUser, error: projectUserError } = await req.supabase
+    .from('project_users')
+    .select('id, role')
+    .eq('project_id', project_id)
+    .eq('user_id', req.user.id)
+    .single();
+
+  // If not found in project_users, check if user is the owner directly
+  if (projectUserError || !projectUser) {
+    const { data: project, error: projectError } = await req.supabase
+      .from('projects')
+      .select('id, owner_id')
+      .eq('id', project_id)
+      .eq('owner_id', req.user.id)
+      .single();
+
+    if (projectError || !project) {
+      return res.status(404).json({
+        success: false,
+        error: 'Project not found or access denied'
+      });
+    }
+  }
+
+  try {
+    const { error } = await req.supabase
+      .from('hierarchy_item_types')
+      .delete()
+      .eq('id', itemTypeId)
+      .eq('project_id', project_id);
+
+    if (error) {
+      console.error('Error deleting item type:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to delete item type'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Item type deleted successfully'
+    });
+
+  } catch (error) {
+    console.error('Error in deleteItemType:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error while deleting item type'
+    });
+  }
+});
+
 export default {
   getHierarchy,
   updateHierarchy,
-  deleteHierarchy
+  deleteHierarchy,
+  getItemTypes,
+  updateItemTypes,
+  createItemType,
+  deleteItemType
 };

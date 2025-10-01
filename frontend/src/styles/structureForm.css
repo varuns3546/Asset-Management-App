@@ -2,6 +2,7 @@
     background: white;
     border-radius: 8px;
     padding: 0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .hierarchy-form h2 {
@@ -27,11 +28,12 @@
 .form-input, .form-textarea, .form-select {
     width: 100%;
     padding: 10px 12px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
     font-size: 14px;
-    transition: border-color 0.2s, box-shadow 0.2s;
+    transition: all 0.2s ease;
     box-sizing: border-box;
+    background: white;
 }
 
 .form-input:focus, .form-textarea:focus, .form-select:focus {
@@ -47,11 +49,12 @@
 
 /* Add Item Section */
 .add-item-section {
-    background: #f8f9fa;
-    border: 1px solid #e9ecef;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border: 1px solid #dee2e6;
     border-radius: 8px;
     padding: 20px;
     margin: 20px 0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .add-item-section h3 {
@@ -62,20 +65,23 @@
 }
 
 .add-item-button {
-    background: #28a745;
+    background: #007bff;
     color: white;
-    border: none;
+    border: 1px solid #007bff;
     padding: 10px 20px;
-    border-radius: 5px;
+    border-radius: 6px;
     cursor: pointer;
     font-size: 14px;
     font-weight: 500;
-    transition: background-color 0.2s;
+    transition: all 0.2s ease;
     margin-top: 10px;
 }
 
 .add-item-button:hover {
-    background: #218838;
+    background: #0056b3;
+    border-color: #0056b3;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .add-item-button:disabled {
@@ -103,13 +109,20 @@
 
 .item-card {
     background: white;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    padding: 12px;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 15px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+}
+
+.item-card:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+    border-color: #007bff;
 }
 
 .item-info {
@@ -132,35 +145,42 @@
 .remove-item-button {
     background: #dc3545;
     color: white;
-    border: none;
+    border: 1px solid #dc3545;
     padding: 6px 12px;
     border-radius: 4px;
     cursor: pointer;
     font-size: 12px;
-    transition: background-color 0.2s;
+    font-weight: 500;
+    transition: all 0.2s ease;
 }
 
 .remove-item-button:hover {
     background: #c82333;
+    border-color: #bd2130;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* Submit Button */
 .submit-button {
     background: #007bff;
     color: white;
-    border: none;
+    border: 1px solid #007bff;
     padding: 12px 24px;
-    border-radius: 5px;
+    border-radius: 6px;
     cursor: pointer;
     font-size: 16px;
-    font-weight: 500;
-    transition: background-color 0.2s;
+    font-weight: 600;
+    transition: all 0.2s ease;
     width: 100%;
     margin-top: 20px;
 }
 
 .submit-button:hover:not(:disabled) {
     background: #0056b3;
+    border-color: #0056b3;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .submit-button:disabled {
