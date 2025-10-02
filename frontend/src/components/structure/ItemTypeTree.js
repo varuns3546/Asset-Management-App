@@ -35,6 +35,13 @@ const ItemTypeTree = ({ itemTypes }) => {
         console.log('ItemTypeTree received new itemTypes:', itemTypes);
     }, [itemTypes]);
 
+    // Force re-render when itemTypes change by updating a state
+    const [treeKey, setTreeKey] = useState(0);
+    
+    useEffect(() => {
+        setTreeKey(prev => prev + 1);
+    }, [itemTypes]);
+
 
     // Calculate dynamic spacing and sizing based on zoom level
     const getDynamicStyles = () => {
@@ -66,12 +73,19 @@ const ItemTypeTree = ({ itemTypes }) => {
             const parentIds = item.parent_ids || []
             
             if (parentIds.length > 0) {
+                let hasValidParent = false
                 // Add this item as a child to all its parents
                 parentIds.forEach(parentId => {
                     if (itemMap.has(parentId)) {
                         itemMap.get(parentId).children.push(itemMap.get(item.id))
+                        hasValidParent = true
                     }
                 })
+                
+                // If no valid parent exists (parent was deleted), promote to root level
+                if (!hasValidParent) {
+                    rootItems.push(itemMap.get(item.id))
+                }
             } else {
                 // No parents - this is a root item
                 rootItems.push(itemMap.get(item.id))
@@ -135,6 +149,7 @@ const ItemTypeTree = ({ itemTypes }) => {
             {isTreeExpanded && (
                 <div className="tree-scroll-wrapper">
                     <div 
+                        key={treeKey}
                         ref={treeContentRef}
                         className="tree-content"
                         style={{ 

@@ -7,8 +7,7 @@ const HierarchyForm = ({
     itemTypes = []
 }) => {
     const dispatch = useDispatch();
-    const { selectedProject } = useSelector((state) => state.projects);
-    const { currentHierarchy } = useSelector((state) => state.projects);
+    const { selectedProject, currentHierarchy } = useSelector((state) => state.projects);
     const [newItem, setNewItem] = useState({
         title: '',
         item_type_id: null,
@@ -25,11 +24,6 @@ const HierarchyForm = ({
     const handleAddItem = async () => {
         if (!newItem.title.trim()) {
             alert('Please enter an item title');
-            return;
-        }
-
-        if (!selectedProject) {
-            alert('Please select a project first');
             return;
         }
 
@@ -58,18 +52,12 @@ const HierarchyForm = ({
     }
 
     const handleRemoveItem = async (itemId) => {
-        if (!selectedProject) {
-            alert('Please select a project first');
-            return;
-        }
-
         try {
             await dispatch(deleteHierarchyItem({
                 projectId: selectedProject.id,
                 itemId
             })).unwrap();
         } catch (error) {
-            console.error('Error deleting hierarchy item:', error);
             alert('Failed to delete item. Please try again.');
         }
     }
