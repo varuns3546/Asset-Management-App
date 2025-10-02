@@ -612,7 +612,7 @@ const updateItemTypes = asyncHandler(async (req, res) => {
 });
 
 const createItemType = asyncHandler(async (req, res) => {
-  const { name, description, parent_ids } = req.body;
+  const { name, description, parent_ids, attributes } = req.body;
   const { id: project_id } = req.params;
 
   if (!project_id) {
@@ -672,6 +672,46 @@ const createItemType = asyncHandler(async (req, res) => {
         success: false,
         error: 'Failed to create item type'
       });
+    }
+
+    // Create attributes if they exist
+    console.log('Attributes received:', attributes);
+    if (attributes && attributes.length > 0) {
+      const attributesToInsert = attributes.map(attribute => ({
+        item_type_id: itemType.id,
+        title: attribute.trim()
+      }));
+
+      console.log('Attributes to insert:', attributesToInsert);
+
+      // Test if attributes table exists by trying to select from it first
+      const { data: testData, error: testError } = await req.supabase
+        .from('attributes')
+        .select('*')
+        .limit(1);
+
+      if (testError) {
+        console.error('Attributes table test error:', testError);
+        console.error('Table might not exist or have wrong permissions');
+      } else {
+        console.log('Attributes table is accessible');
+      }
+
+      const { data: insertedAttributes, error: attributesError } = await req.supabase
+        .from('attributes')
+        .insert(attributesToInsert)
+        .select();
+
+      if (attributesError) {
+        console.error('Error creating attributes:', attributesError);
+        console.error('Full error details:', JSON.stringify(attributesError, null, 2));
+        // Note: We don't return an error here since the item type was created successfully
+        // The attributes can be added later if needed
+      } else {
+        console.log('Successfully created attributes:', insertedAttributes);
+      }
+    } else {
+      console.log('No attributes provided or empty array');
     }
 
     res.status(201).json({
