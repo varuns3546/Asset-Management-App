@@ -454,12 +454,14 @@ export const projectSlice = createSlice({
             })
             .addCase(getHierarchy.pending, (state) => {
                 state.isLoading = true
-                state.currentHierarchy = null // Clear previous hierarchy
+                // Don't clear hierarchy immediately - let the fulfilled case handle the update
+                // This prevents temporary disappearance of children during refresh
             })
             .addCase(getHierarchy.fulfilled, (state, action) => {
                 state.isLoading = false
                 state.isSuccess = true
                 state.currentHierarchy = action.payload.data
+                console.log('getHierarchy fulfilled - updated hierarchy:', action.payload.data);
             })
             .addCase(getHierarchy.rejected, (state, action) => {
                 state.isLoading = false
@@ -573,6 +575,9 @@ export const projectSlice = createSlice({
                     itemType => itemType.id !== action.payload.id
                 )
                 console.log('Delete fulfilled - currentItemTypes after filter:', state.currentItemTypes);
+                
+                // Don't clear hierarchy data - let the getHierarchy call handle the refresh
+                // This prevents the temporary disappearance of children
             })
             .addCase(deleteHierarchyItemType.rejected, (state, action) => {
                 state.isLoading = false

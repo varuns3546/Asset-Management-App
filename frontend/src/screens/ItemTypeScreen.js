@@ -56,7 +56,10 @@ const ItemTypeScreen = () => {
                             {(currentItemTypes && currentItemTypes.length > 0) ? (
                                 <div className="hierarchy-tree-container">
                                     <div className="hierarchy-tree-content">
-                                        <ItemTypeTree itemTypes={currentItemTypes}/>
+                                        <ItemTypeTree 
+                                            key={currentItemTypes.length} 
+                                            itemTypes={currentItemTypes}
+                                        />
                                     </div>
                                 </div>
                             ) : (

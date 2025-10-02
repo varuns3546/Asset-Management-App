@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { createHierarchyItemType, deleteHierarchyItemType } from '../../features/projects/projectSlice';
+import { createHierarchyItemType, deleteHierarchyItemType, getHierarchy } from '../../features/projects/projectSlice';
 import '../../styles/structureScreen.css'
 
 const ItemTypeForm = ({ 
@@ -52,12 +52,6 @@ const ItemTypeForm = ({
             alert('Please enter an item type title');
             return;
         }
-
-        if (!selectedProject) {
-            alert('Please select a project first');
-            return;
-        }
-
         // Collect selected parent IDs from dropdowns
         const selectedParentIds = parentDropdowns
             .map(dropdown => dropdown.value)
@@ -93,20 +87,15 @@ const ItemTypeForm = ({
     }
 
     const handleRemoveItemType = async (itemTypeId) => {
-        if (!selectedProject) {
-            alert('Please select a project first');
-            return;
-        }
 
+        
         try {
-            console.log('Deleting item type with ID:', itemTypeId);
             const result = await dispatch(deleteHierarchyItemType({
                 projectId: selectedProject.id,
                 itemTypeId
             })).unwrap();
-            console.log('Item type deleted successfully:', result);
+            
         } catch (error) {
-            console.error('Error deleting item type:', error);
             alert('Failed to delete item type. Please try again.');
         }
     }

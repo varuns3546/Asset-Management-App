@@ -185,9 +185,11 @@ const updateHierarchy = asyncHandler(async (req, res) => {
     }
 
     // Third pass: Delete items that are no longer in the frontend data
+    // BUT preserve items that have item_type_id set to null (these are items whose item type was deleted)
     const frontendItemTitles = new Set(items.map(item => item.title.toLowerCase()));
     const itemsToDelete = existingItems.filter(existingItem => 
-      !frontendItemTitles.has(existingItem.title.toLowerCase())
+      !frontendItemTitles.has(existingItem.title.toLowerCase()) && 
+      existingItem.item_type_id !== null // Don't delete items with null item_type_id
     );
 
     if (itemsToDelete.length > 0) {
@@ -513,6 +515,60 @@ const updateItemTypes = asyncHandler(async (req, res) => {
     if (itemTypesToDelete.length > 0) {
       const deleteIds = itemTypesToDelete.map(itemType => itemType.id);
       
+      // Before deleting, clean up parent_ids references in remaining item types
+      const remainingItemTypes = existingItemTypes.filter(existingItemType => 
+        frontendItemTypeTitles.has(existingItemType.title.toLowerCase())
+      );
+      
+      const cleanupPromises = [];
+      for (const remainingItemType of remainingItemTypes) {
+        if (remainingItemType.parent_ids && Array.isArray(remainingItemType.parent_ids)) {
+          // Check if any of the deleted item types are in this item type's parent_ids
+          const hasDeletedParents = deleteIds.some(deleteId => 
+            remainingItemType.parent_ids.includes(deleteId)
+          );
+          
+          if (hasDeletedParents) {
+            // Remove deleted item type IDs from parent_ids
+            const updatedParentIds = remainingItemType.parent_ids.filter(id => 
+              !deleteIds.includes(id)
+            );
+            
+            const cleanupPromise = req.supabase
+              .from('hierarchy_item_types')
+              .update({ parent_ids: updatedParentIds.length > 0 ? updatedParentIds : null })
+              .eq('id', remainingItemType.id);
+            
+            cleanupPromises.push(cleanupPromise);
+          }
+        }
+      }
+      
+      // Execute cleanup operations
+      if (cleanupPromises.length > 0) {
+        const cleanupResults = await Promise.all(cleanupPromises);
+        const cleanupErrors = cleanupResults.filter(result => result.error);
+        
+        if (cleanupErrors.length > 0) {
+          console.error('Error cleaning up parent_ids during item type deletion:', cleanupErrors);
+          // Continue with deletion even if cleanup fails
+        }
+      }
+      
+      // Handle hierarchy entries that use the deleted item types
+      // Option 1: Set their item_type_id to null (preserve entries but remove type reference)
+      const { error: hierarchyUpdateError } = await req.supabase
+        .from('hierarchy_entries')
+        .update({ item_type_id: null })
+        .in('item_type_id', deleteIds)
+        .eq('project_id', project_id);
+        
+      if (hierarchyUpdateError) {
+        console.error('Error updating hierarchy entries after item type deletion:', hierarchyUpdateError);
+        // Continue execution - don't fail the entire operation
+      }
+      
+      // Now delete the item types
       const { error: deleteError } = await req.supabase
         .from('hierarchy_item_types')
         .delete()
@@ -675,6 +731,48 @@ const deleteItemType = asyncHandler(async (req, res) => {
   }
 
   try {
+    // First, get all item types that might reference this item type as a parent
+    const { data: allItemTypes, error: fetchError } = await req.supabase
+      .from('hierarchy_item_types')
+      .select('id, parent_ids')
+      .eq('project_id', project_id);
+
+    if (fetchError) {
+      console.error('Error fetching item types for cleanup:', fetchError);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to fetch item types for cleanup'
+      });
+    }
+
+    // Update all item types that have this item type in their parent_ids
+    const updatePromises = [];
+    for (const itemType of allItemTypes) {
+      if (itemType.parent_ids && Array.isArray(itemType.parent_ids) && itemType.parent_ids.includes(itemTypeId)) {
+        // Remove the deleted item type ID from parent_ids
+        const updatedParentIds = itemType.parent_ids.filter(id => id !== itemTypeId);
+        
+        const updatePromise = req.supabase
+          .from('hierarchy_item_types')
+          .update({ parent_ids: updatedParentIds.length > 0 ? updatedParentIds : null })
+          .eq('id', itemType.id);
+        
+        updatePromises.push(updatePromise);
+      }
+    }
+
+    // Execute all parent_ids updates
+    if (updatePromises.length > 0) {
+      const updateResults = await Promise.all(updatePromises);
+      const updateErrors = updateResults.filter(result => result.error);
+      
+      if (updateErrors.length > 0) {
+        console.error('Error updating parent_ids during cleanup:', updateErrors);
+        // Continue with deletion even if cleanup fails
+      }
+    }
+
+    // Now delete the item type
     const { error } = await req.supabase
       .from('hierarchy_item_types')
       .delete()
@@ -691,7 +789,7 @@ const deleteItemType = asyncHandler(async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Item type deleted successfully',
+      message: 'Item type deleted successfully and parent references cleaned up',
       id: itemTypeId
     });
 
