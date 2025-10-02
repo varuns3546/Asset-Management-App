@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-
 const ItemTypeForm = ({ 
     itemTypes,
     onSaveItemTypes,
@@ -100,21 +99,6 @@ const ItemTypeForm = ({
                         className="form-input"
                         disabled={isLoading}
                     />
-                    <select
-                        id="item_type_id"
-                        name="item_type_id"
-                        value={newItemType.item_type_id}
-                        onChange={handleNewItemTypeChange}
-                        className="form-select"
-                        disabled={isLoading}
-                    >
-                        <option value="">No item type (optional)</option>
-                        {itemTypes.map(itemType => (
-                            <option key={itemType.id} value={itemType.id}>
-                                {itemType.name}
-                            </option>
-                        ))}
-                    </select>
                     <select
                         id="parentId"
                         name="parent_id"
