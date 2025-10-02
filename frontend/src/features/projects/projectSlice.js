@@ -185,6 +185,44 @@ export const deleteHierarchy = createAsyncThunk(
     }
 )
 
+// Create individual hierarchy item
+export const createHierarchyItem = createAsyncThunk(
+    'projects/createHierarchyItem',
+    async ({ projectId, itemData }, thunkAPI) => {
+        try {
+            const token = thunkAPI.getState().auth.user.token
+            return await projectService.createHierarchyItem(projectId, itemData, token)
+        } catch (error) {
+            const message =
+                (error.response && 
+                    error.response.data &&
+                    error.response.data.message) ||
+                error.message ||
+                error.toString()
+            return thunkAPI.rejectWithValue(message)
+        }
+    }
+)
+
+// Delete individual hierarchy item
+export const deleteHierarchyItem = createAsyncThunk(
+    'projects/deleteHierarchyItem',
+    async ({ projectId, itemId }, thunkAPI) => {
+        try {
+            const token = thunkAPI.getState().auth.user.token
+            return await projectService.deleteHierarchyItem(projectId, itemId, token)
+        } catch (error) {
+            const message =
+                (error.response && 
+                    error.response.data &&
+                    error.response.data.message) ||
+                error.message ||
+                error.toString()
+            return thunkAPI.rejectWithValue(message)
+        }
+    }
+)
+
 export const getHierarchyItemTypes = createAsyncThunk(
     'projects/getHierarchyItemTypes',
     async (projectId, thunkAPI) => {
@@ -454,6 +492,43 @@ export const projectSlice = createSlice({
                 state.isError = true
                 state.message = action.payload
             })
+            // Individual hierarchy item reducers
+            .addCase(createHierarchyItem.pending, (state) => {
+                state.isLoading = true
+            })
+            .addCase(createHierarchyItem.fulfilled, (state, action) => {
+                state.isLoading = false
+                state.isSuccess = true
+                // Add the new item to current hierarchy
+                if (state.currentHierarchy) {
+                    state.currentHierarchy.push(action.payload.data)
+                } else {
+                    state.currentHierarchy = [action.payload.data]
+                }
+            })
+            .addCase(createHierarchyItem.rejected, (state, action) => {
+                state.isLoading = false
+                state.isError = true
+                state.message = action.payload
+            })
+            .addCase(deleteHierarchyItem.pending, (state) => {
+                state.isLoading = true
+            })
+            .addCase(deleteHierarchyItem.fulfilled, (state, action) => {
+                state.isLoading = false
+                state.isSuccess = true
+                // Remove the item from current hierarchy
+                if (state.currentHierarchy) {
+                    state.currentHierarchy = state.currentHierarchy.filter(
+                        item => item.id !== action.payload.data.id
+                    )
+                }
+            })
+            .addCase(deleteHierarchyItem.rejected, (state, action) => {
+                state.isLoading = false
+                state.isError = true
+                state.message = action.payload
+            })
             // Item Types reducers
             .addCase(getHierarchyItemTypes.pending, (state) => {
                 state.isLoading = true
@@ -474,7 +549,12 @@ export const projectSlice = createSlice({
             .addCase(createHierarchyItemType.fulfilled, (state, action) => {
                 state.isLoading = false
                 state.isSuccess = true
-                state.currentItemTypes.push(action.payload.data)
+                // Add the new item type to currentItemTypes
+                if (state.currentItemTypes) {
+                    state.currentItemTypes.push(action.payload.data)
+                } else {
+                    state.currentItemTypes = [action.payload.data]
+                }
             })
             .addCase(createHierarchyItemType.rejected, (state, action) => {
                 state.isLoading = false
@@ -487,9 +567,12 @@ export const projectSlice = createSlice({
             .addCase(deleteHierarchyItemType.fulfilled, (state, action) => {
                 state.isLoading = false
                 state.isSuccess = true
+                console.log('Delete fulfilled - action.payload:', action.payload);
+                console.log('Delete fulfilled - currentItemTypes before filter:', state.currentItemTypes);
                 state.currentItemTypes = state.currentItemTypes.filter(
                     itemType => itemType.id !== action.payload.id
                 )
+                console.log('Delete fulfilled - currentItemTypes after filter:', state.currentItemTypes);
             })
             .addCase(deleteHierarchyItemType.rejected, (state, action) => {
                 state.isLoading = false

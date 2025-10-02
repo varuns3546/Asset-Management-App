@@ -30,6 +30,11 @@ const ItemTypeTree = ({ itemTypes }) => {
     const [zoomLevel, setZoomLevel] = useState(100)
     const treeContentRef = useRef(null)
 
+    // Debug: Log when itemTypes change
+    useEffect(() => {
+        console.log('ItemTypeTree received new itemTypes:', itemTypes);
+    }, [itemTypes]);
+
 
     // Calculate dynamic spacing and sizing based on zoom level
     const getDynamicStyles = () => {

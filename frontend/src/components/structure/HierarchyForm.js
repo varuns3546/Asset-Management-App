@@ -1,29 +1,19 @@
 import { useState, useEffect, useRef } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { createHierarchyItem, deleteHierarchyItem } from '../../features/projects/projectSlice';
+
 const HierarchyForm = ({ 
     hierarchyItems, 
-    itemTypes = [],
-    onSaveHierarchy,
-    onUpdateItems,
-    isLoading = false,
-    isSaving = false
+    itemTypes = []
 }) => {
-    const [formData, setFormData] = useState({
-        items: hierarchyItems
-    });
+    const dispatch = useDispatch();
+    const { selectedProject } = useSelector((state) => state.projects);
+    const { currentHierarchy } = useSelector((state) => state.projects);
     const [newItem, setNewItem] = useState({
         title: '',
         item_type_id: null,
         parent_id: null
     });
-    const hasLoadedInitialData = useRef(false);
-
-    // Update formData when hierarchyItems loads (only when there's actual data and form is empty)
-    useEffect(() => {
-        if (hierarchyItems && Array.isArray(hierarchyItems) && hierarchyItems.length > 0 && !hasLoadedInitialData.current && formData.items.length === 0) {
-            setFormData({ items: hierarchyItems });
-            hasLoadedInitialData.current = true;
-        }
-    }, [hierarchyItems, formData.items.length]);
 
     const handleNewItemChange = (e) => {
         setNewItem(prev => ({
@@ -32,54 +22,56 @@ const HierarchyForm = ({
         }))
     }
 
-    const handleAddItem = () => {
+    const handleAddItem = async () => {
         if (!newItem.title.trim()) {
             alert('Please enter an item title');
             return;
         }
 
-        const itemToAdd = {
-            id: Date.now().toString(), // Temporary ID for frontend
+        if (!selectedProject) {
+            alert('Please select a project first');
+            return;
+        }
+
+        const itemData = {
             title: newItem.title,
             item_type_id: newItem.item_type_id || null,
             parent_id: newItem.parent_id || null
         };
 
-        setFormData(prev => {
-            const updatedItems = [...prev.items, itemToAdd];
-            
-            // Notify parent component of the change for real-time tree updates
-            if (onUpdateItems) {
-                onUpdateItems(updatedItems);
-            }
-            
-            return {
-                ...prev,
-                items: updatedItems
-            };
-        });
+        try {
+            await dispatch(createHierarchyItem({
+                projectId: selectedProject.id,
+                itemData
+            })).unwrap();
 
-        setNewItem({
-            title: '',
-            item_type_id: null,
-            parent_id: newItem.parent_id || null
-        });
+            // Reset form after successful creation
+            setNewItem({
+                title: '',
+                item_type_id: null,
+                parent_id: newItem.parent_id || null
+            });
+        } catch (error) {
+            console.error('Error creating hierarchy item:', error);
+            alert('Failed to create item. Please try again.');
+        }
     }
 
-    const handleRemoveItem = (itemId) => {
-        setFormData(prev => {
-            const updatedItems = prev.items.filter(item => item.id !== itemId);
-            
-            // Notify parent component of the change for real-time tree updates
-            if (onUpdateItems) {
-                onUpdateItems(updatedItems);
-            }
-            
-            return {
-                ...prev,
-                items: updatedItems
-            };
-        });
+    const handleRemoveItem = async (itemId) => {
+        if (!selectedProject) {
+            alert('Please select a project first');
+            return;
+        }
+
+        try {
+            await dispatch(deleteHierarchyItem({
+                projectId: selectedProject.id,
+                itemId
+            })).unwrap();
+        } catch (error) {
+            console.error('Error deleting hierarchy item:', error);
+            alert('Failed to delete item. Please try again.');
+        }
     }
 
     return (
@@ -95,7 +87,6 @@ const HierarchyForm = ({
                         onChange={handleNewItemChange}
                         placeholder="Enter item title"
                         className="form-input"
-                        disabled={isLoading}
                     />
                     <select
                         id="item_type_id"
@@ -103,7 +94,6 @@ const HierarchyForm = ({
                         value={newItem.item_type_id}
                         onChange={handleNewItemChange}
                         className="form-select"
-                        disabled={isLoading}
                     >
                         <option value="">No item type (optional)</option>
                         {itemTypes.map(itemType => (
@@ -118,10 +108,9 @@ const HierarchyForm = ({
                         value={newItem.parent_id}
                         onChange={handleNewItemChange}
                         className="form-select"
-                        disabled={isLoading}
                     >
                         <option value="">No parent (root item)</option>
-                        {formData.items.map(item => (
+                        {currentHierarchy?.map(item => (
                             <option key={item.id} value={item.id}>
                                 {item.title}
                             </option>
@@ -136,13 +125,12 @@ const HierarchyForm = ({
             <div className="form-group">
                 <label>Current Items</label>
                 <div className="items-list">
-                    {formData.items.map(item => (
+                    {currentHierarchy?.map(item => (
                         <div key={item.id} className="item-row">
                             <span className="item-title">{item.title}</span>
                             <button 
                                 onClick={() => handleRemoveItem(item.id)}
                                 className="remove-button"
-                                disabled={isLoading}
                             >
                                 Remove
                             </button>
@@ -151,11 +139,6 @@ const HierarchyForm = ({
                 </div>
             </div>
             
-            <div className="form-actions">
-                <button onClick={() => onSaveHierarchy(formData.items)} className="save-button">
-                    Save Hierarchy
-                </button>
-            </div>
         </div>
     )
 }

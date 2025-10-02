@@ -691,7 +691,8 @@ const deleteItemType = asyncHandler(async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Item type deleted successfully'
+      message: 'Item type deleted successfully',
+      id: itemTypeId
     });
 
   } catch (error) {
@@ -703,10 +704,161 @@ const deleteItemType = asyncHandler(async (req, res) => {
   }
 });
 
+// Create individual hierarchy item
+const createHierarchyItem = asyncHandler(async (req, res) => {
+  const { title, item_type_id, parent_id } = req.body;
+  const { id: project_id } = req.params;
+
+  if (!project_id) {
+    return res.status(400).json({
+      success: false,
+      error: 'Project ID is required'
+    });
+  }
+
+  if (!title || !title.trim()) {
+    return res.status(400).json({
+      success: false,
+      error: 'Item title is required'
+    });
+  }
+
+  // Verify the user has access to the project through project_users table
+  const { data: projectUser, error: projectUserError } = await req.supabase
+    .from('project_users')
+    .select('id, role')
+    .eq('project_id', project_id)
+    .eq('user_id', req.user.id)
+    .single();
+
+  if (projectUserError || !projectUser) {
+    const { data: project, error: projectError } = await req.supabase
+      .from('projects')
+      .select('id, owner_id')
+      .eq('id', project_id)
+      .eq('owner_id', req.user.id)
+      .single();
+
+    if (projectError || !project) {
+      return res.status(404).json({
+        success: false,
+        error: 'Project not found or access denied'
+      });
+    }
+  }
+
+  try {
+    const { data: hierarchyItem, error } = await req.supabase
+      .from('hierarchy_entries')
+      .insert({
+        title: title.trim(),
+        item_type_id: item_type_id || null,
+        parent_id: parent_id || null,
+        project_id: project_id
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating hierarchy item:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to create hierarchy item'
+      });
+    }
+
+    res.status(201).json({
+      success: true,
+      data: hierarchyItem
+    });
+
+  } catch (error) {
+    console.error('Error in createHierarchyItem:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error while creating hierarchy item'
+    });
+  }
+});
+
+// Delete individual hierarchy item
+const deleteHierarchyItem = asyncHandler(async (req, res) => {
+  const { id: project_id, itemId } = req.params;
+
+  if (!project_id) {
+    return res.status(400).json({
+      success: false,
+      error: 'Project ID is required'
+    });
+  }
+
+  if (!itemId) {
+    return res.status(400).json({
+      success: false,
+      error: 'Item ID is required'
+    });
+  }
+
+  // Verify the user has access to the project through project_users table
+  const { data: projectUser, error: projectUserError } = await req.supabase
+    .from('project_users')
+    .select('id, role')
+    .eq('project_id', project_id)
+    .eq('user_id', req.user.id)
+    .single();
+
+  if (projectUserError || !projectUser) {
+    const { data: project, error: projectError } = await req.supabase
+      .from('projects')
+      .select('id, owner_id')
+      .eq('id', project_id)
+      .eq('owner_id', req.user.id)
+      .single();
+
+    if (projectError || !project) {
+      return res.status(404).json({
+        success: false,
+        error: 'Project not found or access denied'
+      });
+    }
+  }
+
+  try {
+    const { error } = await req.supabase
+      .from('hierarchy_entries')
+      .delete()
+      .eq('id', itemId)
+      .eq('project_id', project_id);
+
+    if (error) {
+      console.error('Error deleting hierarchy item:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to delete hierarchy item'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Hierarchy item deleted successfully',
+      data: { id: itemId }
+    });
+
+  } catch (error) {
+    console.error('Error in deleteHierarchyItem:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error while deleting hierarchy item'
+    });
+  }
+});
+
 export default {
   getHierarchy,
   updateHierarchy,
   deleteHierarchy,
+  createHierarchyItem,
+  deleteHierarchyItem,
   getItemTypes,
   updateItemTypes,
   createItemType,

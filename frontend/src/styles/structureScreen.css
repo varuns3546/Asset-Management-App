@@ -59,20 +59,6 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.hierarchy-edit-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    padding-bottom: 15px;
-    border-bottom: 2px solid #e0e0e0;
-}
-
-.hierarchy-edit-header h3 {
-    margin: 0;
-    color: #333;
-    font-size: 1.2rem;
-}
 
 
 /* Edit Form */
@@ -157,29 +143,6 @@
 
 
 
-/* Error Container */
-.error-container {
-    background: #f8d7da;
-    border: 1px solid #f5c6cb;
-    border-radius: 5px;
-    padding: 15px;
-    margin-top: 20px;
-    color: #721c24;
-}
-
-.retry-button {
-    background: #dc3545;
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 5px;
-    cursor: pointer;
-    margin-top: 10px;
-}
-
-.retry-button:hover {
-    background: #c82333;
-}
 
 /* Tree Panel */
 .hierarchy-tree-container {
@@ -219,22 +182,6 @@
     font-size: 0.95rem;
 }
 
-/* No Project */
-.no-project {
-    text-align: center;
-    padding: 60px 20px;
-    color: #666;
-}
-
-.no-project h2 {
-    margin: 0 0 15px 0;
-    color: #333;
-}
-
-.no-project p {
-    margin: 0;
-    font-size: 1.1rem;
-}
 
 /* Responsive Design */
 @media (max-width: 1024px) {

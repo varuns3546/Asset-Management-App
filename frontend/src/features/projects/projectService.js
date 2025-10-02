@@ -48,6 +48,16 @@ const deleteHierarchy = async (projectId, token) => {
     return response.data;
 }
 
+const createHierarchyItem = async (projectId, itemData, token) => {
+    const response = await api.post(`${API_URL}/${projectId}/hierarchy/items`, itemData);
+    return response.data;
+}
+
+const deleteHierarchyItem = async (projectId, itemId, token) => {
+    const response = await api.delete(`${API_URL}/${projectId}/hierarchy/items/${itemId}`);
+    return response.data;
+}
+
 const getHierarchyItemTypes = async (projectId, token) => {
     const response = await api.get(`${API_URL}/${projectId}/hierarchy/item-types`);
     return response.data;
@@ -92,6 +102,8 @@ const projectService = {
     getHierarchy,
     updateHierarchy,
     deleteHierarchy,
+    createHierarchyItem,
+    deleteHierarchyItem,
     getHierarchyItemTypes,
     updateHierarchyItemTypes,
     createHierarchyItemType,
