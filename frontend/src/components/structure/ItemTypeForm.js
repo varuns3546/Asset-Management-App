@@ -1,15 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { createHierarchyItemType, deleteHierarchyItemType } from '../../features/projects/projectSlice';
 import '../../styles/structureScreen.css'
+
 const ItemTypeForm = ({ 
-    itemTypes,
-    onSaveItemTypes,
-    onUpdateItemTypes,
-    isLoading = false,
-    isSaving = false
+    itemTypes
 }) => {
-    const [formData, setFormData] = useState({
-        itemTypes: itemTypes
-    });
+    const dispatch = useDispatch();
+    const { selectedProject, currentItemTypes } = useSelector((state) => state.projects);
     const [newItemType, setNewItemType] = useState({
         title: '',
         description: '',
@@ -20,14 +18,6 @@ const ItemTypeForm = ({
 
     const [multipleChildrenChecked, setMultipleChildrenChecked] = useState(false);
 
-    const hasLoadedInitialData = useRef(false);
-
-    useEffect(() => {
-        if  (itemTypes && Array.isArray(itemTypes) && itemTypes.length > 0 && !hasLoadedInitialData.current && formData.itemTypes.length === 0) {
-            setFormData({ itemTypes: itemTypes });
-            hasLoadedInitialData.current = true;
-        }
-    }, [itemTypes, formData.itemTypes.length]);
 
     const handleNewItemTypeChange = (e) => {
         setNewItemType(prev => ({
@@ -57,9 +47,14 @@ const ItemTypeForm = ({
         }
     }
 
-    const handleAddItemType = () => {
+    const handleAddItemType = async () => {
         if (!newItemType.title.trim()) {
             alert('Please enter an item type title');
+            return;
+        }
+
+        if (!selectedProject) {
+            alert('Please select a project first');
             return;
         }
 
@@ -68,55 +63,52 @@ const ItemTypeForm = ({
             .map(dropdown => dropdown.value)
             .filter(value => value !== '');
 
-        const itemTypeToAdd = {
-            id: Date.now().toString(), // Temporary ID for frontend
-            title: newItemType.title,
+        const itemTypeData = {
+            name: newItemType.title,
             description: newItemType.description,
             parent_ids: selectedParentIds
         };
 
-        setFormData(prev => {
-            const updatedItemTypes = [...prev.itemTypes, itemTypeToAdd];
-            
-            // Use setTimeout to avoid setState during render
-            setTimeout(() => {
-                if (onUpdateItemTypes) {
-                    onUpdateItemTypes(updatedItemTypes);
-                }
-            }, 0);
-            
-            return {
-                ...prev,
-                itemTypes: updatedItemTypes
-            };
-        });
+        try {
+            console.log('Creating item type with data:', itemTypeData);
+            const result = await dispatch(createHierarchyItemType({
+                projectId: selectedProject.id,
+                itemTypeData
+            })).unwrap();
+            console.log('Item type created successfully:', result);
 
-        setNewItemType({
-            title: '',
-            description: '',
-            parent_ids: []
-        });
+            // Reset form after successful creation
+            setNewItemType({
+                title: '',
+                description: '',
+                parent_ids: []
+            });
 
-        // Reset parent dropdowns to single empty dropdown
-        setParentDropdowns([{ id: 1, value: '' }]);
+            // Reset parent dropdowns to single empty dropdown
+            setParentDropdowns([{ id: 1, value: '' }]);
+        } catch (error) {
+            console.error('Error creating item type:', error);
+            alert('Failed to create item type. Please try again.');
+        }
     }
 
-    const handleRemoveItemType = (itemTypeId) => {
-        setFormData(prev => {
-            const updatedItemTypes = prev.itemTypes.filter(itemType => itemType.id !== itemTypeId);
-            
-            // Use setTimeout to avoid setState during render
-            setTimeout(() => {
-                if (onUpdateItemTypes) {
-                    onUpdateItemTypes(updatedItemTypes);
-                }
-            }, 0);
-            
-            return {
-                ...prev,
-                itemTypes: updatedItemTypes
-            };
-        });
+    const handleRemoveItemType = async (itemTypeId) => {
+        if (!selectedProject) {
+            alert('Please select a project first');
+            return;
+        }
+
+        try {
+            console.log('Deleting item type with ID:', itemTypeId);
+            const result = await dispatch(deleteHierarchyItemType({
+                projectId: selectedProject.id,
+                itemTypeId
+            })).unwrap();
+            console.log('Item type deleted successfully:', result);
+        } catch (error) {
+            console.error('Error deleting item type:', error);
+            alert('Failed to delete item type. Please try again.');
+        }
     }
 
     const handleMultipleChildrenChecked = () => {
@@ -136,7 +128,6 @@ const ItemTypeForm = ({
                         onChange={handleNewItemTypeChange}
                         placeholder="Enter item title"
                         className="form-input"
-                        disabled={isLoading}
                     />
                     <div className="parent-dropdowns-container">
                         <label className="parent-dropdowns-label">Select Parent(s):</label>
@@ -146,10 +137,9 @@ const ItemTypeForm = ({
                                     value={dropdown.value}
                                     onChange={(e) => handleParentDropdownChange(dropdown.id, e.target.value)}
                                     className="form-select parent-dropdown"
-                                    disabled={isLoading}
                                 >
                                     <option value="">No parent (root item)</option>
-                                    {formData.itemTypes.map(itemType => (
+                                    {currentItemTypes?.map(itemType => (
                                         <option key={itemType.id} value={itemType.id}>
                                             {itemType.title}
                                         </option>
@@ -160,7 +150,6 @@ const ItemTypeForm = ({
                                         type="button"
                                         onClick={() => removeParentDropdown(dropdown.id)}
                                         className="remove-parent-button"
-                                        disabled={isLoading}
                                         title="Remove this parent selection"
                                     >
                                         ×
@@ -172,7 +161,6 @@ const ItemTypeForm = ({
                             type="button"
                             onClick={addAnotherParent}
                             className="add-parent-button"
-                            disabled={isLoading}
                         >
                             + Add Another Parent
                         </button>
@@ -197,13 +185,12 @@ const ItemTypeForm = ({
             <div className="form-group">
                 <label>Current Item Types</label>
                 <div className="items-list">
-                    {formData.itemTypes.map(itemType => (
+                    {currentItemTypes?.map(itemType => (
                         <div key={itemType.id} className="item-row">
                             <span className="item-title">{itemType.title}</span>
                             <button 
                                 onClick={() => handleRemoveItemType(itemType.id)}
                                 className="remove-button"
-                                disabled={isLoading}
                             >
                                 Remove
                             </button>
@@ -212,11 +199,6 @@ const ItemTypeForm = ({
                 </div>
             </div>
             
-            <div className="form-actions">
-                <button onClick={() => onSaveItemTypes(formData.itemTypes)} className="save-button">
-                    Save Item Types
-                </button>
-            </div>
         </div>
     )
 }

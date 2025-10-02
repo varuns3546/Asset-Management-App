@@ -312,20 +312,6 @@
     display: block;
 }
 
-.no-hierarchy {
-    text-align: center;
-    padding: 40px 20px;
-    color: #666;
-    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
-    border-radius: 8px;
-    border: 2px dashed #dee2e6;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
-.no-hierarchy p {
-    margin: 0;
-    font-size: 1rem;
-}
 
 /* Tree Structure Styling */
 .tree-node:last-child {
