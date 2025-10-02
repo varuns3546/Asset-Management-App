@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import React from 'react'
 import OpenProject from './OpenProject'
 import CreateProject from './CreateProject'
-import '../styles/dropdown.css'
+import '../styles/navbar.css'
 
 const Dropdown = ({title, options, isOpen, onToggle, onOpenModal, onCloseModal}) => {
     const navigate = useNavigate()
@@ -32,7 +32,7 @@ const Dropdown = ({title, options, isOpen, onToggle, onOpenModal, onCloseModal})
     }
     
     return (
-        <div className="container">
+        <div className="dropdown-container">
             <button className="button" onClick={onToggle}>{title}</button>
             {isOpen && (
                 <div className="options">

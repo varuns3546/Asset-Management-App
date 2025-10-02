@@ -72,8 +72,8 @@ const Navbar = ({ onOpenModal, onCloseModal }) => {
                 isOpen={openDropdown === 'generate'}
                 onToggle={() => toggleDropdown('generate')}
             />
-            <button className="button share-button">Share</button>
-            <button className="button logout-button" onClick={handleLogout}>Logout</button>
+            <button className="button">Share</button>
+            <button className="button" onClick={handleLogout}>Logout</button>
         </div>
     )
 }
