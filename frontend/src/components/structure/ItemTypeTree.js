@@ -1,23 +1,51 @@
 import React, { useState, useEffect, useRef } from 'react'
 import '../../styles/structureTree.css'
-const TreeNode = ({ node, level = 0, parentCount = 0 }) => {
+const TreeNode = ({ node, level = 0, parentCount = 0, onRemove }) => {
     const hasChildren = node.children && node.children.length > 0
     const hasMultipleParents = node.parent_ids && node.parent_ids.length > 1
+
+    const handleRemove = (e) => {
+        e.stopPropagation()
+        if (onRemove) {
+            onRemove(node.id)
+        }
+    }
 
     return (
         <div className="tree-node horizontal-node">
             <div className="node-content">
                 <span className="node-title">{node.title}</span>
                 <div className="node-indicators">
-                    {hasChildren && <span className="has-children-indicator">▼</span>}
                     {hasMultipleParents && <span className="multiple-parents-indicator" title="Has multiple parents">🔗</span>}
+                    <button 
+                        className="node-remove-button"
+                        onClick={handleRemove}
+                        title="Remove this item type"
+                        style={{ 
+                            display: 'flex',
+                            backgroundColor: '#dc3545',
+                            color: 'white',
+                            border: 'none',
+                            width: '20px',
+                            height: '20px',
+                            borderRadius: '4px'
+                        }}
+                    >
+                        ✕
+                    </button>
                 </div>
             </div>
             
             {hasChildren && (
                 <div className="children horizontal-children">
                     {node.children.map(child => (
-                        <TreeNode key={child.id} node={child} level={level + 1} parentCount={parentCount + 1} />
+                        <TreeNode 
+                            key={child.id} 
+                            node={child} 
+                            level={level + 1} 
+                            parentCount={parentCount + 1}
+                            onRemove={onRemove}
+                        />
                     ))}
                 </div>
             )}
@@ -25,7 +53,7 @@ const TreeNode = ({ node, level = 0, parentCount = 0 }) => {
     )
 }
 
-const ItemTypeTree = ({ itemTypes }) => {
+const ItemTypeTree = ({ itemTypes, onRemoveItemType }) => {
     const [isTreeExpanded, setIsTreeExpanded] = useState(true)
     const [zoomLevel, setZoomLevel] = useState(100)
     const treeContentRef = useRef(null)
@@ -164,7 +192,11 @@ const ItemTypeTree = ({ itemTypes }) => {
                         }}
                     >
                         {treeData.map(rootNode => (
-                            <TreeNode key={rootNode.id} node={rootNode} />
+                            <TreeNode 
+                                key={rootNode.id} 
+                                node={rootNode} 
+                                onRemove={onRemoveItemType}
+                            />
                         ))}
                     </div>
                 </div>

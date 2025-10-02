@@ -11,12 +11,13 @@ const ItemTypeForm = ({
     const [newItemType, setNewItemType] = useState({
         title: '',
         description: '',
-        parent_ids: []
+        parent_ids: [],
+        attributes: []
     });
 
     const [parentDropdowns, setParentDropdowns] = useState([{ id: 1, value: '' }]);
+    const [attributes, setAttributes] = useState([{ id: 1, value: '' }]);
 
-    const [multipleChildrenChecked, setMultipleChildrenChecked] = useState(false);
 
 
     const handleNewItemTypeChange = (e) => {
@@ -47,6 +48,27 @@ const ItemTypeForm = ({
         }
     }
 
+    const handleAttributeChange = (attributeId, value) => {
+        setAttributes(prev => 
+            prev.map(attr => 
+                attr.id === attributeId 
+                    ? { ...attr, value: value }
+                    : attr
+            )
+        );
+    }
+
+    const addAnotherAttribute = () => {
+        const newId = Math.max(...attributes.map(a => a.id)) + 1;
+        setAttributes(prev => [...prev, { id: newId, value: '' }]);
+    }
+
+    const removeAttribute = (attributeId) => {
+        if (attributes.length > 1) {
+            setAttributes(prev => prev.filter(attr => attr.id !== attributeId));
+        }
+    }
+
     const handleAddItemType = async () => {
         if (!newItemType.title.trim()) {
             alert('Please enter an item type title');
@@ -57,14 +79,21 @@ const ItemTypeForm = ({
             .map(dropdown => dropdown.value)
             .filter(value => value !== '');
 
+        // Collect attribute values
+        const attributeValues = attributes
+            .map(attr => attr.value)
+            .filter(value => value.trim() !== '');
+
         const itemTypeData = {
             name: newItemType.title,
             description: newItemType.description,
-            parent_ids: selectedParentIds
+            parent_ids: selectedParentIds,
+            attributes: attributeValues
         };
 
         try {
             console.log('Creating item type with data:', itemTypeData);
+            console.log('Attributes being sent:', attributeValues);
             const result = await dispatch(createHierarchyItemType({
                 projectId: selectedProject.id,
                 itemTypeData
@@ -75,11 +104,15 @@ const ItemTypeForm = ({
             setNewItemType({
                 title: '',
                 description: '',
-                parent_ids: []
+                parent_ids: [],
+                attributes: []
             });
 
             // Reset parent dropdowns to single empty dropdown
             setParentDropdowns([{ id: 1, value: '' }]);
+            
+            // Reset attributes to single empty attribute
+            setAttributes([{ id: 1, value: '' }]);
         } catch (error) {
             console.error('Error creating item type:', error);
             alert('Failed to create item type. Please try again.');
@@ -99,95 +132,94 @@ const ItemTypeForm = ({
             alert('Failed to delete item type. Please try again.');
         }
     }
-
-    const handleMultipleChildrenChecked = () => {
-        setMultipleChildrenChecked(!multipleChildrenChecked);
-    }
-
+    
     return (
-        <div className="hierarchy-edit-form">
-            <div className="form-group">
-                <label htmlFor="newItemTypeTitle">Add New Item Type</label>
-                <div className="add-item-form">
-                    <input
-                        type="text"
-                        id="itemTypeTitle"
-                        name="title"
-                        value={newItemType.title}
-                        onChange={handleNewItemTypeChange}
-                        placeholder="Enter item title"
-                        className="form-input"
-                    />
-                    <div className="parent-dropdowns-container">
-                        <label className="parent-dropdowns-label">Select Parent(s):</label>
-                        {parentDropdowns.map((dropdown, index) => (
-                            <div key={dropdown.id} className="parent-dropdown-row">
-                                <select
-                                    value={dropdown.value}
-                                    onChange={(e) => handleParentDropdownChange(dropdown.id, e.target.value)}
-                                    className="form-select parent-dropdown"
-                                >
-                                    <option value="">No parent (root item)</option>
-                                    {currentItemTypes?.map(itemType => (
-                                        <option key={itemType.id} value={itemType.id}>
-                                            {itemType.title}
-                                        </option>
-                                    ))}
-                                </select>
-                                {parentDropdowns.length > 1 && (
-                                    <button
-                                        type="button"
-                                        onClick={() => removeParentDropdown(dropdown.id)}
-                                        className="remove-parent-button"
-                                        title="Remove this parent selection"
-                                    >
-                                        ×
-                                    </button>
-                                )}
-                            </div>
-                        ))}
-                        <button
-                            type="button"
-                            onClick={addAnotherParent}
-                            className="add-parent-button"
-                        >
-                            + Add Another Parent
-                        </button>
-                    </div>
-                    <button onClick={handleAddItemType} className="add-button">
-                        Add Item
-                    </button>
-                    <div className="checkbox-container">
-                        <input
-                            type="checkbox"
-                            id="multipleChildrenCheckbox"
-                            checked={multipleChildrenChecked}
-                            onChange={handleMultipleChildrenChecked}
-                            className="tree-checkbox"
-                        />
-                        <label htmlFor="multipleChildrenCheckbox">Items can have multiple types of children</label>
-
-                    </div>
-                </div>
-            </div>
-
-            <div className="form-group">
-                <label>Current Item Types</label>
-                <div className="items-list">
-                    {currentItemTypes?.map(itemType => (
-                        <div key={itemType.id} className="item-row">
-                            <span className="item-title">{itemType.title}</span>
-                            <button 
-                                onClick={() => handleRemoveItemType(itemType.id)}
-                                className="remove-button"
+        <div className="form-group">
+            <label htmlFor="newItemTypeTitle">Add New Item Type</label>
+            <div className="add-item-form">
+                <input
+                    type="text"
+                    id="itemTypeTitle"
+                    name="title"
+                    value={newItemType.title}
+                    onChange={handleNewItemTypeChange}
+                    placeholder="Enter item title"
+                    className="form-input"
+                />
+                <div className="form-group">
+                    <label className="form-label">Select Parent(s):</label>
+                    {parentDropdowns.map((dropdown, index) => (
+                        <div key={dropdown.id} className="parent-dropdown-row">
+                            <select
+                                value={dropdown.value}
+                                onChange={(e) => handleParentDropdownChange(dropdown.id, e.target.value)}
+                                className="form-select parent-dropdown"
                             >
-                                Remove
-                            </button>
+                                <option value="">No parent (root item)</option>
+                                {currentItemTypes?.map(itemType => (
+                                    <option key={itemType.id} value={itemType.id}>
+                                        {itemType.title}
+                                    </option>
+                                ))}
+                            </select>
+                            {parentDropdowns.length > 1 && (
+                                <button
+                                    type="button"
+                                    onClick={() => removeParentDropdown(dropdown.id)}
+                                    className="remove-parent-button"
+                                    title="Remove this parent selection"
+                                >
+                                    ×
+                                </button>
+                            )}
                         </div>
                     ))}
+                    <button
+                        type="button"
+                        onClick={addAnotherParent}
+                        className="add-parent-button"
+                    >
+                        + Add Parent
+                    </button>
                 </div>
+                
+                {/* Attributes Section */}
+                <div className="form-group">
+                    <label className="form-label">Attributes:</label>
+                    {attributes.map((attribute, index) => (
+                        <div key={attribute.id} className="parent-dropdown-row">
+                            <input
+                                type="text"
+                                value={attribute.value}
+                                onChange={(e) => handleAttributeChange(attribute.id, e.target.value)}
+                                placeholder={`Attribute ${index + 1}`}
+                                className="form-input parent-dropdown"
+                            />
+                            {attributes.length > 1 && (
+                                <button
+                                    type="button"
+                                    onClick={() => removeAttribute(attribute.id)}
+                                    className="remove-parent-button"
+                                    title="Remove this attribute"
+                                >
+                                    ×
+                                </button>
+                            )}
+                        </div>
+                    ))}
+                    <button
+                        type="button"
+                        onClick={addAnotherAttribute}
+                        className="add-parent-button"
+                    >
+                        + Add Attribute
+                    </button>
+                </div>
+                
+                <button onClick={handleAddItemType} className="add-button">
+                    Add Item
+                </button>
             </div>
-            
         </div>
     )
 }

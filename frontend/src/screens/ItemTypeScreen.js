@@ -7,8 +7,8 @@ import ItemTypeForm from '../components/structure/ItemTypeForm';
 import ItemTypeTree from '../components/structure/ItemTypeTree';
 import '../styles/structureScreen.css';
 const ItemTypeScreen = () => {
-    const { selectedProject, currentItemTypes, isLoading, isError, message} = useSelector((state) => state.projects);
-    const { user, isLoading: authLoading } = useSelector((state) => state.auth);
+    const { selectedProject, currentItemTypes, isError, message} = useSelector((state) => state.projects);
+    const { user } = useSelector((state) => state.auth);
     const dispatch = useDispatch();
     const navigate = useNavigate()
 
@@ -31,16 +31,25 @@ const ItemTypeScreen = () => {
         }
     }, [selectedProject, user, dispatch]);
 
+    const handleRemoveItemType = async (itemTypeId) => {
+        try {
+            await dispatch(deleteHierarchyItemType({
+                projectId: selectedProject.id,
+                itemTypeId
+            })).unwrap();
+        } catch (error) {
+            console.error('Error deleting item type:', error);
+            alert('Failed to delete item type. Please try again.');
+        }
+    };
+
     return (
         <div className="hierarchy-screen">
             {selectedProject ? (
                 <div className="hierarchy-container">
                     <div className="hierarchy-header">
                         <h2 className="hierarchy-title">Asset Hierarchy - {selectedProject.title}</h2>
-                        {isLoading && <p className="hierarchy-loading">Loading items...</p>}
-                        {isError && <p className="hierarchy-error">Error: {message}</p>}
                     </div>
-                    
                     <div className="hierarchy-layout">
                         {/* Left side - Edit Form */}
                         <div className="hierarchy-left-panel">
@@ -59,6 +68,7 @@ const ItemTypeScreen = () => {
                                         <ItemTypeTree 
                                             key={currentItemTypes.length} 
                                             itemTypes={currentItemTypes}
+                                            onRemoveItemType={handleRemoveItemType}
                                         />
                                     </div>
                                 </div>
