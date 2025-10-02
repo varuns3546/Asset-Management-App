@@ -367,6 +367,9 @@ const getItemTypes = asyncHandler(async (req, res) => {
 const updateItemTypes = asyncHandler(async (req, res) => {
   const { itemTypes } = req.body;
   const { id: project_id } = req.params; // Fix: use 'id' from route params and rename to project_id
+  
+  console.log('updateItemTypes - Received data:', { itemTypes, project_id });
+  console.log('updateItemTypes - itemTypes type:', typeof itemTypes, 'isArray:', Array.isArray(itemTypes));
 
   if (!project_id) {
     return res.status(400).json({
@@ -375,7 +378,7 @@ const updateItemTypes = asyncHandler(async (req, res) => {
     });
   }
 
-  if (!itemTypes || !Array.isArray(itemTypes) || itemTypes.length === 0) {
+  if (!itemTypes || !Array.isArray(itemTypes)) {
     return res.status(400).json({
       success: false,
       error: 'Item types array is required'
@@ -448,7 +451,7 @@ const updateItemTypes = asyncHandler(async (req, res) => {
           title: itemType.title,
           description: itemType.description,
           project_id: project_id,
-          parent_id: null // Will be updated in second pass
+          parent_ids: null // Will be updated in second pass
         })
         .select()
         .single();
@@ -465,18 +468,37 @@ const updateItemTypes = asyncHandler(async (req, res) => {
 
     // Second pass: update parent relationships for all items (existing and new)
     for (const itemType of itemTypes) {
-      if (itemType.parent_id && itemTypeIdMap.has(itemType.parent_id)) {
-        const backendItemTypeId = itemTypeIdMap.get(itemType  .id);
-        const parentBackendId = itemTypeIdMap.get(itemType.parent_id);
+      if (itemType.parent_ids && Array.isArray(itemType.parent_ids) && itemType.parent_ids.length > 0) {
+        const backendItemTypeId = itemTypeIdMap.get(itemType.id);
         
-        if (backendItemTypeId && parentBackendId) {
+        if (backendItemTypeId) {
+          // Convert frontend parent IDs to backend UUIDs
+          const backendParentIds = itemType.parent_ids
+            .map(parentId => itemTypeIdMap.get(parentId))
+            .filter(id => id !== undefined); // Remove any undefined IDs
+          
+          if (backendParentIds.length > 0) {
+            const { error: updateError } = await req.supabase
+              .from('hierarchy_item_types')
+              .update({ parent_ids: backendParentIds })
+              .eq('id', backendItemTypeId);
+              
+            if (updateError) {
+              console.error('Error updating parent relationships:', updateError);
+            }
+          }
+        }
+      } else {
+        // If no parent_ids or empty array, set to null
+        const backendItemTypeId = itemTypeIdMap.get(itemType.id);
+        if (backendItemTypeId) {
           const { error: updateError } = await req.supabase
-            .from('hierarchy_entries')
-            .update({ parent_id: parentBackendId })
+            .from('hierarchy_item_types')
+            .update({ parent_ids: null })
             .eq('id', backendItemTypeId);
             
           if (updateError) {
-            console.error('Error updating parent relationship:', updateError);
+            console.error('Error clearing parent relationships:', updateError);
           }
         }
       }
@@ -534,7 +556,7 @@ const updateItemTypes = asyncHandler(async (req, res) => {
 });
 
 const createItemType = asyncHandler(async (req, res) => {
-  const { name, description } = req.body;
+  const { name, description, parent_ids } = req.body;
   const { id: project_id } = req.params;
 
   if (!project_id) {
@@ -580,9 +602,10 @@ const createItemType = asyncHandler(async (req, res) => {
     const { data: itemType, error } = await req.supabase
       .from('hierarchy_item_types')
       .insert({
-        name: name.trim(),
+        title: name.trim(),
         description: description || null,
-        project_id: project_id
+        project_id: project_id,
+        parent_ids: parent_ids || null
       })
       .select()
       .single();
