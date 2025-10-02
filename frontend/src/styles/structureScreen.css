@@ -431,3 +431,110 @@
     color: #888;
     font-size: 14px;
 }
+
+.checkbox-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    margin-left: -200px;
+    margin-top: 10px;
+
+}
+
+.checkbox-container label {
+    margin-left: -50px;    
+    margin-top: 5px;
+    color: black;
+}
+
+/* Parent dropdown selection styles */
+.parent-dropdowns-container {
+    margin: 15px 0;
+    padding: 15px;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    background: #f8f9fa;
+}
+
+.parent-dropdowns-label {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 15px;
+    display: block;
+}
+
+.parent-dropdown-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.parent-dropdown {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    background: white;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.parent-dropdown:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.remove-parent-button {
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.remove-parent-button:hover {
+    background: #c82333;
+    transform: scale(1.1);
+}
+
+.remove-parent-button:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.add-parent-button {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    margin-top: 10px;
+}
+
+.add-parent-button:hover {
+    background: #218838;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.add-parent-button:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+    transform: none;
+}

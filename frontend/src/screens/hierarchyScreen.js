@@ -130,9 +130,6 @@ const HierarchyScreen = () => {
                 <div className="no-project-selected">
                     <h2>No Project Selected</h2>
                     <p>Please select a project to view its hierarchy</p>
-                    <button onClick={() => navigate('/')} className="btn-primary">
-                        Go to Projects
-                    </button>
                 </div>
             )}
         </div>

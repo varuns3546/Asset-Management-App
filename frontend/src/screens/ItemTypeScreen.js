@@ -53,7 +53,7 @@ const ItemTypeScreen = () => {
                 id: itemType.id,
                 title: itemType.title,
                 description: itemType.description,
-                parent_id: itemType.parent_id
+                parent_ids: itemType.parent_ids || []
             }))
         };
         
@@ -121,9 +121,6 @@ const ItemTypeScreen = () => {
                 <div className="no-project-selected">
                     <h2>No Project Selected</h2>
                     <p>Please select a project to view its hierarchy</p>
-                    <button onClick={() => navigate('/')} className="btn-primary">
-                        Go to Projects
-                    </button>
                 </div>
             )}
         </div>

@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react'
-import '../../styles/structreTree.css'
+import React, { useState, useRef } from 'react'
+import '../../styles/structureTree.css'
 const TreeNode = ({ node, level = 0 }) => {
     const hasChildren = node.children && node.children.length > 0
 
@@ -40,10 +40,6 @@ const HierarchyTree = ({ hierarchyItems }) => {
     }
 
     const dynamicStyles = getDynamicStyles()
-    
-    if (!hierarchyItems || hierarchyItems.length === 0) {
-        return <div className="no-hierarchy">No items in this hierarchy</div>
-    }
 
     // Build tree structure from flat items array
     const buildTree = (items) => {

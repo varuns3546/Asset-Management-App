@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import '../../styles/structureScreen.css'
 const ItemTypeForm = ({ 
     itemTypes,
     onSaveItemTypes,
@@ -12,8 +13,13 @@ const ItemTypeForm = ({
     const [newItemType, setNewItemType] = useState({
         title: '',
         description: '',
-        parent_id: ''
+        parent_ids: []
     });
+
+    const [parentDropdowns, setParentDropdowns] = useState([{ id: 1, value: '' }]);
+
+    const [multipleChildrenChecked, setMultipleChildrenChecked] = useState(false);
+
     const hasLoadedInitialData = useRef(false);
 
     useEffect(() => {
@@ -30,17 +36,43 @@ const ItemTypeForm = ({
         }))
     }
 
+    const handleParentDropdownChange = (dropdownId, selectedValue) => {
+        setParentDropdowns(prev => 
+            prev.map(dropdown => 
+                dropdown.id === dropdownId 
+                    ? { ...dropdown, value: selectedValue }
+                    : dropdown
+            )
+        );
+    }
+
+    const addAnotherParent = () => {
+        const newId = Math.max(...parentDropdowns.map(d => d.id)) + 1;
+        setParentDropdowns(prev => [...prev, { id: newId, value: '' }]);
+    }
+
+    const removeParentDropdown = (dropdownId) => {
+        if (parentDropdowns.length > 1) {
+            setParentDropdowns(prev => prev.filter(dropdown => dropdown.id !== dropdownId));
+        }
+    }
+
     const handleAddItemType = () => {
         if (!newItemType.title.trim()) {
             alert('Please enter an item type title');
             return;
         }
 
+        // Collect selected parent IDs from dropdowns
+        const selectedParentIds = parentDropdowns
+            .map(dropdown => dropdown.value)
+            .filter(value => value !== '');
+
         const itemTypeToAdd = {
             id: Date.now().toString(), // Temporary ID for frontend
             title: newItemType.title,
             description: newItemType.description,
-            parent_id: newItemType.parent_id || null
+            parent_ids: selectedParentIds
         };
 
         setFormData(prev => {
@@ -62,8 +94,11 @@ const ItemTypeForm = ({
         setNewItemType({
             title: '',
             description: '',
-            parent_id: ''
+            parent_ids: []
         });
+
+        // Reset parent dropdowns to single empty dropdown
+        setParentDropdowns([{ id: 1, value: '' }]);
     }
 
     const handleRemoveItemType = (itemTypeId) => {
@@ -84,6 +119,10 @@ const ItemTypeForm = ({
         });
     }
 
+    const handleMultipleChildrenChecked = () => {
+        setMultipleChildrenChecked(!multipleChildrenChecked);
+    }
+
     return (
         <div className="hierarchy-edit-form">
             <div className="form-group">
@@ -99,24 +138,59 @@ const ItemTypeForm = ({
                         className="form-input"
                         disabled={isLoading}
                     />
-                    <select
-                        id="parentId"
-                        name="parent_id"
-                        value={newItemType.parent_id || ''}
-                        onChange={handleNewItemTypeChange}
-                        className="form-select"
-                        disabled={isLoading}
-                    >
-                        <option value="">No parent (root item)</option>
-                        {formData.itemTypes.map(itemType=> (
-                            <option key={itemType.id} value={itemType.id}>
-                                {itemType.title}
-                            </option>
+                    <div className="parent-dropdowns-container">
+                        <label className="parent-dropdowns-label">Select Parent(s):</label>
+                        {parentDropdowns.map((dropdown, index) => (
+                            <div key={dropdown.id} className="parent-dropdown-row">
+                                <select
+                                    value={dropdown.value}
+                                    onChange={(e) => handleParentDropdownChange(dropdown.id, e.target.value)}
+                                    className="form-select parent-dropdown"
+                                    disabled={isLoading}
+                                >
+                                    <option value="">No parent (root item)</option>
+                                    {formData.itemTypes.map(itemType => (
+                                        <option key={itemType.id} value={itemType.id}>
+                                            {itemType.title}
+                                        </option>
+                                    ))}
+                                </select>
+                                {parentDropdowns.length > 1 && (
+                                    <button
+                                        type="button"
+                                        onClick={() => removeParentDropdown(dropdown.id)}
+                                        className="remove-parent-button"
+                                        disabled={isLoading}
+                                        title="Remove this parent selection"
+                                    >
+                                        ×
+                                    </button>
+                                )}
+                            </div>
                         ))}
-                    </select>
+                        <button
+                            type="button"
+                            onClick={addAnotherParent}
+                            className="add-parent-button"
+                            disabled={isLoading}
+                        >
+                            + Add Another Parent
+                        </button>
+                    </div>
                     <button onClick={handleAddItemType} className="add-button">
                         Add Item
                     </button>
+                    <div className="checkbox-container">
+                        <input
+                            type="checkbox"
+                            id="multipleChildrenCheckbox"
+                            checked={multipleChildrenChecked}
+                            onChange={handleMultipleChildrenChecked}
+                            className="tree-checkbox"
+                        />
+                        <label htmlFor="multipleChildrenCheckbox">Items can have multiple types of children</label>
+
+                    </div>
                 </div>
             </div>
 
