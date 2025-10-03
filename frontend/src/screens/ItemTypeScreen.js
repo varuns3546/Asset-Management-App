@@ -9,6 +9,7 @@ import '../styles/structureScreen.css';
 const ItemTypeScreen = () => {
     const { selectedProject, currentItemTypes, isError, message} = useSelector((state) => state.projects);
     const { user } = useSelector((state) => state.auth);
+    const [selectedItem, setSelectedItem] = useState(null);
     const dispatch = useDispatch();
     const navigate = useNavigate()
 
@@ -43,12 +44,23 @@ const ItemTypeScreen = () => {
         }
     };
 
+    const handleItemClick = (item) => {
+        console.log('ItemType selected in ItemTypeScreen:', item);
+        setSelectedItem(item);
+    };
+
+    const handleItemSelect = (item) => {
+        setSelectedItem(item);
+    };
+
     return (
         <div className="hierarchy-screen">
             {selectedProject ? (
                 <div className="hierarchy-container">
                     <div className="hierarchy-header">
-                        <h2 className="hierarchy-title">Asset Hierarchy - {selectedProject.title}</h2>
+                        <h2 className="hierarchy-title">
+                            {selectedItem ? `Edit Item Type: ${selectedItem.title}` : 'Item Types'} - {selectedProject.title}
+                        </h2>
                     </div>
                     <div className="hierarchy-layout">
                         {/* Left side - Edit Form */}
@@ -56,6 +68,8 @@ const ItemTypeScreen = () => {
                             <div className="hierarchy-edit-container">
                                 <ItemTypeForm 
                                     itemTypes={currentItemTypes || []}
+                                    selectedItem={selectedItem}
+                                    onItemSelect={handleItemSelect}
                                 />
                             </div>
                         </div>
@@ -69,6 +83,7 @@ const ItemTypeScreen = () => {
                                             key={currentItemTypes.length} 
                                             itemTypes={currentItemTypes}
                                             onRemoveItemType={handleRemoveItemType}
+                                            onItemClick={handleItemClick}
                                         />
                                     </div>
                                 </div>

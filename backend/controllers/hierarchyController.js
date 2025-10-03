@@ -66,177 +66,6 @@ const getHierarchy = asyncHandler(async (req, res) => {
   }
 });
 
-const updateHierarchy = asyncHandler(async (req, res) => {
-  const { items } = req.body;
-  const { id: project_id } = req.params; // Fix: use 'id' from route params and rename to project_id
-
-  if (!project_id) {
-    return res.status(400).json({
-      success: false,
-      error: 'Project ID is required'
-    });
-  }
-
-  if (!items || !Array.isArray(items) || items.length === 0) {
-    return res.status(400).json({
-      success: false,
-      error: 'Items array is required'
-    });
-  }
-
-  // Verify the user has access to the project through project_users table
-  const { data: projectUser, error: projectUserError } = await req.supabase
-    .from('project_users')
-    .select('id, role')
-    .eq('project_id', project_id)
-    .eq('user_id', req.user.id)
-    .single();
-
-  // If not found in project_users, check if user is the owner directly
-  if (projectUserError || !projectUser) {
-    const { data: project, error: projectError } = await req.supabase
-      .from('projects')
-      .select('id, owner_id')
-      .eq('id', project_id)
-      .eq('owner_id', req.user.id)
-      .single();
-
-    if (projectError || !project) {
-      return res.status(404).json({
-        success: false,
-        error: 'Project not found or access denied'
-      });
-    }
-  }
-
-  try {
-    // Get existing hierarchy items for this project
-    const { data: existingItems, error: existingError } = await req.supabase
-      .from('hierarchy_entries')
-      .select('*')
-      .eq('project_id', project_id);
-
-    if (existingError) {
-      console.error('Error fetching existing hierarchy items:', existingError);
-      return res.status(500).json({
-        success: false,
-        error: 'Failed to fetch existing hierarchy items'
-      });
-    }
-
-    // Create a map of existing items by title for quick lookup
-    const existingItemsMap = new Map();
-    existingItems.forEach(item => {
-      existingItemsMap.set(item.title.toLowerCase(), item);
-    });
-
-    // Create a map of frontend IDs to backend UUIDs for parent relationships
-    const itemIdMap = new Map();
-    const createdItems = [];
-    
-    // First pass: create new items (skip existing ones) and map frontend IDs to backend UUIDs
-    for (const item of items) {
-      // Check if item already exists
-      const existingItem = existingItemsMap.get(item.title.toLowerCase());
-      if (existingItem) {
-        // Map existing item ID
-        itemIdMap.set(item.id, existingItem.id);
-        continue;
-      }
-
-      const { data: hierarchyItem, error: itemError } = await req.supabase
-        .from('hierarchy_entries')
-        .insert({
-          title: item.title,
-          item_type_id: item.item_type_id,
-          project_id: project_id,
-          parent_id: null // Will be updated in second pass
-        })
-        .select()
-        .single();
-
-      if (itemError) {
-        console.error('Error creating hierarchy item:', itemError);
-        continue;
-      }
-
-      // Map frontend ID to backend UUID
-      itemIdMap.set(item.id, hierarchyItem.id);
-      createdItems.push(hierarchyItem);
-    }
-
-    // Second pass: update parent relationships for all items (existing and new)
-    for (const item of items) {
-      if (item.parent_id && itemIdMap.has(item.parent_id)) {
-        const backendItemId = itemIdMap.get(item.id);
-        const parentBackendId = itemIdMap.get(item.parent_id);
-        
-        if (backendItemId && parentBackendId) {
-          const { error: updateError } = await req.supabase
-            .from('hierarchy_entries')
-            .update({ parent_id: parentBackendId })
-            .eq('id', backendItemId);
-            
-          if (updateError) {
-            console.error('Error updating parent relationship:', updateError);
-          }
-        }
-      }
-    }
-
-    // Third pass: Delete items that are no longer in the frontend data
-    // BUT preserve items that have item_type_id set to null (these are items whose item type was deleted)
-    const frontendItemTitles = new Set(items.map(item => item.title.toLowerCase()));
-    const itemsToDelete = existingItems.filter(existingItem => 
-      !frontendItemTitles.has(existingItem.title.toLowerCase()) && 
-      existingItem.item_type_id !== null // Don't delete items with null item_type_id
-    );
-
-    if (itemsToDelete.length > 0) {
-      const deleteIds = itemsToDelete.map(item => item.id);
-      
-      const { error: deleteError } = await req.supabase
-        .from('hierarchy_entries')
-        .delete()
-        .in('id', deleteIds);
-        
-      if (deleteError) {
-        console.error('Error deleting removed hierarchy items:', deleteError);
-        // Continue execution - don't fail the entire operation
-      }
-    }
-
-    // Fetch the complete updated hierarchy with items
-    const { data: completeHierarchy, error: fetchError } = await req.supabase
-      .from('hierarchy_entries')
-      .select('*')
-      .eq('project_id', project_id)
-      .order('created_at');
-
-    if (fetchError) {
-      console.error('Error fetching complete hierarchy:', fetchError);
-      return res.status(500).json({
-        success: false,
-        error: 'Hierarchy items were processed but failed to fetch updated results',
-        data: createdItems
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      message: 'Hierarchy updated successfully',
-      data: completeHierarchy
-    });
-
-  } catch (error) {
-    console.error('Error updating hierarchy:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Internal server error while updating hierarchy'
-    });
-  }
-});
-
 const deleteHierarchy = asyncHandler(async (req, res) => {
   const { id: project_id } = req.params;
 
@@ -366,251 +195,6 @@ const getItemTypes = asyncHandler(async (req, res) => {
   }
 });
 
-const updateItemTypes = asyncHandler(async (req, res) => {
-  const { itemTypes } = req.body;
-  const { id: project_id } = req.params; // Fix: use 'id' from route params and rename to project_id
-  
-  console.log('updateItemTypes - Received data:', { itemTypes, project_id });
-  console.log('updateItemTypes - itemTypes type:', typeof itemTypes, 'isArray:', Array.isArray(itemTypes));
-
-  if (!project_id) {
-    return res.status(400).json({
-      success: false,
-      error: 'Project ID is required'
-    });
-  }
-
-  if (!itemTypes || !Array.isArray(itemTypes)) {
-    return res.status(400).json({
-      success: false,
-      error: 'Item types array is required'
-    });
-  }
-
-  // Verify the user has access to the project through project_users table
-  const { data: projectUser, error: projectUserError } = await req.supabase
-    .from('project_users')
-    .select('id, role')
-    .eq('project_id', project_id)
-    .eq('user_id', req.user.id)
-    .single();
-
-  // If not found in project_users, check if user is the owner directly
-  if (projectUserError || !projectUser) {
-    const { data: project, error: projectError } = await req.supabase
-      .from('projects')
-      .select('id, owner_id')
-      .eq('id', project_id)
-      .eq('owner_id', req.user.id)
-      .single();
-
-    if (projectError || !project) {
-      return res.status(404).json({
-        success: false,
-        error: 'Project not found or access denied'
-      });
-    }
-  }
-
-  try {
-    // Get existing hierarchy itemTypes for this project
-    const { data: existingItemTypes, error: existingError } = await req.supabase
-      .from('hierarchy_item_types')
-      .select('*')
-      .eq('project_id', project_id);
-
-    if (existingError) {
-      console.error('Error fetching existing hierarchy itemTypes:', existingError);
-      return res.status(500).json({
-        success: false,
-        error: 'Failed to fetch existing hierarchy itemTypes'
-      });
-    }
-
-    // Create a map of existing items by title for quick lookup
-    const existingItemTypesMap = new Map();
-    existingItemTypes.forEach(itemType => {
-      existingItemTypesMap.set(itemType.title.toLowerCase(), itemType);
-    });
-
-    // Create a map of frontend IDs to backend UUIDs for parent relationships
-    const itemTypeIdMap = new Map();
-    const createdItemTypes = [];
-    
-    // First pass: create new items (skip existing ones) and map frontend IDs to backend UUIDs
-    for (const itemType of itemTypes) {
-      // Check if itemType already exists
-      const existingItemType = existingItemTypesMap.get(itemType.title.toLowerCase());
-      if (existingItemType) {
-        // Map existing item ID
-        itemTypeIdMap.set(itemType.id, existingItemType.id);
-        continue;
-      }
-
-      const { data: hierarchyItemType, error: itemTypeError } = await req.supabase
-        .from('hierarchy_item_types')
-        .insert({
-          title: itemType.title,
-          description: itemType.description,
-          project_id: project_id,
-          parent_ids: null // Will be updated in second pass
-        })
-        .select()
-        .single();
-
-      if (itemTypeError) {
-        console.error('Error creating hierarchy itemType:', itemTypeError);
-        continue;
-      }
-
-      // Map frontend ID to backend UUID
-      itemTypeIdMap.set(itemType.id, hierarchyItemType.id);
-      createdItemTypes.push(hierarchyItemType);
-    }
-
-    // Second pass: update parent relationships for all items (existing and new)
-    for (const itemType of itemTypes) {
-      if (itemType.parent_ids && Array.isArray(itemType.parent_ids) && itemType.parent_ids.length > 0) {
-        const backendItemTypeId = itemTypeIdMap.get(itemType.id);
-        
-        if (backendItemTypeId) {
-          // Convert frontend parent IDs to backend UUIDs
-          const backendParentIds = itemType.parent_ids
-            .map(parentId => itemTypeIdMap.get(parentId))
-            .filter(id => id !== undefined); // Remove any undefined IDs
-          
-          if (backendParentIds.length > 0) {
-            const { error: updateError } = await req.supabase
-              .from('hierarchy_item_types')
-              .update({ parent_ids: backendParentIds })
-              .eq('id', backendItemTypeId);
-              
-            if (updateError) {
-              console.error('Error updating parent relationships:', updateError);
-            }
-          }
-        }
-      } else {
-        // If no parent_ids or empty array, set to null
-        const backendItemTypeId = itemTypeIdMap.get(itemType.id);
-        if (backendItemTypeId) {
-          const { error: updateError } = await req.supabase
-            .from('hierarchy_item_types')
-            .update({ parent_ids: null })
-            .eq('id', backendItemTypeId);
-            
-          if (updateError) {
-            console.error('Error clearing parent relationships:', updateError);
-          }
-        }
-      }
-    }
-
-    // Third pass: Delete items that are no longer in the frontend data
-    const frontendItemTypeTitles = new Set(itemTypes.map(itemType => itemType.title.toLowerCase()));
-    const itemTypesToDelete = existingItemTypes.filter(existingItemType => 
-      !frontendItemTypeTitles.has(existingItemType.title.toLowerCase())
-    );
-
-    if (itemTypesToDelete.length > 0) {
-      const deleteIds = itemTypesToDelete.map(itemType => itemType.id);
-      
-      // Before deleting, clean up parent_ids references in remaining item types
-      const remainingItemTypes = existingItemTypes.filter(existingItemType => 
-        frontendItemTypeTitles.has(existingItemType.title.toLowerCase())
-      );
-      
-      const cleanupPromises = [];
-      for (const remainingItemType of remainingItemTypes) {
-        if (remainingItemType.parent_ids && Array.isArray(remainingItemType.parent_ids)) {
-          // Check if any of the deleted item types are in this item type's parent_ids
-          const hasDeletedParents = deleteIds.some(deleteId => 
-            remainingItemType.parent_ids.includes(deleteId)
-          );
-          
-          if (hasDeletedParents) {
-            // Remove deleted item type IDs from parent_ids
-            const updatedParentIds = remainingItemType.parent_ids.filter(id => 
-              !deleteIds.includes(id)
-            );
-            
-            const cleanupPromise = req.supabase
-              .from('hierarchy_item_types')
-              .update({ parent_ids: updatedParentIds.length > 0 ? updatedParentIds : null })
-              .eq('id', remainingItemType.id);
-            
-            cleanupPromises.push(cleanupPromise);
-          }
-        }
-      }
-      
-      // Execute cleanup operations
-      if (cleanupPromises.length > 0) {
-        const cleanupResults = await Promise.all(cleanupPromises);
-        const cleanupErrors = cleanupResults.filter(result => result.error);
-        
-        if (cleanupErrors.length > 0) {
-          console.error('Error cleaning up parent_ids during item type deletion:', cleanupErrors);
-          // Continue with deletion even if cleanup fails
-        }
-      }
-      
-      // Handle hierarchy entries that use the deleted item types
-      // Option 1: Set their item_type_id to null (preserve entries but remove type reference)
-      const { error: hierarchyUpdateError } = await req.supabase
-        .from('hierarchy_entries')
-        .update({ item_type_id: null })
-        .in('item_type_id', deleteIds)
-        .eq('project_id', project_id);
-        
-      if (hierarchyUpdateError) {
-        console.error('Error updating hierarchy entries after item type deletion:', hierarchyUpdateError);
-        // Continue execution - don't fail the entire operation
-      }
-      
-      // Now delete the item types
-      const { error: deleteError } = await req.supabase
-        .from('hierarchy_item_types')
-        .delete()
-        .in('id', deleteIds);
-        
-      if (deleteError) {
-        console.error('Error deleting removed hierarchy itemTypes:', deleteError);
-        // Continue execution - don't fail the entire operation
-      }
-    }
-
-    // Fetch the complete updated hierarchy with items
-    const { data: completeHierarchyItemTypes, error: fetchError } = await req.supabase
-      .from('hierarchy_item_types')
-      .select('*')
-      .eq('project_id', project_id)
-      .order('created_at');
-
-    if (fetchError) {
-      console.error('Error fetching complete hierarchy itemTypes:', fetchError);
-      return res.status(500).json({
-        success: false,
-        error: 'Hierarchy itemTypes were processed but failed to fetch updated results',
-        data: createdItemTypes
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      message: 'Hierarchy itemTypes updated successfully',
-      data: completeHierarchyItemTypes
-    });
-
-  } catch (error) {
-    console.error('Error updating hierarchy itemTypes:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Internal server error while updating hierarchy itemTypes'
-    });
-  }
-});
-
 const createItemType = asyncHandler(async (req, res) => {
   const { name, description, parent_ids, attributes } = req.body;
   const { id: project_id } = req.params;
@@ -727,6 +311,8 @@ const createItemType = asyncHandler(async (req, res) => {
     });
   }
 });
+
+
 
 const deleteItemType = asyncHandler(async (req, res) => {
   const { id: project_id, itemTypeId } = req.params;
@@ -991,14 +577,217 @@ const deleteHierarchyItem = asyncHandler(async (req, res) => {
   }
 });
 
+const updateItemType = asyncHandler(async (req, res) => {
+  const { name, description, parent_ids, attributes } = req.body;
+  const { id: project_id, itemTypeId } = req.params;
+
+  if (!project_id) {
+    return res.status(400).json({
+      success: false,
+      error: 'Project ID is required'
+    });
+  }
+
+  if (!itemTypeId) {
+    return res.status(400).json({
+      success: false,
+      error: 'Item Type ID is required'
+    });
+  }
+
+  if (!name || !name.trim()) {
+    return res.status(400).json({
+      success: false,
+      error: 'Item type name is required'
+    });
+  }
+
+  // Verify the user has access to the project through project_users table
+  const { data: projectUser, error: projectUserError } = await req.supabase
+    .from('project_users')
+    .select('id, role')
+    .eq('project_id', project_id)
+    .eq('user_id', req.user.id)
+    .single();
+
+  // If not found in project_users, check if user is the owner directly
+  if (projectUserError || !projectUser) {
+    const { data: project, error: projectError } = await req.supabase
+      .from('projects')
+      .select('id, owner_id')
+      .eq('id', project_id)
+      .eq('owner_id', req.user.id)
+      .single();
+
+    if (projectError || !project) {
+      return res.status(404).json({
+        success: false,
+        error: 'Project not found or access denied'
+      });
+    }
+  }
+
+  try {
+    // Update the item type
+    const { data: itemType, error: updateError } = await req.supabase
+      .from('hierarchy_item_types')
+      .update({
+        title: name.trim(),
+        description: description || null,
+        parent_ids: parent_ids || null
+      })
+      .eq('id', itemTypeId)
+      .eq('project_id', project_id)
+      .select()
+      .single();
+
+    if (updateError) {
+      console.error('Error updating item type:', updateError);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to update item type'
+      });
+    }
+
+    // Handle attributes if they exist
+    if (attributes && attributes.length > 0) {
+      // First, delete existing attributes for this item type
+      const { error: deleteError } = await req.supabase
+        .from('attributes')
+        .delete()
+        .eq('item_type_id', itemTypeId);
+
+      if (deleteError) {
+        console.error('Error deleting existing attributes:', deleteError);
+      }
+
+      // Then insert new attributes
+      const attributesToInsert = attributes.map(attribute => ({
+        item_type_id: itemTypeId,
+        title: attribute.trim()
+      }));
+
+      const { data: insertedAttributes, error: attributesError } = await req.supabase
+        .from('attributes')
+        .insert(attributesToInsert)
+        .select();
+
+      if (attributesError) {
+        console.error('Error creating attributes:', attributesError);
+        console.error('Full error details:', JSON.stringify(attributesError, null, 2));
+      } else {
+        console.log('Successfully created attributes:', insertedAttributes);
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      data: itemType
+    });
+
+  } catch (error) {
+    console.error('Error in updateItemType:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error while updating item type'
+    });
+  }
+});
+
+const updateHierarchyItem = asyncHandler(async (req, res) => {
+  const { title, item_type_id, parent_id } = req.body;
+  const { id: project_id, itemId } = req.params;
+
+  if (!project_id) {
+    return res.status(400).json({
+      success: false,
+      error: 'Project ID is required'
+    });
+  }
+
+  if (!itemId) {
+    return res.status(400).json({
+      success: false,
+      error: 'Item ID is required'
+    });
+  }
+
+  if (!title || !title.trim()) {
+    return res.status(400).json({
+      success: false,
+      error: 'Item title is required'
+    });
+  }
+
+  // Verify the user has access to the project through project_users table
+  const { data: projectUser, error: projectUserError } = await req.supabase
+    .from('project_users')
+    .select('id, role')
+    .eq('project_id', project_id)
+    .eq('user_id', req.user.id)
+    .single();
+
+  // If not found in project_users, check if user is the owner directly
+  if (projectUserError || !projectUser) {
+    const { data: project, error: projectError } = await req.supabase
+      .from('projects')
+      .select('id, owner_id')
+      .eq('id', project_id)
+      .eq('owner_id', req.user.id)
+      .single();
+
+    if (projectError || !project) {
+      return res.status(404).json({
+        success: false,
+        error: 'Project not found or access denied'
+      });
+    }
+  }
+
+  try {
+    // Update the hierarchy item
+    const { data: hierarchyItem, error: updateError } = await req.supabase
+      .from('hierarchy_entries')
+      .update({
+        title: title.trim(),
+        item_type_id: item_type_id || null,
+        parent_id: parent_id || null
+      })
+      .eq('id', itemId)
+      .eq('project_id', project_id)
+      .select()
+      .single();
+
+    if (updateError) {
+      console.error('Error updating hierarchy item:', updateError);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to update hierarchy item'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: hierarchyItem
+    });
+
+  } catch (error) {
+    console.error('Error in updateHierarchyItem:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error while updating hierarchy item'
+    });
+  }
+});
+
 export default {
   getHierarchy,
-  updateHierarchy,
   deleteHierarchy,
   createHierarchyItem,
+  updateHierarchyItem,
   deleteHierarchyItem,
   getItemTypes,
-  updateItemTypes,
   createItemType,
+  updateItemType,
   deleteItemType
 };

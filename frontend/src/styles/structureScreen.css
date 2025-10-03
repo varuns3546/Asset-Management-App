@@ -72,6 +72,51 @@
     margin-bottom: 20px;
 }
 
+.form-section-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #007bff;
+}
+
+.checkbox-container {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    margin-left: -70px;
+    margin-top: 5px;
+}
+
+.checkbox {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+.checkbox-label {
+    font-size: 16px !important;
+    color: #333 !important;
+    cursor: pointer;
+    margin: 0;
+    margin-left: -60px;
+    margin-top: 5px;
+}
+
+/* Alternative class names for compatibility */
+.form-checkbox {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+/* More specific selector for checkbox label */
+.checkbox-container .checkbox-label {
+    font-size: 18px !important;
+    color: #333 !important;
+}
+
 .form-group label {
     display: block;
     margin-bottom: 5px;

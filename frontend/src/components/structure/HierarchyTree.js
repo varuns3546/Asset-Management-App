@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react'
 import '../../styles/structureTree.css'
-const TreeNode = ({ node, level = 0, onRemove }) => {
+const TreeNode = ({ node, level = 0, onRemove, onItemClick }) => {
     const hasChildren = node.children && node.children.length > 0
 
     const handleRemove = (e) => {
@@ -10,9 +10,28 @@ const TreeNode = ({ node, level = 0, onRemove }) => {
         }
     }
 
+    const handleItemClick = (e) => {
+        e.stopPropagation()
+        e.preventDefault()
+        if (onItemClick) {
+            onItemClick(node)
+        }
+    }
+
     return (
         <div className="tree-node horizontal-node">
-            <div className="node-content">
+            <div 
+                className="node-content" 
+                onClick={handleItemClick}
+                onMouseDown={(e) => e.stopPropagation()}
+                onMouseUp={(e) => e.stopPropagation()}
+                style={{ 
+                    userSelect: 'none',
+                    cursor: 'pointer',
+                    pointerEvents: 'auto'
+                }}
+                title="Click to edit this item"
+            >
                 <span className="node-title">{node.title}</span>
                 <div className="node-indicators">
                     <button 
@@ -42,6 +61,7 @@ const TreeNode = ({ node, level = 0, onRemove }) => {
                             node={child} 
                             level={level + 1}
                             onRemove={onRemove}
+                            onItemClick={onItemClick}
                         />
                     ))}
                 </div>
@@ -50,7 +70,7 @@ const TreeNode = ({ node, level = 0, onRemove }) => {
     )
 }
 
-const HierarchyTree = ({ hierarchyItems, onRemoveItem }) => {
+const HierarchyTree = ({ hierarchyItems, onRemoveItem, onItemClick }) => {
     const [isTreeExpanded, setIsTreeExpanded] = useState(true)
     const [zoomLevel, setZoomLevel] = useState(100)
     const treeContentRef = useRef(null)
@@ -164,6 +184,7 @@ const HierarchyTree = ({ hierarchyItems, onRemoveItem }) => {
                                 key={rootNode.id} 
                                 node={rootNode}
                                 onRemove={onRemoveItem}
+                                onItemClick={onItemClick}
                             />
                         ))}
                     </div>
