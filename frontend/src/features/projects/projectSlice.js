@@ -204,6 +204,25 @@ export const createHierarchyItem = createAsyncThunk(
     }
 )
 
+// Update individual hierarchy item
+export const updateHierarchyItem = createAsyncThunk(
+    'projects/updateHierarchyItem',
+    async ({ projectId, itemId, itemData }, thunkAPI) => {
+        try {
+            const token = thunkAPI.getState().auth.user.token
+            return await projectService.updateHierarchyItem(projectId, itemId, itemData, token)
+        } catch (error) {
+            const message =
+                (error.response && 
+                    error.response.data &&
+                    error.response.data.message) ||
+                error.message ||
+                error.toString()
+            return thunkAPI.rejectWithValue(message)
+        }
+    }
+)
+
 // Delete individual hierarchy item
 export const deleteHierarchyItem = createAsyncThunk(
     'projects/deleteHierarchyItem',
@@ -268,6 +287,25 @@ export const createHierarchyItemType = createAsyncThunk(
         try {
             const token = thunkAPI.getState().auth.user.token
             return await projectService.createHierarchyItemType(projectId, itemTypeData, token)
+        } catch (error) {
+            const message =
+                (error.response && 
+                    error.response.data &&
+                    error.response.data.message) ||
+                error.message ||
+                error.toString()
+            return thunkAPI.rejectWithValue(message)
+        }
+    }
+)
+
+// Update individual hierarchy item type
+export const updateHierarchyItemType = createAsyncThunk(
+    'projects/updateHierarchyItemType',
+    async ({ projectId, itemTypeId, itemTypeData }, thunkAPI) => {
+        try {
+            const token = thunkAPI.getState().auth.user.token
+            return await projectService.updateHierarchyItemType(projectId, itemTypeId, itemTypeData, token)
         } catch (error) {
             const message =
                 (error.response && 
@@ -513,6 +551,25 @@ export const projectSlice = createSlice({
                 state.isError = true
                 state.message = action.payload
             })
+            .addCase(updateHierarchyItem.pending, (state) => {
+                state.isLoading = true
+            })
+            .addCase(updateHierarchyItem.fulfilled, (state, action) => {
+                state.isLoading = false
+                state.isSuccess = true
+                // Update the item in current hierarchy
+                if (state.currentHierarchy) {
+                    const index = state.currentHierarchy.findIndex(item => item.id === action.payload.data.id)
+                    if (index !== -1) {
+                        state.currentHierarchy[index] = action.payload.data
+                    }
+                }
+            })
+            .addCase(updateHierarchyItem.rejected, (state, action) => {
+                state.isLoading = false
+                state.isError = true
+                state.message = action.payload
+            })
             .addCase(deleteHierarchyItem.pending, (state) => {
                 state.isLoading = true
             })
@@ -559,6 +616,25 @@ export const projectSlice = createSlice({
                 }
             })
             .addCase(createHierarchyItemType.rejected, (state, action) => {
+                state.isLoading = false
+                state.isError = true
+                state.message = action.payload
+            })
+            .addCase(updateHierarchyItemType.pending, (state) => {
+                state.isLoading = true
+            })
+            .addCase(updateHierarchyItemType.fulfilled, (state, action) => {
+                state.isLoading = false
+                state.isSuccess = true
+                // Update the item type in currentItemTypes
+                if (state.currentItemTypes) {
+                    const index = state.currentItemTypes.findIndex(item => item.id === action.payload.data.id)
+                    if (index !== -1) {
+                        state.currentItemTypes[index] = action.payload.data
+                    }
+                }
+            })
+            .addCase(updateHierarchyItemType.rejected, (state, action) => {
                 state.isLoading = false
                 state.isError = true
                 state.message = action.payload

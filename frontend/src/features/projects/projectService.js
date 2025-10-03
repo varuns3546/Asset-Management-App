@@ -53,6 +53,11 @@ const createHierarchyItem = async (projectId, itemData, token) => {
     return response.data;
 }
 
+const updateHierarchyItem = async (projectId, itemId, itemData, token) => {
+    const response = await api.put(`${API_URL}/${projectId}/hierarchy/items/${itemId}`, itemData);
+    return response.data;
+}
+
 const deleteHierarchyItem = async (projectId, itemId, token) => {
     const response = await api.delete(`${API_URL}/${projectId}/hierarchy/items/${itemId}`);
     return response.data;
@@ -70,6 +75,11 @@ const updateHierarchyItemTypes = async (projectId, itemTypesData, token) => {
 
 const createHierarchyItemType = async (projectId, itemTypeData, token) => {
     const response = await api.post(`${API_URL}/${projectId}/hierarchy/item-types`, itemTypeData);
+    return response.data;
+}
+
+const updateHierarchyItemType = async (projectId, itemTypeId, itemTypeData, token) => {
+    const response = await api.put(`${API_URL}/${projectId}/hierarchy/item-types/${itemTypeId}`, itemTypeData);
     return response.data;
 }
 
@@ -103,10 +113,12 @@ const projectService = {
     updateHierarchy,
     deleteHierarchy,
     createHierarchyItem,
+    updateHierarchyItem,
     deleteHierarchyItem,
     getHierarchyItemTypes,
     updateHierarchyItemTypes,
     createHierarchyItemType,
+    updateHierarchyItemType,
     deleteHierarchyItemType,
     getProjectUsers,
     addUserToProject,

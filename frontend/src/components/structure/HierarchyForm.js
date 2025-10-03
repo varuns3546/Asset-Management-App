@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { createHierarchyItem, deleteHierarchyItem } from '../../features/projects/projectSlice';
+import { createHierarchyItem, updateHierarchyItem, deleteHierarchyItem } from '../../features/projects/projectSlice';
 
 const HierarchyForm = ({ 
     hierarchyItems, 
-    itemTypes = []
+    itemTypes = [],
+    selectedItem = null,
+    onItemSelect = null
 }) => {
     const dispatch = useDispatch();
     const { selectedProject, currentHierarchy } = useSelector((state) => state.projects);
@@ -13,6 +15,27 @@ const HierarchyForm = ({
         item_type_id: null,
         parent_id: null
     });
+    const [isEditing, setIsEditing] = useState(false);
+
+    // Update form when selectedItem changes
+    useEffect(() => {
+        console.log('HierarchyForm selectedItem changed:', selectedItem);
+        if (selectedItem) {
+            setNewItem({
+                title: selectedItem.title || '',
+                item_type_id: selectedItem.item_type_id || null,
+                parent_id: selectedItem.parent_id || null
+            });
+            setIsEditing(true);
+        } else {
+            setNewItem({
+                title: '',
+                item_type_id: null,
+                parent_id: null
+            });
+            setIsEditing(false);
+        }
+    }, [selectedItem]);
 
     const handleNewItemChange = (e) => {
         setNewItem(prev => ({
@@ -34,20 +57,48 @@ const HierarchyForm = ({
         };
 
         try {
-            await dispatch(createHierarchyItem({
-                projectId: selectedProject.id,
-                itemData
-            })).unwrap();
+            if (isEditing && selectedItem) {
+                // Update existing item
+                await dispatch(updateHierarchyItem({
+                    projectId: selectedProject.id,
+                    itemId: selectedItem.id,
+                    itemData
+                })).unwrap();
+                
+                // Clear selection after successful update
+                if (onItemSelect) {
+                    onItemSelect(null);
+                }
+            } else {
+                // Create new item
+                await dispatch(createHierarchyItem({
+                    projectId: selectedProject.id,
+                    itemData
+                })).unwrap();
+            }
 
-            // Reset form after successful creation
+            // Reset form after successful creation/update
             setNewItem({
                 title: '',
                 item_type_id: null,
                 parent_id: newItem.parent_id || null
             });
+            setIsEditing(false);
         } catch (error) {
-            console.error('Error creating hierarchy item:', error);
-            alert('Failed to create item. Please try again.');
+            console.error('Error creating/updating hierarchy item:', error);
+            alert('Failed to create/update item. Please try again.');
+        }
+    }
+
+    const handleCancelEdit = () => {
+        setNewItem({
+            title: '',
+            item_type_id: null,
+            parent_id: null
+        });
+        setIsEditing(false);
+        if (onItemSelect) {
+            onItemSelect(null);
         }
     }
 
@@ -64,7 +115,9 @@ const HierarchyForm = ({
 
     return (
         <div className="form-group">
-            <label htmlFor="newItemTitle">Add New Item</label>
+            <label htmlFor="newItemTitle">
+                {isEditing ? `Edit Item: ${selectedItem?.title}` : ''}
+            </label>
             <div className="add-item-form">
                 <input
                     type="text"
@@ -97,15 +150,22 @@ const HierarchyForm = ({
                     className="form-select"
                 >
                     <option value="">No parent (root item)</option>
-                    {currentHierarchy?.map(item => (
+                    {currentHierarchy?.filter(item => item.id !== selectedItem?.id).map(item => (
                         <option key={item.id} value={item.id}>
                             {item.title}
                         </option>
                     ))}
                 </select>
-                <button onClick={handleAddItem} className="add-button">
-                    Add Item
-                </button>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                    <button onClick={handleAddItem} className="add-button">
+                        {isEditing ? 'Update Item' : 'Add Item'}
+                    </button>
+                    {isEditing && (
+                        <button onClick={handleCancelEdit} className="btn btn-secondary">
+                            Cancel
+                        </button>
+                    )}
+                </div>
             </div>
         </div>
     )

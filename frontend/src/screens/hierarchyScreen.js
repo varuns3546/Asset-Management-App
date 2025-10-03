@@ -9,6 +9,7 @@ import '../styles/structureScreen.css';
 const HierarchyScreen = () => {
     const { selectedProject, currentHierarchy, currentItemTypes, isError, message} = useSelector((state) => state.projects);
     const { user } = useSelector((state) => state.auth);
+    const [selectedItem, setSelectedItem] = useState(null);
 
     const dispatch = useDispatch();
     const navigate = useNavigate()  
@@ -38,6 +39,15 @@ const HierarchyScreen = () => {
             alert('Failed to delete hierarchy item. Please try again.');
         }
     };
+
+    const handleItemClick = (item) => {
+        console.log('Item selected in HierarchyScreen:', item);
+        setSelectedItem(item);
+    };
+
+    const handleItemSelect = (item) => {
+        setSelectedItem(item);
+    };
     
     return (
         <div className="hierarchy-screen">
@@ -55,6 +65,8 @@ const HierarchyScreen = () => {
                                 <HierarchyForm 
                                     hierarchyItems={currentHierarchy || []}
                                     itemTypes={currentItemTypes}
+                                    selectedItem={selectedItem}
+                                    onItemSelect={handleItemSelect}
                                 />
                             </div>
                         </div>
@@ -67,6 +79,7 @@ const HierarchyScreen = () => {
                                         <HierarchyTree 
                                             hierarchyItems={currentHierarchy}
                                             onRemoveItem={handleRemoveItem}
+                                            onItemClick={handleItemClick}
                                         />
                                     </div>
                                 </div>

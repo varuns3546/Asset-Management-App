@@ -233,8 +233,17 @@
     display: none !important;
 }
 
+/* Hover effects for interactive nodes - only direct hover */
 .node-content:hover {
     background: #e9ecef;
+    border-color: #007bff;
+    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.1);
+    transform: translateY(-1px);
+    transition: all 0.2s ease;
+}
+
+.node-content:hover .node-title {
+    color: #007bff;
 }
 
 /* Update node-title to use dynamic font size */

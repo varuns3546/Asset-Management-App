@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import '../../styles/structureTree.css'
-const TreeNode = ({ node, level = 0, parentCount = 0, onRemove }) => {
+const TreeNode = ({ node, level = 0, parentCount = 0, onRemove, onItemClick }) => {
     const hasChildren = node.children && node.children.length > 0
     const hasMultipleParents = node.parent_ids && node.parent_ids.length > 1
 
@@ -11,9 +11,28 @@ const TreeNode = ({ node, level = 0, parentCount = 0, onRemove }) => {
         }
     }
 
+    const handleItemClick = (e) => {
+        e.stopPropagation()
+        e.preventDefault()
+        if (onItemClick) {
+            onItemClick(node)
+        }
+    }
+
     return (
         <div className="tree-node horizontal-node">
-            <div className="node-content">
+            <div 
+                className="node-content" 
+                onClick={handleItemClick}
+                onMouseDown={(e) => e.stopPropagation()}
+                onMouseUp={(e) => e.stopPropagation()}
+                style={{ 
+                    userSelect: 'none',
+                    cursor: 'pointer',
+                    pointerEvents: 'auto'
+                }}
+                title="Click to edit this item type"
+            >
                 <span className="node-title">{node.title}</span>
                 <div className="node-indicators">
                     {hasMultipleParents && <span className="multiple-parents-indicator" title="Has multiple parents">🔗</span>}
@@ -45,6 +64,7 @@ const TreeNode = ({ node, level = 0, parentCount = 0, onRemove }) => {
                             level={level + 1} 
                             parentCount={parentCount + 1}
                             onRemove={onRemove}
+                            onItemClick={onItemClick}
                         />
                     ))}
                 </div>
@@ -53,7 +73,7 @@ const TreeNode = ({ node, level = 0, parentCount = 0, onRemove }) => {
     )
 }
 
-const ItemTypeTree = ({ itemTypes, onRemoveItemType }) => {
+const ItemTypeTree = ({ itemTypes, onRemoveItemType, onItemClick }) => {
     const [isTreeExpanded, setIsTreeExpanded] = useState(true)
     const [zoomLevel, setZoomLevel] = useState(100)
     const treeContentRef = useRef(null)
@@ -196,6 +216,7 @@ const ItemTypeTree = ({ itemTypes, onRemoveItemType }) => {
                                 key={rootNode.id} 
                                 node={rootNode} 
                                 onRemove={onRemoveItemType}
+                                onItemClick={onItemClick}
                             />
                         ))}
                     </div>
