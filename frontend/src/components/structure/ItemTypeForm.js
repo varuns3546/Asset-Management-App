@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { createHierarchyItemType, updateHierarchyItemType, deleteHierarchyItemType, getHierarchy } from '../../features/projects/projectSlice';
+import { createHierarchyItemType, updateHierarchyItemType, deleteHierarchyItemType, getHierarchy, getHierarchyItemTypes } from '../../features/projects/projectSlice';
 import '../../styles/structureScreen.css'
 
 const ItemTypeForm = ({ 
@@ -44,8 +44,16 @@ const ItemTypeForm = ({
                 setParentDropdowns([{ id: 1, value: '' }]);
             }
             
-            // TODO: Load existing attributes for this item type
-            setAttributes([{ id: 1, value: '' }]);
+            // Load existing attributes for this item type
+            if (selectedItem.attributes && selectedItem.attributes.length > 0) {
+                const attributesData = selectedItem.attributes.map((attr, index) => ({
+                    id: index + 1,
+                    value: attr
+                }));
+                setAttributes(attributesData);
+            } else {
+                setAttributes([{ id: 1, value: '' }]);
+            }
             setHasCoordinates(selectedItem.has_coordinates || false);
             setIsEditing(true);
         } else {
@@ -146,6 +154,9 @@ const ItemTypeForm = ({
                     itemTypeData
                 })).unwrap();
                 
+                // Refresh the item types list to get updated attributes
+                await dispatch(getHierarchyItemTypes(selectedProject.id));
+                
                 // Clear selection after successful update
                 if (onItemSelect) {
                     onItemSelect(null);
@@ -159,6 +170,10 @@ const ItemTypeForm = ({
                     projectId: selectedProject.id,
                     itemTypeData
                 })).unwrap();
+                
+                // Refresh the item types list to get the new item with attributes
+                await dispatch(getHierarchyItemTypes(selectedProject.id));
+                
                 console.log('Item type created successfully:', result);
             }
 

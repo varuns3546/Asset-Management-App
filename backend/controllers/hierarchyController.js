@@ -180,6 +180,36 @@ const getItemTypes = asyncHandler(async (req, res) => {
       });
     }
 
+    // Fetch attributes for each item type
+    if (itemTypes && itemTypes.length > 0) {
+      const itemTypeIds = itemTypes.map(item => item.id);
+      const { data: attributes, error: attributesError } = await req.supabase
+        .from('attributes')
+        .select('*')
+        .in('item_type_id', itemTypeIds);
+
+      if (attributesError) {
+        console.error('Error fetching attributes:', attributesError);
+        // Continue without attributes if there's an error
+      } else {
+        // Group attributes by item_type_id
+        const attributesByItemType = {};
+        if (attributes) {
+          attributes.forEach(attr => {
+            if (!attributesByItemType[attr.item_type_id]) {
+              attributesByItemType[attr.item_type_id] = [];
+            }
+            attributesByItemType[attr.item_type_id].push(attr.title);
+          });
+        }
+
+        // Add attributes to each item type
+        itemTypes.forEach(itemType => {
+          itemType.attributes = attributesByItemType[itemType.id] || [];
+        });
+      }
+    }
+
     // Return the item types (empty array if none exist)
     res.status(200).json({
       success: true,
@@ -196,7 +226,7 @@ const getItemTypes = asyncHandler(async (req, res) => {
 });
 
 const createItemType = asyncHandler(async (req, res) => {
-  const { name, description, parent_ids, attributes } = req.body;
+  const { name, description, parent_ids, attributes, has_coordinates } = req.body;
   const { id: project_id } = req.params;
 
   if (!project_id) {
@@ -245,7 +275,8 @@ const createItemType = asyncHandler(async (req, res) => {
         title: name.trim(),
         description: description || null,
         project_id: project_id,
-        parent_ids: parent_ids || null
+        parent_ids: parent_ids || null,
+        has_coordinates: has_coordinates || false
       })
       .select()
       .single();
@@ -578,7 +609,7 @@ const deleteHierarchyItem = asyncHandler(async (req, res) => {
 });
 
 const updateItemType = asyncHandler(async (req, res) => {
-  const { name, description, parent_ids, attributes } = req.body;
+  const { name, description, parent_ids, attributes, has_coordinates } = req.body;
   const { id: project_id, itemTypeId } = req.params;
 
   if (!project_id) {
@@ -634,7 +665,8 @@ const updateItemType = asyncHandler(async (req, res) => {
       .update({
         title: name.trim(),
         description: description || null,
-        parent_ids: parent_ids || null
+        parent_ids: parent_ids || null,
+        has_coordinates: has_coordinates || false
       })
       .eq('id', itemTypeId)
       .eq('project_id', project_id)
@@ -649,19 +681,19 @@ const updateItemType = asyncHandler(async (req, res) => {
       });
     }
 
-    // Handle attributes if they exist
+    // Handle attributes - always delete existing and insert new ones
+    // First, delete existing attributes for this item type
+    const { error: deleteError } = await req.supabase
+      .from('attributes')
+      .delete()
+      .eq('item_type_id', itemTypeId);
+
+    if (deleteError) {
+      console.error('Error deleting existing attributes:', deleteError);
+    }
+
+    // Then insert new attributes if they exist
     if (attributes && attributes.length > 0) {
-      // First, delete existing attributes for this item type
-      const { error: deleteError } = await req.supabase
-        .from('attributes')
-        .delete()
-        .eq('item_type_id', itemTypeId);
-
-      if (deleteError) {
-        console.error('Error deleting existing attributes:', deleteError);
-      }
-
-      // Then insert new attributes
       const attributesToInsert = attributes.map(attribute => ({
         item_type_id: itemTypeId,
         title: attribute.trim()
