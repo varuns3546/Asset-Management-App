@@ -11,6 +11,7 @@ import RegisterScreen from "./screens/RegisterScreen";
 import HomeScreen from "./screens/HomeScreen";
 import HierarchyScreen from "./screens/HierarchyScreen";
 import ItemTypeScreen from "./screens/ItemTypeScreen";
+import MapScreen from "./screens/MapScreen";
 import Navbar from "./components/Navbar";
 import Modal from "./components/Modal";
 
@@ -20,7 +21,6 @@ function AppContent() {
   const dispatch = useDispatch();
   const location = useLocation();
   const navigate = useNavigate();
-  const { selectedProject } = useSelector((state) => state.projects);
   const { user, isLoading } = useSelector((state) => state.auth);
   useEffect(() => {
     // Give time for user to load on refresh
@@ -52,6 +52,8 @@ function AppContent() {
       } catch (error) {
         console.error('Error loading selected project:', error);
       }
+    } else{
+      
     }
   }, [user, dispatch]);
   
@@ -86,6 +88,7 @@ function AppContent() {
         <Route path="/home" element={<HomeScreen />} />
         <Route path="/hierarchies" element={<HierarchyScreen />} />
         <Route path="/item-types" element={<ItemTypeScreen />} />
+        <Route path="/map" element={<MapScreen />} />
       </Routes>
       
       <Modal 

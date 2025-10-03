@@ -13,7 +13,11 @@ const HierarchyForm = ({
     const [newItem, setNewItem] = useState({
         title: '',
         item_type_id: null,
-        parent_id: null
+        parent_id: null,
+        coordinates: {
+            latitude: '',
+            longitude: ''
+        }
     });
     const [isEditing, setIsEditing] = useState(false);
 
@@ -24,23 +28,56 @@ const HierarchyForm = ({
             setNewItem({
                 title: selectedItem.title || '',
                 item_type_id: selectedItem.item_type_id || null,
-                parent_id: selectedItem.parent_id || null
+                parent_id: selectedItem.parent_id || null,
+                coordinates: selectedItem.coordinates || {
+                    latitude: '',
+                    longitude: ''
+                }
             });
             setIsEditing(true);
         } else {
             setNewItem({
                 title: '',
                 item_type_id: null,
-                parent_id: null
+                parent_id: null,
+                coordinates: {
+                    latitude: '',
+                    longitude: ''
+                }
             });
             setIsEditing(false);
         }
     }, [selectedItem]);
 
     const handleNewItemChange = (e) => {
+        const { name, value } = e.target;
+        
+        // If item_type_id changes, clear coordinates if new item type doesn't have coordinates
+        if (name === 'item_type_id') {
+            const selectedItemType = itemTypes.find(type => type.id === value);
+            setNewItem(prev => ({
+                ...prev,
+                [name]: value,
+                coordinates: selectedItemType?.has_coordinates ? prev.coordinates : {
+                    latitude: '',
+                    longitude: ''
+                }
+            }));
+        } else {
+            setNewItem(prev => ({
+                ...prev,
+                [name]: value
+            }));
+        }
+    }
+
+    const handleCoordinateChange = (coordinateType, value) => {
         setNewItem(prev => ({
             ...prev,
-            [e.target.name]: e.target.value
+            coordinates: {
+                ...prev.coordinates,
+                [coordinateType]: value
+            }
         }))
     }
 
@@ -50,10 +87,38 @@ const HierarchyForm = ({
             return;
         }
 
+        // Check if coordinates are required and valid
+        const selectedItemType = itemTypes.find(type => type.id === newItem.item_type_id);
+        if (selectedItemType?.has_coordinates) {
+            const lat = parseFloat(newItem.coordinates.latitude);
+            const lng = parseFloat(newItem.coordinates.longitude);
+            
+            if (isNaN(lat) || isNaN(lng)) {
+                alert('Please enter valid coordinates (latitude and longitude must be numbers)');
+                return;
+            }
+            
+            if (lat < -90 || lat > 90) {
+                alert('Latitude must be between -90 and 90 degrees');
+                return;
+            }
+            
+            if (lng < -180 || lng > 180) {
+                alert('Longitude must be between -180 and 180 degrees');
+                return;
+            }
+        }
+
         const itemData = {
             title: newItem.title,
             item_type_id: newItem.item_type_id || null,
-            parent_id: newItem.parent_id || null
+            parent_id: newItem.parent_id || null,
+            coordinates: selectedItemType?.has_coordinates ? 
+                (newItem.coordinates.latitude && newItem.coordinates.longitude ? 
+                    {
+                        latitude: parseFloat(newItem.coordinates.latitude),
+                        longitude: parseFloat(newItem.coordinates.longitude)
+                    } : null) : null
         };
 
         try {
@@ -81,7 +146,11 @@ const HierarchyForm = ({
             setNewItem({
                 title: '',
                 item_type_id: null,
-                parent_id: newItem.parent_id || null
+                parent_id: newItem.parent_id || null,
+                coordinates: {
+                    latitude: '',
+                    longitude: ''
+                }
             });
             setIsEditing(false);
         } catch (error) {
@@ -94,7 +163,11 @@ const HierarchyForm = ({
         setNewItem({
             title: '',
             item_type_id: null,
-            parent_id: null
+            parent_id: null,
+            coordinates: {
+                latitude: '',
+                longitude: ''
+            }
         });
         setIsEditing(false);
         if (onItemSelect) {
@@ -131,7 +204,7 @@ const HierarchyForm = ({
                 <select
                     id="item_type_id"
                     name="item_type_id"
-                    value={newItem.item_type_id}
+                    value={newItem.item_type_id || ''}
                     onChange={handleNewItemChange}
                     className="form-select"
                 >
@@ -145,7 +218,7 @@ const HierarchyForm = ({
                 <select
                     id="parent_id"
                     name="parent_id"
-                    value={newItem.parent_id}
+                    value={newItem.parent_id || ''}
                     onChange={handleNewItemChange}
                     className="form-select"
                 >
@@ -156,6 +229,35 @@ const HierarchyForm = ({
                         </option>
                     ))}
                 </select>
+                
+                {/* Coordinates fields - only show if item type has coordinates */}
+                {newItem.item_type_id && (() => {
+                    const selectedItemType = itemTypes.find(type => type.id === newItem.item_type_id);
+                    return selectedItemType?.has_coordinates;
+                })() && (
+                    <div className="coordinates-section">
+                        <label className="form-label">Coordinates:</label>
+                        <div className="coordinates-inputs">
+                            <input
+                                type="number"
+                                step="any"
+                                value={newItem.coordinates.latitude}
+                                onChange={(e) => handleCoordinateChange('latitude', e.target.value)}
+                                placeholder="Latitude"
+                                className="form-input"
+                            />
+                            <input
+                                type="number"
+                                step="any"
+                                value={newItem.coordinates.longitude}
+                                onChange={(e) => handleCoordinateChange('longitude', e.target.value)}
+                                placeholder="Longitude"
+                                className="form-input"
+                            />
+                        </div>
+                    </div>
+                )}
+                
                 <div style={{ display: 'flex', gap: '10px' }}>
                     <button onClick={handleAddItem} className="add-button">
                         {isEditing ? 'Update Item' : 'Add Item'}

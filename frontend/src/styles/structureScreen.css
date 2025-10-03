@@ -376,3 +376,31 @@
     cursor: not-allowed;
     transform: none;
 }
+
+/* Coordinates section styles */
+.coordinates-section {
+    margin: 15px 0;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.coordinates-inputs {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.coordinates-inputs input {
+    flex: 1;
+    min-width: 120px;
+}
+
+.form-label {
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 8px;
+    display: block;
+    font-size: 14px;
+}
