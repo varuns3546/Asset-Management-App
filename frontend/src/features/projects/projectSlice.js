@@ -626,13 +626,9 @@ export const projectSlice = createSlice({
             .addCase(updateHierarchyItemType.fulfilled, (state, action) => {
                 state.isLoading = false
                 state.isSuccess = true
-                // Update the item type in currentItemTypes
-                if (state.currentItemTypes) {
-                    const index = state.currentItemTypes.findIndex(item => item.id === action.payload.data.id)
-                    if (index !== -1) {
-                        state.currentItemTypes[index] = action.payload.data
-                    }
-                }
+                // Note: We don't update currentItemTypes here because the backend response
+                // doesn't include the updated attributes. The ItemTypeForm will handle
+                // refreshing the data by calling getHierarchyItemTypes after successful update.
             })
             .addCase(updateHierarchyItemType.rejected, (state, action) => {
                 state.isLoading = false
