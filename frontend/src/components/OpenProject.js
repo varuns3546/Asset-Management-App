@@ -8,8 +8,6 @@ const OpenProject = ({ onClose }) => {
     const dispatch = useDispatch()
     const [selectedProjectId, setSelectedProjectId] = useState('')
     const [searchTerm, setSearchTerm] = useState('')
-    const [showAdvancedSearch, setShowAdvancedSearch] = useState(false)
-    
     const { projects, isLoading, isError, message } = useSelector((state) => state.projects)
     const { user } = useSelector((state) => state.auth)
 

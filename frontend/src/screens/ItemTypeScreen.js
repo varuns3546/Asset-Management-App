@@ -1,17 +1,15 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { getHierarchyItemTypes, updateHierarchyItemTypes, deleteHierarchyItemType, reset } from '../features/projects/projectSlice';
+import { getHierarchyItemTypes, deleteHierarchyItemType, reset } from '../features/projects/projectSlice';
 import { loadUser } from '../features/auth/authSlice';
-import { useNavigate } from 'react-router-dom';
 import ItemTypeForm from '../components/structure/ItemTypeForm';
 import ItemTypeTree from '../components/structure/ItemTypeTree';
 import '../styles/structureScreen.css';
 const ItemTypeScreen = () => {
-    const { selectedProject, currentItemTypes, isError, message} = useSelector((state) => state.projects);
+    const { selectedProject, currentItemTypes } = useSelector((state) => state.projects);
     const { user } = useSelector((state) => state.auth);
     const [selectedItem, setSelectedItem] = useState(null);
     const dispatch = useDispatch();
-    const navigate = useNavigate()
 
     // Debug: Log when currentItemTypes change
     useEffect(() => {

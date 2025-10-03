@@ -8,7 +8,7 @@ const Dropdown = ({title, options, isOpen, onToggle, onOpenModal, onCloseModal})
     const navigate = useNavigate()
     
     const handleOptionClick = (option) => {
-        
+        console.log('Dropdown: Handling option click for:', option)
         // Handle modal options only for Projects dropdown
         if (onOpenModal && (option === 'Open Project' || option === 'Create Project')) {
             console.log('Opening modal for:', option) // Debug log
@@ -22,6 +22,7 @@ const Dropdown = ({title, options, isOpen, onToggle, onOpenModal, onCloseModal})
             const routeMap = {
                 'Asset Hierarchy': '/hierarchies',
                 'Item Types': '/item-types',
+                'Map': '/map',
             }
             
             if (routeMap[option]) {

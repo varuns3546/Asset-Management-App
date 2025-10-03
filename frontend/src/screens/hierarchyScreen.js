@@ -1,18 +1,16 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { getHierarchy, updateHierarchy, deleteHierarchy, deleteHierarchyItem, getHierarchyItemTypes, reset } from '../features/projects/projectSlice';
+import { getHierarchy, deleteHierarchyItem, getHierarchyItemTypes, reset } from '../features/projects/projectSlice';
 import { loadUser } from '../features/auth/authSlice';
-import { useNavigate } from 'react-router-dom';
 import HierarchyTree from '../components/structure/HierarchyTree';
 import HierarchyForm from '../components/structure/HierarchyForm';
 import '../styles/structureScreen.css';
 const HierarchyScreen = () => {
-    const { selectedProject, currentHierarchy, currentItemTypes, isError, message} = useSelector((state) => state.projects);
+    const { selectedProject, currentHierarchy, currentItemTypes} = useSelector((state) => state.projects);
     const { user } = useSelector((state) => state.auth);
     const [selectedItem, setSelectedItem] = useState(null);
 
     const dispatch = useDispatch();
-    const navigate = useNavigate()  
     
     useEffect(() => {dispatch(loadUser())}, [dispatch])
 
@@ -55,7 +53,6 @@ const HierarchyScreen = () => {
                 <div className="hierarchy-container">
                     <div className="hierarchy-header">
                         <h2 className="hierarchy-title">Asset Hierarchy - {selectedProject.title}</h2>
-                        {isError && <p className="hierarchy-error">Error: {message}</p>}
                     </div>
                     
                     <div className="hierarchy-layout">
