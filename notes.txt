@@ -1,0 +1,1 @@
+adding map features has slowed down compile time when i run npm start on my frontend

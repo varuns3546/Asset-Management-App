@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { getHierarchy, getHierarchyItemTypes } from '../features/projects/projectSlice';
 import { loadUser } from '../features/auth/authSlice';
-import MapComponent from '../components/MapComponent';
+import Map from '../components/Map';
 import HierarchyForm from '../components/structure/HierarchyForm';
 import '../styles/map.css';
 import '../styles/structureScreen.css';
@@ -55,7 +55,7 @@ const MapScreen = () => {
                     <div className="map-screen-layout">
                         {/* Left side - Map */}
                         <div className="map-screen-left-panel">
-                            <MapComponent 
+                            <Map 
                                 hierarchyItems={currentHierarchy || []}
                                 selectedItem={selectedItem}
                                 onItemSelect={handleItemSelect}
