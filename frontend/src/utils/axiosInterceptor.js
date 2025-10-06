@@ -1,4 +1,6 @@
 import axios from 'axios';
+import store from '../app/store';
+import { logout } from '../features/auth/authSlice';
 
 // Create axios instance
 const api = axios.create();
@@ -35,9 +37,8 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       console.log('Token expired or invalid, redirecting to login...');
       
-      // Clear localStorage
-      localStorage.removeItem('user');
-      localStorage.removeItem('selectedProject');
+      // Dispatch logout action to clear Redux state
+      store.dispatch(logout());
       
       // Redirect to login page
       window.location.href = '/';

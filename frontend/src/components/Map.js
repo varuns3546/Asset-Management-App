@@ -14,6 +14,7 @@ const MapComponent = ({
   hierarchyItems = [], 
   selectedItem = null, 
   onItemSelect = null,
+  selectedProject = null,
   height = '500px' 
 }) => {
   const mapRef = useRef(null);
@@ -33,11 +34,17 @@ const MapComponent = ({
       basemap: basemapStyle
     });
 
+    // Determine map center - use project coordinates if available, otherwise use default
+    let mapCenter = [ARCGIS_CONFIG.defaultCenter.longitude, ARCGIS_CONFIG.defaultCenter.latitude];
+    if (selectedProject && selectedProject.latitude && selectedProject.longitude) {
+      mapCenter = [parseFloat(selectedProject.longitude), parseFloat(selectedProject.latitude)];
+    }
+
     // Create map view
     const mapView = new MapView({
       container: mapRef.current,
       map: map,
-      center: [ARCGIS_CONFIG.defaultCenter.longitude, ARCGIS_CONFIG.defaultCenter.latitude],
+      center: mapCenter,
       zoom: ARCGIS_CONFIG.defaultZoom
     });
 
@@ -68,7 +75,7 @@ const MapComponent = ({
       console.error('MapComponent: Error initializing map:', error);
       setMapError(error.message);
     }
-  }, []);
+  }, [selectedProject]);
 
   // Update markers when hierarchy items change
   useEffect(() => {

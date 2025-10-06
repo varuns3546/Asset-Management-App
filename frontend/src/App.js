@@ -22,16 +22,22 @@ function AppContent() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, isLoading } = useSelector((state) => state.auth);
-  useEffect(() => {
-    // Give time for user to load on refresh
-    const timer = setTimeout(() => {
-        if (user === null && !isLoading && location.pathname !== '/register') {
-            navigate('/');
-        }
-    }, 100);
 
-    return () => clearTimeout(timer);
-}, [user, isLoading, navigate, location.pathname]);
+  
+  // Handle routing based on authentication state
+  useEffect(() => {
+    if (!isLoading) {
+      const isAuthRoute = location.pathname === '/' || location.pathname === '/register';
+      
+      if (user === null && !isAuthRoute) {
+        // User is not authenticated and trying to access protected route
+        navigate('/');
+      } else if (user !== null && isAuthRoute) {
+        // User is authenticated but on auth page, redirect to home
+        navigate('/home');
+      }
+    }
+  }, [user, isLoading, navigate, location.pathname]);
   const hideNavbarRoutes = ['/', '/register'];
   const showNavbar = !hideNavbarRoutes.includes(location.pathname);
   

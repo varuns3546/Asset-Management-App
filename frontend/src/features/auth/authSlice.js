@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import authService from './authService'
+import { isUserTokenValid } from '../../utils/jwtUtils'
 
 const initialState = {
     user: null,
@@ -15,9 +16,28 @@ export const loadUser = createAsyncThunk(
     try {
       const user = await localStorage.getItem('user')
       const parsedUser = user ? JSON.parse(user) : null
+      
+      // If no user data, return null
+      if (!parsedUser) {
+        return null
+      }
+      
+      // Validate JWT token
+      const isTokenValid = isUserTokenValid(parsedUser)
+      
+      if (!isTokenValid) {
+        // Token is expired or invalid, clear localStorage
+        localStorage.removeItem('user')
+        localStorage.removeItem('selectedProject')
+        return null
+      }
+      
       return parsedUser
     } catch (error) {
-      return thunkAPI.rejectWithValue('Failed to load user from storage')
+      // If there's any error parsing or validating, clear localStorage and return null
+      localStorage.removeItem('user')
+      localStorage.removeItem('selectedProject')
+      return null
     }
   }
 )
