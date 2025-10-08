@@ -7,6 +7,8 @@
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  position: relative; /* Ensure proper positioning context */
+  contain: layout; /* CSS containment to prevent layout thrashing */
 }
 
 .map-header {
@@ -36,6 +38,9 @@
   flex: 1;
   width: 100%;
   min-height: 400px;
+  max-height: 80vh; /* Prevent excessive height */
+  position: relative;
+  overflow: hidden; /* Prevent scrollbars that might cause resize loops */
 }
 
 /* Map loading and error states */
@@ -80,6 +85,22 @@
 /* Map controls styling */
 .esri-view {
   border-radius: 0 0 8px 8px;
+  width: 100% !important;
+  height: 100% !important;
+  position: relative !important;
+  contain: layout style paint; /* CSS containment for better performance */
+}
+
+/* Prevent ArcGIS from creating excessive resize events */
+.esri-view-root {
+  width: 100% !important;
+  height: 100% !important;
+  position: relative !important;
+}
+
+.esri-view-surface {
+  width: 100% !important;
+  height: 100% !important;
 }
 
 /* Popup styling */

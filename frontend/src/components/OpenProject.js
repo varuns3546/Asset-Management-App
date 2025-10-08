@@ -120,7 +120,7 @@ const OpenProject = ({ onClose }) => {
                 </div>
                 <div style={{ fontSize: '12px', color: '#666', marginBottom: '16px' }}>
                     <div>🔍 Debug Info:</div>
-                    <div>• API URL: http://localhost:3001/api/projects</div>
+                    <div>• API URL: {process.env.REACT_APP_API_BASE_URL}/api/projects</div>
                     <div>• User: {user?.firstName} {user?.lastName}</div>
                     <div>• Token: {user?.token ? 'Present' : 'Missing'}</div>
                     <div>• Backend Status: Check if server is running on port 3001</div>

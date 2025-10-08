@@ -24,11 +24,6 @@ const MapScreen = () => {
         }
     }, [selectedProject, user, dispatch]);
 
-    const handleItemClick = (item) => {
-        console.log('Item selected in MapScreen:', item);
-        setSelectedItem(item);
-    };
-
     const handleItemSelect = (item) => {
         setSelectedItem(item);
     };
