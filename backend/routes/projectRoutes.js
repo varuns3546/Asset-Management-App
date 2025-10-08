@@ -4,7 +4,7 @@ import hierarchyController from '../controllers/hierarchyController.js';
 import supabaseClient from '../config/supabaseClient.js';
 
 const { getProjects, getProject, createProject, deleteProject, updateProject, getProjectUsers, addUserToProject, removeUserFromProject } = projectController;
-const { getHierarchy, deleteHierarchy, createHierarchyItem, updateHierarchyItem, deleteHierarchyItem, getItemTypes, createItemType, updateItemType, deleteItemType } = hierarchyController;
+const { getHierarchy, deleteHierarchy, createHierarchyItem, updateHierarchyItem, deleteHierarchyItem, getItemTypes, createItemType, updateItemType, deleteItemType, uploadHierarchyFile, importHierarchyData } = hierarchyController;
 const { authenticateUser } = supabaseClient;
 const router = express.Router();
 
@@ -24,6 +24,10 @@ router.delete('/:id/users/:userId', removeUserFromProject);
 // Hierarchy routes
 router.get('/:id/hierarchy', getHierarchy);
 router.delete('/:id/hierarchy', deleteHierarchy);
+
+// Hierarchy file upload routes
+router.post('/:id/hierarchy/upload', uploadHierarchyFile);
+router.post('/:id/hierarchy/import', importHierarchyData);
 
 // Individual hierarchy item routes
 router.post('/:id/hierarchy/items', createHierarchyItem);
