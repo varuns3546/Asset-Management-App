@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { createHierarchyItem, updateHierarchyItem, deleteHierarchyItem } from '../../features/projects/projectSlice';
+import { createHierarchyItem, updateHierarchyItem } from '../../features/projects/projectSlice';
 
 const HierarchyForm = ({ 
     hierarchyItems, 
@@ -109,6 +109,7 @@ const HierarchyForm = ({
             }
         }
 
+        // Store the current form data before clearing
         const itemData = {
             title: newItem.title,
             item_type_id: newItem.item_type_id || null,
@@ -121,6 +122,26 @@ const HierarchyForm = ({
                     } : null) : null
         };
 
+        // Store the current parent_id for form reset (keep parent selection for efficiency)
+        const currentParentId = newItem.parent_id;
+
+        // Clear form fields IMMEDIATELY for better UX
+        setNewItem({
+            title: '',
+            item_type_id: null,
+            parent_id: currentParentId, // Keep parent selection for efficiency
+            coordinates: {
+                latitude: '',
+                longitude: ''
+            }
+        });
+        setIsEditing(false);
+
+        // Clear selection if updating
+        if (isEditing && selectedItem && onItemSelect) {
+            onItemSelect(null);
+        }
+
         try {
             if (isEditing && selectedItem) {
                 // Update existing item
@@ -129,11 +150,6 @@ const HierarchyForm = ({
                     itemId: selectedItem.id,
                     itemData
                 })).unwrap();
-                
-                // Clear selection after successful update
-                if (onItemSelect) {
-                    onItemSelect(null);
-                }
             } else {
                 // Create new item
                 await dispatch(createHierarchyItem({
@@ -141,21 +157,17 @@ const HierarchyForm = ({
                     itemData
                 })).unwrap();
             }
-
-            // Reset form after successful creation/update
-            setNewItem({
-                title: '',
-                item_type_id: null,
-                parent_id: newItem.parent_id || null,
-                coordinates: {
-                    latitude: '',
-                    longitude: ''
-                }
-            });
-            setIsEditing(false);
         } catch (error) {
             console.error('Error creating/updating hierarchy item:', error);
             alert('Failed to create/update item. Please try again.');
+            
+            // Restore form data if there was an error (optional - you might want to keep the form clear)
+            // setNewItem({
+            //     title: itemData.title,
+            //     item_type_id: itemData.item_type_id,
+            //     parent_id: itemData.parent_id,
+            //     coordinates: itemData.coordinates || { latitude: '', longitude: '' }
+            // });
         }
     }
 
@@ -175,16 +187,6 @@ const HierarchyForm = ({
         }
     }
 
-    const handleRemoveItem = async (itemId) => {
-        try {
-            await dispatch(deleteHierarchyItem({
-                projectId: selectedProject.id,
-                itemId
-            })).unwrap();
-        } catch (error) {
-            alert('Failed to delete item. Please try again.');
-        }
-    }
 
     return (
         <div className="form-group">

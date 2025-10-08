@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { createHierarchyItemType, updateHierarchyItemType, deleteHierarchyItemType, getHierarchy, getHierarchyItemTypes } from '../../features/projects/projectSlice';
+import { createHierarchyItemType, updateHierarchyItemType, getHierarchyItemTypes } from '../../features/projects/projectSlice';
 import '../../styles/structureScreen.css'
 
 const ItemTypeForm = ({ 
@@ -124,6 +124,7 @@ const ItemTypeForm = ({
             alert('Please enter an item type title');
             return;
         }
+        
         // Collect selected parent IDs from dropdowns
         const selectedParentIds = parentDropdowns
             .map(dropdown => dropdown.value)
@@ -134,6 +135,7 @@ const ItemTypeForm = ({
             .map(attr => attr.value)
             .filter(value => value.trim() !== '');
 
+        // Store the current form data before clearing
         const itemTypeData = {
             name: newItemType.title,
             description: newItemType.description,
@@ -141,6 +143,27 @@ const ItemTypeForm = ({
             attributes: attributeValues,
             has_coordinates: hasCoordinates
         };
+
+        // Clear form fields IMMEDIATELY for better UX
+        setNewItemType({
+            title: '',
+            description: '',
+            parent_ids: [],
+            attributes: []
+        });
+
+        // Reset parent dropdowns to single empty dropdown
+        setParentDropdowns([{ id: 1, value: '' }]);
+        
+        // Reset attributes to single empty attribute
+        setAttributes([{ id: 1, value: '' }]);
+        setHasCoordinates(false);
+        setIsEditing(false);
+
+        // Clear selection if updating
+        if (isEditing && selectedItem && onItemSelect) {
+            onItemSelect(null);
+        }
 
         try {
             let result;
@@ -157,10 +180,6 @@ const ItemTypeForm = ({
                 // Refresh the item types list to get updated attributes
                 await dispatch(getHierarchyItemTypes(selectedProject.id));
                 
-                // Clear selection after successful update
-                if (onItemSelect) {
-                    onItemSelect(null);
-                }
                 console.log('Item type updated successfully:', result);
             } else {
                 // Create new item type
@@ -176,25 +195,18 @@ const ItemTypeForm = ({
                 
                 console.log('Item type created successfully:', result);
             }
-
-            // Reset form after successful creation/update
-            setNewItemType({
-                title: '',
-                description: '',
-                parent_ids: [],
-                attributes: []
-            });
-
-            // Reset parent dropdowns to single empty dropdown
-            setParentDropdowns([{ id: 1, value: '' }]);
-            
-            // Reset attributes to single empty attribute
-            setAttributes([{ id: 1, value: '' }]);
-            setHasCoordinates(false);
-            setIsEditing(false);
         } catch (error) {
             console.error('Error creating/updating item type:', error);
             alert('Failed to create/update item type. Please try again.');
+            
+            // Restore form data if there was an error (optional - you might want to keep the form clear)
+            // setNewItemType({
+            //     title: itemTypeData.name,
+            //     description: itemTypeData.description,
+            //     parent_ids: itemTypeData.parent_ids,
+            //     attributes: itemTypeData.attributes
+            // });
+            // setHasCoordinates(itemTypeData.has_coordinates);
         }
     }
 
@@ -214,19 +226,6 @@ const ItemTypeForm = ({
         }
     }
 
-    const handleRemoveItemType = async (itemTypeId) => {
-
-        
-        try {
-            const result = await dispatch(deleteHierarchyItemType({
-                projectId: selectedProject.id,
-                itemTypeId
-            })).unwrap();
-            
-        } catch (error) {
-            alert('Failed to delete item type. Please try again.');
-        }
-    }
     
     return (
         <div className="form-group">

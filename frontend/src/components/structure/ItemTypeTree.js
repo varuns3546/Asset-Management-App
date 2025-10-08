@@ -109,7 +109,6 @@ const ItemTypeTree = ({ itemTypes, onRemoveItemType, onItemClick }) => {
     const buildTree = (items) => {
         const itemMap = new Map()
         const rootItems = []
-        const processedItems = new Set() // Track processed items to avoid duplicates
 
         // Create a map of all items
         items.forEach(item => {

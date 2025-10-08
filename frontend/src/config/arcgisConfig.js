@@ -1,6 +1,6 @@
 const ARCGIS_CONFIG = {
-  // Replace with your actual ArcGIS API key
-  apiKey: 'AAPTxy8BH1VEsoebNVZXo8HurMCqwgNFjRJiI6A2DL4XYjqMLh52EKduHAEXwDnkotltAuH9Vm-4LmiAYb0gcYSa7u06uXwhDk5TqQutxhpwQ87W3saalOiVuMBTeEfgmQTe6oipJBRV0wqChHCtyZJaKeEYu-AuLYPxYsfKp-2jwOKP0cYwntQutXZjdWLMA3SBpu6XmXMOPmsdueJ36icHqwEc8bxNBUviGRbE7Cdfu58.AT1_KNgzHb7Q',
+  // ArcGIS API key from environment variable
+  apiKey: process.env.REACT_APP_ARCGIS_API_KEY,
   
         // Default map center (you can change this to your preferred location)
         defaultCenter: {

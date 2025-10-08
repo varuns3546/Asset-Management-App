@@ -3,6 +3,9 @@ import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
+// Test environment variables
+import "./test-env";
+
 import { loadUser } from "./features/auth/authSlice";
 import { setSelectedProject } from "./features/projects/projectSlice"
 import "./utils/axiosInterceptor"; // Initialize axios interceptor

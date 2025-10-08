@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Create a separate axios instance for project operations to avoid circular dependency
 const projectApi = axios.create({
-  baseURL: 'http://localhost:3001/api/projects',
+  baseURL: process.env.REACT_APP_API_BASE_URL + '/api/projects',
   headers: {
     'Content-Type': 'application/json',
   },

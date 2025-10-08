@@ -32,6 +32,11 @@ const HierarchyScreen = () => {
                 projectId: selectedProject.id,
                 itemId
             })).unwrap();
+            
+            // Clear selected item if the deleted item was selected
+            if (selectedItem && selectedItem.id === itemId) {
+                setSelectedItem(null);
+            }
         } catch (error) {
             console.error('Error deleting hierarchy item:', error);
             alert('Failed to delete hierarchy item. Please try again.');
