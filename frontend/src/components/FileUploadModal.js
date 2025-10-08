@@ -2,7 +2,7 @@ import { useState } from 'react';
 import Modal from './Modal';
 import '../styles/modal.css';
 
-const FileUploadModal = ({ isOpen, onClose, onUpload, projectId }) => {
+const FileUploadModal = ({ isOpen, onClose, onFileSelect, projectId }) => {
     const [selectedFile, setSelectedFile] = useState(null);
     const [uploading, setUploading] = useState(false);
     const [error, setError] = useState('');
@@ -41,14 +41,14 @@ const FileUploadModal = ({ isOpen, onClose, onUpload, projectId }) => {
         setError('');
 
         try {
-            await onUpload(selectedFile, projectId);
+            await onFileSelect(selectedFile);
             
             // Reset form after successful upload
             setSelectedFile(null);
             setUploading(false);
             onClose();
         } catch (err) {
-            setError(err.message || 'Failed to upload file. Please try again.');
+            setError(err.message || 'Failed to parse file. Please try again.');
             setUploading(false);
         }
     };
@@ -58,6 +58,12 @@ const FileUploadModal = ({ isOpen, onClose, onUpload, projectId }) => {
             setSelectedFile(null);
             setError('');
             onClose();
+        }
+    };
+
+    const handleDropZoneClick = () => {
+        if (!uploading && !selectedFile) {
+            document.getElementById('file-input')?.click();
         }
     };
 
@@ -98,6 +104,7 @@ const FileUploadModal = ({ isOpen, onClose, onUpload, projectId }) => {
                     className={`drop-zone ${selectedFile ? 'has-file' : ''}`}
                     onDragOver={handleDragOver}
                     onDrop={handleDrop}
+                    onClick={handleDropZoneClick}
                 >
                     <input
                         type="file"
@@ -109,7 +116,7 @@ const FileUploadModal = ({ isOpen, onClose, onUpload, projectId }) => {
                     />
                     
                     {selectedFile ? (
-                        <div className="selected-file">
+                        <div className="selected-file" onClick={(e) => e.stopPropagation()}>
                             <div className="file-icon">📄</div>
                             <div className="file-info">
                                 <p className="file-name">{selectedFile.name}</p>
@@ -120,19 +127,22 @@ const FileUploadModal = ({ isOpen, onClose, onUpload, projectId }) => {
                             {!uploading && (
                                 <button
                                     className="remove-file-btn"
-                                    onClick={() => setSelectedFile(null)}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedFile(null);
+                                    }}
                                 >
                                     ×
                                 </button>
                             )}
                         </div>
                     ) : (
-                        <label htmlFor="file-input" className="drop-zone-label">
+                        <div className="drop-zone-label">
                             <div className="upload-icon">📁</div>
                             <p className="drop-zone-text">
                                 Drag and drop your file here or click to browse
                             </p>
-                        </label>
+                        </div>
                     )}
                 </div>
 
@@ -156,7 +166,7 @@ const FileUploadModal = ({ isOpen, onClose, onUpload, projectId }) => {
                         onClick={handleUpload}
                         disabled={!selectedFile || uploading}
                     >
-                        {uploading ? 'Uploading...' : 'Upload'}
+                        {uploading ? 'Processing...' : 'Continue'}
                     </button>
                 </div>
             </div>

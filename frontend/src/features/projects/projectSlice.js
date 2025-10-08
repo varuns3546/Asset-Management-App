@@ -308,6 +308,42 @@ export const deleteHierarchyItemType = createAsyncThunk(
     }
 )
 
+export const uploadHierarchyFile = createAsyncThunk(
+    'projects/uploadHierarchyFile',
+    async ({ projectId, file }, thunkAPI) => {
+        try {
+            const token = thunkAPI.getState().auth.user.token
+            return await projectService.uploadHierarchyFile(projectId, file, token)
+        } catch (error) {
+            const message =
+                (error.response && 
+                    error.response.data &&
+                    error.response.data.message) ||
+                error.message ||
+                error.toString()
+            return thunkAPI.rejectWithValue(message)
+        }
+    }
+)
+
+export const importHierarchyData = createAsyncThunk(
+    'projects/importHierarchyData',
+    async ({ projectId, mappings, data }, thunkAPI) => {
+        try {
+            const token = thunkAPI.getState().auth.user.token
+            return await projectService.importHierarchyData(projectId, mappings, data, token)
+        } catch (error) {
+            const message =
+                (error.response && 
+                    error.response.data &&
+                    error.response.data.message) ||
+                error.message ||
+                error.toString()
+            return thunkAPI.rejectWithValue(message)
+        }
+    }
+)
+
 export const getProjectUsers = createAsyncThunk(
     'projects/getProjectUsers',
     async (projectId, thunkAPI) => {
