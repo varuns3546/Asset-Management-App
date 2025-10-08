@@ -461,7 +461,7 @@ const deleteItemType = asyncHandler(async (req, res) => {
 
 // Create individual hierarchy item
 const createHierarchyItem = asyncHandler(async (req, res) => {
-  const { title, item_type_id, parent_id, coordinates } = req.body;
+  const { title, item_type_id, parent_id, beginning_latitude, end_latitude, beginning_longitude, end_longitude } = req.body;
   const { id: project_id } = req.params;
 
   if (!project_id) {
@@ -510,7 +510,10 @@ const createHierarchyItem = asyncHandler(async (req, res) => {
         item_type_id: item_type_id || null,
         parent_id: parent_id || null,
         project_id: project_id,
-        coordinates: coordinates || null
+        beginning_latitude: beginning_latitude || null,
+        end_latitude: end_latitude || null,
+        beginning_longitude: beginning_longitude || null,
+        end_longitude: end_longitude || null
       })
       .select()
       .single();
@@ -728,7 +731,7 @@ const updateItemType = asyncHandler(async (req, res) => {
 });
 
 const updateHierarchyItem = asyncHandler(async (req, res) => {
-  const { title, item_type_id, parent_id, coordinates } = req.body;
+  const { title, item_type_id, parent_id, beginning_latitude, end_latitude, beginning_longitude, end_longitude } = req.body;
   const { id: project_id, itemId } = req.params;
 
   if (!project_id) {
@@ -785,7 +788,10 @@ const updateHierarchyItem = asyncHandler(async (req, res) => {
         title: title.trim(),
         item_type_id: item_type_id || null,
         parent_id: parent_id || null,
-        coordinates: coordinates || null
+        beginning_latitude: beginning_latitude || null,
+        end_latitude: end_latitude || null,
+        beginning_longitude: beginning_longitude || null,
+        end_longitude: end_longitude || null
       })
       .eq('id', itemId)
       .eq('project_id', project_id)

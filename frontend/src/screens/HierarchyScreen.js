@@ -4,11 +4,13 @@ import { getHierarchy, deleteHierarchyItem, getHierarchyItemTypes, reset } from 
 import { loadUser } from '../features/auth/authSlice';
 import HierarchyTree from '../components/structure/HierarchyTree';
 import HierarchyForm from '../components/structure/HierarchyForm';
+import FileUploadModal from '../components/FileUploadModal';
 import '../styles/structureScreen.css';
 const HierarchyScreen = () => {
     const { selectedProject, currentHierarchy, currentItemTypes} = useSelector((state) => state.projects);
     const { user } = useSelector((state) => state.auth);
     const [selectedItem, setSelectedItem] = useState(null);
+    const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
 
     const dispatch = useDispatch();
     
@@ -51,6 +53,24 @@ const HierarchyScreen = () => {
     const handleItemSelect = (item) => {
         setSelectedItem(item);
     };
+
+    const handleFileUpload = async (file, projectId) => {
+        // TODO: Implement file upload logic
+        // For now, just log the file
+        console.log('Uploading file:', file.name, 'for project:', projectId);
+        
+        // Placeholder for actual upload implementation
+        return new Promise((resolve, reject) => {
+            setTimeout(() => {
+                // Simulate successful upload
+                console.log('File uploaded successfully');
+                resolve();
+                
+                // Refresh hierarchy after upload
+                dispatch(getHierarchy(projectId));
+            }, 1000);
+        });
+    };
     
     return (
         <div className="hierarchy-screen">
@@ -58,6 +78,12 @@ const HierarchyScreen = () => {
                 <div className="hierarchy-container">
                     <div className="hierarchy-header">
                         <h2 className="hierarchy-title">Asset Hierarchy - {selectedProject.title}</h2>
+                        <button 
+                            className="upload-button"
+                            onClick={() => setIsUploadModalOpen(true)}
+                        >
+                            Import Data
+                        </button>
                     </div>
                     
                     <div className="hierarchy-layout">
@@ -88,6 +114,14 @@ const HierarchyScreen = () => {
                             )}
                         </div>
                     </div>
+
+                    {/* File Upload Modal */}
+                    <FileUploadModal
+                        isOpen={isUploadModalOpen}
+                        onClose={() => setIsUploadModalOpen(false)}
+                        onUpload={handleFileUpload}
+                        projectId={selectedProject.id}
+                    />
                 </div>
             ) : (
                 <div className="no-project-selected">
