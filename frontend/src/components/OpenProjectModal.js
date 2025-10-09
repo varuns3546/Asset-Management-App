@@ -4,7 +4,7 @@ import { useSelector, useDispatch } from 'react-redux'
 import { getProjects, setSelectedProject } from '../features/projects/projectSlice'
 import { loadUser } from '../features/auth/authSlice'
 
-const OpenProject = ({ onClose }) => {
+const OpenProjectModal = ({ onClose }) => {
     const dispatch = useDispatch()
     const [selectedProjectId, setSelectedProjectId] = useState('')
     const [searchTerm, setSearchTerm] = useState('')
@@ -17,26 +17,12 @@ const OpenProject = ({ onClose }) => {
     }, [dispatch])
 
     useEffect(() => {
-        console.log('OpenProject: User state:', user)
         if (user && user.token) {
-            console.log('OpenProject: Dispatching getProjects')
             dispatch(getProjects())
-        } else {
-            console.log('OpenProject: No user or token, cannot fetch projects')
-        }
+        } 
     }, [dispatch, user])
 
     // Debug logging
-    useEffect(() => {
-        console.log('OpenProject: Projects state changed:', { 
-            projects, 
-            isLoading, 
-            isError, 
-            message,
-            userToken: user?.token ? 'Token exists' : 'No token'
-        })
-    }, [projects, isLoading, isError, message, user])
-
     const handleOpenProject = () => {
         if (!selectedProjectId) {
             return
@@ -56,18 +42,14 @@ const OpenProject = ({ onClose }) => {
     }
 
     const handleCancel = () => {
-        console.log('Cancel clicked')
         if (onClose) {
             onClose()
         }
     }
 
     const handleRetry = () => {
-        console.log('Retrying getProjects')
         if (user && user.token) {
             dispatch(getProjects())
-        } else {
-            console.log('No user token available for retry')
         }
     }
 
@@ -293,4 +275,4 @@ const OpenProject = ({ onClose }) => {
     )
 }
 
-export default OpenProject
+export default OpenProjectModal

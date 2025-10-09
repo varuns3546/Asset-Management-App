@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import React from 'react'
-import OpenProject from './OpenProject'
-import CreateProject from './CreateProject'
+import OpenProjectModal from './OpenProjectModal'
+import CreateProjectModal from './CreateProjectModal'
 import '../styles/navbar.css'
 
 const Dropdown = ({title, options, isOpen, onToggle, onOpenModal, onCloseModal}) => {
@@ -12,9 +12,9 @@ const Dropdown = ({title, options, isOpen, onToggle, onOpenModal, onCloseModal})
         if (onOpenModal && (option === 'Open Project' || option === 'Create Project')) {
             console.log('Opening modal for:', option) // Debug log
             if (option === 'Open Project') {
-                onOpenModal(<OpenProject onClose={onCloseModal} />, 'Open Project')
+                onOpenModal(<OpenProjectModal onClose={onCloseModal} />, 'Open Project')
             } else if (option === 'Create Project') {
-                onOpenModal(<CreateProject onClose={onCloseModal} />, 'Create Project')
+                onOpenModal(<CreateProjectModal onClose={onCloseModal} />, 'Create Project')
             }
         } else {
             // Map other options to routes
