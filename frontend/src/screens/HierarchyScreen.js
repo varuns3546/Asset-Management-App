@@ -49,7 +49,6 @@ const HierarchyScreen = () => {
     };
 
     const handleItemClick = (item) => {
-        console.log('Item selected in HierarchyScreen:', item);
         setSelectedItem(item);
     };
 
@@ -74,20 +73,15 @@ const HierarchyScreen = () => {
         }
     };
 
-    const handleImport = async (columnMappings, itemTypeMap, selectedSheets, itemTypeAttributes) => {
+    const handleImport = async (columnMappings, itemTypeMap, selectedSheets, itemTypeAttributes, sheetDefaultTypes) => {
         try {
-            console.log('=== IMPORT START ===');
-            console.log('Selected sheets:', selectedSheets);
-            console.log('Column mappings:', columnMappings);
-            console.log('Item type map:', itemTypeMap);
-            console.log('Item type attributes:', itemTypeAttributes);
             
-            // First, create any new item types (across all sheets)
+            // First, create any new item types (from both itemTypeMap and sheetDefaultTypes)
             const typeNameToIdMap = {};
-            console.log('Creating new item types...');
+            const sheetToTypeIdMap = {}; // Map sheet name to type ID for default types
             
+            // Create types from itemTypeMap (from Type column values)
             for (const [typeName, config] of Object.entries(itemTypeMap)) {
-                console.log(`Processing type: ${typeName}, action: ${config.action}`);
                 if (config.action === 'create_new') {
                     // Get attributes for this item type
                     const attributes = itemTypeAttributes[typeName] || [];
@@ -112,19 +106,40 @@ const HierarchyScreen = () => {
                 }
             }
             
-            console.log('Type name to ID map:', typeNameToIdMap);
+            // Create types from sheetDefaultTypes (for sheets without Type column)
+            for (const [sheetName, config] of Object.entries(sheetDefaultTypes || {})) {
+                if (config.action === 'create_new') {
+                    const typeName = (config.customTitle && config.customTitle.trim()) ? config.customTitle.trim() : sheetName;
+                    
+                    const result = await dispatch(createHierarchyItemType({
+                        projectId: selectedProject.id,
+                        itemTypeData: {
+                            name: typeName,
+                            description: '',
+                            parent_ids: [],
+                            attributes: [], // No attributes for sheet defaults
+                            has_coordinates: config.hasCoordinates || false
+                        }
+                    })).unwrap();
+                    
+                    sheetToTypeIdMap[sheetName] = result.data.id;
+                } else if (config.action === 'use_existing' && config.itemTypeId) {
+                    sheetToTypeIdMap[sheetName] = config.itemTypeId;
+                }
+            }
+            
             
             // Refresh item types after creating new ones
-            console.log('Refreshing item types...');
             await dispatch(getHierarchyItemTypes(selectedProject.id));
             
             // Process all selected sheets
-            console.log('Processing selected sheets...');
             const allTransformedData = [];
             
-            for (const sheetName of selectedSheets) {
-                console.log(`Processing sheet: ${sheetName}`);
-                
+            // Check if Type column is mapped
+            const hasTypeColumn = Object.values(columnMappings).some(m => m.mappedTo === 'type');
+           
+            
+            for (const sheetName of selectedSheets) {                
                 // Get the data for this sheet
                 let sheetData;
                 if (parsedData.sheets && parsedData.sheets[sheetName]) {
@@ -137,23 +152,26 @@ const HierarchyScreen = () => {
                 }
 
                 const { headers, allData } = sheetData;
-                console.log(`Sheet has ${allData.length} rows`);
-                console.log(`Sheet headers:`, headers);
-                console.log(`Column mappings:`, columnMappings);
                 
+                // Get sheet default type if no Type column is mapped
+                const sheetDefaultTypeId = !hasTypeColumn ? sheetToTypeIdMap[sheetName] : null;
+        
                 // Transform data according to mappings
                 allData.forEach((row, rowIndex) => {
                     const transformedRow = {};
                     
+                    // If no Type column mapped, use sheet default type
+                    if (!hasTypeColumn && sheetDefaultTypeId) {
+                        transformedRow.item_type_id = sheetDefaultTypeId;
+                        
+                    }
+                    
                     // Match by column NAME instead of index
                     headers.forEach((header, sheetColIndex) => {
                         // Find the mapping for this column name
-                        const mappingEntry = Object.entries(columnMappings).find(([index, mapping]) => {
-                            console.log(`Looking for header "${header}", checking mapping columnName: "${mapping.columnName}"`);
-                            return mapping.columnName === header;
-                        });
-                        
-                        console.log(`Header "${header}" mapping found:`, mappingEntry);
+                        const mappingEntry = Object.entries(columnMappings).find(([index, mapping]) => 
+                            mapping.columnName === header
+                        );
                         
                         if (mappingEntry) {
                             const [, mapping] = mappingEntry;
@@ -169,7 +187,7 @@ const HierarchyScreen = () => {
                                 }
                             }
                         }
-                    });
+                    })
                     
                     if (transformedRow.title && transformedRow.item_type_id) {
                         allTransformedData.push(transformedRow);
@@ -177,28 +195,21 @@ const HierarchyScreen = () => {
                 });
             }
             
-            console.log('Transformed data count:', allTransformedData.length);
-            console.log('Sample transformed data:', allTransformedData.slice(0, 2));
-            
             // Execute import with all data
-            console.log('Calling import API...');
             const result = await dispatch(importHierarchyData({
                 projectId: selectedProject.id,
                 mappings: columnMappings,
                 data: allTransformedData
             })).unwrap();
             
-            console.log('Import API completed:', result);
             
             // Close preview modal
             setIsPreviewModalOpen(false);
             setParsedData(null);
             
             // Refresh hierarchy
-            console.log('Refreshing hierarchy...');
             await dispatch(getHierarchy(selectedProject.id));
             
-            console.log('=== IMPORT COMPLETE ===');
             
             // Show success message
             const { imported, total, errors } = result.data;
