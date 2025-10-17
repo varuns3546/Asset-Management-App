@@ -7,8 +7,9 @@ import HierarchyForm from '../components/structure/HierarchyForm';
 import FileUploadModal from '../components/FileUploadModal';
 import HierarchyImportPreview from '../components/HierarchyImportPreview';
 import '../styles/structureScreen.css';
+
 const HierarchyScreen = () => {
-    const { selectedProject, currentHierarchy, currentItemTypes} = useSelector((state) => state.projects);
+    const { selectedProject, currentHierarchy, currentItemTypes } = useSelector((state) => state.projects);
     const { user } = useSelector((state) => state.auth);
     const [selectedItem, setSelectedItem] = useState(null);
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -260,6 +261,7 @@ const HierarchyScreen = () => {
                                             hierarchyItems={currentHierarchy}
                                             onRemoveItem={handleRemoveItem}
                                             onItemClick={handleItemClick}
+                                            itemTypes={currentItemTypes}
                                         />
                                     </div>
                                 </div>
