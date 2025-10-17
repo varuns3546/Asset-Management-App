@@ -70,9 +70,10 @@ const TreeNode = ({ node, level = 0, onRemove, onItemClick }) => {
     )
 }
 
-const HierarchyTree = ({ hierarchyItems, onRemoveItem, onItemClick }) => {
+const HierarchyTree = ({ hierarchyItems, onRemoveItem, onItemClick, itemTypes = [] }) => {
     const [isTreeExpanded, setIsTreeExpanded] = useState(true)
     const [zoomLevel, setZoomLevel] = useState(100)
+    const [selectedTypeFilter, setSelectedTypeFilter] = useState(null)
     const treeContentRef = useRef(null)
 
 
@@ -89,6 +90,35 @@ const HierarchyTree = ({ hierarchyItems, onRemoveItem, onItemClick }) => {
     }
 
     const dynamicStyles = getDynamicStyles()
+
+    // Filter items by selected type
+    const getFilteredItems = (items) => {
+        if (!selectedTypeFilter) {
+            return items
+        }
+        return items.filter(item => item.item_type_id === selectedTypeFilter)
+    }
+
+    // Get unique item types from hierarchy items
+    const getItemTypesFromHierarchy = () => {
+        const typeMap = new Map()
+        hierarchyItems.forEach(item => {
+            if (item.item_type_id) {
+                const itemType = itemTypes.find(type => type.id === item.item_type_id)
+                if (itemType) {
+                    if (!typeMap.has(item.item_type_id)) {
+                        typeMap.set(item.item_type_id, {
+                            id: itemType.id,
+                            title: itemType.title,
+                            count: 0
+                        })
+                    }
+                    typeMap.get(item.item_type_id).count++
+                }
+            }
+        })
+        return Array.from(typeMap.values())
+    }
 
     // Build tree structure from flat items array
     const buildTree = (items) => {
@@ -120,7 +150,25 @@ const HierarchyTree = ({ hierarchyItems, onRemoveItem, onItemClick }) => {
         setZoomLevel(prev => Math.max(prev - 25, 50))
     }
 
-    const treeData = buildTree(hierarchyItems)
+    const handleTypeFilter = (typeId) => {
+        setSelectedTypeFilter(typeId === selectedTypeFilter ? null : typeId)
+    }
+
+    const clearFilter = () => {
+        setSelectedTypeFilter(null)
+    }
+
+    const filteredItems = getFilteredItems(hierarchyItems)
+    const treeData = buildTree(filteredItems)
+    const availableTypes = getItemTypesFromHierarchy()
+    
+    // Debug logging
+
+    
+    // If no item types are loaded, show a message about creating them
+    if (itemTypes?.length === 0) {
+        console.warn('No item types found. Make sure to create item types in the Item Type screen first.')
+    }
 
     return (
         <div className="hierarchy-tree">
@@ -151,6 +199,44 @@ const HierarchyTree = ({ hierarchyItems, onRemoveItem, onItemClick }) => {
                 >
                     {isTreeExpanded ? '−' : '+'}
                 </button>
+            </div>
+            
+            {/* Type Filter Buttons - Always show for debugging */}
+            <div className="type-filter-section">
+                <div className="type-filter-header">
+                    <span className="filter-label">Filter by Type:</span>
+                    {selectedTypeFilter && (
+                        <button 
+                            className="clear-filter-button"
+                            onClick={clearFilter}
+                            title="Clear filter"
+                        >
+                            Clear Filter
+                        </button>
+                    )}
+                </div>
+                <div className="type-filter-buttons">
+                    {availableTypes.length > 0 ? (
+                        availableTypes.map(type => (
+                            <button
+                                key={type.id}
+                                className={`type-filter-button ${selectedTypeFilter === type.id ? 'active' : ''}`}
+                                onClick={() => handleTypeFilter(type.id)}
+                                title={`Show only ${type.title} items (${type.count} items)`}
+                            >
+                                {type.title} ({type.count})
+                            </button>
+                        ))
+                    ) : (
+                        <div className="no-types-message">
+                            No item types found. Create item types first to use filtering.
+                            <br />
+                            <small>Debug: {hierarchyItems?.length || 0} hierarchy items, {itemTypes?.length || 0} item types, {hierarchyItems?.filter(item => item.item_type_id)?.length || 0} items with types</small>
+                            <br />
+                            <small>To fix: Go to the Item Type screen and create some item types, then assign them to your hierarchy items.</small>
+                        </div>
+                    )}
+                </div>
             </div>
             {isTreeExpanded && (
                 <div className="tree-scroll-wrapper">
