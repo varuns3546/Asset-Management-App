@@ -6,20 +6,23 @@ import Graphic from '@arcgis/core/Graphic';
 import Point from '@arcgis/core/geometry/Point';
 import Polyline from '@arcgis/core/geometry/Polyline';
 import Polygon from '@arcgis/core/geometry/Polygon';
-import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
 import SimpleLineSymbol from '@arcgis/core/symbols/SimpleLineSymbol';
 import SimpleFillSymbol from '@arcgis/core/symbols/SimpleFillSymbol';
 import TextSymbol from '@arcgis/core/symbols/TextSymbol';
+import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
 import config from '@arcgis/core/config';
 import ARCGIS_CONFIG from '../config/arcgisConfig';
+import { ITEM_TYPE_ICON_MAP, DEFAULT_ITEM_TYPE_ICON } from '../constants/itemTypeIcons';
 import '../styles/map.css';
 
 const MapComponent = ({ 
   hierarchyItems = [], 
-  selectedItem = null, 
+  itemTypes = [],
+  selectedItem = null,
   onItemSelect = null,
   selectedProject = null,
-  height = '500px' 
+  height = '500px',
+  mapStyle = 'streets'
 }) => {
   const mapRef = useRef(null);
   const mapViewRef = useRef(null);
@@ -29,11 +32,17 @@ const MapComponent = ({
 
   useEffect(() => {
     try {
+      setMapLoaded(false);
+      setMapError(null);
+
       // Configure ArcGIS API
       config.apiKey = ARCGIS_CONFIG.apiKey;
 
     // Create map with fallback basemap if no API key
-    const basemapStyle = ARCGIS_CONFIG.apiKey ? ARCGIS_CONFIG.mapStyles.streets : 'osm';
+    const availableStyles = ARCGIS_CONFIG.mapStyles || {};
+    const defaultArcgisStyle = availableStyles.streets || 'arcgis/streets';
+    const requestedStyle = availableStyles[mapStyle] || defaultArcgisStyle;
+    const basemapStyle = ARCGIS_CONFIG.apiKey ? requestedStyle : 'osm';
     const map = new Map({
       basemap: basemapStyle
     });
@@ -79,7 +88,7 @@ const MapComponent = ({
       console.error('MapComponent: Error initializing map:', error);
       setMapError(error.message);
     }
-  }, [selectedProject]);
+  }, [selectedProject, mapStyle]);
 
   // Update markers when hierarchy items change
   useEffect(() => {
@@ -104,10 +113,35 @@ const MapComponent = ({
     // Filter items that have coordinates
     const itemsWithCoordinates = hierarchyItems.filter(hasCoordinates);
 
+    // Helper to get icon meta for an item
+    const getItemIcon = (item) => {
+      const typeIcon =
+        item.item_type?.icon ||
+        item.icon ||
+        itemTypes.find(type => type.id === item.item_type_id)?.icon ||
+        DEFAULT_ITEM_TYPE_ICON;
+      const iconKey = ITEM_TYPE_ICON_MAP[typeIcon] ? typeIcon : DEFAULT_ITEM_TYPE_ICON;
+      return {
+        key: iconKey,
+        meta: ITEM_TYPE_ICON_MAP[iconKey] || ITEM_TYPE_ICON_MAP[DEFAULT_ITEM_TYPE_ICON]
+      };
+    };
+    const getIconSize = (baseSize, key) => {
+      if (key === 'hexagon') return baseSize * 0.55;
+      if (key === 'star' || key === 'cross') return baseSize * 0.65;
+      return baseSize;
+    };
     // Create graphics for each item
     itemsWithCoordinates.forEach(item => {
       const isSelected = selectedItem?.id === item.id;
       const baseColor = isSelected ? '#ff0000' : '#007bff';
+      const { key: iconKey, meta: iconMeta } = getItemIcon(item);
+      const colorOverride =
+        item.item_type?.icon_color ||
+        item.icon_color ||
+        itemTypes.find(type => type.id === item.item_type_id)?.icon_color ||
+        null;
+      const pointColor = colorOverride || baseColor;
       
       // Parse coordinates
       const beginLat = item.beginning_latitude ? parseFloat(item.beginning_latitude) : null;
@@ -225,29 +259,49 @@ const MapComponent = ({
           latitude: latitude
         });
 
-        symbol = new SimpleMarkerSymbol({
-          color: baseColor,
-          size: isSelected ? '20px' : '15px',
-          outline: {
-            color: '#ffffff',
-            width: 2
-          }
-        });
+        if (iconKey === 'hexagon') {
+          symbol = new SimpleMarkerSymbol({
+            style: 'path',
+            path: 'M 0 -1 L 0.866 -0.5 L 0.866 0.5 L 0 1 L -0.866 0.5 L -0.866 -0.5 Z',
+            color: pointColor,
+            outline: {
+              color: '#ffffff',
+              width: 1.5
+            },
+            size: getIconSize(isSelected ? 24 : 20, iconKey)
+          });
+        } else {
+          symbol = new TextSymbol({
+            text: iconMeta.preview,
+            color: pointColor,
+            font: {
+              size: getIconSize(isSelected ? 24 : 20, iconKey),
+              weight: 'bold',
+              family: 'Segoe UI Symbol, Arial, sans-serif'
+            },
+            haloColor: '#ffffff',
+            haloSize: 2,
+            yoffset: 0,
+            verticalAlignment: 'middle',
+            horizontalAlignment: 'center'
+          });
+        }
 
         labelPoint = geometry;
       }
 
-      // Create text symbol for label
+      // Create text symbol for label with icon
       const textSymbol = new TextSymbol({
         color: '#000000',
-        text: item.title,
+        text: item.title || '',
         font: {
           size: 12,
-          weight: 'bold'
+          weight: 'bold',
+          family: 'Segoe UI Symbol, Arial, sans-serif'
         },
         haloColor: '#ffffff',
         haloSize: 1,
-        yoffset: geometry.type === 'point' ? 15 : 0,
+        yoffset: geometry.type === 'point' ? 20 : 0,
         verticalAlignment: 'bottom',
         horizontalAlignment: 'center'
       });
@@ -287,7 +341,7 @@ const MapComponent = ({
         console.log('Could not fit view to graphics:', error);
       });
     }
-  }, [hierarchyItems, selectedItem, mapLoaded]);
+  }, [hierarchyItems, itemTypes, selectedItem, mapLoaded]);
 
   // Handle marker clicks
   useEffect(() => {
