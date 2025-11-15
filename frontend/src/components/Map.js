@@ -11,7 +11,7 @@ import SimpleLineSymbol from '@arcgis/core/symbols/SimpleLineSymbol';
 import SimpleFillSymbol from '@arcgis/core/symbols/SimpleFillSymbol';
 import TextSymbol from '@arcgis/core/symbols/TextSymbol';
 import config from '@arcgis/core/config';
-import { getArcgisConfig } from '../config/arcgisConfig';
+import ARCGIS_CONFIG from '../config/arcgisConfig';
 import '../styles/map.css';
 
 const MapComponent = ({ 
@@ -29,14 +29,11 @@ const MapComponent = ({
 
   useEffect(() => {
     try {
-      // Get dynamic config based on selected project
-      const arcgisConfig = getArcgisConfig(selectedProject);
-      
       // Configure ArcGIS API
-      config.apiKey = arcgisConfig.apiKey;
+      config.apiKey = ARCGIS_CONFIG.apiKey;
 
     // Create map with fallback basemap if no API key
-    const basemapStyle = arcgisConfig.apiKey ? arcgisConfig.mapStyles.streets : 'osm';
+    const basemapStyle = ARCGIS_CONFIG.apiKey ? ARCGIS_CONFIG.mapStyles.streets : 'osm';
     const map = new Map({
       basemap: basemapStyle
     });
@@ -51,13 +48,8 @@ const MapComponent = ({
     const mapView = new MapView({
       container: mapRef.current,
       map: map,
-<<<<<<< HEAD
-      center: [arcgisConfig.defaultCenter.longitude, arcgisConfig.defaultCenter.latitude],
-      zoom: arcgisConfig.defaultZoom
-=======
       center: mapCenter,
       zoom: ARCGIS_CONFIG.defaultZoom
->>>>>>> b5a02f5537c311c90762edc164fad1e6acd1445a
     });
 
     // Create graphics layer for markers
