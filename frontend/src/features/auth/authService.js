@@ -1,10 +1,17 @@
-import api from '../../utils/axiosInterceptor'
+import axios from 'axios'
+console.log(process.env.REACT_APP_API_BASE_URL,'API URL')
+// Create a separate axios instance for auth operations to avoid circular dependency
+const authApi = axios.create({
+  baseURL: process.env.REACT_APP_API_BASE_URL + '/api/users/',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+})
 
-const API_URL = 'http://localhost:3001/api/users/'
 const register = async (userData) => {
 
   try {
-    const response = await api.post(API_URL, userData)
+    const response = await authApi.post('', userData)
   
     
     if (response.data) {
@@ -21,7 +28,7 @@ const register = async (userData) => {
 // Login user
 const login = async (userData) => {
 
-  const response = await api.post(API_URL + 'login', userData)
+  const response = await authApi.post('login', userData)
 
   if (response.data) {
     await localStorage.setItem('user', JSON.stringify(response.data))

@@ -109,7 +109,6 @@ const ItemTypeTree = ({ itemTypes, onRemoveItemType, onItemClick }) => {
     const buildTree = (items) => {
         const itemMap = new Map()
         const rootItems = []
-        const processedItems = new Set() // Track processed items to avoid duplicates
 
         // Create a map of all items
         items.forEach(item => {
@@ -151,10 +150,6 @@ const ItemTypeTree = ({ itemTypes, onRemoveItemType, onItemClick }) => {
         setZoomLevel(prev => Math.max(prev - 25, 50))
     }
 
-    const handleResetZoom = () => {
-        setZoomLevel(100)
-    }
-
     const treeData = buildTree(itemTypes)
 
     return (
@@ -177,13 +172,6 @@ const ItemTypeTree = ({ itemTypes, onRemoveItemType, onItemClick }) => {
                         disabled={zoomLevel >= 200}
                     >
                         +
-                    </button>
-                    <button 
-                        className="reset-zoom-button"
-                        onClick={handleResetZoom}
-                        title="Reset Zoom"
-                    >
-                        Reset
                     </button>
                 </div>
                 <button 
