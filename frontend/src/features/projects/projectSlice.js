@@ -308,6 +308,42 @@ export const deleteHierarchyItemType = createAsyncThunk(
     }
 )
 
+export const uploadHierarchyFile = createAsyncThunk(
+    'projects/uploadHierarchyFile',
+    async ({ projectId, file }, thunkAPI) => {
+        try {
+            const token = thunkAPI.getState().auth.user.token
+            return await projectService.uploadHierarchyFile(projectId, file, token)
+        } catch (error) {
+            const message =
+                (error.response && 
+                    error.response.data &&
+                    error.response.data.message) ||
+                error.message ||
+                error.toString()
+            return thunkAPI.rejectWithValue(message)
+        }
+    }
+)
+
+export const importHierarchyData = createAsyncThunk(
+    'projects/importHierarchyData',
+    async ({ projectId, mappings, data }, thunkAPI) => {
+        try {
+            const token = thunkAPI.getState().auth.user.token
+            return await projectService.importHierarchyData(projectId, mappings, data, token)
+        } catch (error) {
+            const message =
+                (error.response && 
+                    error.response.data &&
+                    error.response.data.message) ||
+                error.message ||
+                error.toString()
+            return thunkAPI.rejectWithValue(message)
+        }
+    }
+)
+
 export const getProjectUsers = createAsyncThunk(
     'projects/getProjectUsers',
     async (projectId, thunkAPI) => {
@@ -470,7 +506,6 @@ export const projectSlice = createSlice({
                 state.isLoading = false
                 state.isSuccess = true
                 state.currentHierarchy = action.payload.data
-                console.log('getHierarchy fulfilled - updated hierarchy:', action.payload.data);
             })
             .addCase(getHierarchy.rejected, (state, action) => {
                 state.isLoading = false
@@ -609,15 +644,9 @@ export const projectSlice = createSlice({
             .addCase(deleteHierarchyItemType.fulfilled, (state, action) => {
                 state.isLoading = false
                 state.isSuccess = true
-                console.log('Delete fulfilled - action.payload:', action.payload);
-                console.log('Delete fulfilled - currentItemTypes before filter:', state.currentItemTypes);
                 state.currentItemTypes = state.currentItemTypes.filter(
                     itemType => itemType.id !== action.payload.id
                 )
-                console.log('Delete fulfilled - currentItemTypes after filter:', state.currentItemTypes);
-                
-                // Don't clear hierarchy data - let the getHierarchy call handle the refresh
-                // This prevents the temporary disappearance of children
             })
             .addCase(deleteHierarchyItemType.rejected, (state, action) => {
                 state.isLoading = false

@@ -80,6 +80,89 @@
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+/* Type Filter Styles */
+.type-filter-section {
+    background: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    padding: 15px 20px;
+}
+
+.type-filter-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.filter-label {
+    font-weight: 600;
+    color: #495057;
+    font-size: 14px;
+}
+
+.clear-filter-button {
+    background: #6c757d;
+    color: white;
+    border: 1px solid #6c757d;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.clear-filter-button:hover {
+    background: #5a6268;
+    border-color: #545b62;
+    transform: translateY(-1px);
+}
+
+.type-filter-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.type-filter-button {
+    background: #ffffff;
+    color: #495057;
+    border: 1px solid #ced4da;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.type-filter-button:hover {
+    background: #e9ecef;
+    border-color: #adb5bd;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.type-filter-button.active {
+    background: #007bff;
+    color: white;
+    border-color: #007bff;
+    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.3);
+}
+
+.type-filter-button.active:hover {
+    background: #0056b3;
+    border-color: #0056b3;
+}
+
+.no-types-message {
+    color: #6c757d;
+    font-style: italic;
+    font-size: 13px;
+    padding: 8px 0;
+}
+
 /* Scroll wrapper for tree content */
 .tree-scroll-wrapper {
     width: 100%;
@@ -314,7 +397,6 @@
         font-size: 13px;
     }
     
-    
     .horizontal-node {
         display: block;
         margin-right: 0;
@@ -328,5 +410,25 @@
     
     .node-content {
         min-width: auto;
+    }
+    
+    /* Type filter responsive styles */
+    .type-filter-section {
+        padding: 12px 15px;
+    }
+    
+    .type-filter-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .type-filter-buttons {
+        gap: 6px;
+    }
+    
+    .type-filter-button {
+        font-size: 12px;
+        padding: 5px 10px;
     }
 }

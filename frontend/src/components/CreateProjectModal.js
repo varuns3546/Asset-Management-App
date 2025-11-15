@@ -2,7 +2,7 @@ import '../styles/projectComponents.css'
 import { createProject } from '../features/projects/projectSlice'
 import { useDispatch } from 'react-redux'
 import { useState } from 'react'
-const CreateProject = ({ onClose }) => {
+const CreateProjectModal = ({ onClose }) => {
     const dispatch = useDispatch()
     const [formData, setFormData] = useState({
         title: '',
@@ -101,5 +101,5 @@ const CreateProject = ({ onClose }) => {
     )
 }
 
-export default CreateProject
+export default CreateProjectModal
 

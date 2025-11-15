@@ -131,6 +131,26 @@ const deleteHierarchyItemType = async (projectId, itemTypeId, token) => {
     return response.data;
 }
 
+const uploadHierarchyFile = async (projectId, file, token) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const response = await projectApi.post(`/${projectId}/hierarchy/upload`, formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data'
+        }
+    });
+    return response.data;
+}
+
+const importHierarchyData = async (projectId, mappings, data, token) => {
+    const response = await projectApi.post(`/${projectId}/hierarchy/import`, {
+        mappings,
+        data
+    });
+    return response.data;
+}
+
 const getProjectUsers = async (projectId, token) => {
     const response = await projectApi.get(`/${projectId}/users`);
     return response.data;
@@ -162,6 +182,8 @@ const projectService = {
     createHierarchyItemType,
     updateHierarchyItemType,
     deleteHierarchyItemType,
+    uploadHierarchyFile,
+    importHierarchyData,
     getProjectUsers,
     addUserToProject,
     removeUserFromProject
