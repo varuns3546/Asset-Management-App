@@ -288,6 +288,8 @@ const HierarchyScreen = () => {
                         onImport={handleImport}
                         itemTypes={currentItemTypes || []}
                     />
+                    {console.log('currentItemTypes:', currentItemTypes)}                    />
+
                 </div>
             ) : (
                 <div className="no-project-selected">
