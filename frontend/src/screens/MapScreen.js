@@ -59,6 +59,7 @@ const MapScreen = () => {
                                 hierarchyItems={currentHierarchy || []}
                                 selectedItem={selectedItem}
                                 onItemSelect={handleItemSelect}
+                                selectedProject={selectedProject}
                                 height="600px"
                             />
                         </div>
