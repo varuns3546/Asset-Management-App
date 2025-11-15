@@ -4,7 +4,11 @@ import MapView from '@arcgis/core/views/MapView';
 import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import Graphic from '@arcgis/core/Graphic';
 import Point from '@arcgis/core/geometry/Point';
+import Polyline from '@arcgis/core/geometry/Polyline';
+import Polygon from '@arcgis/core/geometry/Polygon';
 import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
+import SimpleLineSymbol from '@arcgis/core/symbols/SimpleLineSymbol';
+import SimpleFillSymbol from '@arcgis/core/symbols/SimpleFillSymbol';
 import TextSymbol from '@arcgis/core/symbols/TextSymbol';
 import config from '@arcgis/core/config';
 import { getArcgisConfig } from '../config/arcgisConfig';
@@ -37,12 +41,23 @@ const MapComponent = ({
       basemap: basemapStyle
     });
 
+    // Determine map center - use project coordinates if available, otherwise use default
+    let mapCenter = [ARCGIS_CONFIG.defaultCenter.longitude, ARCGIS_CONFIG.defaultCenter.latitude];
+    if (selectedProject && selectedProject.latitude && selectedProject.longitude) {
+      mapCenter = [parseFloat(selectedProject.longitude), parseFloat(selectedProject.latitude)];
+    }
+
     // Create map view
     const mapView = new MapView({
       container: mapRef.current,
       map: map,
+<<<<<<< HEAD
       center: [arcgisConfig.defaultCenter.longitude, arcgisConfig.defaultCenter.latitude],
       zoom: arcgisConfig.defaultZoom
+=======
+      center: mapCenter,
+      zoom: ARCGIS_CONFIG.defaultZoom
+>>>>>>> b5a02f5537c311c90762edc164fad1e6acd1445a
     });
 
     // Create graphics layer for markers
@@ -81,39 +96,154 @@ const MapComponent = ({
     // Clear existing graphics
     graphicsLayerRef.current.removeAll();
 
-    // Filter items that have coordinates
-    const itemsWithCoordinates = hierarchyItems.filter(item => 
-      item.coordinates && 
-      item.coordinates.latitude && 
-      item.coordinates.longitude
-    );
-
-    // Create markers for each item
-    itemsWithCoordinates.forEach(item => {
-      // Create point geometry
-      const longitude = parseFloat(item.coordinates.longitude);
-      const latitude = parseFloat(item.coordinates.latitude);
-      
-      // Check if coordinates are valid
-      if (isNaN(longitude) || isNaN(latitude)) {
-        console.error('MapComponent: Invalid coordinates for item:', item.title, longitude, latitude);
-        return;
+    // Helper function to determine if item has coordinates
+    const hasCoordinates = (item) => {
+      // New coordinate format
+      if (item.beginning_latitude || item.end_latitude || item.beginning_longitude || item.end_longitude) {
+        return true;
       }
-      
-      const point = new Point({
-        longitude: longitude,
-        latitude: latitude
-      });
+      // Old coordinate format
+      if (item.coordinates && item.coordinates.latitude && item.coordinates.longitude) {
+        return true;
+      }
+      return false;
+    };
 
-      // Create marker symbol
-      const markerSymbol = new SimpleMarkerSymbol({
-        color: selectedItem?.id === item.id ? '#ff0000' : '#007bff',
-        size: selectedItem?.id === item.id ? '20px' : '15px',
-        outline: {
-          color: '#ffffff',
-          width: 2
+    // Filter items that have coordinates
+    const itemsWithCoordinates = hierarchyItems.filter(hasCoordinates);
+
+    // Create graphics for each item
+    itemsWithCoordinates.forEach(item => {
+      const isSelected = selectedItem?.id === item.id;
+      const baseColor = isSelected ? '#ff0000' : '#007bff';
+      
+      // Parse coordinates
+      const beginLat = item.beginning_latitude ? parseFloat(item.beginning_latitude) : null;
+      const endLat = item.end_latitude ? parseFloat(item.end_latitude) : null;
+      const beginLng = item.beginning_longitude ? parseFloat(item.beginning_longitude) : null;
+      const endLng = item.end_longitude ? parseFloat(item.end_longitude) : null;
+
+      // Determine geometry type and create appropriate graphic
+      let geometry = null;
+      let symbol = null;
+      let labelPoint = null;
+
+      // Check if all four coordinates are present - draw rectangle
+      if (beginLat !== null && endLat !== null && beginLng !== null && endLng !== null) {
+        // Create rectangle (polygon)
+        const rings = [[
+          [beginLng, beginLat],
+          [endLng, beginLat],
+          [endLng, endLat],
+          [beginLng, endLat],
+          [beginLng, beginLat]
+        ]];
+        
+        geometry = new Polygon({
+          rings: rings
+        });
+
+        symbol = new SimpleFillSymbol({
+          color: [
+            parseInt(baseColor.slice(1, 3), 16),
+            parseInt(baseColor.slice(3, 5), 16),
+            parseInt(baseColor.slice(5, 7), 16),
+            0.3
+          ],
+          outline: {
+            color: baseColor,
+            width: isSelected ? 3 : 2
+          }
+        });
+
+        // Label at center of rectangle
+        labelPoint = new Point({
+          longitude: (beginLng + endLng) / 2,
+          latitude: (beginLat + endLat) / 2
+        });
+      }
+      // Check if it's a line (one lat and two longs, or one long and two lats)
+      else if (
+        (beginLat !== null && endLat === null && beginLng !== null && endLng !== null) || // Same lat, different longs
+        (beginLat === null && endLat !== null && beginLng !== null && endLng !== null) || // Same lat, different longs
+        (beginLat !== null && endLat !== null && beginLng !== null && endLng === null) || // Different lats, same long
+        (beginLat !== null && endLat !== null && beginLng === null && endLng !== null)    // Different lats, same long
+      ) {
+        // Determine line coordinates
+        let lat1, lat2, lng1, lng2;
+        
+        if (beginLat !== null && endLat === null && beginLng !== null && endLng !== null) {
+          // Same beginning latitude, different longitudes
+          lat1 = lat2 = beginLat;
+          lng1 = beginLng;
+          lng2 = endLng;
+        } else if (beginLat === null && endLat !== null && beginLng !== null && endLng !== null) {
+          // Same end latitude, different longitudes
+          lat1 = lat2 = endLat;
+          lng1 = beginLng;
+          lng2 = endLng;
+        } else if (beginLat !== null && endLat !== null && beginLng !== null && endLng === null) {
+          // Different latitudes, same beginning longitude
+          lat1 = beginLat;
+          lat2 = endLat;
+          lng1 = lng2 = beginLng;
+        } else {
+          // Different latitudes, same end longitude
+          lat1 = beginLat;
+          lat2 = endLat;
+          lng1 = lng2 = endLng;
         }
-      });
+
+        geometry = new Polyline({
+          paths: [[[lng1, lat1], [lng2, lat2]]]
+        });
+
+        symbol = new SimpleLineSymbol({
+          color: baseColor,
+          width: isSelected ? 4 : 3
+        });
+
+        // Label at midpoint of line
+        labelPoint = new Point({
+          longitude: (lng1 + lng2) / 2,
+          latitude: (lat1 + lat2) / 2
+        });
+      }
+      // Otherwise, draw a point
+      else {
+        // Try new coordinate format first
+        let latitude = beginLat || endLat;
+        let longitude = beginLng || endLng;
+
+        // Fallback to old coordinate format
+        if (!latitude || !longitude) {
+          if (item.coordinates) {
+            latitude = parseFloat(item.coordinates.latitude);
+            longitude = parseFloat(item.coordinates.longitude);
+          }
+        }
+
+        if (!latitude || !longitude || isNaN(latitude) || isNaN(longitude)) {
+          console.error('MapComponent: Invalid coordinates for item:', item.title);
+          return;
+        }
+
+        geometry = new Point({
+          longitude: longitude,
+          latitude: latitude
+        });
+
+        symbol = new SimpleMarkerSymbol({
+          color: baseColor,
+          size: isSelected ? '20px' : '15px',
+          outline: {
+            color: '#ffffff',
+            width: 2
+          }
+        });
+
+        labelPoint = geometry;
+      }
 
       // Create text symbol for label
       const textSymbol = new TextSymbol({
@@ -125,14 +255,15 @@ const MapComponent = ({
         },
         haloColor: '#ffffff',
         haloSize: 1,
-        verticalAlignment: 'top',
+        yoffset: geometry.type === 'point' ? 15 : 0,
+        verticalAlignment: 'bottom',
         horizontalAlignment: 'center'
       });
 
       // Create graphics
-      const markerGraphic = new Graphic({
-        geometry: point,
-        symbol: markerSymbol,
+      const shapeGraphic = new Graphic({
+        geometry: geometry,
+        symbol: symbol,
         attributes: {
           id: item.id,
           title: item.title,
@@ -141,7 +272,7 @@ const MapComponent = ({
       });
 
       const labelGraphic = new Graphic({
-        geometry: point,
+        geometry: labelPoint,
         symbol: textSymbol,
         attributes: {
           id: item.id,
@@ -150,11 +281,11 @@ const MapComponent = ({
       });
 
       // Add graphics to layer
-      graphicsLayerRef.current.add(markerGraphic);
+      graphicsLayerRef.current.add(shapeGraphic);
       graphicsLayerRef.current.add(labelGraphic);
     });
 
-    // If there are items with coordinates, fit the view to show all markers
+    // If there are items with coordinates, fit the view to show all graphics
     if (itemsWithCoordinates.length > 0 && graphicsLayerRef.current.queryExtent) {
       graphicsLayerRef.current.queryExtent().then(result => {
         if (result.extent) {
@@ -162,14 +293,6 @@ const MapComponent = ({
         }
       }).catch(error => {
         console.log('Could not fit view to graphics:', error);
-        // Fallback: center on first item
-        if (itemsWithCoordinates.length > 0) {
-          const firstItem = itemsWithCoordinates[0];
-          mapViewRef.current.goTo({
-            center: [parseFloat(firstItem.coordinates.longitude), parseFloat(firstItem.coordinates.latitude)],
-            zoom: 15
-          });
-        }
       });
     }
   }, [hierarchyItems, selectedItem, mapLoaded]);
@@ -210,9 +333,17 @@ const MapComponent = ({
       <div className="map-header">
         <h3>Asset Locations</h3>
         <div className="map-stats">
-          {hierarchyItems.filter(item => 
-            item.coordinates && item.coordinates.latitude && item.coordinates.longitude
-          ).length} assets with coordinates
+          {hierarchyItems.filter(item => {
+            // New coordinate format
+            if (item.beginning_latitude || item.end_latitude || item.beginning_longitude || item.end_longitude) {
+              return true;
+            }
+            // Old coordinate format
+            if (item.coordinates && item.coordinates.latitude && item.coordinates.longitude) {
+              return true;
+            }
+            return false;
+          }).length} assets with coordinates
         </div>
       </div>
       

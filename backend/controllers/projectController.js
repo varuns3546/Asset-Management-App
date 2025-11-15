@@ -91,8 +91,13 @@ const createProject = asyncHandler(async (req, res) => {
     .insert({
       title: title.trim(),
       description: description !== undefined ? description : "",
+<<<<<<< HEAD
       latitude: latitude ? parseFloat(latitude) : null,
       longitude: longitude ? parseFloat(longitude) : null,
+=======
+      latitude: latitude !== undefined ? parseFloat(latitude) : null,
+      longitude: longitude !== undefined ? parseFloat(longitude) : null,
+>>>>>>> b5a02f5537c311c90762edc164fad1e6acd1445a
       owner_id: req.user.id, // Set the creator as owner
     })
     .select()
@@ -137,7 +142,7 @@ const createProject = asyncHandler(async (req, res) => {
 
 const updateProject = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { title, description} = req.body;
+  const { title, description, latitude, longitude } = req.body;
 
   if (!id) {
     return res.status(400).json({
@@ -146,14 +151,19 @@ const updateProject = asyncHandler(async (req, res) => {
     });
   }
 
-  if (!title && !description) {
+  if (!title && !description && latitude === undefined && longitude === undefined) {
     return res.status(400).json({
       success: false,
-      error: 'At least title or description must be provided'
+      error: 'At least one field must be provided for update'
     });
   }
   
-  const updateData = { ...(title && { title }), ...(description && { description }) };
+  const updateData = { 
+    ...(title && { title }), 
+    ...(description && { description }),
+    ...(latitude !== undefined && { latitude: parseFloat(latitude) }),
+    ...(longitude !== undefined && { longitude: parseFloat(longitude) })
+  };
 
   const { data: existingProject, error: checkError } = await req.supabase
     .from('projects')

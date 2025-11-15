@@ -67,11 +67,19 @@ const CreateProject = ({ onClose }) => {
                 <input 
                     type="number" 
                     id="project-latitude"
+<<<<<<< HEAD
                     placeholder="Enter latitude..."
                     className="form-input"
                     step="any"
                     value={latitude}
                     onChange={(e) => setFormData({ ...formData, latitude: e.target.value })}
+=======
+                    placeholder="Enter latitude (e.g., 40.7128)"
+                    className="form-input"
+                    value={latitude}
+                    onChange={(e) => setFormData({ ...formData, latitude: e.target.value })}
+                    step="any"
+>>>>>>> b5a02f5537c311c90762edc164fad1e6acd1445a
                 />
             </div>
 
@@ -82,6 +90,7 @@ const CreateProject = ({ onClose }) => {
                 <input 
                     type="number" 
                     id="project-longitude"
+<<<<<<< HEAD
                     placeholder="Enter longitude..."
                     className="form-input"
                     step="any"
@@ -90,6 +99,15 @@ const CreateProject = ({ onClose }) => {
                 />
             </div>
             
+=======
+                    placeholder="Enter longitude (e.g., -74.0060)"
+                    className="form-input"
+                    value={longitude}
+                    onChange={(e) => setFormData({ ...formData, longitude: e.target.value })}
+                    step="any"
+                />
+            </div>        
+>>>>>>> b5a02f5537c311c90762edc164fad1e6acd1445a
             <div className="button-group">
                 <button className="btn btn-secondary" onClick={() => onClose && onClose()}>
                     Cancel

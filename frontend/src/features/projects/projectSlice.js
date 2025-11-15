@@ -128,7 +128,6 @@ export const deleteProject = createAsyncThunk(
     }
 )
 
-// Get project hierarchy
 export const getHierarchy = createAsyncThunk(
     'projects/getHierarchy',
     async (projectId, thunkAPI) => {
@@ -147,7 +146,6 @@ export const getHierarchy = createAsyncThunk(
     }
 )
 
-// Update project hierarchy
 export const updateHierarchy = createAsyncThunk(
     'projects/updateHierarchy',
     async ({projectId, hierarchyData}, thunkAPI) => {
@@ -166,7 +164,6 @@ export const updateHierarchy = createAsyncThunk(
     }
 )
 
-// Delete project hierarchy
 export const deleteHierarchy = createAsyncThunk(
     'projects/deleteHierarchy',
     async ({ projectId }, thunkAPI) => {
@@ -185,7 +182,6 @@ export const deleteHierarchy = createAsyncThunk(
     }
 )
 
-// Create individual hierarchy item
 export const createHierarchyItem = createAsyncThunk(
     'projects/createHierarchyItem',
     async ({ projectId, itemData }, thunkAPI) => {
@@ -204,7 +200,6 @@ export const createHierarchyItem = createAsyncThunk(
     }
 )
 
-// Update individual hierarchy item
 export const updateHierarchyItem = createAsyncThunk(
     'projects/updateHierarchyItem',
     async ({ projectId, itemId, itemData }, thunkAPI) => {
@@ -223,7 +218,6 @@ export const updateHierarchyItem = createAsyncThunk(
     }
 )
 
-// Delete individual hierarchy item
 export const deleteHierarchyItem = createAsyncThunk(
     'projects/deleteHierarchyItem',
     async ({ projectId, itemId }, thunkAPI) => {
@@ -260,27 +254,6 @@ export const getHierarchyItemTypes = createAsyncThunk(
     }
 )
 
-export const updateHierarchyItemTypes = createAsyncThunk(
-
-    'projects/updateHierarchyItemTypes',
-    async ({ projectId, itemTypesData }, thunkAPI) => {
-        try {
-            const token = thunkAPI.getState().auth.user.token
-            return await projectService.updateHierarchyItemTypes(projectId, itemTypesData, token)
-        }
-        catch (error) {
-            const message =
-                (error.response && 
-                    error.response.data &&
-                    error.response.data.message) ||
-                error.message ||
-                error.toString()
-            return thunkAPI.rejectWithValue(message)
-        }
-    }
-)
-
-// Create hierarchy item type
 export const createHierarchyItemType = createAsyncThunk(
     'projects/createHierarchyItemType',
     async ({ projectId, itemTypeData }, thunkAPI) => {
@@ -299,7 +272,6 @@ export const createHierarchyItemType = createAsyncThunk(
     }
 )
 
-// Update individual hierarchy item type
 export const updateHierarchyItemType = createAsyncThunk(
     'projects/updateHierarchyItemType',
     async ({ projectId, itemTypeId, itemTypeData }, thunkAPI) => {
@@ -318,7 +290,6 @@ export const updateHierarchyItemType = createAsyncThunk(
     }
 )
 
-// Delete hierarchy item type
 export const deleteHierarchyItemType = createAsyncThunk(
     'projects/deleteHierarchyItemType',
     async ({ projectId, itemTypeId }, thunkAPI) => {
@@ -626,9 +597,6 @@ export const projectSlice = createSlice({
             .addCase(updateHierarchyItemType.fulfilled, (state, action) => {
                 state.isLoading = false
                 state.isSuccess = true
-                // Note: We don't update currentItemTypes here because the backend response
-                // doesn't include the updated attributes. The ItemTypeForm will handle
-                // refreshing the data by calling getHierarchyItemTypes after successful update.
             })
             .addCase(updateHierarchyItemType.rejected, (state, action) => {
                 state.isLoading = false

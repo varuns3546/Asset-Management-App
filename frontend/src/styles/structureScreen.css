@@ -14,12 +14,41 @@
     margin-bottom: 20px;
     border-bottom: 2px solid #e0e0e0;
     padding-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
 }
 
 .hierarchy-title {
     margin: 0;
     color: #333;
     font-size: 1.8rem;
+}
+
+.upload-button {
+    background: #28a745;
+    color: white;
+    border: 1px solid #28a745;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+    margin-left: auto;
+}
+
+.upload-button:hover {
+    background: #218838;
+    border-color: #218838;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.upload-button:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .hierarchy-loading {
@@ -388,8 +417,21 @@
 
 .coordinates-inputs {
     display: flex;
+    flex-direction: column;
     gap: 10px;
-    align-items: center;
+}
+
+.coordinate-field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.coordinate-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #495057;
+    margin: 0;
 }
 
 .coordinates-inputs input {

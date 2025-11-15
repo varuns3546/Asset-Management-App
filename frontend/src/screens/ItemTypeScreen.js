@@ -36,6 +36,11 @@ const ItemTypeScreen = () => {
                 projectId: selectedProject.id,
                 itemTypeId
             })).unwrap();
+            
+            // Clear selected item if the deleted item type was selected
+            if (selectedItem && selectedItem.id === itemTypeId) {
+                setSelectedItem(null);
+            }
         } catch (error) {
             console.error('Error deleting item type:', error);
             alert('Failed to delete item type. Please try again.');

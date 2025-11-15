@@ -120,10 +120,6 @@ const HierarchyTree = ({ hierarchyItems, onRemoveItem, onItemClick }) => {
         setZoomLevel(prev => Math.max(prev - 25, 50))
     }
 
-    const handleResetZoom = () => {
-        setZoomLevel(100)
-    }
-
     const treeData = buildTree(hierarchyItems)
 
     return (
@@ -146,13 +142,6 @@ const HierarchyTree = ({ hierarchyItems, onRemoveItem, onItemClick }) => {
                         disabled={zoomLevel >= 200}
                     >
                         +
-                    </button>
-                    <button 
-                        className="reset-zoom-button"
-                        onClick={handleResetZoom}
-                        title="Reset Zoom"
-                    >
-                        Reset
                     </button>
                 </div>
                 <button 

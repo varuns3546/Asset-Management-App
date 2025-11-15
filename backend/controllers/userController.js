@@ -132,7 +132,7 @@ const getUser = asyncHandler(async (req, res) => {
     })
 
     
-  });
+});
 
 const extractTokenFromHeader = (req) => {
     const authHeader = req.headers.authorization || req.headers.Authorization;
@@ -150,4 +150,5 @@ const extractTokenFromHeader = (req) => {
     // Handle direct token (less common)
     return authHeader;
 };
+
 export default {registerUser, loginUser, getUser}

@@ -1,7 +1,31 @@
+<<<<<<< HEAD
 // Default fallback coordinates (Vieques Island)
 const DEFAULT_FALLBACK_CENTER = {
   longitude: -65.4401,
   latitude: 18.1263
+=======
+const ARCGIS_CONFIG = {
+  // ArcGIS API key from environment variable
+  apiKey: process.env.REACT_APP_ARCGIS_API_KEY,
+  
+        // Default map center (you can change this to your preferred location)
+        defaultCenter: {
+          longitude: -65.4401, // Vieques Island coordinates
+          latitude: 18.1263
+        },
+  
+  // Default zoom level
+  defaultZoom: 11,
+  
+  // Map style options
+  mapStyles: {
+    streets: 'arcgis/streets',
+    satellite: 'arcgis/satellite',
+    hybrid: 'arcgis/hybrid',
+    terrain: 'arcgis/terrain',
+    topo: 'arcgis/topo'
+  }
+>>>>>>> b5a02f5537c311c90762edc164fad1e6acd1445a
 };
 
 // Function to get ArcGIS config with dynamic center based on selected project

@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { createHierarchyItem, updateHierarchyItem, deleteHierarchyItem } from '../../features/projects/projectSlice';
+import { createHierarchyItem, updateHierarchyItem } from '../../features/projects/projectSlice';
+import '../../styles/structureScreen.css';
 
 const HierarchyForm = ({ 
     hierarchyItems, 
@@ -14,25 +15,24 @@ const HierarchyForm = ({
         title: '',
         item_type_id: null,
         parent_id: null,
-        coordinates: {
-            latitude: '',
-            longitude: ''
-        }
+        beginning_latitude: '',
+        end_latitude: '',
+        beginning_longitude: '',
+        end_longitude: ''
     });
     const [isEditing, setIsEditing] = useState(false);
 
     // Update form when selectedItem changes
     useEffect(() => {
-        console.log('HierarchyForm selectedItem changed:', selectedItem);
         if (selectedItem) {
             setNewItem({
                 title: selectedItem.title || '',
                 item_type_id: selectedItem.item_type_id || null,
                 parent_id: selectedItem.parent_id || null,
-                coordinates: selectedItem.coordinates || {
-                    latitude: '',
-                    longitude: ''
-                }
+                beginning_latitude: selectedItem.beginning_latitude || '',
+                end_latitude: selectedItem.end_latitude || '',
+                beginning_longitude: selectedItem.beginning_longitude || '',
+                end_longitude: selectedItem.end_longitude || ''
             });
             setIsEditing(true);
         } else {
@@ -40,10 +40,10 @@ const HierarchyForm = ({
                 title: '',
                 item_type_id: null,
                 parent_id: null,
-                coordinates: {
-                    latitude: '',
-                    longitude: ''
-                }
+                beginning_latitude: '',
+                end_latitude: '',
+                beginning_longitude: '',
+                end_longitude: ''
             });
             setIsEditing(false);
         }
@@ -58,27 +58,18 @@ const HierarchyForm = ({
             setNewItem(prev => ({
                 ...prev,
                 [name]: value,
-                coordinates: selectedItemType?.has_coordinates ? prev.coordinates : {
-                    latitude: '',
-                    longitude: ''
-                }
+                beginning_latitude: selectedItemType?.has_coordinates ? prev.beginning_latitude : '',
+                end_latitude: selectedItemType?.has_coordinates ? prev.end_latitude : '',
+                beginning_longitude: selectedItemType?.has_coordinates ? prev.beginning_longitude : '',
+                end_longitude: selectedItemType?.has_coordinates ? prev.end_longitude : ''
             }));
         } else {
+            // For all other fields, including coordinates
             setNewItem(prev => ({
                 ...prev,
                 [name]: value
             }));
         }
-    }
-
-    const handleCoordinateChange = (coordinateType, value) => {
-        setNewItem(prev => ({
-            ...prev,
-            coordinates: {
-                ...prev.coordinates,
-                [coordinateType]: value
-            }
-        }))
     }
 
     const handleAddItem = async () => {
@@ -87,39 +78,72 @@ const HierarchyForm = ({
             return;
         }
 
-        // Check if coordinates are required and valid
+        // Check if coordinates are valid (only validate fields that are filled)
         const selectedItemType = itemTypes.find(type => type.id === newItem.item_type_id);
         if (selectedItemType?.has_coordinates) {
-            const lat = parseFloat(newItem.coordinates.latitude);
-            const lng = parseFloat(newItem.coordinates.longitude);
-            
-            if (isNaN(lat) || isNaN(lng)) {
-                alert('Please enter valid coordinates (latitude and longitude must be numbers)');
-                return;
+            // Validate filled coordinate fields
+            if (newItem.beginning_latitude) {
+                const beginLat = parseFloat(newItem.beginning_latitude);
+                if (isNaN(beginLat)) {
+                    alert('Beginning latitude must be a valid number');
+                    return;
+                }
+                if (beginLat < -90 || beginLat > 90) {
+                    alert('Beginning latitude must be between -90 and 90 degrees');
+                    return;
+                }
             }
             
-            if (lat < -90 || lat > 90) {
-                alert('Latitude must be between -90 and 90 degrees');
-                return;
+            if (newItem.end_latitude) {
+                const endLat = parseFloat(newItem.end_latitude);
+                if (isNaN(endLat)) {
+                    alert('End latitude must be a valid number');
+                    return;
+                }
+                if (endLat < -90 || endLat > 90) {
+                    alert('End latitude must be between -90 and 90 degrees');
+                    return;
+                }
             }
             
-            if (lng < -180 || lng > 180) {
-                alert('Longitude must be between -180 and 180 degrees');
-                return;
+            if (newItem.beginning_longitude) {
+                const beginLng = parseFloat(newItem.beginning_longitude);
+                if (isNaN(beginLng)) {
+                    alert('Beginning longitude must be a valid number');
+                    return;
+                }
+                if (beginLng < -180 || beginLng > 180) {
+                    alert('Beginning longitude must be between -180 and 180 degrees');
+                    return;
+                }
+            }
+            
+            if (newItem.end_longitude) {
+                const endLng = parseFloat(newItem.end_longitude);
+                if (isNaN(endLng)) {
+                    alert('End longitude must be a valid number');
+                    return;
+                }
+                if (endLng < -180 || endLng > 180) {
+                    alert('End longitude must be between -180 and 180 degrees');
+                    return;
+                }
             }
         }
 
+        // Store the current form data before clearing
         const itemData = {
             title: newItem.title,
             item_type_id: newItem.item_type_id || null,
             parent_id: newItem.parent_id || null,
-            coordinates: selectedItemType?.has_coordinates ? 
-                (newItem.coordinates.latitude && newItem.coordinates.longitude ? 
-                    {
-                        latitude: parseFloat(newItem.coordinates.latitude),
-                        longitude: parseFloat(newItem.coordinates.longitude)
-                    } : null) : null
+            beginning_latitude: newItem.beginning_latitude ? parseFloat(newItem.beginning_latitude) : null,
+            end_latitude: newItem.end_latitude ? parseFloat(newItem.end_latitude) : null,
+            beginning_longitude: newItem.beginning_longitude ? parseFloat(newItem.beginning_longitude) : null,
+            end_longitude: newItem.end_longitude ? parseFloat(newItem.end_longitude) : null
         };
+
+        // Store the current parent_id for form reset (keep parent selection for efficiency)
+        const currentParentId = newItem.parent_id;
 
         try {
             if (isEditing && selectedItem) {
@@ -129,11 +153,6 @@ const HierarchyForm = ({
                     itemId: selectedItem.id,
                     itemData
                 })).unwrap();
-                
-                // Clear selection after successful update
-                if (onItemSelect) {
-                    onItemSelect(null);
-                }
             } else {
                 // Create new item
                 await dispatch(createHierarchyItem({
@@ -142,17 +161,22 @@ const HierarchyForm = ({
                 })).unwrap();
             }
 
-            // Reset form after successful creation/update
+            // Clear form fields AFTER successful save
             setNewItem({
                 title: '',
                 item_type_id: null,
-                parent_id: newItem.parent_id || null,
-                coordinates: {
-                    latitude: '',
-                    longitude: ''
-                }
+                parent_id: currentParentId, // Keep parent selection for efficiency
+                beginning_latitude: '',
+                end_latitude: '',
+                beginning_longitude: '',
+                end_longitude: ''
             });
             setIsEditing(false);
+
+            // Clear selection after successful save
+            if (onItemSelect) {
+                onItemSelect(null);
+            }
         } catch (error) {
             console.error('Error creating/updating hierarchy item:', error);
             alert('Failed to create/update item. Please try again.');
@@ -164,10 +188,10 @@ const HierarchyForm = ({
             title: '',
             item_type_id: null,
             parent_id: null,
-            coordinates: {
-                latitude: '',
-                longitude: ''
-            }
+            beginning_latitude: '',
+            end_latitude: '',
+            beginning_longitude: '',
+            end_longitude: ''
         });
         setIsEditing(false);
         if (onItemSelect) {
@@ -175,16 +199,6 @@ const HierarchyForm = ({
         }
     }
 
-    const handleRemoveItem = async (itemId) => {
-        try {
-            await dispatch(deleteHierarchyItem({
-                projectId: selectedProject.id,
-                itemId
-            })).unwrap();
-        } catch (error) {
-            alert('Failed to delete item. Please try again.');
-        }
-    }
 
     return (
         <div className="form-group">
@@ -238,22 +252,66 @@ const HierarchyForm = ({
                     <div className="coordinates-section">
                         <label className="form-label">Coordinates:</label>
                         <div className="coordinates-inputs">
-                            <input
-                                type="number"
-                                step="any"
-                                value={newItem.coordinates.latitude}
-                                onChange={(e) => handleCoordinateChange('latitude', e.target.value)}
-                                placeholder="Latitude"
-                                className="form-input"
-                            />
-                            <input
-                                type="number"
-                                step="any"
-                                value={newItem.coordinates.longitude}
-                                onChange={(e) => handleCoordinateChange('longitude', e.target.value)}
-                                placeholder="Longitude"
-                                className="form-input"
-                            />
+                            <div className="coordinate-field">
+                                <label htmlFor="beginning_latitude" className="coordinate-label">
+                                    Beginning Latitude
+                                </label>
+                                <input
+                                    id="beginning_latitude"
+                                    name="beginning_latitude"
+                                    type="number"
+                                    step="any"
+                                    value={newItem.beginning_latitude || ''}
+                                    onChange={handleNewItemChange}
+                                    placeholder="-90 to 90"
+                                    className="form-input"
+                                />
+                            </div>
+                            <div className="coordinate-field">
+                                <label htmlFor="end_latitude" className="coordinate-label">
+                                    End Latitude
+                                </label>
+                                <input
+                                    id="end_latitude"
+                                    name="end_latitude"
+                                    type="number"
+                                    step="any"
+                                    value={newItem.end_latitude || ''}
+                                    onChange={handleNewItemChange}
+                                    placeholder="-90 to 90"
+                                    className="form-input"
+                                />
+                            </div>
+                            <div className="coordinate-field">
+                                <label htmlFor="beginning_longitude" className="coordinate-label">
+                                    Beginning Longitude
+                                </label>
+                                <input
+                                    id="beginning_longitude"
+                                    name="beginning_longitude"
+                                    type="number"
+                                    step="any"
+                                    value={newItem.beginning_longitude || ''}
+                                    onChange={handleNewItemChange}
+                                    placeholder="-180 to 180"
+                                    className="form-input"
+                                />
+                            </div>
+                            <div className="coordinate-field">
+                                <label htmlFor="end_longitude" className="coordinate-label">
+                                    End Longitude
+                                </label>
+                                <input
+                                    id="end_longitude"
+                                    name="end_longitude"
+                                    type="number"
+                                    step="any"
+                                    value={newItem.end_longitude || ''}
+                                    onChange={handleNewItemChange}
+                                    placeholder="-180 to 180"
+                                    className="form-input"
+                                />
+                            </div>
                         </div>
                     </div>
                 )}
