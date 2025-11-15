@@ -91,13 +91,8 @@ const createProject = asyncHandler(async (req, res) => {
     .insert({
       title: title.trim(),
       description: description !== undefined ? description : "",
-<<<<<<< HEAD
-      latitude: latitude ? parseFloat(latitude) : null,
-      longitude: longitude ? parseFloat(longitude) : null,
-=======
       latitude: latitude !== undefined ? parseFloat(latitude) : null,
       longitude: longitude !== undefined ? parseFloat(longitude) : null,
->>>>>>> b5a02f5537c311c90762edc164fad1e6acd1445a
       owner_id: req.user.id, // Set the creator as owner
     })
     .select()
