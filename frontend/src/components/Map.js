@@ -7,13 +7,14 @@ import Point from '@arcgis/core/geometry/Point';
 import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
 import TextSymbol from '@arcgis/core/symbols/TextSymbol';
 import config from '@arcgis/core/config';
-import ARCGIS_CONFIG from '../config/arcgisConfig';
+import { getArcgisConfig } from '../config/arcgisConfig';
 import '../styles/map.css';
 
 const MapComponent = ({ 
   hierarchyItems = [], 
   selectedItem = null, 
   onItemSelect = null,
+  selectedProject = null,
   height = '500px' 
 }) => {
   const mapRef = useRef(null);
@@ -24,11 +25,14 @@ const MapComponent = ({
 
   useEffect(() => {
     try {
+      // Get dynamic config based on selected project
+      const arcgisConfig = getArcgisConfig(selectedProject);
+      
       // Configure ArcGIS API
-      config.apiKey = ARCGIS_CONFIG.apiKey;
+      config.apiKey = arcgisConfig.apiKey;
 
     // Create map with fallback basemap if no API key
-    const basemapStyle = ARCGIS_CONFIG.apiKey ? ARCGIS_CONFIG.mapStyles.streets : 'osm';
+    const basemapStyle = arcgisConfig.apiKey ? arcgisConfig.mapStyles.streets : 'osm';
     const map = new Map({
       basemap: basemapStyle
     });
@@ -37,8 +41,8 @@ const MapComponent = ({
     const mapView = new MapView({
       container: mapRef.current,
       map: map,
-      center: [ARCGIS_CONFIG.defaultCenter.longitude, ARCGIS_CONFIG.defaultCenter.latitude],
-      zoom: ARCGIS_CONFIG.defaultZoom
+      center: [arcgisConfig.defaultCenter.longitude, arcgisConfig.defaultCenter.latitude],
+      zoom: arcgisConfig.defaultZoom
     });
 
     // Create graphics layer for markers
@@ -68,7 +72,7 @@ const MapComponent = ({
       console.error('MapComponent: Error initializing map:', error);
       setMapError(error.message);
     }
-  }, []);
+  }, [selectedProject]);
 
   // Update markers when hierarchy items change
   useEffect(() => {

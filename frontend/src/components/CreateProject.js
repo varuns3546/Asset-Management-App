@@ -6,9 +6,11 @@ const CreateProject = ({ onClose }) => {
     const dispatch = useDispatch()
     const [formData, setFormData] = useState({
         title: '',
-        description: ''
+        description: '',
+        latitude: '',
+        longitude: ''
     })
-    const { title, description } = formData
+    const { title, description, latitude, longitude } = formData
     const handleCreateProject = () => {
         if (title.trim() === '') {
             console.log('Project title is required')
@@ -18,7 +20,9 @@ const CreateProject = ({ onClose }) => {
             dispatch(createProject(formData))
             setFormData({
                 title: '',
-                description: ''
+                description: '',
+                latitude: '',
+                longitude: ''
             })
             // Close the modal after creating project
             if (onClose) {
@@ -54,7 +58,38 @@ const CreateProject = ({ onClose }) => {
                     value={description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 />
-            </div>        
+            </div>
+
+            <div className="form-group">
+                <label htmlFor="project-latitude" className="form-label">
+                    Latitude:
+                </label>
+                <input 
+                    type="number" 
+                    id="project-latitude"
+                    placeholder="Enter latitude..."
+                    className="form-input"
+                    step="any"
+                    value={latitude}
+                    onChange={(e) => setFormData({ ...formData, latitude: e.target.value })}
+                />
+            </div>
+
+            <div className="form-group">
+                <label htmlFor="project-longitude" className="form-label">
+                    Longitude:
+                </label>
+                <input 
+                    type="number" 
+                    id="project-longitude"
+                    placeholder="Enter longitude..."
+                    className="form-input"
+                    step="any"
+                    value={longitude}
+                    onChange={(e) => setFormData({ ...formData, longitude: e.target.value })}
+                />
+            </div>
+            
             <div className="button-group">
                 <button className="btn btn-secondary" onClick={() => onClose && onClose()}>
                     Cancel

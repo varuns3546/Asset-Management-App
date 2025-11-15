@@ -75,7 +75,7 @@ const createProject = asyncHandler(async (req, res) => {
   console.log('=== CREATE PROJECT DEBUG ===');
   console.log('Request body:', req.body);
   
-  const { title, description, userIds = [] } = req.body; // userIds is array of user IDs to give access
+  const { title, description, latitude, longitude, userIds = [] } = req.body; // userIds is array of user IDs to give access
 
   // Validation
   if (!title || title.trim() === '') {
@@ -91,6 +91,8 @@ const createProject = asyncHandler(async (req, res) => {
     .insert({
       title: title.trim(),
       description: description !== undefined ? description : "",
+      latitude: latitude ? parseFloat(latitude) : null,
+      longitude: longitude ? parseFloat(longitude) : null,
       owner_id: req.user.id, // Set the creator as owner
     })
     .select()
