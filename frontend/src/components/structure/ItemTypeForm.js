@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { createHierarchyItemType, updateHierarchyItemType, getHierarchyItemTypes } from '../../features/projects/projectSlice';
 import '../../styles/structureScreen.css'
+import { ITEM_TYPE_ICON_OPTIONS, ITEM_TYPE_COLOR_OPTIONS, DEFAULT_ITEM_TYPE_ICON } from '../../constants/itemTypeIcons';
 
 const ItemTypeForm = ({ 
     itemTypes,
@@ -20,6 +21,8 @@ const ItemTypeForm = ({
     const [parentDropdowns, setParentDropdowns] = useState([{ id: 1, value: '' }]);
     const [attributes, setAttributes] = useState([{ id: 1, value: '' }]);
     const [hasCoordinates, setHasCoordinates] = useState(false);
+    const [selectedIcon, setSelectedIcon] = useState(DEFAULT_ITEM_TYPE_ICON);
+    const [iconColor, setIconColor] = useState(ITEM_TYPE_COLOR_OPTIONS[0].value);
     const [isEditing, setIsEditing] = useState(false);
 
     // Update form when selectedItem changes
@@ -55,6 +58,8 @@ const ItemTypeForm = ({
                 setAttributes([{ id: 1, value: '' }]);
             }
             setHasCoordinates(selectedItem.has_coordinates || false);
+            setSelectedIcon(selectedItem.icon || DEFAULT_ITEM_TYPE_ICON);
+            setIconColor(selectedItem.icon_color || ITEM_TYPE_COLOR_OPTIONS[0].value);
             setIsEditing(true);
         } else {
             setNewItemType({
@@ -66,6 +71,8 @@ const ItemTypeForm = ({
             setParentDropdowns([{ id: 1, value: '' }]);
             setAttributes([{ id: 1, value: '' }]);
             setHasCoordinates(false);
+            setSelectedIcon(DEFAULT_ITEM_TYPE_ICON);
+            setIconColor(ITEM_TYPE_COLOR_OPTIONS[0].value);
             setIsEditing(false);
         }
     }, [selectedItem]);
@@ -141,7 +148,9 @@ const ItemTypeForm = ({
             description: newItemType.description,
             parent_ids: selectedParentIds,
             attributes: attributeValues,
-            has_coordinates: hasCoordinates
+            has_coordinates: hasCoordinates,
+            icon: selectedIcon,
+            icon_color: iconColor
         };
 
         // Clear form fields IMMEDIATELY for better UX
@@ -158,6 +167,8 @@ const ItemTypeForm = ({
         // Reset attributes to single empty attribute
         setAttributes([{ id: 1, value: '' }]);
         setHasCoordinates(false);
+        setSelectedIcon(DEFAULT_ITEM_TYPE_ICON);
+        setIconColor(ITEM_TYPE_COLOR_OPTIONS[0].value);
         setIsEditing(false);
 
         // Clear selection if updating
@@ -220,6 +231,8 @@ const ItemTypeForm = ({
         setParentDropdowns([{ id: 1, value: '' }]);
         setAttributes([{ id: 1, value: '' }]);
         setHasCoordinates(false);
+        setSelectedIcon(DEFAULT_ITEM_TYPE_ICON);
+        setIconColor(ITEM_TYPE_COLOR_OPTIONS[0].value);
         setIsEditing(false);
         if (onItemSelect) {
             onItemSelect(null);
@@ -289,6 +302,47 @@ const ItemTypeForm = ({
                         className="checkbox"
                     />
                     <label className="checkbox-label">Has coordinates</label>
+                </div>
+                <div className="form-group">
+                    <label className="form-label">Icon:</label>
+                    <select
+                        value={selectedIcon}
+                        onChange={(e) => setSelectedIcon(e.target.value)}
+                        className="form-select"
+                    >
+                        {ITEM_TYPE_ICON_OPTIONS.map(option => (
+                            <option key={option.key} value={option.key}>
+                                {option.preview}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
+                <div className="form-group">
+                    <label className="form-label">Icon Color:</label>
+                    <div className="icon-color-select-wrapper">
+                        <select
+                            value={iconColor}
+                            onChange={(e) => setIconColor(e.target.value)}
+                            className="form-select icon-color-select"
+                            style={{ color: iconColor }}
+                        >
+                            {ITEM_TYPE_COLOR_OPTIONS.map(option => (
+                                <option
+                                    key={option.value}
+                                    value={option.value}
+                                    style={{ color: option.value }}
+                                >
+                                    ■
+                                </option>
+                            ))}
+                        </select>
+                        <div
+                            className="icon-color-preview"
+                            style={{ backgroundColor: iconColor }}
+                            aria-hidden="true"
+                        />
+                    </div>
                 </div>
                 
                 {/* Attributes Section */}

@@ -123,33 +123,6 @@
   padding: 15px;
 }
 
-/* Map legend */
-.map-legend {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: white;
-  padding: 10px;
-  border-radius: 6px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  font-size: 0.8rem;
-  z-index: 100;
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  margin-bottom: 5px;
-}
-
-.legend-color {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  margin-right: 8px;
-  border: 1px solid #ccc;
-}
-
 /* Map Screen Styles */
 .map-screen {
   padding: 20px;
@@ -175,6 +148,12 @@
   align-items: center;
 }
 
+.map-screen-header-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
 .map-screen-title {
   margin: 0;
   color: #333;
@@ -184,6 +163,28 @@
 .map-screen-info {
   color: #666;
   font-size: 0.9rem;
+}
+
+.map-screen-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.map-screen-controls label {
+  font-weight: 600;
+}
+
+.map-style-select {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid #ced4da;
+  background-color: #fff;
+  font-size: 0.9rem;
+  color: #333;
+  min-width: 140px;
 }
 
 .map-screen-layout {
@@ -196,6 +197,9 @@
 .map-screen-left-panel {
   flex: 2;
   min-width: 600px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
 .map-screen-right-panel {
@@ -204,6 +208,103 @@
   overflow-y: auto;
   border-left: 2px solid #e0e0e0;
   padding-left: 20px;
+}
+
+.map-panel {
+  position: relative;
+  display: flex;
+}
+
+.map-legend-wrapper {
+  width: 240px;
+  flex-shrink: 0;
+  margin-right: 16px;
+}
+
+.map-view-wrapper {
+  flex: 1;
+  position: relative;
+}
+
+.map-panel .map-container {
+  height: 720px;
+}
+
+.map-legend {
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  padding: 10px;
+  width: 100%;
+  max-height: 100%;
+  overflow-y: auto;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  pointer-events: auto;
+}
+
+.map-legend-title {
+  margin: 0 0 10px 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.map-legend-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.map-legend-item {
+  border-radius: 6px;
+  padding: 4px;
+  transition: background 0.2s ease;
+}
+
+.map-legend-item.active {
+  background: rgba(13, 110, 253, 0.08);
+}
+
+.map-legend-item-btn {
+  width: 100%;
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 6px 4px;
+}
+
+.map-legend-icon {
+  font-size: 1.2rem;
+  width: 24px;
+  text-align: center;
+}
+
+.map-legend-label {
+  flex: 1;
+  text-align: left;
+  color: #212529;
+}
+
+.map-legend-count {
+  background: #0d6efd;
+  color: #fff;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 0.75rem;
+}
+
+.map-legend-edit {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #e0e0e0;
 }
 
 .map-screen-form-container {

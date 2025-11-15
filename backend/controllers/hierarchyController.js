@@ -228,7 +228,7 @@ const getItemTypes = asyncHandler(async (req, res) => {
 });
 
 const createItemType = asyncHandler(async (req, res) => {
-  const { name, description, parent_ids, attributes, has_coordinates } = req.body;
+  const { name, description, parent_ids, attributes, has_coordinates, icon, icon_color } = req.body;
   const { id: project_id } = req.params;
 
   if (!project_id) {
@@ -278,7 +278,9 @@ const createItemType = asyncHandler(async (req, res) => {
         description: description || null,
         project_id: project_id,
         parent_ids: parent_ids || null,
-        has_coordinates: has_coordinates || false
+        has_coordinates: has_coordinates || false,
+        icon: icon || null,
+        icon_color: icon_color || null
       })
       .select()
       .single();
@@ -615,7 +617,7 @@ const deleteHierarchyItem = asyncHandler(async (req, res) => {
 });
 
 const updateItemType = asyncHandler(async (req, res) => {
-  const { name, description, parent_ids, attributes, has_coordinates } = req.body;
+  const { name, description, parent_ids, attributes, has_coordinates, icon, icon_color } = req.body;
   const { id: project_id, itemTypeId } = req.params;
 
   if (!project_id) {
@@ -672,7 +674,9 @@ const updateItemType = asyncHandler(async (req, res) => {
         title: name.trim(),
         description: description || null,
         parent_ids: parent_ids || null,
-        has_coordinates: has_coordinates || false
+        has_coordinates: has_coordinates || false,
+        icon: icon || null,
+        icon_color: icon_color || null
       })
       .eq('id', itemTypeId)
       .eq('project_id', project_id)
