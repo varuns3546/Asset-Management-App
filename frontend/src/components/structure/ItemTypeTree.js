@@ -78,11 +78,6 @@ const ItemTypeTree = ({ itemTypes, onRemoveItemType, onItemClick }) => {
     const [zoomLevel, setZoomLevel] = useState(100)
     const treeContentRef = useRef(null)
 
-    // Debug: Log when itemTypes change
-    useEffect(() => {
-        console.log('ItemTypeTree received new itemTypes:', itemTypes);
-    }, [itemTypes]);
-
     // Force re-render when itemTypes change by updating a state
     const [treeKey, setTreeKey] = useState(0);
     
