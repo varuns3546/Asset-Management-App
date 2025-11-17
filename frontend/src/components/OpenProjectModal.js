@@ -91,16 +91,17 @@ const OpenProjectModal = ({ onClose }) => {
     })
 
     if (isLoading) {
-        return <div className="form-group">Loading projects...</div>
+        return <div className="open-project-modal"><div className="form-group">Loading projects...</div></div>
     }
 
     if (isError) {
         return (
+            <div className="open-project-modal">
             <div className="form-group">
                 <div style={{ color: 'red', marginBottom: '16px' }}>
                     ⚠️ Backend Error: {message}
                 </div>
-                <div style={{ fontSize: '12px', color: '#666', marginBottom: '16px' }}>
+                <div style={{ fontSize: '18px', color: '#666', marginBottom: '24px' }}>
                     <div>🔍 Debug Info:</div>
                     <div>• API URL: {process.env.REACT_APP_API_BASE_URL}/api/projects</div>
                     <div>• User: {user?.firstName} {user?.lastName}</div>
@@ -109,8 +110,8 @@ const OpenProjectModal = ({ onClose }) => {
                 </div>
                 
                 {/* Temporary fallback with sample projects */}
-                <div style={{ marginBottom: '16px', padding: '12px', background: '#f0f9ff', border: '1px solid #0ea5e9', borderRadius: '4px' }}>
-                    <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>📋 Sample Projects (Backend offline)</div>
+                <div style={{ marginBottom: '24px', padding: '18px', background: '#f0f9ff', border: '1px solid #0ea5e9', borderRadius: '6px' }}>
+                    <div style={{ fontWeight: 'bold', marginBottom: '12px', fontSize: '21px' }}>📋 Sample Projects (Backend offline)</div>
                     <div className="form-group">
                         <label htmlFor="sample-project-list" className="form-label">
                             Select a sample project:
@@ -136,7 +137,7 @@ const OpenProjectModal = ({ onClose }) => {
                     <button 
                         className="btn btn-primary" 
                         onClick={handleRetry}
-                        style={{ marginRight: '8px' }}
+                        style={{ marginRight: '12px' }}
                     >
                         🔄 Retry API
                     </button>
@@ -149,11 +150,12 @@ const OpenProjectModal = ({ onClose }) => {
                     </button>
                 </div>
             </div>
+            </div>
         )
     }
 
     return (
-        <div>
+        <div className="open-project-modal">
             {/* Search Section */}
             <div className="form-group">
                 <label htmlFor="project-search" className="form-label">
@@ -167,20 +169,20 @@ const OpenProjectModal = ({ onClose }) => {
                         className="form-input"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        style={{ paddingRight: searchTerm ? '40px' : '12px' }}
+                        style={{ paddingRight: searchTerm ? '60px' : '18px' }}
                     />
                     {searchTerm && (
                         <button
                             onClick={clearSearch}
                             style={{
                                 position: 'absolute',
-                                right: '8px',
+                                right: '12px',
                                 top: '50%',
                                 transform: 'translateY(-50%)',
                                 background: 'none',
                                 border: 'none',
                                 cursor: 'pointer',
-                                fontSize: '16px',
+                                fontSize: '24px',
                                 color: '#6b7280'
                             }}
                             title="Clear search"
@@ -192,7 +194,7 @@ const OpenProjectModal = ({ onClose }) => {
                 
                 {/* Search Results Info */}
                 {searchTerm && (
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+                    <div style={{ fontSize: '18px', color: '#6b7280', marginTop: '6px' }}>
                         {filteredProjects.length} of {projects.length} projects match "{searchTerm}"
                     </div>
                 )}
@@ -232,14 +234,14 @@ const OpenProjectModal = ({ onClose }) => {
             {selectedProjectId && (
                 <div className="form-group">
                     <div style={{ 
-                        padding: '12px', 
+                        padding: '18px', 
                         background: '#f0f9ff', 
                         border: '1px solid #0ea5e9', 
-                        borderRadius: '4px',
-                        fontSize: '14px'
+                        borderRadius: '6px',
+                        fontSize: '21px'
                     }}>
                         <strong>Selected Project:</strong>
-                        <div style={{ marginTop: '4px' }}>
+                        <div style={{ marginTop: '6px' }}>
                             {(() => {
                                 const selected = projects.find(p => p.id === selectedProjectId)
                                 return selected ? (

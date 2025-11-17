@@ -1,11 +1,16 @@
 import React, { useState, useRef } from 'react'
 import '../../styles/structureTree.css'
-const TreeNode = ({ node, level = 0, onRemove, onItemClick }) => {
+const TreeNode = ({ node, level = 0, onRemove, onItemClick, isItemType = false, isTopLevelItemType = false }) => {
+    // Start expanded for top-level item types, collapsed for hierarchy items with children
+    const [isExpanded, setIsExpanded] = React.useState(isTopLevelItemType)
     const hasChildren = node.children && node.children.length > 0
+    
+    // Show expand button for any node with children
+    const showExpandButton = hasChildren
 
     const handleRemove = (e) => {
         e.stopPropagation()
-        if (onRemove) {
+        if (onRemove && !isItemType) {
             onRemove(node.id)
         }
     }
@@ -13,59 +18,82 @@ const TreeNode = ({ node, level = 0, onRemove, onItemClick }) => {
     const handleItemClick = (e) => {
         e.stopPropagation()
         e.preventDefault()
-        if (onItemClick) {
+        if (onItemClick && !isItemType) {
             onItemClick(node)
         }
     }
 
+    const handleToggle = (e) => {
+        e.stopPropagation()
+        setIsExpanded(!isExpanded)
+    }
+
     return (
-        <div className="tree-node horizontal-node">
-            <div 
-                className="node-content" 
-                onClick={handleItemClick}
-                onMouseDown={(e) => e.stopPropagation()}
-                onMouseUp={(e) => e.stopPropagation()}
-                style={{ 
-                    userSelect: 'none',
-                    cursor: 'pointer',
-                    pointerEvents: 'auto'
-                }}
-                title="Click to edit this item"
-            >
-                <span className="node-title">{node.title}</span>
-                <div className="node-indicators">
-                    <button 
-                        className="node-remove-button"
-                        onClick={handleRemove}
-                        title="Remove this hierarchy item"
-                        style={{ 
-                            display: 'flex',
-                            backgroundColor: '#dc3545',
-                            color: 'white',
-                            border: 'none',
-                            width: '20px',
-                            height: '20px',
-                            borderRadius: '4px'
-                        }}
-                    >
-                        ✕
-                    </button>
+        <div className="tree-node vertical-node">
+            <div className="node-row">
+                <div 
+                    className="node-content" 
+                    onClick={isItemType ? undefined : handleItemClick}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onMouseUp={(e) => e.stopPropagation()}
+                    style={{ 
+                        userSelect: 'none',
+                        cursor: isItemType ? 'default' : 'pointer',
+                        pointerEvents: 'auto',
+                        backgroundColor: isItemType ? '#e7f3ff' : undefined,
+                        borderColor: isItemType ? '#007bff' : undefined,
+                        fontWeight: isItemType ? '600' : undefined
+                    }}
+                    title={isItemType ? `Item Type: ${node.title}` : "Click to edit this item"}
+                >
+                    {showExpandButton && (
+                        <button 
+                            className="expand-button"
+                            onClick={handleToggle}
+                            title={isExpanded ? 'Collapse' : 'Expand'}
+                        >
+                            {isExpanded ? '−' : '+'}
+                        </button>
+                    )}
+                    <span className="node-title">{node.title}</span>
+                    <div className="node-indicators">
+                        {!isItemType && (
+                            <button 
+                                className="node-remove-button"
+                                onClick={handleRemove}
+                                title="Remove this hierarchy item"
+                                style={{ 
+                                    display: 'flex',
+                                    backgroundColor: '#dc3545',
+                                    color: 'white',
+                                    border: 'none',
+                                    width: '20px',
+                                    height: '20px',
+                                    borderRadius: '4px'
+                                }}
+                            >
+                                ✕
+                            </button>
+                        )}
+                    </div>
                 </div>
+                
+                {hasChildren && isExpanded && (
+                    <div className="children vertical-children">
+                        {node.children.map(child => (
+                            <TreeNode 
+                                key={child.id} 
+                                node={child} 
+                                level={level + 1}
+                                onRemove={onRemove}
+                                onItemClick={onItemClick}
+                                isItemType={child.isItemType}
+                                isTopLevelItemType={false}
+                            />
+                        ))}
+                    </div>
+                )}
             </div>
-            
-            {hasChildren && (
-                <div className="children horizontal-children">
-                    {node.children.map(child => (
-                        <TreeNode 
-                            key={child.id} 
-                            node={child} 
-                            level={level + 1}
-                            onRemove={onRemove}
-                            onItemClick={onItemClick}
-                        />
-                    ))}
-                </div>
-            )}
         </div>
     )
 }
@@ -127,7 +155,7 @@ const HierarchyTree = ({ hierarchyItems, onRemoveItem, onItemClick, itemTypes = 
 
         // Create a map of all items
         items.forEach(item => {
-            itemMap.set(item.id, { ...item, children: [] })
+            itemMap.set(item.id, { ...item, children: [], isItemType: false })
         })
 
         // Build parent-child relationships
@@ -140,6 +168,81 @@ const HierarchyTree = ({ hierarchyItems, onRemoveItem, onItemClick, itemTypes = 
         })
 
         return rootItems
+    }
+
+    // Build tree with item types as parent nodes
+    const buildTreeWithItemTypes = (items) => {
+        // Create item type hierarchy
+        const itemTypeMap = new Map()
+        const itemTypeRoots = []
+        
+        // Initialize item type nodes
+        itemTypes.forEach(type => {
+            itemTypeMap.set(type.id, {
+                id: `type_${type.id}`,
+                title: type.title,
+                item_type_id: type.id,
+                children: [],
+                isItemType: true,
+                originalType: type
+            })
+        })
+        
+        // Build item type parent-child relationships
+        itemTypes.forEach(type => {
+            const typeNode = itemTypeMap.get(type.id)
+            const parentIds = type.parent_ids || []
+            
+            if (parentIds.length > 0) {
+                let hasValidParent = false
+                parentIds.forEach(parentId => {
+                    if (itemTypeMap.has(parentId)) {
+                        itemTypeMap.get(parentId).children.push(typeNode)
+                        hasValidParent = true
+                    }
+                })
+                if (!hasValidParent) {
+                    itemTypeRoots.push(typeNode)
+                }
+            } else {
+                itemTypeRoots.push(typeNode)
+            }
+        })
+        
+        // Build complete hierarchy for ALL items (across all types)
+        const itemMap = new Map()
+        
+        // Create map of all hierarchy items
+        items.forEach(item => {
+            itemMap.set(item.id, { ...item, children: [], isItemType: false })
+        })
+        
+        // Build parent-child relationships for ALL hierarchy items
+        items.forEach(item => {
+            const itemNode = itemMap.get(item.id)
+            if (item.parent_id && itemMap.has(item.parent_id)) {
+                // This item has a parent - add it as a child of the parent
+                itemMap.get(item.parent_id).children.push(itemNode)
+            } else {
+                // This is a root item - attach to its item type node
+                if (item.item_type_id && itemTypeMap.has(item.item_type_id)) {
+                    itemTypeMap.get(item.item_type_id).children.push(itemNode)
+                }
+            }
+        })
+        
+        // Remove item type nodes that have no children
+        const pruneEmptyTypes = (nodes) => {
+            return nodes.filter(node => {
+                if (node.isItemType) {
+                    node.children = pruneEmptyTypes(node.children)
+                    return node.children.length > 0
+                }
+                return true
+            })
+        }
+        
+        return pruneEmptyTypes(itemTypeRoots)
     }
 
     const handleZoomIn = () => {
@@ -159,7 +262,8 @@ const HierarchyTree = ({ hierarchyItems, onRemoveItem, onItemClick, itemTypes = 
     }
 
     const filteredItems = getFilteredItems(hierarchyItems)
-    const treeData = buildTree(filteredItems)
+    // Use buildTreeWithItemTypes to show item type hierarchy
+    const treeData = buildTreeWithItemTypes(filteredItems)
     const availableTypes = getItemTypesFromHierarchy()
     
     // Debug logging
@@ -260,6 +364,8 @@ const HierarchyTree = ({ hierarchyItems, onRemoveItem, onItemClick, itemTypes = 
                                 node={rootNode}
                                 onRemove={onRemoveItem}
                                 onItemClick={onItemClick}
+                                isItemType={rootNode.isItemType}
+                                isTopLevelItemType={rootNode.isItemType}
                             />
                         ))}
                     </div>

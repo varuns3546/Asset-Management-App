@@ -1,15 +1,21 @@
 /* Navbar Container */
 .container {
-    position: sticky;
+    display: flex;
     flex-direction: row;
+    flex-wrap: wrap;
     align-items: center;
+
+    width: 100%;
+    box-sizing: border-box;
     background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
     border-bottom: 2px solid #e0e0e0;
-    padding: 12px 20px;
+    padding: 16px 24px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    gap: 8px;
+    gap: 12px;
     position: sticky;
     top: 0;
+    left: 0;
+    right: 0;
     z-index: 1000;
 }
 
@@ -23,9 +29,9 @@
     background: transparent;
     border: 1px solid transparent;
     color: #333;
-    padding: 10px 16px;
+    padding: 14px 24px;
     border-radius: 6px;
-    font-size: 14px;
+    font-size: 25px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -59,7 +65,7 @@
     left: 0;
     display: flex;
     flex-direction: column;
-    min-width: 180px;
+    min-width: 200px;
     background: white;
     border: 1px solid #dee2e6;
     border-radius: 6px;
@@ -74,8 +80,8 @@
     background: white;
     border: 1px solid #dee2e6;
     color: #333;
-    padding: 12px 16px;
-    font-size: 14px;
+    padding: 14px 20px;
+    font-size: 25px;
     font-weight: 400;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -86,7 +92,7 @@
 .options button:hover {
     background: #f8f9fa;
     color: #007bff;
-    padding-left: 20px;
+    padding-left: 24px;
 }
 
 .options button:active {
@@ -95,4 +101,111 @@
 
 .options button:last-child {
     border-bottom: none;
-}              
+}
+
+/* Responsive Design for Smaller Screens */
+
+/* Large tablets and smaller desktops */
+@media (max-width: 1199px) {
+    .container {
+        padding: 14px 22px;
+        gap: 10px;
+    }
+    
+    .button {
+        padding: 13px 22px;
+        font-size: 23px;
+    }
+    
+    .options {
+        min-width: 180px;
+    }
+    
+    .options button {
+        padding: 13px 18px;
+        font-size: 23px;
+    }
+    
+    .options button:hover {
+        padding-left: 22px;
+    }
+}
+
+/* Tablets */
+@media (max-width: 768px) {
+    .container {
+        padding: 12px 18px;
+        gap: 8px;
+    }
+    
+    .button {
+        padding: 11px 18px;
+        font-size: 20px;
+    }
+    
+    .options {
+        min-width: 160px;
+    }
+    
+    .options button {
+        padding: 11px 16px;
+        font-size: 20px;
+    }
+    
+    .options button:hover {
+        padding-left: 20px;
+    }
+}
+
+/* Mobile devices */
+@media (max-width: 480px) {
+    .container {
+        padding: 10px 14px;
+        gap: 6px;
+        justify-content: flex-start;
+    }
+    
+    .button {
+        padding: 9px 14px;
+        font-size: 16px;
+    }
+    
+    .options {
+        min-width: 140px;
+    }
+    
+    .options button {
+        padding: 9px 14px;
+        font-size: 16px;
+    }
+    
+    .options button:hover {
+        padding-left: 18px;
+    }
+}
+
+/* Extra small devices */
+@media (max-width: 375px) {
+    .container {
+        padding: 8px 10px;
+        gap: 4px;
+    }
+    
+    .button {
+        padding: 7px 10px;
+        font-size: 14px;
+    }
+    
+    .options {
+        min-width: 120px;
+    }
+    
+    .options button {
+        padding: 8px 12px;
+        font-size: 14px;
+    }
+    
+    .options button:hover {
+        padding-left: 16px;
+    }
+}

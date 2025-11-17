@@ -31,7 +31,7 @@ const CreateProjectModal = ({ onClose }) => {
         }
     }
     return (
-        <div>
+        <div className="create-project-modal">
             <div className="form-group">
                 <label htmlFor="project-title" className="form-label">
                     Project Title:

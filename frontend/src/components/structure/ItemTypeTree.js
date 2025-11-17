@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react'
 import '../../styles/structureTree.css'
-const TreeNode = ({ node, level = 0, parentCount = 0, onRemove, onItemClick }) => {
+const TreeNode = ({ node, level = 0, parentCount = 0, onRemove, onItemClick, isTopLevel = false }) => {
+    // Start expanded for top-level nodes, collapsed for nested ones
+    const [isExpanded, setIsExpanded] = React.useState(isTopLevel)
     const hasChildren = node.children && node.children.length > 0
     const hasMultipleParents = node.parent_ids && node.parent_ids.length > 1
 
@@ -19,56 +21,73 @@ const TreeNode = ({ node, level = 0, parentCount = 0, onRemove, onItemClick }) =
         }
     }
 
+    const handleToggle = (e) => {
+        e.stopPropagation()
+        setIsExpanded(!isExpanded)
+    }
+
     return (
-        <div className="tree-node horizontal-node">
-            <div 
-                className="node-content" 
-                onClick={handleItemClick}
-                onMouseDown={(e) => e.stopPropagation()}
-                onMouseUp={(e) => e.stopPropagation()}
-                style={{ 
-                    userSelect: 'none',
-                    cursor: 'pointer',
-                    pointerEvents: 'auto'
-                }}
-                title="Click to edit this item type"
-            >
-                <span className="node-title">{node.title}</span>
-                <div className="node-indicators">
-                    {hasMultipleParents && <span className="multiple-parents-indicator" title="Has multiple parents">🔗</span>}
-                    <button 
-                        className="node-remove-button"
-                        onClick={handleRemove}
-                        title="Remove this item type"
-                        style={{ 
-                            display: 'flex',
-                            backgroundColor: '#dc3545',
-                            color: 'white',
-                            border: 'none',
-                            width: '20px',
-                            height: '20px',
-                            borderRadius: '4px'
-                        }}
-                    >
-                        ✕
-                    </button>
+        <div className="tree-node vertical-node">
+            <div className="node-row">
+                <div 
+                    className="node-content" 
+                    onClick={handleItemClick}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onMouseUp={(e) => e.stopPropagation()}
+                    style={{ 
+                        userSelect: 'none',
+                        cursor: 'pointer',
+                        pointerEvents: 'auto'
+                    }}
+                    title="Click to edit this item type"
+                >
+                    {hasChildren && (
+                        <button 
+                            className="expand-button"
+                            onClick={handleToggle}
+                            title={isExpanded ? 'Collapse' : 'Expand'}
+                        >
+                            {isExpanded ? '−' : '+'}
+                        </button>
+                    )}
+                    <span className="node-title">{node.title}</span>
+                    <div className="node-indicators">
+                        {hasMultipleParents && <span className="multiple-parents-indicator" title="Has multiple parents">🔗</span>}
+                        <button 
+                            className="node-remove-button"
+                            onClick={handleRemove}
+                            title="Remove this item type"
+                            style={{ 
+                                display: 'flex',
+                                backgroundColor: '#dc3545',
+                                color: 'white',
+                                border: 'none',
+                                width: '20px',
+                                height: '20px',
+                                borderRadius: '4px'
+                            }}
+                        >
+                            ✕
+                        </button>
+                    </div>
                 </div>
+                
+                {hasChildren && isExpanded && (
+                    <div className="children vertical-children">
+                        {node.children.map(child => (
+                            <TreeNode 
+                                key={child.id} 
+                                node={child} 
+                                level={level + 1} 
+                                parentCount={parentCount + 1}
+                                onRemove={onRemove}
+                                onItemClick={onItemClick}
+                                isTopLevel={false}
+                            />
+                        ))}
+                    </div>
+                )}
             </div>
-            
-            {hasChildren && (
-                <div className="children horizontal-children">
-                    {node.children.map(child => (
-                        <TreeNode 
-                            key={child.id} 
-                            node={child} 
-                            level={level + 1} 
-                            parentCount={parentCount + 1}
-                            onRemove={onRemove}
-                            onItemClick={onItemClick}
-                        />
-                    ))}
-                </div>
-            )}
         </div>
     )
 }
@@ -200,6 +219,7 @@ const ItemTypeTree = ({ itemTypes, onRemoveItemType, onItemClick }) => {
                                 node={rootNode} 
                                 onRemove={onRemoveItemType}
                                 onItemClick={onItemClick}
+                                isTopLevel={true}
                             />
                         ))}
                     </div>

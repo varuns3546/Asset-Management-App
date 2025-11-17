@@ -15,7 +15,7 @@
     background: white;
     border-radius: 8px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3); /* Stronger shadow */
-    max-width: 600px;
+    max-width: 900px;
     width: 90%;
     max-height: 80vh;
     overflow-y: auto;
@@ -27,18 +27,60 @@
     max-width: 1200px;
 }
 
+/* Larger create project modal - 50% bigger */
+.content:has(.create-project-modal) {
+    max-width: 900px;
+}
+
+.content:has(.create-project-modal) .header {
+    padding: 30px 36px;
+}
+
+.content:has(.create-project-modal) .title {
+    font-size: 2.25rem;
+}
+
+.content:has(.create-project-modal) .close-btn {
+    font-size: 2.25rem;
+}
+
+.content:has(.create-project-modal) .body {
+    padding: 36px;
+}
+
+/* Larger open project modal - 50% bigger */
+.content:has(.open-project-modal) {
+    max-width: 900px;
+}
+
+.content:has(.open-project-modal) .header {
+    padding: 30px 36px;
+}
+
+.content:has(.open-project-modal) .title {
+    font-size: 2.25rem;
+}
+
+.content:has(.open-project-modal) .close-btn {
+    font-size: 2.25rem;
+}
+
+.content:has(.open-project-modal) .body {
+    padding: 36px;
+}
+
 .header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 20px 24px;
+    padding: 30px 36px;
     border-bottom: 1px solid #e5e7eb;
     background-color: #f8fafc; /* Added background color */
 }
 
 .title {
     margin: 0;
-    font-size: 1.5rem;
+    font-size: 2.25rem;
     font-weight: 600;
     color: #1f2937;
 }
@@ -46,11 +88,11 @@
 .close-btn {
     background: none;
     border: none;
-    font-size: 1.5rem;
+    font-size: 2.25rem;
     cursor: pointer;
     color: #6b7280;
-    padding: 4px;
-    border-radius: 4px;
+    padding: 6px;
+    border-radius: 6px;
     transition: background-color 0.2s;
 }
 
@@ -60,7 +102,7 @@
 }
 
 .body {
-    padding: 24px;
+    padding: 36px;
     background-color: white; /* Ensure white background */
 }
 
@@ -68,20 +110,20 @@
 .file-upload-modal {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 30px;
 }
 
 .upload-instructions {
     color: #4b5563;
-    font-size: 14px;
+    font-size: 21px;
 }
 
 .upload-instructions p {
-    margin: 8px 0;
+    margin: 12px 0;
 }
 
 .supported-formats {
-    font-size: 13px;
+    font-size: 19px;
     color: #6b7280;
     font-style: italic;
 }
@@ -89,12 +131,12 @@
 .drop-zone {
     border: 2px dashed #cbd5e1;
     border-radius: 8px;
-    padding: 40px 20px;
+    padding: 60px 30px;
     text-align: center;
     background-color: #f8fafc;
     transition: all 0.3s ease;
     cursor: pointer;
-    min-height: 200px;
+    min-height: 300px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -115,33 +157,33 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
+    gap: 18px;
     cursor: pointer;
     width: 100%;
 }
 
 .upload-icon {
-    font-size: 48px;
+    font-size: 72px;
 }
 
 .drop-zone-text {
     color: #6b7280;
-    font-size: 14px;
+    font-size: 21px;
     margin: 0;
 }
 
 .selected-file {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 24px;
     background: white;
-    padding: 16px;
-    border-radius: 6px;
+    padding: 24px;
+    border-radius: 9px;
     width: 100%;
 }
 
 .file-icon {
-    font-size: 36px;
+    font-size: 54px;
 }
 
 .file-info {
@@ -150,26 +192,27 @@
 }
 
 .file-name {
-    margin: 0 0 4px 0;
+    margin: 0 0 6px 0;
     font-weight: 500;
     color: #1f2937;
     word-break: break-word;
+    font-size: 21px;
 }
 
 .file-size {
     margin: 0;
-    font-size: 13px;
+    font-size: 19px;
     color: #6b7280;
 }
 
 .remove-file-btn {
     background: none;
     border: none;
-    font-size: 24px;
+    font-size: 36px;
     color: #ef4444;
     cursor: pointer;
-    padding: 4px 8px;
-    border-radius: 4px;
+    padding: 6px 12px;
+    border-radius: 6px;
     transition: background-color 0.2s;
     flex-shrink: 0;
 }
@@ -181,30 +224,30 @@
 .upload-error {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 12px 16px;
+    gap: 12px;
+    padding: 18px 24px;
     background-color: #fef2f2;
     border: 1px solid #fecaca;
-    border-radius: 6px;
+    border-radius: 9px;
     color: #dc2626;
-    font-size: 14px;
+    font-size: 21px;
 }
 
 .error-icon {
-    font-size: 18px;
+    font-size: 27px;
 }
 
 .upload-actions {
     display: flex;
     justify-content: flex-end;
-    gap: 12px;
-    padding-top: 12px;
+    gap: 18px;
+    padding-top: 18px;
 }
 
 .btn {
-    padding: 10px 20px;
-    border-radius: 6px;
-    font-size: 14px;
+    padding: 15px 30px;
+    border-radius: 9px;
+    font-size: 21px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -244,7 +287,7 @@
 .import-preview-modal {
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 36px;
     max-height: 70vh;
     overflow-y: auto;
 }
@@ -252,11 +295,11 @@
 .sheet-selector {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding: 16px;
+    gap: 18px;
+    padding: 24px;
     background-color: #f0f9ff;
     border: 1px solid #bae6fd;
-    border-radius: 6px;
+    border-radius: 9px;
 }
 
 .sheet-selector-header {
@@ -268,11 +311,11 @@
 .sheet-label {
     font-weight: 600;
     color: #0c4a6e;
-    font-size: 14px;
+    font-size: 21px;
 }
 
 .selected-count {
-    font-size: 13px;
+    font-size: 19px;
     color: #0369a1;
     font-weight: 500;
 }
@@ -280,19 +323,20 @@
 .sheet-checkboxes {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 12px;
 }
 
 .sheet-checkbox-label {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 10px 12px;
+    gap: 15px;
+    padding: 15px 18px;
     background-color: white;
     border: 1px solid #e0f2fe;
-    border-radius: 6px;
+    border-radius: 9px;
     cursor: pointer;
     transition: all 0.2s;
+    font-size: 19px;
 }
 
 .sheet-checkbox-label:hover {
@@ -302,8 +346,8 @@
 
 .sheet-checkbox-label input[type="checkbox"] {
     cursor: pointer;
-    width: 16px;
-    height: 16px;
+    width: 24px;
+    height: 24px;
 }
 
 .sheet-name {
@@ -313,26 +357,26 @@
 }
 
 .sheet-row-count {
-    font-size: 12px;
+    font-size: 18px;
     color: #6b7280;
 }
 
 .preview-badge {
-    font-size: 11px;
-    padding: 2px 8px;
+    font-size: 16px;
+    padding: 3px 12px;
     background-color: #3b82f6;
     color: white;
-    border-radius: 4px;
+    border-radius: 6px;
     font-weight: 500;
 }
 
 .preview-sheet-btn {
-    padding: 4px 12px;
-    font-size: 12px;
+    padding: 6px 18px;
+    font-size: 18px;
     background-color: #e0f2fe;
     color: #0c4a6e;
     border: 1px solid #bae6fd;
-    border-radius: 4px;
+    border-radius: 6px;
     cursor: pointer;
     transition: all 0.2s;
 }
@@ -349,65 +393,65 @@
 .preview-info {
     background-color: #eff6ff;
     border: 1px solid #bfdbfe;
-    border-radius: 6px;
-    padding: 12px 16px;
+    border-radius: 9px;
+    padding: 18px 24px;
     color: #1e40af;
 }
 
 .preview-info p {
-    margin: 4px 0;
-    font-size: 14px;
+    margin: 6px 0;
+    font-size: 21px;
 }
 
 .preview-note {
-    font-size: 13px !important;
+    font-size: 19px !important;
     color: #3b82f6 !important;
 }
 
 .mapping-section {
     border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    padding: 16px;
+    border-radius: 12px;
+    padding: 24px;
     background-color: #f9fafb;
 }
 
 .section-title {
-    margin: 0 0 8px 0;
-    font-size: 16px;
+    margin: 0 0 12px 0;
+    font-size: 24px;
     font-weight: 600;
     color: #1f2937;
 }
 
 .section-description {
-    margin: 0 0 16px 0;
-    font-size: 13px;
+    margin: 0 0 24px 0;
+    font-size: 19px;
     color: #6b7280;
 }
 
 .column-mappings {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 18px;
 }
 
 .column-mapping-row {
     display: grid;
     grid-template-columns: 1fr 2fr auto;
-    gap: 12px;
+    gap: 18px;
     align-items: center;
 }
 
 .column-label {
     font-weight: 500;
     color: #374151;
-    font-size: 14px;
+    font-size: 21px;
 }
 
 .mapping-select {
-    padding: 8px 12px;
+    padding: 12px 18px;
     border: 1px solid #d1d5db;
-    border-radius: 6px;
-    font-size: 14px;
+    border-radius: 9px;
+    font-size: 21px;
     background-color: white;
     transition: border-color 0.2s;
 }
@@ -415,39 +459,39 @@
 .mapping-select:focus {
     outline: none;
     border-color: #3b82f6;
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
 }
 
 .mapping-status {
-    font-size: 18px;
-    min-width: 24px;
+    font-size: 27px;
+    min-width: 36px;
     text-align: center;
 }
 
 .item-type-mappings {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 24px;
 }
 
 .item-type-config-card {
-    padding: 16px;
+    padding: 24px;
     background-color: white;
-    border-radius: 8px;
+    border-radius: 12px;
     border: 1px solid #d1d5db;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 18px;
 }
 
 .type-config-header {
-    padding-bottom: 8px;
+    padding-bottom: 12px;
     border-bottom: 1px solid #e5e7eb;
     margin-bottom: 4px;
 }
 
 .type-source-label {
-    font-size: 13px;
+    font-size: 19px;
     color: #6b7280;
 }
 
@@ -457,59 +501,43 @@
 
 .type-config-row {
     display: grid;
-    grid-template-columns: 150px 1fr;
-    gap: 12px;
+    grid-template-columns: 225px 1fr;
+    gap: 18px;
     align-items: center;
 }
 
 .config-field-label {
     font-weight: 500;
     color: #374151;
-    font-size: 14px;
-}
-
-.form-input {
-    width: 100%;
-    padding: 8px 12px;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-    font-size: 14px;
-    background-color: white;
-    transition: border-color 0.2s;
-}
-
-.form-input:focus {
-    outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    font-size: 21px;
 }
 
 .type-attributes-section {
-    margin-top: 8px;
-    padding: 12px;
+    margin-top: 12px;
+    padding: 18px;
     background-color: #f9fafb;
-    border-radius: 6px;
+    border-radius: 9px;
     border: 1px solid #e5e7eb;
 }
 
 .attribute-columns {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    margin-top: 8px;
+    gap: 12px;
+    margin-top: 12px;
 }
 
 .attribute-column-label {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 6px 10px;
+    gap: 12px;
+    padding: 9px 15px;
     background-color: white;
     border: 1px solid #e5e7eb;
-    border-radius: 4px;
+    border-radius: 6px;
     cursor: pointer;
     transition: all 0.2s;
-    font-size: 13px;
+    font-size: 19px;
 }
 
 .attribute-column-label:hover {
@@ -519,27 +547,29 @@
 
 .attribute-column-label input[type="checkbox"] {
     cursor: pointer;
+    width: 20px;
+    height: 20px;
 }
 
 .sheet-type-mappings {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 18px;
 }
 
 .sheet-type-row {
     display: grid;
-    grid-template-columns: 200px repeat(auto-fit, minmax(150px, 1fr));
-    gap: 12px;
+    grid-template-columns: 300px repeat(auto-fit, minmax(225px, 1fr));
+    gap: 18px;
     align-items: center;
-    padding: 12px;
+    padding: 18px;
     background-color: white;
-    border-radius: 6px;
+    border-radius: 9px;
     border: 1px solid #e5e7eb;
 }
 
 .sheet-type-label {
-    font-size: 14px;
+    font-size: 21px;
     color: #374151;
 }
 
@@ -550,39 +580,41 @@
 .checkbox-inline {
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 14px;
+    gap: 12px;
+    font-size: 21px;
     color: #374151;
     cursor: pointer;
 }
 
 .checkbox-inline input[type="checkbox"] {
     cursor: pointer;
+    width: 20px;
+    height: 20px;
 }
 
 .preview-section {
     border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    padding: 16px;
+    border-radius: 12px;
+    padding: 24px;
 }
 
 .preview-table-container {
     overflow-x: auto;
-    max-height: 300px;
+    max-height: 450px;
     overflow-y: auto;
     border: 1px solid #e5e7eb;
-    border-radius: 6px;
+    border-radius: 9px;
 }
 
 .preview-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 13px;
+    font-size: 19px;
 }
 
 .preview-table th {
     background-color: #f9fafb;
-    padding: 10px 12px;
+    padding: 15px 18px;
     text-align: left;
     font-weight: 600;
     color: #374151;
@@ -593,7 +625,7 @@
 }
 
 .preview-table td {
-    padding: 8px 12px;
+    padding: 12px 18px;
     border-bottom: 1px solid #f3f4f6;
     color: #1f2937;
 }
@@ -605,11 +637,11 @@
 .header-cell {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 6px;
 }
 
 .mapped-field {
-    font-size: 11px;
+    font-size: 16px;
     color: #6b7280;
     font-weight: normal;
     font-style: italic;
@@ -618,24 +650,590 @@
 .validation-errors {
     background-color: #fef2f2;
     border: 1px solid #fecaca;
-    border-radius: 6px;
-    padding: 12px 16px;
+    border-radius: 9px;
+    padding: 18px 24px;
 }
 
 .validation-errors h4 {
-    margin: 0 0 8px 0;
+    margin: 0 0 12px 0;
     color: #dc2626;
-    font-size: 14px;
+    font-size: 21px;
     font-weight: 600;
 }
 
 .validation-errors ul {
     margin: 0;
-    padding-left: 20px;
+    padding-left: 30px;
 }
 
 .validation-errors li {
     color: #dc2626;
-    font-size: 13px;
-    margin: 4px 0;
+    font-size: 19px;
+    margin: 6px 0;
+}
+
+/* ========== RESPONSIVE DESIGN ========== */
+
+/* Tablets and smaller desktops (1199px and below) */
+@media (max-width: 1199px) {
+    .content {
+        max-width: 800px;
+    }
+    
+    .header {
+        padding: 26px 32px;
+    }
+    
+    .title {
+        font-size: 2rem;
+    }
+    
+    .close-btn {
+        font-size: 2rem;
+    }
+    
+    .body {
+        padding: 32px;
+    }
+    
+    .upload-instructions {
+        font-size: 19px;
+    }
+    
+    .supported-formats {
+        font-size: 17px;
+    }
+    
+    .drop-zone {
+        padding: 50px 25px;
+        min-height: 260px;
+    }
+    
+    .upload-icon {
+        font-size: 64px;
+    }
+    
+    .drop-zone-text,
+    .file-name,
+    .config-field-label,
+    .column-label {
+        font-size: 19px;
+    }
+    
+    .btn {
+        padding: 13px 26px;
+        font-size: 19px;
+    }
+    
+    .sheet-label,
+    .section-title {
+        font-size: 20px;
+    }
+}
+
+/* Tablets (768px to 1199px) */
+@media (max-width: 768px) {
+    .content {
+        max-width: 95%;
+        width: 95%;
+    }
+    
+    .content:has(.create-project-modal),
+    .content:has(.open-project-modal) {
+        max-width: 95%;
+    }
+    
+    .header {
+        padding: 22px 28px;
+    }
+    
+    .title {
+        font-size: 1.75rem;
+    }
+    
+    .close-btn {
+        font-size: 1.75rem;
+    }
+    
+    .body {
+        padding: 28px;
+    }
+    
+    .file-upload-modal {
+        gap: 24px;
+    }
+    
+    .upload-instructions {
+        font-size: 17px;
+    }
+    
+    .upload-instructions p {
+        margin: 10px 0;
+    }
+    
+    .supported-formats {
+        font-size: 15px;
+    }
+    
+    .drop-zone {
+        padding: 45px 20px;
+        min-height: 240px;
+    }
+    
+    .drop-zone-label {
+        gap: 14px;
+    }
+    
+    .upload-icon {
+        font-size: 56px;
+    }
+    
+    .drop-zone-text {
+        font-size: 17px;
+    }
+    
+    .selected-file {
+        gap: 18px;
+        padding: 18px;
+    }
+    
+    .file-icon {
+        font-size: 42px;
+    }
+    
+    .file-name {
+        font-size: 17px;
+    }
+    
+    .file-size {
+        font-size: 15px;
+    }
+    
+    .remove-file-btn {
+        font-size: 28px;
+    }
+    
+    .upload-error {
+        font-size: 17px;
+        padding: 14px 18px;
+    }
+    
+    .btn {
+        padding: 12px 22px;
+        font-size: 17px;
+    }
+    
+    .import-preview-modal {
+        gap: 28px;
+    }
+    
+    .sheet-selector {
+        padding: 18px;
+    }
+    
+    .sheet-label {
+        font-size: 17px;
+    }
+    
+    .selected-count {
+        font-size: 15px;
+    }
+    
+    .sheet-checkbox-label {
+        padding: 12px 14px;
+        font-size: 16px;
+    }
+    
+    .sheet-checkbox-label input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+    }
+    
+    .sheet-row-count {
+        font-size: 15px;
+    }
+    
+    .preview-badge {
+        font-size: 14px;
+    }
+    
+    .preview-info p {
+        font-size: 17px;
+    }
+    
+    .mapping-section {
+        padding: 18px;
+    }
+    
+    .section-title {
+        font-size: 20px;
+    }
+    
+    .section-description {
+        font-size: 16px;
+    }
+    
+    .column-label,
+    .config-field-label {
+        font-size: 17px;
+    }
+    
+    .mapping-select {
+        padding: 10px 14px;
+        font-size: 17px;
+    }
+    
+    .mapping-status {
+        font-size: 22px;
+    }
+    
+    .preview-table {
+        font-size: 16px;
+    }
+    
+    .preview-table th {
+        padding: 12px 14px;
+    }
+    
+    .preview-table td {
+        padding: 10px 14px;
+    }
+    
+    .mapped-field {
+        font-size: 14px;
+    }
+    
+    .validation-errors h4 {
+        font-size: 17px;
+    }
+    
+    .validation-errors li {
+        font-size: 15px;
+    }
+}
+
+/* Mobile devices (480px to 767px) */
+@media (max-width: 480px) {
+    .content {
+        max-width: 98%;
+        width: 98%;
+    }
+    
+    .content:has(.import-preview-modal) {
+        max-width: 98%;
+    }
+    
+    .header {
+        padding: 18px 20px;
+        flex-wrap: wrap;
+    }
+    
+    .title {
+        font-size: 1.4rem;
+    }
+    
+    .close-btn {
+        font-size: 1.4rem;
+        padding: 4px;
+    }
+    
+    .body {
+        padding: 20px;
+    }
+    
+    .file-upload-modal {
+        gap: 18px;
+    }
+    
+    .upload-instructions {
+        font-size: 15px;
+    }
+    
+    .upload-instructions p {
+        margin: 8px 0;
+    }
+    
+    .supported-formats {
+        font-size: 13px;
+    }
+    
+    .drop-zone {
+        padding: 30px 15px;
+        min-height: 180px;
+    }
+    
+    .drop-zone-label {
+        gap: 10px;
+    }
+    
+    .upload-icon {
+        font-size: 42px;
+    }
+    
+    .drop-zone-text {
+        font-size: 14px;
+    }
+    
+    .selected-file {
+        gap: 12px;
+        padding: 14px;
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .file-icon {
+        font-size: 32px;
+    }
+    
+    .file-name {
+        font-size: 14px;
+    }
+    
+    .file-size {
+        font-size: 12px;
+    }
+    
+    .remove-file-btn {
+        font-size: 22px;
+        padding: 4px 8px;
+    }
+    
+    .upload-error {
+        font-size: 14px;
+        padding: 10px 14px;
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .error-icon {
+        font-size: 20px;
+    }
+    
+    .upload-actions {
+        gap: 12px;
+        flex-direction: column;
+    }
+    
+    .btn {
+        padding: 10px 18px;
+        font-size: 14px;
+        width: 100%;
+    }
+    
+    .import-preview-modal {
+        gap: 20px;
+    }
+    
+    .sheet-selector {
+        padding: 14px;
+        gap: 12px;
+    }
+    
+    .sheet-selector-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .sheet-label {
+        font-size: 15px;
+    }
+    
+    .selected-count {
+        font-size: 13px;
+    }
+    
+    .sheet-checkbox-label {
+        padding: 10px 12px;
+        font-size: 14px;
+        gap: 10px;
+    }
+    
+    .sheet-checkbox-label input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+    }
+    
+    .sheet-name {
+        font-size: 14px;
+    }
+    
+    .sheet-row-count {
+        font-size: 12px;
+    }
+    
+    .preview-badge {
+        font-size: 11px;
+        padding: 2px 8px;
+    }
+    
+    .preview-sheet-btn {
+        padding: 4px 12px;
+        font-size: 12px;
+    }
+    
+    .preview-info {
+        padding: 12px 16px;
+    }
+    
+    .preview-info p {
+        font-size: 14px;
+    }
+    
+    .preview-note {
+        font-size: 13px !important;
+    }
+    
+    .mapping-section {
+        padding: 14px;
+    }
+    
+    .section-title {
+        font-size: 16px;
+    }
+    
+    .section-description {
+        font-size: 13px;
+    }
+    
+    .column-mapping-row {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    
+    .column-label,
+    .config-field-label {
+        font-size: 14px;
+    }
+    
+    .mapping-select {
+        padding: 8px 12px;
+        font-size: 14px;
+    }
+    
+    .mapping-status {
+        font-size: 18px;
+        display: none;
+    }
+    
+    .item-type-config-card {
+        padding: 14px;
+        gap: 12px;
+    }
+    
+    .type-config-row {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    
+    .type-source-label {
+        font-size: 13px;
+    }
+    
+    .type-attributes-section {
+        padding: 12px;
+    }
+    
+    .attribute-column-label {
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+    
+    .attribute-column-label input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+    }
+    
+    .sheet-type-row {
+        grid-template-columns: 1fr;
+        gap: 12px;
+        padding: 14px;
+    }
+    
+    .sheet-type-label {
+        font-size: 14px;
+    }
+    
+    .checkbox-inline {
+        font-size: 14px;
+        gap: 8px;
+    }
+    
+    .checkbox-inline input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+    }
+    
+    .preview-section {
+        padding: 14px;
+    }
+    
+    .preview-table-container {
+        max-height: 300px;
+    }
+    
+    .preview-table {
+        font-size: 12px;
+    }
+    
+    .preview-table th {
+        padding: 8px 10px;
+    }
+    
+    .preview-table td {
+        padding: 6px 10px;
+    }
+    
+    .mapped-field {
+        font-size: 10px;
+    }
+    
+    .validation-errors {
+        padding: 12px 16px;
+    }
+    
+    .validation-errors h4 {
+        font-size: 14px;
+    }
+    
+    .validation-errors ul {
+        padding-left: 20px;
+    }
+    
+    .validation-errors li {
+        font-size: 12px;
+    }
+}
+
+/* Extra small devices (320px to 479px) */
+@media (max-width: 375px) {
+    .title {
+        font-size: 1.2rem;
+    }
+    
+    .close-btn {
+        font-size: 1.2rem;
+    }
+    
+    .header {
+        padding: 14px 16px;
+    }
+    
+    .body {
+        padding: 16px;
+    }
+    
+    .btn {
+        padding: 8px 14px;
+        font-size: 13px;
+    }
+    
+    .upload-icon {
+        font-size: 36px;
+    }
+    
+    .drop-zone {
+        padding: 20px 10px;
+        min-height: 150px;
+    }
 }
