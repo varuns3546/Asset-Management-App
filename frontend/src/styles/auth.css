@@ -190,32 +190,121 @@
 }
 
 /* Responsive Design */
+
+/* Tablets */
+@media (max-width: 768px) {
+    .auth-card {
+        max-width: 500px;
+        padding: 35px 30px;
+    }
+    
+    .auth-title {
+        font-size: 1.8rem;
+    }
+    
+    .auth-subtitle {
+        font-size: 13px;
+    }
+    
+    .auth-label {
+        font-size: 13px;
+    }
+    
+    .auth-input {
+        padding: 11px 14px;
+        font-size: 13px;
+    }
+    
+    .auth-submit-button {
+        padding: 13px 22px;
+        font-size: 15px;
+    }
+}
+
+/* Mobile */
 @media (max-width: 480px) {
     .auth-container {
         padding: 15px;
     }
     
     .auth-card {
-        padding: 30px 20px;
+        padding: 25px 18px;
         border-radius: 8px;
+        max-width: 100%;
     }
     
     .auth-title {
         font-size: 1.5rem;
     }
     
+    .auth-subtitle {
+        font-size: 12px;
+    }
+    
+    .auth-header {
+        margin-bottom: 24px;
+    }
+    
+    .auth-form {
+        gap: 16px;
+    }
+    
     .auth-form-row {
         flex-direction: column;
-        gap: 20px;
+        gap: 16px;
+    }
+    
+    .auth-label {
+        font-size: 12px;
     }
     
     .auth-input {
-        padding: 10px 14px;
+        padding: 10px 12px;
+        font-size: 12px;
+    }
+    
+    .auth-password-toggle {
+        font-size: 12px;
     }
     
     .auth-submit-button {
-        padding: 12px 20px;
-        font-size: 15px;
+        padding: 12px 18px;
+        font-size: 14px;
+    }
+    
+    .auth-error {
+        padding: 10px 14px;
+        font-size: 12px;
+    }
+    
+    .auth-footer {
+        margin-top: 24px;
+        padding-top: 16px;
+    }
+    
+    .auth-footer-text {
+        font-size: 12px;
+    }
+}
+
+/* Extra small */
+@media (max-width: 375px) {
+    .auth-card {
+        padding: 20px 15px;
+    }
+    
+    .auth-title {
+        font-size: 1.3rem;
+    }
+    
+    .auth-input {
+        padding: 9px 12px;
+        font-size: 11px;
+    }
+    
+    .auth-submit-button {
+        padding: 10px 16px;
+        font-size: 13px;
     }
 }
 

@@ -211,52 +211,87 @@
     -o-transition: none !important;
 }
 
-/* Update horizontal-children to use dynamic gap */
-.horizontal-children {
+/* Vertical node layout - siblings stack vertically */
+.vertical-node {
+    position: relative;
+    margin-bottom: 8px;
+}
+
+/* Node row contains the node content and its children */
+.node-row {
     display: flex;
-    flex-wrap: wrap;
-    margin-left: 0;
-    margin-top: 10px;
-    gap: var(--node-gap); /* Use dynamic gap instead of fixed 10px */
-    position: relative;
-    /* Add a bit more horizontal spacing between parent nodes */
-    column-gap: calc(var(--node-gap) + 5px); /* Extra 5px horizontal spacing */
-    /* Use full available width */
-    width: 100%;
-    justify-content: flex-start;
-}
-
-/* Update horizontal-node to use dynamic spacing */
-.horizontal-node {
-    top: 5px;
-    display: inline-block;
-    margin-right: 0; /* Remove fixed margin, use gap instead */
-    margin-bottom: var(--node-gap); /* Use dynamic spacing */
-    vertical-align: top;
+    flex-direction: row;
+    align-items: flex-start;
     position: relative;
 }
 
-/* Vertical lines pointing to each child */
-.horizontal-node::before {
+/* Vertical children appear to the right of parent */
+.vertical-children {
+    display: flex;
+    flex-direction: column;
+    margin-left: 30px;
+    padding-left: 20px;
+    border-left: 2px solid #dee2e6;
+    position: relative;
+}
+
+/* Connecting line from parent to children container */
+.vertical-children::before {
     content: '';
     position: absolute;
-    margin-top: -5px;
-    left: 50%;
-    width: 2px;
-    height: 5px;
-    background-color: #6c757d;
-    z-index: 1;
-    display: block;
+    left: -2px;
+    top: -8px;
+    width: 20px;
+    height: 20px;
+    border-left: 2px solid #dee2e6;
+    border-bottom: 2px solid #dee2e6;
+    border-bottom-left-radius: 8px;
 }
 
-/* Hide vertical lines for single children */
-.horizontal-children:not(:has(.horizontal-node:nth-child(2))) .horizontal-node::before {
+/* Small horizontal line connecting each child to the vertical line */
+.vertical-children > .vertical-node::before {
+    content: '';
+    position: absolute;
+    left: -20px;
+    top: 16px;
+    width: 20px;
+    height: 2px;
+    background-color: #dee2e6;
+}
+
+/* First child doesn't need the small horizontal line (covered by the main connector) */
+.vertical-children > .vertical-node:first-child::before {
     display: none;
 }
 
-/* Hide vertical lines for root nodes (nodes without parent) */
-.tree-content > .horizontal-node::before {
-    display: none;
+/* Expand/collapse button */
+.expand-button {
+    background: #007bff;
+    color: white;
+    border: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    margin-right: 8px;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    padding: 0;
+    line-height: 1;
+}
+
+.expand-button:hover {
+    background: #0056b3;
+    transform: scale(1.1);
+}
+
+.expand-button:active {
+    transform: scale(0.95);
 }
 
 /* Update node-content to use dynamic values */
@@ -273,29 +308,9 @@
     position: relative;
     z-index: 2;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    gap: 8px;
 }
 
-.node-content::after {
-    content: '';
-    position: absolute;
-    bottom: -10px;
-    left: 50%;
-    width: 2px;
-    height: 10px;
-    background-color: #6c757d;
-    z-index: 1;
-    display: none;
-}
-
-/* Show vertical line from parent only if it has children */
-.horizontal-node:has(.horizontal-children) .node-content::after {
-    display: block;
-}
-
-/* Hide vertical line for nodes without children */
-.horizontal-node:not(:has(.horizontal-children)) .node-content::after {
-    display: none !important;
-}
 
 /* Hover effects for interactive nodes - only direct hover */
 .node-content:hover {
@@ -371,7 +386,36 @@
 
 
 /* Responsive Design */
+
+/* Large tablets */
+@media (max-width: 1024px) {
+    .hierarchy-tree {
+        min-height: 70vh;
+        height: 70vh;
+    }
+    
+    .tree-controls {
+        padding: 14px 18px;
+    }
+    
+    .zoom-button {
+        padding: 5px 11px;
+        font-size: 15px;
+    }
+    
+    .tree-toggle-button {
+        padding: 7px 11px;
+        font-size: 13px;
+    }
+}
+
+/* Tablets */
 @media (max-width: 768px) {
+    .hierarchy-tree {
+        min-height: 60vh;
+        height: 60vh;
+    }
+    
     .tree-controls {
         padding: 12px 15px;
         flex-direction: column;
@@ -384,9 +428,23 @@
         justify-content: space-between;
     }
     
+    .zoom-button {
+        padding: 5px 10px;
+        font-size: 14px;
+    }
+    
+    .zoom-level {
+        font-size: 13px;
+    }
+    
+    .tree-toggle-button {
+        padding: 7px 10px;
+        font-size: 13px;
+        width: 100%;
+    }
+    
     .tree-content {
         padding: 15px;
-        max-height: 60vh;
     }
     
     .node-content {
@@ -397,19 +455,32 @@
         font-size: 13px;
     }
     
-    .horizontal-node {
-        display: block;
-        margin-right: 0;
-        margin-bottom: 10px;
+    .vertical-children {
+        margin-left: 20px;
+        padding-left: 15px;
     }
     
-    .horizontal-children {
-        display: block;
-        gap: 0;
+    .expand-button {
+        width: 18px;
+        height: 18px;
+        font-size: 12px;
+        margin-right: 6px;
     }
     
     .node-content {
         min-width: auto;
+    }
+    
+    .node-remove-button {
+        width: 18px;
+        height: 18px;
+        font-size: 12px;
+    }
+    
+    .multiple-parents-indicator {
+        width: 16px;
+        height: 16px;
+        font-size: 10px;
     }
     
     /* Type filter responsive styles */
@@ -423,6 +494,15 @@
         gap: 8px;
     }
     
+    .filter-label {
+        font-size: 13px;
+    }
+    
+    .clear-filter-button {
+        font-size: 11px;
+        padding: 3px 7px;
+    }
+    
     .type-filter-buttons {
         gap: 6px;
     }
@@ -430,5 +510,159 @@
     .type-filter-button {
         font-size: 12px;
         padding: 5px 10px;
+    }
+    
+    .no-types-message {
+        font-size: 12px;
+    }
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+    .hierarchy-tree {
+        min-height: 50vh;
+        height: 50vh;
+    }
+    
+    .tree-controls {
+        padding: 10px 12px;
+        gap: 8px;
+    }
+    
+    .zoom-button {
+        padding: 4px 8px;
+        font-size: 13px;
+        min-width: 28px;
+    }
+    
+    .zoom-level {
+        font-size: 12px;
+        min-width: 35px;
+    }
+    
+    .tree-toggle-button {
+        padding: 6px 8px;
+        font-size: 12px;
+    }
+    
+    .tree-content {
+        padding: 12px;
+    }
+    
+    .node-content {
+        padding: 5px 8px;
+    }
+    
+    .node-title {
+        font-size: 12px;
+    }
+    
+    .vertical-children {
+        margin-left: 15px;
+        padding-left: 10px;
+    }
+    
+    .vertical-children::before {
+        width: 15px;
+    }
+    
+    .vertical-children > .vertical-node::before {
+        left: -10px;
+        width: 10px;
+    }
+    
+    .expand-button {
+        width: 16px;
+        height: 16px;
+        font-size: 11px;
+        margin-right: 4px;
+    }
+    
+    .node-remove-button {
+        width: 16px;
+        height: 16px;
+        font-size: 11px;
+    }
+    
+    .multiple-parents-indicator {
+        width: 14px;
+        height: 14px;
+        font-size: 9px;
+    }
+    
+    .type-filter-section {
+        padding: 10px 12px;
+    }
+    
+    .filter-label {
+        font-size: 12px;
+    }
+    
+    .clear-filter-button {
+        font-size: 10px;
+        padding: 3px 6px;
+    }
+    
+    .type-filter-button {
+        font-size: 11px;
+        padding: 4px 8px;
+    }
+    
+    .no-types-message {
+        font-size: 11px;
+    }
+}
+
+/* Extra small */
+@media (max-width: 375px) {
+    .hierarchy-tree {
+        min-height: 45vh;
+        height: 45vh;
+    }
+    
+    .zoom-button {
+        padding: 3px 6px;
+        font-size: 12px;
+        min-width: 24px;
+    }
+    
+    .zoom-level {
+        font-size: 11px;
+        min-width: 30px;
+    }
+    
+    .tree-toggle-button {
+        padding: 5px 6px;
+        font-size: 11px;
+    }
+    
+    .node-title {
+        font-size: 11px;
+    }
+    
+    .vertical-children {
+        margin-left: 12px;
+        padding-left: 8px;
+    }
+    
+    .vertical-children::before {
+        width: 12px;
+    }
+    
+    .vertical-children > .vertical-node::before {
+        left: -8px;
+        width: 8px;
+    }
+    
+    .expand-button {
+        width: 14px;
+        height: 14px;
+        font-size: 10px;
+        margin-right: 3px;
+    }
+    
+    .type-filter-button {
+        font-size: 10px;
+        padding: 3px 6px;
     }
 }
