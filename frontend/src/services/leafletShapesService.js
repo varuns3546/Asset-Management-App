@@ -37,6 +37,21 @@ const saveShapes = async (projectId, shapes) => {
   return response.data;
 };
 
+// Update a specific shape
+const updateShape = async (shapeId, shapeData) => {
+  const token = getAuthToken();
+  const response = await axios.put(
+    `${API_URL}/api/leaflet-shapes/${shapeId}`,
+    shapeData,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    }
+  );
+  return response.data;
+};
+
 // Delete a specific shape
 const deleteShape = async (shapeId) => {
   const token = getAuthToken();
@@ -68,6 +83,7 @@ const deleteAllShapesByProject = async (projectId) => {
 const leafletShapesService = {
   getShapesByProject,
   saveShapes,
+  updateShape,
   deleteShape,
   deleteAllShapesByProject
 };

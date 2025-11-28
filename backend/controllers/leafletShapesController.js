@@ -66,18 +66,30 @@ const saveShapes = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Delete a specific leaflet shape
-// @route   DELETE /api/leaflet-shapes/:shapeId
+// @desc    Update a specific leaflet shape
+// @route   PUT /api/leaflet-shapes/:shapeId
 // @access  Private
-const deleteShape = asyncHandler(async (req, res) => {
+const updateShape = asyncHandler(async (req, res) => {
   const { shapeId } = req.params;
+  const { shape_type, geojson } = req.body;
 
-  const { error } = await req.supabase
-    .from('leaflet_shapes')
-    .delete()
-    .eq('id', shapeId);
+  if (!shape_type || !geojson) {
+    return res.status(400).json({
+      success: false,
+      error: 'Shape type and GeoJSON are required'
+    });
+  }
+
+  // Update the shape using RPC function for proper PostGIS handling
+  const { data, error } = await req.supabase
+    .rpc('update_leaflet_shape', {
+      p_shape_id: shapeId,
+      p_shape_type: shape_type,
+      p_geojson: geojson
+    });
 
   if (error) {
+    console.error('Error updating shape:', error);
     return res.status(400).json({
       success: false,
       error: error.message
@@ -86,7 +98,42 @@ const deleteShape = asyncHandler(async (req, res) => {
 
   res.status(200).json({
     success: true,
-    message: 'Shape deleted successfully'
+    message: 'Shape updated successfully',
+    data: data
+  });
+});
+
+// @desc    Delete a specific leaflet shape
+// @route   DELETE /api/leaflet-shapes/:shapeId
+// @access  Private
+const deleteShape = asyncHandler(async (req, res) => {
+  const { shapeId } = req.params;
+
+  const { data, error } = await req.supabase
+    .from('leaflet_shapes')
+    .delete()
+    .eq('id', shapeId)
+    .select();
+
+  if (error) {
+    console.error('Error deleting shape:', error);
+    return res.status(400).json({
+      success: false,
+      error: error.message
+    });
+  }
+
+  if (!data || data.length === 0) {
+    return res.status(404).json({
+      success: false,
+      error: 'Shape not found or you do not have permission to delete it'
+    });
+  }
+
+  res.status(200).json({
+    success: true,
+    message: 'Shape deleted successfully',
+    data: data[0]
   });
 });
 
@@ -117,6 +164,7 @@ const deleteAllShapesByProject = asyncHandler(async (req, res) => {
 export default {
   getShapesByProject,
   saveShapes,
+  updateShape,
   deleteShape,
   deleteAllShapesByProject
 };
