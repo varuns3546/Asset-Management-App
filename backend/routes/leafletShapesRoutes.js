@@ -14,6 +14,9 @@ router.get('/:projectId', leafletShapesController.getShapesByProject);
 // Save shapes for a project
 router.post('/:projectId', leafletShapesController.saveShapes);
 
+// Update a specific shape
+router.put('/:shapeId', leafletShapesController.updateShape);
+
 // Delete a specific shape
 router.delete('/:shapeId', leafletShapesController.deleteShape);
 

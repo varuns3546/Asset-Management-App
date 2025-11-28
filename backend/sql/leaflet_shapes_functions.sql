@@ -76,7 +76,44 @@ BEGIN
 END;
 $$;
 
+-- Function to update a leaflet shape
+CREATE OR REPLACE FUNCTION public.update_leaflet_shape(
+    p_shape_id UUID,
+    p_shape_type TEXT,
+    p_geojson JSONB
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    updated_shape JSONB;
+BEGIN
+    -- Update the shape
+    WITH updated AS (
+        UPDATE leaflet_shapes
+        SET 
+            shape_type = p_shape_type,
+            geometry = ST_GeomFromGeoJSON(p_geojson->'geometry'),
+            properties = COALESCE(p_geojson->'properties', '{}'::jsonb)
+        WHERE id = p_shape_id
+        RETURNING id, project_id, shape_type, geometry, created_at
+    )
+    SELECT jsonb_build_object(
+        'id', updated.id,
+        'project_id', updated.project_id,
+        'shape_type', updated.shape_type,
+        'geojson', ST_AsGeoJSON(updated.geometry)::jsonb,
+        'created_at', updated.created_at
+    ) INTO updated_shape
+    FROM updated;
+    
+    RETURN updated_shape;
+END;
+$$;
+
 -- Grant execute permissions (adjust role as needed)
 GRANT EXECUTE ON FUNCTION get_leaflet_shapes_geojson(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION insert_leaflet_shapes(UUID, JSONB) TO authenticated;
+GRANT EXECUTE ON FUNCTION update_leaflet_shape(UUID, TEXT, JSONB) TO authenticated;
 

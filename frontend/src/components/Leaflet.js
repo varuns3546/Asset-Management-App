@@ -54,7 +54,8 @@ const Leaflet = ({
     onDrawCreated,
     onDrawEdited,
     onDrawDeleted,
-    clearTrigger = 0,
+    onShapesLoaded,
+    onMapReady,
     initialShapes = []
 }) => {
     const mapRef = useRef(null);
@@ -65,6 +66,7 @@ const Leaflet = ({
     const [isMapReady, setIsMapReady] = useState(false);
     const hasLoadedShapes = useRef(false);
     const loadedShapesCount = useRef(0);
+    const loadedShapesIdsRef = useRef('');
     const isLoadingShapes = useRef(false);
     const previousShapesRef = useRef(null);
 
@@ -184,6 +186,40 @@ const Leaflet = ({
             mapInstanceRef.current = map;
             setIsMapReady(true);
 
+            // Expose map methods to parent
+            if (onMapReady) {
+                onMapReady({
+                    removeLayerById: (leafletId) => {
+                        if (drawnItemsRef.current) {
+                            drawnItemsRef.current.eachLayer((layer) => {
+                                if (layer._leaflet_id === leafletId) {
+                                    drawnItemsRef.current.removeLayer(layer);
+                                }
+                            });
+                        }
+                    },
+                    addLayer: (geoJSON) => {
+                        if (drawnItemsRef.current) {
+                            const layer = L.geoJSON(geoJSON, {
+                                pointToLayer: (feature, latlng) => L.marker(latlng),
+                                style: {
+                                    color: '#3388ff',
+                                    weight: 4,
+                                    opacity: 0.7,
+                                    fillOpacity: 0.2
+                                }
+                            });
+                            
+                            layer.eachLayer((l) => {
+                                drawnItemsRef.current.addLayer(l);
+                            });
+                            
+                            return layer;
+                        }
+                    }
+                });
+            }
+
             // Cleanup on unmount
             return () => {
                 console.log('[Leaflet] Component ACTUALLY unmounting - destroying map');
@@ -220,40 +256,10 @@ const Leaflet = ({
         }
     }, [mapStyle, isMapReady]);
 
-    // Clear all drawn items when clearTrigger changes
+    // Load initial shapes when they change
     useEffect(() => {
-        if (clearTrigger > 0 && drawnItemsRef.current && mapInstanceRef.current && isMapReady) {
-            console.log('Clearing all shapes - clearTrigger:', clearTrigger);
-            
-            // Stop any ongoing animations first
-            mapInstanceRef.current.stop();
-            
-            requestAnimationFrame(() => {
-                if (drawnItemsRef.current) {
-                    // Safely remove each layer
-                    const layers = [];
-                    drawnItemsRef.current.eachLayer(layer => layers.push(layer));
-                    layers.forEach(layer => {
-                        try {
-                            drawnItemsRef.current.removeLayer(layer);
-                        } catch (e) {
-                            console.warn('Error removing layer:', e);
-                        }
-                    });
-                    
-                    hasLoadedShapes.current = false;
-                    loadedShapesCount.current = 0;
-                    previousShapesRef.current = null;
-                    console.log('All shapes cleared');
-                }
-            });
-        }
-    }, [clearTrigger, isMapReady]);
-
-    // Load initial shapes only once on mount - simple approach
-    useEffect(() => {
-        // Skip if not ready or already loaded
-        if (!isMapReady || !drawnItemsRef.current || hasLoadedShapes.current) {
+        // Skip if not ready
+        if (!isMapReady || !drawnItemsRef.current) {
             return;
         }
         
@@ -262,14 +268,35 @@ const Leaflet = ({
             return;
         }
 
+        // Skip if we've already loaded these exact shapes (check by comparing shape IDs and count)
+        if (hasLoadedShapes.current && loadedShapesCount.current === initialShapes.length) {
+            // Check if the shapes are the same by comparing IDs
+            const currentIds = initialShapes.map(s => s.id).filter(Boolean).sort().join(',');
+            const loadedIds = loadedShapesIdsRef.current;
+            if (currentIds === loadedIds) {
+                return; // Same shapes, don't reload
+            }
+        }
+
+        // Clear existing shapes if reloading
+        if (hasLoadedShapes.current && drawnItemsRef.current) {
+            const layers = [];
+            drawnItemsRef.current.eachLayer(layer => layers.push(layer));
+            layers.forEach(layer => drawnItemsRef.current.removeLayer(layer));
+        }
+
         console.log('Loading initial shapes:', initialShapes.length);
         
         // Mark as loaded BEFORE actually loading to prevent race conditions
         hasLoadedShapes.current = true;
         loadedShapesCount.current = initialShapes.length;
+        // Store the IDs of loaded shapes to prevent reloading the same ones
+        loadedShapesIdsRef.current = initialShapes.map(s => s.id).filter(Boolean).sort().join(',');
 
         // Simple loading without all the complex logic
-        initialShapes.forEach(shape => {
+        const loadedShapesWithLayerIds = [];
+        
+        initialShapes.forEach((shape, index) => {
             try {
                 if (!shape.geoJSON) return;
                 
@@ -286,6 +313,11 @@ const Leaflet = ({
                 layer.eachLayer((l) => {
                     if (drawnItemsRef.current) {
                         drawnItemsRef.current.addLayer(l);
+                        // Store the shape with its layer ID
+                        loadedShapesWithLayerIds.push({
+                            ...shape,
+                            _leaflet_id: l._leaflet_id
+                        });
                     }
                 });
             } catch (error) {
@@ -294,7 +326,12 @@ const Leaflet = ({
         });
         
         console.log('Initial shapes loaded successfully');
-    }, [isMapReady, initialShapes]);
+        
+        // Notify parent component of loaded shapes with their layer IDs
+        if (onShapesLoaded) {
+            onShapesLoaded(loadedShapesWithLayerIds);
+        }
+    }, [isMapReady, initialShapes]); // Remove onShapesLoaded from dependencies to prevent infinite loop
 
     return (
         <div style={{ width: '100%', height: height, position: 'relative' }}>
