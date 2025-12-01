@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { getHierarchy, getHierarchyItemTypes, updateHierarchyItemType } from '../features/projects/projectSlice';
 import { loadUser } from '../features/auth/authSlice';
-import Map from '../components/Map';
+import Map from '../components/map/Map';
 import HierarchyForm from '../components/structure/HierarchyForm';
 import { ITEM_TYPE_ICON_MAP, ITEM_TYPE_ICON_OPTIONS, ITEM_TYPE_COLOR_OPTIONS, DEFAULT_ITEM_TYPE_ICON } from '../constants/itemTypeIcons';
 import ARCGIS_CONFIG from '../config/arcgisConfig';

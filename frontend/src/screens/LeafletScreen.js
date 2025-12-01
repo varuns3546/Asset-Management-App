@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
-import Leaflet from '../components/Leaflet';
-import LeftMapPanel from '../components/LeftMapPanel';
-import TopMapPanel from '../components/TopMapPanel';
+import Leaflet from '../components/map/Leaflet';
+import LeftMapPanel from '../components/map/LeftMapPanel';
+import TopMapPanel from '../components/map/TopMapPanel';
+import MapNavbar from '../components/map/MapNavbar';
+import FileUploadModal from '../components/FileUploadModal';
 import '../styles/map.css';
 
 const LeafletScreen = () => {
@@ -11,6 +13,13 @@ const LeafletScreen = () => {
   const [panelWidth, setPanelWidth] = useState(320);
   const [topPanelHeight, setTopPanelHeight] = useState(80);
   const [selectedBasemap, setSelectedBasemap] = useState('street');
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+
+  const handleFileSelect = (file) => {
+    // TODO: Handle file upload for layer creation
+    console.log('File selected:', file);
+    setIsUploadModalOpen(false);
+  };
 
   const mapWidth = isExpanded ? `calc(100% - ${panelWidth}px)` : '100%';
 
@@ -22,6 +31,7 @@ const LeafletScreen = () => {
 
   return (
     <div className="leaflet-screen-container">
+      <MapNavbar onOpenUploadModal={() => setIsUploadModalOpen(true)} />
       <TopMapPanel 
         panelHeight={topPanelHeight}
         setPanelHeight={setTopPanelHeight}
@@ -43,6 +53,16 @@ const LeafletScreen = () => {
           />
         </div>
       </div>
+      
+      {/* File Upload Modal */}
+      {selectedProject && (
+        <FileUploadModal
+          isOpen={isUploadModalOpen}
+          onClose={() => setIsUploadModalOpen(false)}
+          onFileSelect={handleFileSelect}
+          projectId={selectedProject.id}
+        />
+      )}
     </div>
   );
 };

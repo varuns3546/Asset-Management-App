@@ -11,9 +11,9 @@ import SimpleFillSymbol from '@arcgis/core/symbols/SimpleFillSymbol';
 import TextSymbol from '@arcgis/core/symbols/TextSymbol';
 import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
 import config from '@arcgis/core/config';
-import ARCGIS_CONFIG from '../config/arcgisConfig';
-import { ITEM_TYPE_ICON_MAP, DEFAULT_ITEM_TYPE_ICON } from '../constants/itemTypeIcons';
-import '../styles/map.css';
+import ARCGIS_CONFIG from '../../config/arcgisConfig';
+import { ITEM_TYPE_ICON_MAP, DEFAULT_ITEM_TYPE_ICON } from '../../constants/itemTypeIcons';
+import '../../styles/map.css';
 
 const MapComponent = ({ 
   hierarchyItems = [], 

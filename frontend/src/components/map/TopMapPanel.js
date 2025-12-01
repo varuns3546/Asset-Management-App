@@ -76,7 +76,10 @@ const TopMapPanel = ({ panelHeight, setPanelHeight, selectedBasemap, setSelected
     <div ref={panelRef} className="top-panel" style={{ height: `${panelHeight}px` }}>
       <div className="top-panel-content">
         <h2>Map Toolbar</h2>
-        <div className="toolbar-actions">
+        <div className="toolbar-actions">    
+          <button className="toolbar-btn">Search</button>
+          <button className="toolbar-btn">Layers</button>
+          <button className="toolbar-btn">Tools</button>
           <div className="basemap-dropdown-container" ref={dropdownRef}>
             <button 
               className="toolbar-btn"
@@ -98,9 +101,6 @@ const TopMapPanel = ({ panelHeight, setPanelHeight, selectedBasemap, setSelected
               </div>
             )}
           </div>
-          <button className="toolbar-btn">Search</button>
-          <button className="toolbar-btn">Layers</button>
-          <button className="toolbar-btn">Tools</button>
         </div>
       </div>
       
