@@ -62,9 +62,23 @@ const MapCenterHandler = ({ center, zoom }) => {
   const map = useMap();
 
   useEffect(() => {
-    if (center && center[0] && center[1]) {
-      map.setView(center, zoom || map.getZoom(), { animate: true });
+    let isMounted = true;
+
+    if (center && center[0] && center[1] && map && isMounted) {
+      try {
+        // Check if map container still exists
+        if (map.getContainer() && map.getPane('mapPane')) {
+          map.setView(center, zoom || map.getZoom(), { animate: true });
+        }
+      } catch (error) {
+        // Silently catch errors if map is being destroyed
+        console.debug('Map update skipped during unmount');
+      }
     }
+
+    return () => {
+      isMounted = false;
+    };
   }, [center, zoom, map]);
 
   return null;
