@@ -3,7 +3,7 @@ import Modal from './Modal';
 import '../styles/modal.css';
 
 const FileUploadModal = ({ isOpen, onClose, onFileSelect, projectId }) => {
-    const [selectedFile, setSelectedFile] = useState(null);
+    const [selectedFiles, setSelectedFiles] = useState([]);
     const [uploading, setUploading] = useState(false);
     const [error, setError] = useState('');
 
@@ -16,24 +16,41 @@ const FileUploadModal = ({ isOpen, onClose, onFileSelect, projectId }) => {
     ];
 
     const handleFileChange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            // Validate file type
-            const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
-            if (!acceptedFileTypes.includes(fileExtension)) {
-                setError(`Invalid file type. Please upload one of: ${acceptedFileTypes.join(', ')}`);
-                setSelectedFile(null);
+        const newFiles = Array.from(e.target.files);
+        if (newFiles.length > 0) {
+            // Validate all file types
+            const invalidFiles = newFiles.filter(file => {
+                const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+                return !acceptedFileTypes.includes(fileExtension);
+            });
+
+            if (invalidFiles.length > 0) {
+                setError(`Invalid file type(s). Please upload only: ${acceptedFileTypes.join(', ')}`);
                 return;
             }
             
-            setError('');
-            setSelectedFile(file);
+            // Filter out duplicates based on file name and size
+            const uniqueNewFiles = newFiles.filter(newFile => {
+                return !selectedFiles.some(existingFile => 
+                    existingFile.name === newFile.name && 
+                    existingFile.size === newFile.size
+                );
+            });
+            
+            // Add new files on top of existing files (silently skip duplicates)
+            if (uniqueNewFiles.length > 0) {
+                setSelectedFiles([...uniqueNewFiles, ...selectedFiles]);
+                setError('');
+            }
         }
+
+        // Reset the input so the same files can be selected again if removed
+        e.target.value = '';
     };
 
     const handleUpload = async () => {
-        if (!selectedFile) {
-            setError('Please select a file to upload');
+        if (selectedFiles.length === 0) {
+            setError('Please select at least one file to upload');
             return;
         }
 
@@ -41,57 +58,46 @@ const FileUploadModal = ({ isOpen, onClose, onFileSelect, projectId }) => {
         setError('');
 
         try {
-            await onFileSelect(selectedFile);
+            // Process files one by one or all at once depending on implementation
+            for (const file of selectedFiles) {
+                await onFileSelect(file);
+            }
             
             // Reset form after successful upload
-            setSelectedFile(null);
+            setSelectedFiles([]);
             setUploading(false);
             onClose();
         } catch (err) {
-            setError(err.message || 'Failed to parse file. Please try again.');
+            setError(err.message || 'Failed to parse file(s). Please try again.');
             setUploading(false);
         }
     };
 
     const handleClose = () => {
         if (!uploading) {
-            setSelectedFile(null);
+            setSelectedFiles([]);
             setError('');
             onClose();
         }
     };
 
-    const handleDropZoneClick = () => {
-        if (!uploading && !selectedFile) {
+    const handleBrowseClick = () => {
+        if (!uploading) {
             document.getElementById('file-input')?.click();
         }
     };
 
-    const handleDragOver = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
+    const removeFile = (index) => {
+        setSelectedFiles(selectedFiles.filter((_, i) => i !== index));
     };
 
-    const handleDrop = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        const file = e.dataTransfer.files[0];
-        if (file) {
-            const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
-            if (!acceptedFileTypes.includes(fileExtension)) {
-                setError(`Invalid file type. Please upload one of: ${acceptedFileTypes.join(', ')}`);
-                setSelectedFile(null);
-                return;
-            }
-            
-            setError('');
-            setSelectedFile(file);
-        }
+    const getFilePathsText = () => {
+        if (selectedFiles.length === 0) return '';
+        return selectedFiles.map(file => file.name).join('; ');
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={handleClose} title="Import Hierarchy Data">
+        <Modal isOpen={isOpen} onClose={handleClose} title="File Upload">
             <div className="file-upload-modal">
                 <div className="upload-instructions">
                     <p>Upload a spreadsheet file to import hierarchy data.</p>
@@ -100,48 +106,55 @@ const FileUploadModal = ({ isOpen, onClose, onFileSelect, projectId }) => {
                     </p>
                 </div>
 
-                <div 
-                    className={`drop-zone ${selectedFile ? 'has-file' : ''}`}
-                    onDragOver={handleDragOver}
-                    onDrop={handleDrop}
-                    onClick={handleDropZoneClick}
-                >
+                <div className="file-input-container">
                     <input
                         type="file"
                         id="file-input"
                         accept={acceptedFileTypes.join(',')}
                         onChange={handleFileChange}
                         disabled={uploading}
+                        multiple
                         style={{ display: 'none' }}
                     />
                     
-                    {selectedFile ? (
-                        <div className="selected-file" onClick={(e) => e.stopPropagation()}>
-                            <div className="file-icon">📄</div>
-                            <div className="file-info">
-                                <p className="file-name">{selectedFile.name}</p>
-                                <p className="file-size">
-                                    {(selectedFile.size / 1024).toFixed(2)} KB
-                                </p>
-                            </div>
-                            {!uploading && (
-                                <button
-                                    className="remove-file-btn"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setSelectedFile(null);
-                                    }}
-                                >
-                                    ×
-                                </button>
-                            )}
-                        </div>
-                    ) : (
-                        <div className="drop-zone-label">
-                            <div className="upload-icon">📁</div>
-                            <p className="drop-zone-text">
-                                Drag and drop your file here or click to browse
-                            </p>
+                    <div className="file-path-input-group">
+                        <input
+                            type="text"
+                            className="file-path-input"
+                            value={getFilePathsText()}
+                            placeholder="No files selected"
+                            readOnly
+                            disabled={uploading}
+                        />
+                        <button
+                            className="browse-btn"
+                            onClick={handleBrowseClick}
+                            disabled={uploading}
+                            type="button"
+                        >
+                            ...
+                        </button>
+                    </div>
+
+                    {selectedFiles.length > 0 && (
+                        <div className="selected-files-list">
+                            {selectedFiles.map((file, index) => (
+                                <div key={index} className="file-item">
+                                    <span className="file-item-name">{file.name}</span>
+                                    <span className="file-item-size">
+                                        ({(file.size / 1024).toFixed(2)} KB)
+                                    </span>
+                                    {!uploading && (
+                                        <button
+                                            className="remove-file-btn-small"
+                                            onClick={() => removeFile(index)}
+                                            type="button"
+                                        >
+                                            ×
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
                         </div>
                     )}
                 </div>
@@ -164,9 +177,9 @@ const FileUploadModal = ({ isOpen, onClose, onFileSelect, projectId }) => {
                     <button
                         className="btn btn-primary"
                         onClick={handleUpload}
-                        disabled={!selectedFile || uploading}
+                        disabled={selectedFiles.length === 0 || uploading}
                     >
-                        {uploading ? 'Processing...' : 'Continue'}
+                        {uploading ? 'Processing...' : `Continue (${selectedFiles.length} file${selectedFiles.length !== 1 ? 's' : ''})`}
                     </button>
                 </div>
             </div>
