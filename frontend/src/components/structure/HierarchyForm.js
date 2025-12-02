@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { createHierarchyItem, updateHierarchyItem } from '../../features/projects/projectSlice';
+import { createFeature, updateFeature } from '../../features/projects/projectSlice';
 import '../../styles/structureScreen.css';
 
 const HierarchyForm = ({ 
@@ -147,17 +147,17 @@ const HierarchyForm = ({
 
         try {
             if (isEditing && selectedItem) {
-                // Update existing item
-                await dispatch(updateHierarchyItem({
+                // Update existing feature
+                await dispatch(updateFeature({
                     projectId: selectedProject.id,
-                    itemId: selectedItem.id,
-                    itemData
+                    featureId: selectedItem.id,
+                    featureData: itemData
                 })).unwrap();
             } else {
-                // Create new item
-                await dispatch(createHierarchyItem({
+                // Create new feature
+                await dispatch(createFeature({
                     projectId: selectedProject.id,
-                    itemData
+                    featureData: itemData
                 })).unwrap();
             }
 

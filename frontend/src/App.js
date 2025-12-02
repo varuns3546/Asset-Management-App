@@ -95,15 +95,17 @@ function AppContent() {
   return (
     <>
       {showNavbar && <Navbar onOpenModal={openModal} onCloseModal={closeModal} />}
-      <Routes>
-        <Route path="/" element={<LoginScreen />} />
-        <Route path="/register" element={<RegisterScreen />} />
-        <Route path="/home" element={<HomeScreen />} />
-        <Route path="/hierarchies" element={<HierarchyScreen />} />
-        <Route path="/item-types" element={<ItemTypeScreen />} />
-        <Route path="/map" element={<MapScreen />} />
-        <Route path="/leaflet" element={<LeafletScreen />} />
-      </Routes>
+      <div style={{ paddingTop: showNavbar ? '53px' : '0' }}>
+        <Routes>
+          <Route path="/" element={<LoginScreen />} />
+          <Route path="/register" element={<RegisterScreen />} />
+          <Route path="/home" element={<HomeScreen />} />
+          <Route path="/hierarchies" element={<HierarchyScreen />} />
+          <Route path="/item-types" element={<ItemTypeScreen />} />
+          <Route path="/map" element={<MapScreen />} />
+          <Route path="/leaflet" element={<LeafletScreen />} />
+        </Routes>
+      </div>
       
       <Modal 
         isOpen={modalState.isOpen}
