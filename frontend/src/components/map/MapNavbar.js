@@ -3,27 +3,32 @@ import { useSelector } from 'react-redux';
 
 const MapNavbar = ({ onOpenUploadModal }) => {
   const { selectedProject } = useSelector((state) => state.projects);
+  const [showViewDropdown, setShowViewDropdown] = useState(false);
   const [showLayerDropdown, setShowLayerDropdown] = useState(false);
   const [showCreateSubmenu, setShowCreateSubmenu] = useState(false);
-  const dropdownRef = useRef(null);
+  const viewDropdownRef = useRef(null);
+  const layerDropdownRef = useRef(null);
 
-  // Close dropdown when clicking outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      if (viewDropdownRef.current && !viewDropdownRef.current.contains(event.target)) {
+        setShowViewDropdown(false);
+      }
+      if (layerDropdownRef.current && !layerDropdownRef.current.contains(event.target)) {
         setShowLayerDropdown(false);
         setShowCreateSubmenu(false);
       }
     };
 
-    if (showLayerDropdown) {
+    if (showViewDropdown || showLayerDropdown) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showLayerDropdown]);
+  }, [showViewDropdown, showLayerDropdown]);
 
   const handleCreateFromFile = () => {
     setShowLayerDropdown(false);
@@ -40,11 +45,35 @@ const MapNavbar = ({ onOpenUploadModal }) => {
     console.log('Input Data clicked');
   };
 
+  const handleLayersClick = () => {
+    setShowViewDropdown(false);
+    // TODO: Implement layers functionality
+    console.log('Layers clicked');
+  };
+
   return (
     <div className="map-navbar">
       <div className="map-navbar-content">
         <div className="map-navbar-center">
-          <div className="navbar-layer-dropdown-container" ref={dropdownRef}>
+          <div className="navbar-layer-dropdown-container" ref={viewDropdownRef}>
+            <button 
+              className="navbar-btn"
+              onClick={() => setShowViewDropdown(!showViewDropdown)}
+            >
+              View
+            </button>
+            {showViewDropdown && (
+              <div className="navbar-layer-dropdown">
+                <div
+                  className="navbar-layer-option"
+                  onClick={handleLayersClick}
+                >
+                  Layers
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="navbar-layer-dropdown-container" ref={layerDropdownRef}>
             <button 
               className="navbar-btn"
               onClick={() => setShowLayerDropdown(!showLayerDropdown)}

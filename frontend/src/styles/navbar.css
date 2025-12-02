@@ -9,10 +9,10 @@
     box-sizing: border-box;
     background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
     border-bottom: 2px solid #e0e0e0;
-    padding: 16px 24px;
+    padding: 12px 24px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     gap: 12px;
-    position: sticky;
+    position: fixed;
     top: 0;
     left: 0;
     right: 0;
@@ -29,9 +29,9 @@
     background: transparent;
     border: 1px solid transparent;
     color: #333;
-    padding: 14px 24px;
+    padding: 10px 24px;
     border-radius: 6px;
-    font-size: 25px;
+    font-size: 19px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -80,8 +80,8 @@
     background: white;
     border: 1px solid #dee2e6;
     color: #333;
-    padding: 14px 20px;
-    font-size: 25px;
+    padding: 10px 20px;
+    font-size: 19px;
     font-weight: 400;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -108,13 +108,13 @@
 /* Large tablets and smaller desktops */
 @media (max-width: 1199px) {
     .container {
-        padding: 14px 22px;
+        padding: 10px 22px;
         gap: 10px;
     }
     
     .button {
-        padding: 13px 22px;
-        font-size: 23px;
+        padding: 10px 22px;
+        font-size: 17px;
     }
     
     .options {
@@ -122,8 +122,8 @@
     }
     
     .options button {
-        padding: 13px 18px;
-        font-size: 23px;
+        padding: 10px 18px;
+        font-size: 17px;
     }
     
     .options button:hover {
@@ -134,13 +134,13 @@
 /* Tablets */
 @media (max-width: 768px) {
     .container {
-        padding: 12px 18px;
+        padding: 9px 18px;
         gap: 8px;
     }
     
     .button {
-        padding: 11px 18px;
-        font-size: 20px;
+        padding: 8px 18px;
+        font-size: 15px;
     }
     
     .options {
@@ -148,8 +148,8 @@
     }
     
     .options button {
-        padding: 11px 16px;
-        font-size: 20px;
+        padding: 8px 16px;
+        font-size: 15px;
     }
     
     .options button:hover {
@@ -160,14 +160,14 @@
 /* Mobile devices */
 @media (max-width: 480px) {
     .container {
-        padding: 10px 14px;
+        padding: 8px 14px;
         gap: 6px;
         justify-content: flex-start;
     }
     
     .button {
-        padding: 9px 14px;
-        font-size: 16px;
+        padding: 7px 14px;
+        font-size: 12px;
     }
     
     .options {
@@ -175,8 +175,8 @@
     }
     
     .options button {
-        padding: 9px 14px;
-        font-size: 16px;
+        padding: 7px 14px;
+        font-size: 12px;
     }
     
     .options button:hover {
@@ -187,13 +187,13 @@
 /* Extra small devices */
 @media (max-width: 375px) {
     .container {
-        padding: 8px 10px;
+        padding: 6px 10px;
         gap: 4px;
     }
     
     .button {
-        padding: 7px 10px;
-        font-size: 14px;
+        padding: 5px 10px;
+        font-size: 11px;
     }
     
     .options {
@@ -201,8 +201,8 @@
     }
     
     .options button {
-        padding: 8px 12px;
-        font-size: 14px;
+        padding: 6px 12px;
+        font-size: 11px;
     }
     
     .options button:hover {
