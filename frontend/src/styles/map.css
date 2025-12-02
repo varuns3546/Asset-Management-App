@@ -3,9 +3,15 @@
   height: 100vh;
   width: 100%;
   position: relative;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
+  --navbar-height: 60px; /* Approximate navbar height */
+  --main-navbar-height: 53px; /* Approximate main navbar height (reduced by 25%) */
+  --map-navbar-height: 60px; /* Map navbar height */
+  --top-panel-height: 80px; /* Top panel default height */
+  padding-top: calc(var(--map-navbar-height, 60px) + var(--top-panel-height, 80px));
 }
 
 /* Map Navbar Styles */
@@ -16,6 +22,10 @@
   z-index: 30;
   flex-shrink: 0;
   border-bottom: 2px solid #dee2e6;
+  position: fixed;
+  top: var(--main-navbar-height, 53px);
+  left: 0;
+  right: 0;
 }
 
 .map-navbar-content {
@@ -122,6 +132,7 @@
   display: flex;
   flex: 1;
   overflow: hidden;
+  margin-top: 0;
 }
 
 .leaflet-map-container {
@@ -262,7 +273,10 @@
   border-bottom: 2px solid #333;
   z-index: 20;
   flex-shrink: 0;
-  position: relative;
+  position: fixed;
+  top: calc(var(--main-navbar-height, 53px) + var(--map-navbar-height, 60px));
+  left: 0;
+  right: 0;
   overflow: visible;
 }
 

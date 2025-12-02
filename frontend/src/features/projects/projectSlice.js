@@ -30,8 +30,8 @@ const initialState = {
     selectedProject: getInitialSelectedProject(),
     // Single hierarchy object instead of array
     currentHierarchy: null,
-    // Item types for the current project
-    currentItemTypes: [],
+    // Feature types for the current project
+    currentFeatureTypes: [],
     isError: false,
     isSuccess: false,
     isLoading: false,
@@ -182,12 +182,12 @@ export const deleteHierarchy = createAsyncThunk(
     }
 )
 
-export const createHierarchyItem = createAsyncThunk(
-    'projects/createHierarchyItem',
-    async ({ projectId, itemData }, thunkAPI) => {
+export const createFeature = createAsyncThunk(
+    'projects/createFeature',
+    async ({ projectId, featureData }, thunkAPI) => {
         try {
             const token = thunkAPI.getState().auth.user.token
-            return await projectService.createHierarchyItem(projectId, itemData, token)
+            return await projectService.createFeature(projectId, featureData, token)
         } catch (error) {
             const message =
                 (error.response && 
@@ -200,12 +200,12 @@ export const createHierarchyItem = createAsyncThunk(
     }
 )
 
-export const updateHierarchyItem = createAsyncThunk(
-    'projects/updateHierarchyItem',
-    async ({ projectId, itemId, itemData }, thunkAPI) => {
+export const updateFeature = createAsyncThunk(
+    'projects/updateFeature',
+    async ({ projectId, featureId, featureData }, thunkAPI) => {
         try {
             const token = thunkAPI.getState().auth.user.token
-            return await projectService.updateHierarchyItem(projectId, itemId, itemData, token)
+            return await projectService.updateFeature(projectId, featureId, featureData, token)
         } catch (error) {
             const message =
                 (error.response && 
@@ -218,12 +218,12 @@ export const updateHierarchyItem = createAsyncThunk(
     }
 )
 
-export const deleteHierarchyItem = createAsyncThunk(
-    'projects/deleteHierarchyItem',
-    async ({ projectId, itemId }, thunkAPI) => {
+export const deleteFeature = createAsyncThunk(
+    'projects/deleteFeature',
+    async ({ projectId, featureId }, thunkAPI) => {
         try {
             const token = thunkAPI.getState().auth.user.token
-            return await projectService.deleteHierarchyItem(projectId, itemId, token)
+            return await projectService.deleteFeature(projectId, featureId, token)
         } catch (error) {
             const message =
                 (error.response && 
@@ -236,12 +236,12 @@ export const deleteHierarchyItem = createAsyncThunk(
     }
 )
 
-export const getHierarchyItemTypes = createAsyncThunk(
-    'projects/getHierarchyItemTypes',
+export const getFeatureTypes = createAsyncThunk(
+    'projects/getFeatureTypes',
     async (projectId, thunkAPI) => {
         try {
             const token = thunkAPI.getState().auth.user.token
-            return await projectService.getHierarchyItemTypes(projectId, token)
+            return await projectService.getFeatureTypes(projectId, token)
         } catch (error) {
             const message =
                 (error.response && 
@@ -254,12 +254,12 @@ export const getHierarchyItemTypes = createAsyncThunk(
     }
 )
 
-export const createHierarchyItemType = createAsyncThunk(
-    'projects/createHierarchyItemType',
-    async ({ projectId, itemTypeData }, thunkAPI) => {
+export const createFeatureType = createAsyncThunk(
+    'projects/createFeatureType',
+    async ({ projectId, featureTypeData }, thunkAPI) => {
         try {
             const token = thunkAPI.getState().auth.user.token
-            return await projectService.createHierarchyItemType(projectId, itemTypeData, token)
+            return await projectService.createFeatureType(projectId, featureTypeData, token)
         } catch (error) {
             const message =
                 (error.response && 
@@ -272,12 +272,12 @@ export const createHierarchyItemType = createAsyncThunk(
     }
 )
 
-export const updateHierarchyItemType = createAsyncThunk(
-    'projects/updateHierarchyItemType',
-    async ({ projectId, itemTypeId, itemTypeData }, thunkAPI) => {
+export const updateFeatureType = createAsyncThunk(
+    'projects/updateFeatureType',
+    async ({ projectId, featureTypeId, featureTypeData }, thunkAPI) => {
         try {
             const token = thunkAPI.getState().auth.user.token
-            return await projectService.updateHierarchyItemType(projectId, itemTypeId, itemTypeData, token)
+            return await projectService.updateFeatureType(projectId, featureTypeId, featureTypeData, token)
         } catch (error) {
             const message =
                 (error.response && 
@@ -290,12 +290,12 @@ export const updateHierarchyItemType = createAsyncThunk(
     }
 )
 
-export const deleteHierarchyItemType = createAsyncThunk(
-    'projects/deleteHierarchyItemType',
-    async ({ projectId, itemTypeId }, thunkAPI) => {
+export const deleteFeatureType = createAsyncThunk(
+    'projects/deleteFeatureType',
+    async ({ projectId, featureTypeId }, thunkAPI) => {
         try {
             const token = thunkAPI.getState().auth.user.token
-            return await projectService.deleteHierarchyItemType(projectId, itemTypeId, token)
+            return await projectService.deleteFeatureType(projectId, featureTypeId, token)
         } catch (error) {
             const message =
                 (error.response && 
@@ -538,117 +538,117 @@ export const projectSlice = createSlice({
                 state.isError = true
                 state.message = action.payload
             })
-            // Individual hierarchy item reducers
-            .addCase(createHierarchyItem.pending, (state) => {
+            // Individual feature reducers
+            .addCase(createFeature.pending, (state) => {
                 state.isLoading = true
             })
-            .addCase(createHierarchyItem.fulfilled, (state, action) => {
+            .addCase(createFeature.fulfilled, (state, action) => {
                 state.isLoading = false
                 state.isSuccess = true
-                // Add the new item to current hierarchy
+                // Add the new feature to current hierarchy
                 if (state.currentHierarchy) {
                     state.currentHierarchy.push(action.payload.data)
                 } else {
                     state.currentHierarchy = [action.payload.data]
                 }
             })
-            .addCase(createHierarchyItem.rejected, (state, action) => {
+            .addCase(createFeature.rejected, (state, action) => {
                 state.isLoading = false
                 state.isError = true
                 state.message = action.payload
             })
-            .addCase(updateHierarchyItem.pending, (state) => {
+            .addCase(updateFeature.pending, (state) => {
                 state.isLoading = true
             })
-            .addCase(updateHierarchyItem.fulfilled, (state, action) => {
+            .addCase(updateFeature.fulfilled, (state, action) => {
                 state.isLoading = false
                 state.isSuccess = true
-                // Update the item in current hierarchy
+                // Update the feature in current hierarchy
                 if (state.currentHierarchy) {
-                    const index = state.currentHierarchy.findIndex(item => item.id === action.payload.data.id)
+                    const index = state.currentHierarchy.findIndex(feature => feature.id === action.payload.data.id)
                     if (index !== -1) {
                         state.currentHierarchy[index] = action.payload.data
                     }
                 }
             })
-            .addCase(updateHierarchyItem.rejected, (state, action) => {
+            .addCase(updateFeature.rejected, (state, action) => {
                 state.isLoading = false
                 state.isError = true
                 state.message = action.payload
             })
-            .addCase(deleteHierarchyItem.pending, (state) => {
+            .addCase(deleteFeature.pending, (state) => {
                 state.isLoading = true
             })
-            .addCase(deleteHierarchyItem.fulfilled, (state, action) => {
+            .addCase(deleteFeature.fulfilled, (state, action) => {
                 state.isLoading = false
                 state.isSuccess = true
-                // Remove the item from current hierarchy
+                // Remove the feature from current hierarchy
                 if (state.currentHierarchy) {
                     state.currentHierarchy = state.currentHierarchy.filter(
-                        item => item.id !== action.payload.data.id
+                        feature => feature.id !== action.payload.data.id
                     )
                 }
             })
-            .addCase(deleteHierarchyItem.rejected, (state, action) => {
+            .addCase(deleteFeature.rejected, (state, action) => {
                 state.isLoading = false
                 state.isError = true
                 state.message = action.payload
             })
-            // Item Types reducers
-            .addCase(getHierarchyItemTypes.pending, (state) => {
+            // Feature Types reducers
+            .addCase(getFeatureTypes.pending, (state) => {
                 state.isLoading = true
             })
-            .addCase(getHierarchyItemTypes.fulfilled, (state, action) => {
+            .addCase(getFeatureTypes.fulfilled, (state, action) => {
                 state.isLoading = false
                 state.isSuccess = true
-                state.currentItemTypes = action.payload.data || []
+                state.currentFeatureTypes = action.payload.data || []
             })
-            .addCase(getHierarchyItemTypes.rejected, (state, action) => {
+            .addCase(getFeatureTypes.rejected, (state, action) => {
                 state.isLoading = false
                 state.isError = true
                 state.message = action.payload
             })
-            .addCase(createHierarchyItemType.pending, (state) => {
+            .addCase(createFeatureType.pending, (state) => {
                 state.isLoading = true
             })
-            .addCase(createHierarchyItemType.fulfilled, (state, action) => {
+            .addCase(createFeatureType.fulfilled, (state, action) => {
                 state.isLoading = false
                 state.isSuccess = true
-                // Add the new item type to currentItemTypes
-                if (state.currentItemTypes) {
-                    state.currentItemTypes.push(action.payload.data)
+                // Add the new feature type to currentFeatureTypes
+                if (state.currentFeatureTypes) {
+                    state.currentFeatureTypes.push(action.payload.data)
                 } else {
-                    state.currentItemTypes = [action.payload.data]
+                    state.currentFeatureTypes = [action.payload.data]
                 }
             })
-            .addCase(createHierarchyItemType.rejected, (state, action) => {
+            .addCase(createFeatureType.rejected, (state, action) => {
                 state.isLoading = false
                 state.isError = true
                 state.message = action.payload
             })
-            .addCase(updateHierarchyItemType.pending, (state) => {
+            .addCase(updateFeatureType.pending, (state) => {
                 state.isLoading = true
             })
-            .addCase(updateHierarchyItemType.fulfilled, (state, action) => {
+            .addCase(updateFeatureType.fulfilled, (state, action) => {
                 state.isLoading = false
                 state.isSuccess = true
             })
-            .addCase(updateHierarchyItemType.rejected, (state, action) => {
+            .addCase(updateFeatureType.rejected, (state, action) => {
                 state.isLoading = false
                 state.isError = true
                 state.message = action.payload
             })
-            .addCase(deleteHierarchyItemType.pending, (state) => {
+            .addCase(deleteFeatureType.pending, (state) => {
                 state.isLoading = true
             })
-            .addCase(deleteHierarchyItemType.fulfilled, (state, action) => {
+            .addCase(deleteFeatureType.fulfilled, (state, action) => {
                 state.isLoading = false
                 state.isSuccess = true
-                state.currentItemTypes = state.currentItemTypes.filter(
-                    itemType => itemType.id !== action.payload.id
+                state.currentFeatureTypes = state.currentFeatureTypes.filter(
+                    featureType => featureType.id !== action.payload.id
                 )
             })
-            .addCase(deleteHierarchyItemType.rejected, (state, action) => {
+            .addCase(deleteFeatureType.rejected, (state, action) => {
                 state.isLoading = false
                 state.isError = true
                 state.message = action.payload

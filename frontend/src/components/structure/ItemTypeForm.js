@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { createHierarchyItemType, updateHierarchyItemType, getHierarchyItemTypes } from '../../features/projects/projectSlice';
+import { createFeatureType, updateFeatureType, getFeatureTypes } from '../../features/projects/projectSlice';
 import '../../styles/structureScreen.css'
 import { ITEM_TYPE_ICON_OPTIONS, ITEM_TYPE_COLOR_OPTIONS, DEFAULT_ITEM_TYPE_ICON } from '../../constants/itemTypeIcons';
 
@@ -10,7 +10,7 @@ const ItemTypeForm = ({
     onItemSelect = null
 }) => {
     const dispatch = useDispatch();
-    const { selectedProject, currentItemTypes } = useSelector((state) => state.projects);
+    const { selectedProject, currentFeatureTypes } = useSelector((state) => state.projects);
     const [newItemType, setNewItemType] = useState({
         title: '',
         description: '',
@@ -179,32 +179,32 @@ const ItemTypeForm = ({
         try {
             let result;
             if (isEditing && selectedItem) {
-                // Update existing item type
-                console.log('Updating item type with data:', itemTypeData);
+                // Update existing feature type
+                console.log('Updating feature type with data:', itemTypeData);
                 console.log('Attributes being sent:', attributeValues);
-                result = await dispatch(updateHierarchyItemType({
+                result = await dispatch(updateFeatureType({
                     projectId: selectedProject.id,
-                    itemTypeId: selectedItem.id,
-                    itemTypeData
+                    featureTypeId: selectedItem.id,
+                    featureTypeData: itemTypeData
                 })).unwrap();
                 
-                // Refresh the item types list to get updated attributes
-                await dispatch(getHierarchyItemTypes(selectedProject.id));
+                // Refresh the feature types list to get updated attributes
+                await dispatch(getFeatureTypes(selectedProject.id));
                 
-                console.log('Item type updated successfully:', result);
+                console.log('Feature type updated successfully:', result);
             } else {
-                // Create new item type
-                console.log('Creating item type with data:', itemTypeData);
+                // Create new feature type
+                console.log('Creating feature type with data:', itemTypeData);
                 console.log('Attributes being sent:', attributeValues);
-                result = await dispatch(createHierarchyItemType({
+                result = await dispatch(createFeatureType({
                     projectId: selectedProject.id,
-                    itemTypeData
+                    featureTypeData: itemTypeData
                 })).unwrap();
                 
-                // Refresh the item types list to get the new item with attributes
-                await dispatch(getHierarchyItemTypes(selectedProject.id));
+                // Refresh the feature types list to get the new feature type with attributes
+                await dispatch(getFeatureTypes(selectedProject.id));
                 
-                console.log('Item type created successfully:', result);
+                console.log('Feature type created successfully:', result);
             }
         } catch (error) {
             console.error('Error creating/updating item type:', error);
@@ -265,7 +265,7 @@ const ItemTypeForm = ({
                                 className="form-select parent-dropdown"
                             >
                                 <option value="">No parent (root item)</option>
-                                {currentItemTypes?.filter(itemType => itemType.id !== selectedItem?.id).map(itemType => (
+                                {currentFeatureTypes?.filter(itemType => itemType.id !== selectedItem?.id).map(itemType => (
                                     <option key={itemType.id} value={itemType.id}>
                                         {itemType.title}
                                     </option>

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { getHierarchy, getHierarchyItemTypes, updateHierarchyItemType } from '../features/projects/projectSlice';
+import { getHierarchy, getFeatureTypes, updateFeatureType } from '../features/projects/projectSlice';
 import { loadUser } from '../features/auth/authSlice';
 import Map from '../components/map/Map';
 import HierarchyForm from '../components/structure/HierarchyForm';
@@ -10,7 +10,7 @@ import '../styles/map.css';
 import '../styles/structureScreen.css';
 
 const MapScreen = () => {
-    const { selectedProject, currentHierarchy, currentItemTypes } = useSelector((state) => state.projects);
+    const { selectedProject, currentHierarchy, currentFeatureTypes } = useSelector((state) => state.projects);
     const { user } = useSelector((state) => state.auth);
     const [selectedItem, setSelectedItem] = useState(null);
     const dispatch = useDispatch();
@@ -36,7 +36,7 @@ const MapScreen = () => {
     useEffect(() => {
         if (selectedProject && user) {
             dispatch(getHierarchy(selectedProject.id));
-            dispatch(getHierarchyItemTypes(selectedProject.id));
+            dispatch(getFeatureTypes(selectedProject.id));
         }
     }, [selectedProject, user, dispatch]);
 
@@ -62,8 +62,8 @@ const MapScreen = () => {
     }, [currentHierarchy]);
 
     const typesWithEntries = useMemo(() => {
-        return (currentItemTypes || []).filter(type => itemTypeCounts[type.id]);
-    }, [currentItemTypes, itemTypeCounts]);
+        return (currentFeatureTypes || []).filter(type => itemTypeCounts[type.id]);
+    }, [currentFeatureTypes, itemTypeCounts]);
 
     const filteredItemsByType = useMemo(() => {
         if (!activeTypeId) return [];
@@ -71,7 +71,7 @@ const MapScreen = () => {
     }, [currentHierarchy, activeTypeId]);
 
     const selectedType = activeTypeId 
-        ? (currentItemTypes || []).find(type => type.id === activeTypeId) 
+        ? (currentFeatureTypes || []).find(type => type.id === activeTypeId) 
         : null;
 
     const handleTypeToggle = (typeId) => {
@@ -80,7 +80,7 @@ const MapScreen = () => {
                 handleCancelTypeEdit();
                 return null;
             }
-            const nextType = (currentItemTypes || []).find(type => type.id === typeId);
+            const nextType = (currentFeatureTypes || []).find(type => type.id === typeId);
             if (nextType) {
                 handleStartTypeEdit(nextType);
             }
@@ -107,10 +107,10 @@ const MapScreen = () => {
 
     const handleSaveTypeEdit = async () => {
         if (!editingTypeId || !selectedProject) return;
-        const typeToUpdate = (currentItemTypes || []).find(type => type.id === editingTypeId);
+        const typeToUpdate = (currentFeatureTypes || []).find(type => type.id === editingTypeId);
         if (!typeToUpdate) return;
 
-        const itemTypeData = {
+        const featureTypeData = {
             name: typeToUpdate.title,
             description: typeToUpdate.description || '',
             parent_ids: typeToUpdate.parent_ids || [],
@@ -123,12 +123,12 @@ const MapScreen = () => {
         try {
             setUpdatingType(true);
             setTypeEditError(null);
-            await dispatch(updateHierarchyItemType({
+            await dispatch(updateFeatureType({
                 projectId: selectedProject.id,
-                itemTypeId: editingTypeId,
-                itemTypeData
+                featureTypeId: editingTypeId,
+                featureTypeData
             })).unwrap();
-            await dispatch(getHierarchyItemTypes(selectedProject.id));
+            await dispatch(getFeatureTypes(selectedProject.id));
             setEditingTypeId(null);
         } catch (error) {
             setTypeEditError(error?.message || 'Failed to update item type');
@@ -271,7 +271,7 @@ const MapScreen = () => {
                                 <div className="map-view-wrapper">
                                     <Map 
                                         hierarchyItems={currentHierarchy || []}
-                                        itemTypes={currentItemTypes || []}
+                                        itemTypes={currentFeatureTypes || []}
                                         selectedItem={selectedItem}
                                         onItemSelect={handleItemSelect}
                                         selectedProject={selectedProject}
@@ -286,7 +286,7 @@ const MapScreen = () => {
                             <div className="map-screen-form-container">
                                 <HierarchyForm 
                                     hierarchyItems={currentHierarchy || []}
-                                    itemTypes={currentItemTypes || []}
+                                    itemTypes={currentFeatureTypes || []}
                                     selectedItem={selectedItem}
                                     onItemSelect={handleItemSelect}
                                 />

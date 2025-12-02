@@ -1,20 +1,20 @@
 import { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { getHierarchyItemTypes, deleteHierarchyItemType, reset } from '../features/projects/projectSlice';
+import { getFeatureTypes, deleteFeatureType, reset } from '../features/projects/projectSlice';
 import { loadUser } from '../features/auth/authSlice';
 import ItemTypeForm from '../components/structure/ItemTypeForm';
 import ItemTypeTree from '../components/structure/ItemTypeTree';
 import '../styles/structureScreen.css';
 const ItemTypeScreen = () => {
-    const { selectedProject, currentItemTypes } = useSelector((state) => state.projects);
+    const { selectedProject, currentFeatureTypes } = useSelector((state) => state.projects);
     const { user } = useSelector((state) => state.auth);
     const [selectedItem, setSelectedItem] = useState(null);
     const dispatch = useDispatch();
 
-    // Debug: Log when currentItemTypes change
+    // Debug: Log when currentFeatureTypes change
     useEffect(() => {
-        console.log('ItemTypeScreen currentItemTypes updated:', currentItemTypes);
-    }, [currentItemTypes]);  
+        console.log('ItemTypeScreen currentFeatureTypes updated:', currentFeatureTypes);
+    }, [currentFeatureTypes]);  
 
     useEffect(() => {
         dispatch(loadUser())
@@ -23,7 +23,7 @@ const ItemTypeScreen = () => {
     useEffect(() => {
         if (selectedProject && user) {
             dispatch(reset());
-            dispatch(getHierarchyItemTypes(selectedProject.id));
+            dispatch(getFeatureTypes(selectedProject.id));
         }
         return () => {
             dispatch(reset())
@@ -32,9 +32,9 @@ const ItemTypeScreen = () => {
 
     const handleRemoveItemType = async (itemTypeId) => {
         try {
-            await dispatch(deleteHierarchyItemType({
+            await dispatch(deleteFeatureType({
                 projectId: selectedProject.id,
-                itemTypeId
+                featureTypeId: itemTypeId
             })).unwrap();
             
             // Clear selected item if the deleted item type was selected
@@ -70,7 +70,7 @@ const ItemTypeScreen = () => {
                         <div className="hierarchy-left-panel">
                             <div className="hierarchy-edit-container">
                                 <ItemTypeForm 
-                                    itemTypes={currentItemTypes || []}
+                                    itemTypes={currentFeatureTypes || []}
                                     selectedItem={selectedItem}
                                     onItemSelect={handleItemSelect}
                                 />
@@ -79,12 +79,12 @@ const ItemTypeScreen = () => {
                         
                         {/* Right side - Tree (always visible) */}
                         <div className="hierarchy-right-panel">
-                            {(currentItemTypes && currentItemTypes.length > 0) ? (
+                            {(currentFeatureTypes && currentFeatureTypes.length > 0) ? (
                                 <div className="hierarchy-tree-container">
                                     <div className="hierarchy-tree-content">
                                         <ItemTypeTree 
-                                            key={currentItemTypes.length} 
-                                            itemTypes={currentItemTypes}
+                                            key={currentFeatureTypes.length} 
+                                            itemTypes={currentFeatureTypes}
                                             onRemoveItemType={handleRemoveItemType}
                                             onItemClick={handleItemClick}
                                         />
