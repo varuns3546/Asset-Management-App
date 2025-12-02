@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import Leaflet from '../components/map/Leaflet';
 import LeftMapPanel from '../components/map/LeftMapPanel';
@@ -14,6 +14,32 @@ const LeafletScreen = () => {
   const [topPanelHeight, setTopPanelHeight] = useState(80);
   const [selectedBasemap, setSelectedBasemap] = useState('street');
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const containerRef = useRef(null);
+
+  // Update CSS variables based on actual component heights
+  useEffect(() => {
+    if (containerRef.current) {
+      // Measure main Navbar height (the one at the top of the app)
+      const mainNavbar = document.querySelector('.container');
+      if (mainNavbar) {
+        const mainNavbarHeight = mainNavbar.offsetHeight;
+        containerRef.current.style.setProperty('--main-navbar-height', `${mainNavbarHeight}px`);
+      }
+      
+      // Measure MapNavbar height using querySelector
+      const navbarElement = containerRef.current.querySelector('.map-navbar');
+      if (navbarElement) {
+        const navbarHeight = navbarElement.offsetHeight;
+        containerRef.current.style.setProperty('--map-navbar-height', `${navbarHeight}px`);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (containerRef.current) {
+      containerRef.current.style.setProperty('--top-panel-height', `${topPanelHeight}px`);
+    }
+  }, [topPanelHeight]);
 
   const handleFileSelect = (file) => {
     // TODO: Handle file upload for layer creation
@@ -24,13 +50,14 @@ const LeafletScreen = () => {
   const mapWidth = isExpanded ? `calc(100% - ${panelWidth}px)` : '100%';
 
   // Extract coordinates from selected project
-  // Expecting format: selectedProject = { latitude: number, longitude: number }
-  const projectCoordinates = selectedProject && selectedProject.latitude && selectedProject.longitude
-    ? [selectedProject.latitude, selectedProject.longitude]
+  // Leaflet expects [latitude, longitude] format
+  const projectCoordinates = selectedProject && selectedProject.latitude != null && selectedProject.longitude != null
+    ? [parseFloat(selectedProject.latitude), parseFloat(selectedProject.longitude)]
     : null;
 
   return (
-    <div className="leaflet-screen-container">
+    
+    <div ref={containerRef} className="leaflet-screen-container">
       <MapNavbar onOpenUploadModal={() => setIsUploadModalOpen(true)} />
       <TopMapPanel 
         panelHeight={topPanelHeight}

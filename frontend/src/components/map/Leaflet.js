@@ -64,7 +64,9 @@ const MapCenterHandler = ({ center, zoom }) => {
   useEffect(() => {
     let isMounted = true;
 
-    if (center && center[0] && center[1] && map && isMounted) {
+    if (center && Array.isArray(center) && center.length === 2 && 
+        typeof center[0] === 'number' && typeof center[1] === 'number' && 
+        !isNaN(center[0]) && !isNaN(center[1]) && map && isMounted) {
       try {
         // Check if map container still exists
         if (map.getContainer() && map.getPane('mapPane')) {
@@ -95,9 +97,10 @@ const Leaflet = ({ panelWidth, selectedBasemap = 'street', projectCoordinates })
       center={position} 
       zoom={13} 
       className="leaflet-map-container"
+      key={projectCoordinates ? `${projectCoordinates[0]}-${projectCoordinates[1]}` : 'default'}
     >
       <MapResizeHandler panelWidth={panelWidth} />
-      <MapCenterHandler center={projectCoordinates} zoom={13} />
+      <MapCenterHandler center={projectCoordinates || position} zoom={13} />
       <TileLayer
         key={selectedBasemap}
         attribution={basemap.attribution}

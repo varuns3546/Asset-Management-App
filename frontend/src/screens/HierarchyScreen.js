@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { getHierarchy, deleteHierarchyItem, getHierarchyItemTypes, reset, uploadHierarchyFile, importHierarchyData, createHierarchyItemType } from '../features/projects/projectSlice';
+import { getHierarchy, deleteFeature, getFeatureTypes, reset, uploadHierarchyFile, importHierarchyData, createFeatureType } from '../features/projects/projectSlice';
 import { loadUser } from '../features/auth/authSlice';
 import HierarchyTree from '../components/structure/HierarchyTree';
 import HierarchyForm from '../components/structure/HierarchyForm';
@@ -9,7 +9,7 @@ import HierarchyImportPreview from '../components/HierarchyImportPreview';
 import '../styles/structureScreen.css';
 
 const HierarchyScreen = () => {
-    const { selectedProject, currentHierarchy, currentItemTypes } = useSelector((state) => state.projects);
+    const { selectedProject, currentHierarchy, currentFeatureTypes } = useSelector((state) => state.projects);
     const { user } = useSelector((state) => state.auth);
     const [selectedItem, setSelectedItem] = useState(null);
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -25,7 +25,7 @@ const HierarchyScreen = () => {
             // Clear Redux state and fetch new hierarchy
             dispatch(reset());
             dispatch(getHierarchy(selectedProject.id));
-            dispatch(getHierarchyItemTypes(selectedProject.id));
+            dispatch(getFeatureTypes(selectedProject.id));
         }
         return () => {
             dispatch(reset())
@@ -34,9 +34,9 @@ const HierarchyScreen = () => {
 
     const handleRemoveItem = async (itemId) => {
         try {
-            await dispatch(deleteHierarchyItem({
+            await dispatch(deleteFeature({
                 projectId: selectedProject.id,
-                itemId
+                featureId: itemId
             })).unwrap();
             
             // Clear selected item if the deleted item was selected
@@ -90,9 +90,9 @@ const HierarchyScreen = () => {
                     // Use customTitle if provided and not empty, otherwise use typeName from spreadsheet
                     const itemTypeTitle = (config.customTitle && config.customTitle.trim()) ? config.customTitle.trim() : typeName;
                     
-                    const result = await dispatch(createHierarchyItemType({
+                    const result = await dispatch(createFeatureType({
                         projectId: selectedProject.id,
-                        itemTypeData: {
+                        featureTypeData: {
                             name: itemTypeTitle,
                             description: '',
                             parent_ids: [],
@@ -112,9 +112,9 @@ const HierarchyScreen = () => {
                 if (config.action === 'create_new') {
                     const typeName = (config.customTitle && config.customTitle.trim()) ? config.customTitle.trim() : sheetName;
                     
-                    const result = await dispatch(createHierarchyItemType({
+                    const result = await dispatch(createFeatureType({
                         projectId: selectedProject.id,
-                        itemTypeData: {
+                        featureTypeData: {
                             name: typeName,
                             description: '',
                             parent_ids: [],
@@ -130,8 +130,8 @@ const HierarchyScreen = () => {
             }
             
             
-            // Refresh item types after creating new ones
-            await dispatch(getHierarchyItemTypes(selectedProject.id));
+            // Refresh feature types after creating new ones
+            await dispatch(getFeatureTypes(selectedProject.id));
             
             // Process all selected sheets
             const allTransformedData = [];
@@ -245,7 +245,7 @@ const HierarchyScreen = () => {
                             <div className="hierarchy-edit-container">
                                 <HierarchyForm 
                                     hierarchyItems={currentHierarchy || []}
-                                    itemTypes={currentItemTypes}
+                                    itemTypes={currentFeatureTypes}
                                     selectedItem={selectedItem}
                                     onItemSelect={handleItemSelect}
                                 />
@@ -261,7 +261,7 @@ const HierarchyScreen = () => {
                                             hierarchyItems={currentHierarchy}
                                             onRemoveItem={handleRemoveItem}
                                             onItemClick={handleItemClick}
-                                            itemTypes={currentItemTypes}
+                                            itemTypes={currentFeatureTypes}
                                         />
                                     </div>
                                 </div>
@@ -286,7 +286,7 @@ const HierarchyScreen = () => {
                         }}
                         parsedData={parsedData}
                         onImport={handleImport}
-                        itemTypes={currentItemTypes || []}
+                        itemTypes={currentFeatureTypes || []}
                     />
                 </div>
             ) : (
