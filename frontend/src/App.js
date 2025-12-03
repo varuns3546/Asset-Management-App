@@ -14,6 +14,7 @@ import ItemTypeScreen from "./screens/ItemTypeScreen";
 import MapScreen from "./screens/MapScreen";
 import Navbar from "./components/Navbar";
 import Modal from "./components/Modal";
+import LeafletScreen from "./screens/LeafletScreen";
 
 
 function AppContent() {
@@ -22,29 +23,35 @@ function AppContent() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, isLoading } = useSelector((state) => state.auth);
+  const [authChecked, setAuthChecked] = useState(false);
 
-  
-  // Handle routing based on authentication state
-  useEffect(() => {
-    if (!isLoading) {
-      const isAuthRoute = location.pathname === '/' || location.pathname === '/register';
-      
-      if (user === null && !isAuthRoute) {
-        // User is not authenticated and trying to access protected route
-        navigate('/');
-      } else if (user !== null && isAuthRoute) {
-        // User is authenticated but on auth page, redirect to home
-        navigate('/home');
-      }
-    }
-  }, [user, isLoading, navigate, location.pathname]);
-  const hideNavbarRoutes = ['/', '/register'];
-  const showNavbar = !hideNavbarRoutes.includes(location.pathname);
-  
   // Load user from localStorage on app start
   useEffect(() => {
-    dispatch(loadUser());
+    dispatch(loadUser()).finally(() => {
+      setAuthChecked(true);
+    });
   }, [dispatch]);
+  
+  // Protect routes - only redirect if not authenticated
+  useEffect(() => {
+    // Don't do anything until initial auth check is complete
+    if (!authChecked || isLoading) {
+      return;
+    }
+
+    const isAuthRoute = location.pathname === '/' || location.pathname === '/register';
+    
+    // Only redirect if trying to access protected route without authentication
+    if (user === null && !isAuthRoute) {
+      navigate('/', { replace: true });
+    }
+    // Don't automatically redirect away from any route if authenticated
+    // Let the user stay on whatever route they're on
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authChecked, user, isLoading, location.pathname]); // navigate is stable from React Router
+  
+  const hideNavbarRoutes = ['/', '/register'];
+  const showNavbar = !hideNavbarRoutes.includes(location.pathname);
   
   // Load selected project from localStorage when user is loaded
   useEffect(() => {
@@ -88,14 +95,17 @@ function AppContent() {
   return (
     <>
       {showNavbar && <Navbar onOpenModal={openModal} onCloseModal={closeModal} />}
-      <Routes>
-        <Route path="/" element={<LoginScreen />} />
-        <Route path="/register" element={<RegisterScreen />} />
-        <Route path="/home" element={<HomeScreen />} />
-        <Route path="/hierarchies" element={<HierarchyScreen />} />
-        <Route path="/item-types" element={<ItemTypeScreen />} />
-        <Route path="/map" element={<MapScreen />} />
-      </Routes>
+      <div style={{ paddingTop: showNavbar ? '53px' : '0' }}>
+        <Routes>
+          <Route path="/" element={<LoginScreen />} />
+          <Route path="/register" element={<RegisterScreen />} />
+          <Route path="/home" element={<HomeScreen />} />
+          <Route path="/hierarchies" element={<HierarchyScreen />} />
+          <Route path="/item-types" element={<ItemTypeScreen />} />
+          <Route path="/map" element={<MapScreen />} />
+          <Route path="/leaflet" element={<LeafletScreen />} />
+        </Routes>
+      </div>
       
       <Modal 
         isOpen={modalState.isOpen}

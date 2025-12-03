@@ -41,8 +41,8 @@ const Navbar = ({ onOpenModal, onCloseModal }) => {
     return (
         <div className="container" ref={navbarRef}>
             <Dropdown 
-                title="Projects" 
-                options={['Open Project', 'Create Project']} 
+                title="Project" 
+                options={['Save Project', 'Open Project', 'Create Project', 'Upload File']} 
                 isOpen={openDropdown === 'projects'}
                 onToggle={() => toggleDropdown('projects')}
                 onOpenModal={onOpenModal}
@@ -50,7 +50,7 @@ const Navbar = ({ onOpenModal, onCloseModal }) => {
             />
             <Dropdown 
                 title="View" 
-                options={['Data', 'Map', 'Charts and Graphs', 'Reports']} 
+                options={['Data', 'Map', 'Leaflet', 'Charts and Graphs', 'Reports']} 
                 isOpen={openDropdown === 'view'}
                 onToggle={() => toggleDropdown('view')}
             />

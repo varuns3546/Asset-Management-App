@@ -96,38 +96,38 @@ const deleteHierarchy = async (projectId, token) => {
     return response.data;
 }
 
-const createHierarchyItem = async (projectId, itemData, token) => {
-    const response = await projectApi.post(`/${projectId}/hierarchy/items`, itemData);
+const createFeature = async (projectId, featureData, token) => {
+    const response = await projectApi.post(`/${projectId}/hierarchy/features`, featureData);
     return response.data;
 }
 
-const updateHierarchyItem = async (projectId, itemId, itemData, token) => {
-    const response = await projectApi.put(`/${projectId}/hierarchy/items/${itemId}`, itemData);
+const updateFeature = async (projectId, featureId, featureData, token) => {
+    const response = await projectApi.put(`/${projectId}/hierarchy/features/${featureId}`, featureData);
     return response.data;
 }
 
-const deleteHierarchyItem = async (projectId, itemId, token) => {
-    const response = await projectApi.delete(`/${projectId}/hierarchy/items/${itemId}`);
+const deleteFeature = async (projectId, featureId, token) => {
+    const response = await projectApi.delete(`/${projectId}/hierarchy/features/${featureId}`);
     return response.data;
 }
 
-const getHierarchyItemTypes = async (projectId, token) => {
-    const response = await projectApi.get(`/${projectId}/hierarchy/item-types`);
+const getFeatureTypes = async (projectId, token) => {
+    const response = await projectApi.get(`/${projectId}/hierarchy/feature-types`);
     return response.data;
 }
 
-const createHierarchyItemType = async (projectId, itemTypeData, token) => {
-    const response = await projectApi.post(`/${projectId}/hierarchy/item-types`, itemTypeData);
+const createFeatureType = async (projectId, featureTypeData, token) => {
+    const response = await projectApi.post(`/${projectId}/hierarchy/feature-types`, featureTypeData);
     return response.data;
 }
 
-const updateHierarchyItemType = async (projectId, itemTypeId, itemTypeData, token) => {
-    const response = await projectApi.put(`/${projectId}/hierarchy/item-types/${itemTypeId}`, itemTypeData);
+const updateFeatureType = async (projectId, featureTypeId, featureTypeData, token) => {
+    const response = await projectApi.put(`/${projectId}/hierarchy/feature-types/${featureTypeId}`, featureTypeData);
     return response.data;
 }
 
-const deleteHierarchyItemType = async (projectId, itemTypeId, token) => {
-    const response = await projectApi.delete(`/${projectId}/hierarchy/item-types/${itemTypeId}`);
+const deleteFeatureType = async (projectId, featureTypeId, token) => {
+    const response = await projectApi.delete(`/${projectId}/hierarchy/feature-types/${featureTypeId}`);
     return response.data;
 }
 
@@ -175,13 +175,13 @@ const projectService = {
     getHierarchy,
     updateHierarchy,
     deleteHierarchy,
-    createHierarchyItem,
-    updateHierarchyItem,
-    deleteHierarchyItem,
-    getHierarchyItemTypes,
-    createHierarchyItemType,
-    updateHierarchyItemType,
-    deleteHierarchyItemType,
+    createFeature,
+    updateFeature,
+    deleteFeature,
+    getFeatureTypes,
+    createFeatureType,
+    updateFeatureType,
+    deleteFeatureType,
     uploadHierarchyFile,
     importHierarchyData,
     getProjectUsers,
