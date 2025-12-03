@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { basemaps } from './Map';
+// Import basemaps from Map component
 
 const TopMapPanel = ({ 
   panelHeight, 

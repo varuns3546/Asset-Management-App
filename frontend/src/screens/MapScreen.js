@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import Leaflet from '../components/map/Map';
+import Map from '../components/map/Map';
 import LeftMapPanel from '../components/map/LeftMapPanel';
 import TopMapPanel from '../components/map/TopMapPanel';
 import MapNavbar from '../components/map/MapNavbar';
@@ -109,7 +109,7 @@ const MapScreen = () => {
           minHeight: 0,
           overflow: 'hidden'
         }}>
-          <Leaflet 
+          <Map 
             panelWidth={panelWidth} 
             selectedBasemap={selectedBasemap}
             projectCoordinates={projectCoordinates}
