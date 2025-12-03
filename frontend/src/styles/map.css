@@ -37,7 +37,7 @@
 .map-view {
   flex: 1;
   width: 100%;
-  min-height: 400px;
+  min-height: 460px;
   max-height: 80vh; /* Prevent excessive height */
   position: relative;
   overflow: hidden; /* Prevent scrollbars that might cause resize loops */
@@ -47,7 +47,7 @@
 .map-loading, .map-error {
   flex: 1;
   width: 100%;
-  min-height: 400px;
+  min-height: 460px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -126,7 +126,7 @@
 /* Map Screen Styles */
 .map-screen {
   padding: 20px;
-  max-width: 1400px;
+  max-width: 1610px;
   margin: 0 auto;
   height: 100vh;
   display: flex;
@@ -195,8 +195,8 @@
 }
 
 .map-screen-left-panel {
-  flex: 2;
-  min-width: 600px;
+  flex: 2.3;
+  min-width: 690px;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -204,7 +204,7 @@
 
 .map-screen-right-panel {
   flex: 1;
-  min-width: 400px;
+  min-width: 460px;
   overflow-y: auto;
   border-left: 2px solid #e0e0e0;
   padding-left: 20px;
@@ -216,9 +216,9 @@
 }
 
 .map-legend-wrapper {
-  width: 240px;
+  width: 276px;
   flex-shrink: 0;
-  margin-right: 16px;
+  margin-right: 18px;
 }
 
 .map-view-wrapper {
@@ -227,7 +227,7 @@
 }
 
 .map-panel .map-container {
-  height: 720px;
+  height: 828px;
 }
 
 .map-legend {
@@ -366,7 +366,7 @@
   }
   
   .map-view {
-    min-height: 300px;
+    min-height: 345px;
   }
   
   .map-legend {
@@ -385,5 +385,87 @@
     gap: 10px;
     text-align: center;
   }
+}
+
+/* External Layers Panel Styles */
+.external-layers-panel {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  padding: 12px;
+  margin-top: 15px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  max-width: 276px;
+}
+
+.external-layers-panel h4 {
+  margin: 0 0 10px 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.external-layers-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.external-layer-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  background: rgba(13, 110, 253, 0.05);
+  border-radius: 6px;
+  border: 1px solid rgba(13, 110, 253, 0.15);
+  transition: background 0.2s ease;
+}
+
+.external-layer-item:hover {
+  background: rgba(13, 110, 253, 0.1);
+}
+
+.external-layer-name {
+  flex: 1;
+  font-size: 0.85rem;
+  color: #212529;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.external-layer-remove {
+  border: none;
+  background: rgba(220, 53, 69, 0.1);
+  color: #dc3545;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.external-layer-remove:hover {
+  background: #dc3545;
+  color: white;
+  transform: scale(1.1);
+}
+
+.external-layers-count {
+  font-weight: normal;
+  opacity: 0.95;
 }
 

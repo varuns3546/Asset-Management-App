@@ -1,50 +1,50 @@
 .form-group {
-    margin-bottom: 24px;
+    margin-bottom: 19px;
 }
 
 .form-label {
     display: block;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
     font-weight: 500;
-    font-size: 21px;
+    font-size: 17px;
 }
 
 .form-input {
     width: 100%;
-    padding: 12px 18px;
+    padding: 10px 14px;
     border: 1px solid #d1d5db;
-    border-radius: 6px;
-    font-size: 21px;
+    border-radius: 5px;
+    font-size: 17px;
 }
 
 .form-textarea {
     width: 100%;
-    padding: 12px 18px;
+    padding: 10px 14px;
     border: 1px solid #d1d5db;
-    border-radius: 6px;
-    font-size: 21px;
+    border-radius: 5px;
+    font-size: 17px;
     resize: vertical;
 }
 
 .form-select {
     width: 100%;
-    padding: 12px 18px;
+    padding: 10px 14px;
     border: 1px solid #d1d5db;
-    border-radius: 6px;
-    font-size: 21px;
+    border-radius: 5px;
+    font-size: 17px;
 }
 
 .button-group {
     display: flex;
-    gap: 18px;
+    gap: 14px;
     justify-content: flex-end;
 }
 
 .btn {
-    padding: 12px 24px;
-    border-radius: 6px;
+    padding: 10px 19px;
+    border-radius: 5px;
     cursor: pointer;
-    font-size: 21px;
+    font-size: 17px;
     font-weight: 500;
 }
 
@@ -77,175 +77,175 @@
     background: #059669;
 }
 
-/* Create Project Modal - 50% larger styling */
+/* Create Project Modal - 80% of original size */
 .create-project-modal .form-group {
-    margin-bottom: 24px;
+    margin-bottom: 19px;
 }
 
 .create-project-modal .form-label {
     display: block;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
     font-weight: 500;
-    font-size: 21px;
+    font-size: 17px;
 }
 
 .create-project-modal .form-input {
     width: 100%;
-    padding: 12px 18px;
+    padding: 10px 14px;
     border: 1px solid #d1d5db;
-    border-radius: 6px;
-    font-size: 21px;
+    border-radius: 5px;
+    font-size: 17px;
 }
 
 .create-project-modal .form-textarea {
     width: 100%;
-    padding: 12px 18px;
+    padding: 10px 14px;
     border: 1px solid #d1d5db;
-    border-radius: 6px;
-    font-size: 21px;
+    border-radius: 5px;
+    font-size: 17px;
     resize: vertical;
 }
 
 .create-project-modal .form-input::placeholder,
 .create-project-modal .form-textarea::placeholder {
-    font-size: 21px;
+    font-size: 17px;
 }
 
 .create-project-modal .button-group {
     display: flex;
-    gap: 18px;
+    gap: 14px;
     justify-content: flex-end;
-    margin-top: 24px;
+    margin-top: 19px;
 }
 
 .create-project-modal .btn {
-    padding: 12px 24px;
-    border-radius: 6px;
+    padding: 10px 19px;
+    border-radius: 5px;
     cursor: pointer;
-    font-size: 21px;
+    font-size: 17px;
     font-weight: 500;
 }
 
-/* Open Project Modal - 50% larger styling */
+/* Open Project Modal - 80% of original size */
 .open-project-modal .form-group {
-    margin-bottom: 24px;
+    margin-bottom: 19px;
 }
 
 .open-project-modal .form-label {
     display: block;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
     font-weight: 500;
-    font-size: 21px;
+    font-size: 17px;
 }
 
 .open-project-modal .form-input {
     width: 100%;
-    padding: 12px 18px;
+    padding: 10px 14px;
     border: 1px solid #d1d5db;
-    border-radius: 6px;
-    font-size: 21px;
+    border-radius: 5px;
+    font-size: 17px;
 }
 
 .open-project-modal .form-select {
     width: 100%;
-    padding: 12px 18px;
+    padding: 10px 14px;
     border: 1px solid #d1d5db;
-    border-radius: 6px;
-    font-size: 21px;
+    border-radius: 5px;
+    font-size: 17px;
 }
 
 .open-project-modal .form-input::placeholder {
-    font-size: 21px;
+    font-size: 17px;
 }
 
 .open-project-modal .button-group {
     display: flex;
-    gap: 18px;
+    gap: 14px;
     justify-content: flex-end;
-    margin-top: 24px;
+    margin-top: 19px;
 }
 
 .open-project-modal .btn {
-    padding: 12px 24px;
-    border-radius: 6px;
+    padding: 10px 19px;
+    border-radius: 5px;
     cursor: pointer;
-    font-size: 21px;
+    font-size: 17px;
     font-weight: 500;
 }
 
 /* Responsive Design - Tablets and smaller desktops */
 @media (max-width: 1199px) {
     .form-label {
-        font-size: 19px;
+        font-size: 15px;
     }
     
     .form-input,
     .form-textarea,
     .form-select {
-        padding: 10px 16px;
-        font-size: 19px;
+        padding: 8px 13px;
+        font-size: 15px;
     }
     
     .btn {
-        padding: 10px 20px;
-        font-size: 19px;
+        padding: 8px 16px;
+        font-size: 15px;
     }
 }
 
 /* Responsive Design - Tablets */
 @media (max-width: 768px) {
     .form-group {
-        margin-bottom: 20px;
+        margin-bottom: 16px;
     }
     
     .form-label {
-        margin-bottom: 10px;
-        font-size: 17px;
+        margin-bottom: 8px;
+        font-size: 14px;
     }
     
     .form-input,
     .form-textarea,
     .form-select {
-        padding: 9px 14px;
-        font-size: 17px;
+        padding: 7px 11px;
+        font-size: 14px;
     }
     
     .button-group {
-        gap: 14px;
+        gap: 11px;
     }
     
     .btn {
-        padding: 9px 18px;
-        font-size: 17px;
+        padding: 7px 14px;
+        font-size: 14px;
     }
 }
 
 /* Responsive Design - Mobile */
 @media (max-width: 480px) {
     .form-group {
-        margin-bottom: 16px;
+        margin-bottom: 13px;
     }
     
     .form-label {
-        margin-bottom: 8px;
-        font-size: 15px;
+        margin-bottom: 6px;
+        font-size: 12px;
     }
     
     .form-input,
     .form-textarea,
     .form-select {
-        padding: 8px 12px;
-        font-size: 15px;
+        padding: 6px 10px;
+        font-size: 12px;
     }
     
     .button-group {
-        gap: 12px;
+        gap: 10px;
         flex-direction: column;
     }
     
     .btn {
-        padding: 8px 16px;
-        font-size: 15px;
+        padding: 6px 13px;
+        font-size: 12px;
         width: 100%;
     }
 }
