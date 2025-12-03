@@ -77,7 +77,7 @@ const MapCenterHandler = ({ center, zoom }) => {
   return null;
 };
 
-const Leaflet = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, features = [], featureTypes = [], showLabels = true, labelFontSize = 12 }) => {
+const Leaflet = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, features = [], featureTypes = [], showLabels = true, labelFontSize = 12, labelColor = '#000000' }) => {
   // Use project coordinates if available, otherwise default to New York City
   const defaultPosition = [40.7128, -74.0060];
   const position = projectCoordinates || defaultPosition;
@@ -161,7 +161,7 @@ const Leaflet = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, f
               offset={[8, 0]}
               className="feature-label"
             >
-              <span style={{ fontSize: `${labelFontSize}px` }}>{feature.title}</span>
+              <span style={{ fontSize: `${labelFontSize}px`, color: labelColor }}>{feature.title}</span>
             </Tooltip>
           )}
           <Popup>

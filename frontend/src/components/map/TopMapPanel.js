@@ -9,12 +9,15 @@ const TopMapPanel = ({
   showLabels,
   setShowLabels,
   labelFontSize,
-  setLabelFontSize
+  setLabelFontSize,
+  labelColor,
+  setLabelColor
 }) => {
   const [isResizing, setIsResizing] = useState(false);
   const [startY, setStartY] = useState(0);
   const [startHeight, setStartHeight] = useState(0);
   const [showBasemapDropdown, setShowBasemapDropdown] = useState(false);
+  const [showLabelModal, setShowLabelModal] = useState(false);
   const panelRef = useRef(null);
   const dropdownRef = useRef(null);
 
@@ -81,19 +84,22 @@ const TopMapPanel = ({
     setShowBasemapDropdown(false);
   };
 
-  const handleLabelToggle = () => {
-    setShowLabels(!showLabels);
-  };
-
-  const handleIncreaseFontSize = () => {
-    if (labelFontSize < 48) {
-      setLabelFontSize(labelFontSize + 1);
+  const handleLabelClick = () => {
+    if (showLabels) {
+      // If labels are on, turn them off and close modal
+      setShowLabels(false);
+      setShowLabelModal(false);
+    } else {
+      // If labels are off, turn them on and open modal
+      setShowLabels(true);
+      setShowLabelModal(true);
     }
   };
 
-  const handleDecreaseFontSize = () => {
-    if (labelFontSize > 6) {
-      setLabelFontSize(labelFontSize - 1);
+  const handleFontSizeChange = (e) => {
+    const value = parseInt(e.target.value, 10);
+    if (!isNaN(value) && value >= 6 && value <= 48) {
+      setLabelFontSize(value);
     }
   };
 
@@ -127,27 +133,53 @@ const TopMapPanel = ({
           </div>
           <div className="label-control-container">
             <button 
-              className={`toolbar-btn label-btn ${showLabels ? 'active' : ''}`}
-              onClick={handleLabelToggle}
+              className={`toolbar-btn ${showLabels ? 'active' : ''}`}
+              onClick={handleLabelClick}
             >
-              {showLabels && (
-                <span 
-                  className="label-size-btn-inline"
-                  onClick={(e) => { e.stopPropagation(); handleDecreaseFontSize(); }}
-                >
-                  −
-                </span>
-              )}
-              <span>Labels</span>
-              {showLabels && (
-                <span 
-                  className="label-size-btn-inline"
-                  onClick={(e) => { e.stopPropagation(); handleIncreaseFontSize(); }}
-                >
-                  +
-                </span>
-              )}
+              Labels
             </button>
+            {showLabelModal && showLabels && (
+              <div className="label-modal">
+                <div className="label-modal-header">
+                  <span>Label Settings</span>
+                  <button className="label-modal-close" onClick={() => setShowLabelModal(false)}>×</button>
+                </div>
+                <div className="label-modal-content">
+                  <div className="label-setting-group">
+                    <label>Font Size</label>
+                    <div className="font-size-control">
+                      <input
+                        type="range"
+                        min="6"
+                        max="48"
+                        value={labelFontSize}
+                        onChange={handleFontSizeChange}
+                        className="font-size-slider"
+                      />
+                      <span className="font-size-value">{labelFontSize}px</span>
+                    </div>
+                  </div>
+                  <div className="label-setting-group">
+                    <label>Color</label>
+                    <div className="color-picker-row">
+                      <input
+                        type="color"
+                        value={labelColor}
+                        onChange={(e) => setLabelColor(e.target.value)}
+                        className="color-picker-input"
+                      />
+                      <input
+                        type="text"
+                        value={labelColor}
+                        onChange={(e) => setLabelColor(e.target.value)}
+                        className="color-hex-input"
+                        placeholder="#000000"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
