@@ -1,10 +1,10 @@
 import express from 'express';
 import projectController from '../controllers/projectController.js';
-import hierarchyController from '../controllers/hierarchyController.js';
+import featureController from '../controllers/featureController.js';
 import supabaseClient from '../config/supabaseClient.js';
 
 const { getProjects, getProject, createProject, deleteProject, updateProject, getProjectUsers, addUserToProject, removeUserFromProject } = projectController;
-const { getHierarchy, deleteHierarchy, createHierarchyItem, updateHierarchyItem, deleteHierarchyItem, getItemTypes, createItemType, updateItemType, deleteItemType, uploadHierarchyFile, importHierarchyData } = hierarchyController;
+const { getHierarchy, deleteHierarchy, createFeature, updateFeature, deleteFeature, getFeatureTypes, createFeatureType, updateFeatureType, deleteFeatureType, uploadHierarchyFile, importHierarchyData } = featureController;
 const { authenticateUser } = supabaseClient;
 const router = express.Router();
 
@@ -29,15 +29,15 @@ router.delete('/:id/hierarchy', deleteHierarchy);
 router.post('/:id/hierarchy/upload', uploadHierarchyFile);
 router.post('/:id/hierarchy/import', importHierarchyData);
 
-// Individual hierarchy item routes
-router.post('/:id/hierarchy/items', createHierarchyItem);
-router.put('/:id/hierarchy/items/:itemId', updateHierarchyItem);
-router.delete('/:id/hierarchy/items/:itemId', deleteHierarchyItem);
+// Individual feature routes
+router.post('/:id/hierarchy/features', createFeature);
+router.put('/:id/hierarchy/features/:featureId', updateFeature);
+router.delete('/:id/hierarchy/features/:featureId', deleteFeature);
 
-// Item types routes
-router.get('/:id/hierarchy/item-types', getItemTypes);
-router.post('/:id/hierarchy/item-types', createItemType);
-router.put('/:id/hierarchy/item-types/:itemTypeId', updateItemType);
-router.delete('/:id/hierarchy/item-types/:itemTypeId', deleteItemType);
+// Feature types routes
+router.get('/:id/hierarchy/feature-types', getFeatureTypes);
+router.post('/:id/hierarchy/feature-types', createFeatureType);
+router.put('/:id/hierarchy/feature-types/:featureTypeId', updateFeatureType);
+router.delete('/:id/hierarchy/feature-types/:featureTypeId', deleteFeatureType);
 
 export default router;
