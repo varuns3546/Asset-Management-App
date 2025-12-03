@@ -50,7 +50,7 @@ const Navbar = ({ onOpenModal, onCloseModal }) => {
             />
             <Dropdown 
                 title="View" 
-                options={['Data', 'Map', 'Leaflet', 'Charts and Graphs', 'Reports']} 
+                options={['Data', 'Map', 'Charts and Graphs', 'Reports']} 
                 isOpen={openDropdown === 'view'}
                 onToggle={() => toggleDropdown('view')}
             />
