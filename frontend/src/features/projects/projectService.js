@@ -97,37 +97,37 @@ const deleteHierarchy = async (projectId, token) => {
 }
 
 const createFeature = async (projectId, featureData, token) => {
-    const response = await projectApi.post(`/${projectId}/hierarchy/items`, featureData);
+    const response = await projectApi.post(`/${projectId}/hierarchy/features`, featureData);
     return response.data;
 }
 
 const updateFeature = async (projectId, featureId, featureData, token) => {
-    const response = await projectApi.put(`/${projectId}/hierarchy/items/${featureId}`, featureData);
+    const response = await projectApi.put(`/${projectId}/hierarchy/features/${featureId}`, featureData);
     return response.data;
 }
 
 const deleteFeature = async (projectId, featureId, token) => {
-    const response = await projectApi.delete(`/${projectId}/hierarchy/items/${featureId}`);
+    const response = await projectApi.delete(`/${projectId}/hierarchy/features/${featureId}`);
     return response.data;
 }
 
 const getFeatureTypes = async (projectId, token) => {
-    const response = await projectApi.get(`/${projectId}/hierarchy/item-types`);
+    const response = await projectApi.get(`/${projectId}/hierarchy/feature-types`);
     return response.data;
 }
 
 const createFeatureType = async (projectId, featureTypeData, token) => {
-    const response = await projectApi.post(`/${projectId}/hierarchy/item-types`, featureTypeData);
+    const response = await projectApi.post(`/${projectId}/hierarchy/feature-types`, featureTypeData);
     return response.data;
 }
 
 const updateFeatureType = async (projectId, featureTypeId, featureTypeData, token) => {
-    const response = await projectApi.put(`/${projectId}/hierarchy/item-types/${featureTypeId}`, featureTypeData);
+    const response = await projectApi.put(`/${projectId}/hierarchy/feature-types/${featureTypeId}`, featureTypeData);
     return response.data;
 }
 
 const deleteFeatureType = async (projectId, featureTypeId, token) => {
-    const response = await projectApi.delete(`/${projectId}/hierarchy/item-types/${featureTypeId}`);
+    const response = await projectApi.delete(`/${projectId}/hierarchy/feature-types/${featureTypeId}`);
     return response.data;
 }
 

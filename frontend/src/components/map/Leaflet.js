@@ -1,15 +1,6 @@
-import React, { useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import React, { useEffect, useMemo } from 'react';
+import { MapContainer, TileLayer, CircleMarker, Popup, Tooltip, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
-
-// Fix for default marker icon issue in React-Leaflet
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),
-  iconUrl: require('leaflet/dist/images/marker-icon.png'),
-  shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
-});
 
 // Basemap configurations
 export const basemaps = {
@@ -86,11 +77,46 @@ const MapCenterHandler = ({ center, zoom }) => {
   return null;
 };
 
-const Leaflet = ({ panelWidth, selectedBasemap = 'street', projectCoordinates }) => {
+const Leaflet = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, features = [], featureTypes = [], showLabels = true, labelFontSize = 12 }) => {
   // Use project coordinates if available, otherwise default to New York City
   const defaultPosition = [40.7128, -74.0060];
   const position = projectCoordinates || defaultPosition;
   const basemap = basemaps[selectedBasemap] || basemaps.street;
+
+  // Create a map of feature type IDs to their colors/icons
+  const featureTypeMap = useMemo(() => {
+    const map = {};
+    featureTypes.forEach(type => {
+      map[type.id] = {
+        title: type.title,
+        color: type.icon_color || '#3388ff',
+        icon: type.icon
+      };
+    });
+    return map;
+  }, [featureTypes]);
+
+  // Filter features that have valid coordinates
+  const featuresWithCoordinates = useMemo(() => {
+    return features.filter(feature => 
+      feature.beginning_latitude != null && 
+      feature.beginning_longitude != null &&
+      !isNaN(parseFloat(feature.beginning_latitude)) &&
+      !isNaN(parseFloat(feature.beginning_longitude))
+    );
+  }, [features]);
+
+  // Get color for a feature based on its type
+  const getFeatureColor = (feature) => {
+    const typeInfo = featureTypeMap[feature.item_type_id];
+    return typeInfo?.color || '#3388ff';
+  };
+
+  // Get feature type name
+  const getFeatureTypeName = (feature) => {
+    const typeInfo = featureTypeMap[feature.item_type_id];
+    return typeInfo?.title || 'Unknown Type';
+  };
 
   return (
     <MapContainer 
@@ -112,6 +138,46 @@ const Leaflet = ({ panelWidth, selectedBasemap = 'street', projectCoordinates })
           attribution=""
         />
       )}
+      
+      {featuresWithCoordinates.map(feature => (
+        <CircleMarker
+          key={feature.id}
+          center={[
+            parseFloat(feature.beginning_latitude),
+            parseFloat(feature.beginning_longitude)
+          ]}
+          radius={4}
+          pathOptions={{
+            fillColor: getFeatureColor(feature),
+            fillOpacity: 0.8,
+            color: '#333',
+            weight: 2
+          }}
+        >
+          {showLabels && (
+            <Tooltip 
+              permanent 
+              direction="right" 
+              offset={[8, 0]}
+              className="feature-label"
+            >
+              <span style={{ fontSize: `${labelFontSize}px` }}>{feature.title}</span>
+            </Tooltip>
+          )}
+          <Popup>
+            <div style={{ minWidth: '150px' }}>
+              <strong style={{ fontSize: '14px' }}>{feature.title}</strong>
+              <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                Type: {getFeatureTypeName(feature)}
+              </div>
+              <div style={{ fontSize: '11px', color: '#888', marginTop: '4px' }}>
+                Lat: {parseFloat(feature.beginning_latitude).toFixed(6)}<br />
+                Lng: {parseFloat(feature.beginning_longitude).toFixed(6)}
+              </div>
+            </div>
+          </Popup>
+        </CircleMarker>
+      ))}
     </MapContainer>
   );
 };
