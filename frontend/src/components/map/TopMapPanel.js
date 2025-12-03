@@ -11,7 +11,9 @@ const TopMapPanel = ({
   labelFontSize,
   setLabelFontSize,
   labelColor,
-  setLabelColor
+  setLabelColor,
+  labelBackgroundColor,
+  setLabelBackgroundColor
 }) => {
   const [isResizing, setIsResizing] = useState(false);
   const [startY, setStartY] = useState(0);
@@ -21,7 +23,7 @@ const TopMapPanel = ({
   const panelRef = useRef(null);
   const dropdownRef = useRef(null);
 
-  const minHeight = 60;
+  const minHeight = 10;
   const maxHeight = 300;
 
   const handleMouseDown = (e) => {
@@ -103,6 +105,50 @@ const TopMapPanel = ({
     }
   };
 
+  // Helper functions for RGBA to Hex conversion
+  const rgbaToHex = (rgba) => {
+    const match = rgba.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
+    if (match) {
+      const r = parseInt(match[1], 10);
+      const g = parseInt(match[2], 10);
+      const b = parseInt(match[3], 10);
+      return '#' + [r, g, b].map(x => {
+        const hex = x.toString(16);
+        return hex.length === 1 ? '0' + hex : hex;
+      }).join('');
+    }
+    // Default to white
+    return '#ffffff';
+  };
+
+  const hexToRgba = (hex) => {
+    // Ensure hex starts with #
+    const cleanHex = hex.startsWith('#') ? hex : '#' + hex;
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(cleanHex);
+    if (result) {
+      const r = parseInt(result[1], 16);
+      const g = parseInt(result[2], 16);
+      const b = parseInt(result[3], 16);
+      // Set alpha to 60% (0.6)
+      return `rgba(${r}, ${g}, ${b}, 0.6)`;
+    }
+    return labelBackgroundColor;
+  };
+
+  const backgroundHex = rgbaToHex(labelBackgroundColor);
+
+  const handleBackgroundColorChange = (hex) => {
+    if (!hex) return;
+    
+    // Ensure hex starts with #
+    const cleanHex = hex.startsWith('#') ? hex : '#' + hex;
+    
+    // Validate hex format (6 hex digits) and update
+    if (cleanHex.match(/^#[0-9a-f]{6}$/i)) {
+      setLabelBackgroundColor(hexToRgba(cleanHex));
+    }
+  };
+
   return (
     <div ref={panelRef} className="top-panel" style={{ height: `${panelHeight}px` }}>
       <div className="top-panel-content">
@@ -174,6 +220,35 @@ const TopMapPanel = ({
                         onChange={(e) => setLabelColor(e.target.value)}
                         className="color-hex-input"
                         placeholder="#000000"
+                      />
+                    </div>
+                  </div>
+                  <div className="label-setting-group">
+                    <label>Background Color</label>
+                    <div className="color-picker-row">
+                      <input
+                        type="color"
+                        value={backgroundHex}
+                        onChange={(e) => handleBackgroundColorChange(e.target.value)}
+                        className="color-picker-input"
+                      />
+                      <input
+                        type="text"
+                        value={backgroundHex}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          handleBackgroundColorChange(value);
+                        }}
+                        onBlur={(e) => {
+                          // On blur, ensure we have a valid hex value
+                          const value = e.target.value;
+                          if (!value.match(/^#[0-9a-f]{6}$/i)) {
+                            // Reset to current valid hex if invalid
+                            e.target.value = backgroundHex;
+                          }
+                        }}
+                        className="color-hex-input"
+                        placeholder="#ffffff"
                       />
                     </div>
                   </div>

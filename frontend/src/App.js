@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 import { loadUser } from "./features/auth/authSlice";
-import { setSelectedProject } from "./features/projects/projectSlice"
+import { getSelectedProject } from "./features/projects/projectSlice"
 import "./utils/axiosInterceptor"; // Initialize axios interceptor
 import LoginScreen from "./screens/LoginScreen";
 import RegisterScreen from "./screens/RegisterScreen";
@@ -53,20 +53,10 @@ function AppContent() {
   const hideNavbarRoutes = ['/', '/register'];
   const showNavbar = !hideNavbarRoutes.includes(location.pathname);
   
-  // Load selected project from localStorage when user is loaded
+  // Load selected project from user_profiles when user is loaded
   useEffect(() => {
     if (user) {
-      try {
-        const savedProject = localStorage.getItem('selectedProject');
-        if (savedProject) {
-          const project = JSON.parse(savedProject);
-          dispatch(setSelectedProject(project));
-        }
-      } catch (error) {
-        console.error('Error loading selected project:', error);
-      }
-    } else{
-      
+      dispatch(getSelectedProject());
     }
   }, [user, dispatch]);
   

@@ -3,15 +3,15 @@
   height: 100vh;
   width: 100%;
   position: relative;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   --navbar-height: 60px; /* Approximate navbar height */
   --main-navbar-height: 53px; /* Approximate main navbar height (reduced by 25%) */
   --map-navbar-height: 60px; /* Map navbar height */
-  --top-panel-height: 80px; /* Top panel default height */
+  --top-panel-height: 10px; /* Top panel default height */
   padding-top: calc(var(--map-navbar-height, 60px) + var(--top-panel-height, 80px));
+  box-sizing: border-box;
 }
 
 /* Map Navbar Styles */
@@ -34,6 +34,13 @@
   justify-content: flex-start;
   padding: 15px 25px;
   gap: 15px;
+}
+
+.map-navbar-center {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex-wrap: nowrap;
 }
 
 .map-view {
@@ -149,6 +156,34 @@
   flex: 1;
   overflow: hidden;
   margin-top: 0;
+  min-height: 0; /* Important for flex children */
+}
+
+/* Leaflet Map Container Styles */
+.leaflet-map-container {
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  min-height: 0;
+}
+
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  font-family: inherit;
+}
+
+/* Feature Label Tooltip - Remove white border */
+.feature-label {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+.feature-label .leaflet-tooltip-content {
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
 .map-screen-left-panel {
@@ -291,6 +326,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 15px 20px;
+  line-height: 1;
+  margin: 0;
 }
 
 .top-panel-content h2 {
@@ -303,6 +340,10 @@
 .toolbar-actions {
   display: flex;
   gap: 10px;
+  align-items: center;
+  flex-wrap: nowrap;
+  margin: 0;
+  padding: 0;
 }
 
 .toolbar-btn {
@@ -313,11 +354,33 @@
   font-size: 14px;
   color: #495057;
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+  height: auto;
+  min-height: 36px;
+  box-sizing: border-box;
 }
 
 .toolbar-btn:hover {
   background: #e9ecef;
+}
+
+.toolbar-btn.active {
+  background: #007bff;
+  color: #ffffff;
+  border-color: #007bff;
+}
+
+.toolbar-btn.active:hover {
+  background: #0056b3;
+  border-color: #0056b3;
+}
+
+/* Label Control Container */
+.label-control-container {
+  position: relative;
+  display: inline-block;
 }
 
 /* Basemap Dropdown */
@@ -365,6 +428,218 @@
 
 .basemap-option:last-child {
   border-radius: 0 0 2px 2px;
+}
+
+/* Label Modal */
+.label-modal {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 5px;
+  background: #ffffff;
+  border: 2px solid #333;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 280px;
+  z-index: 10000;
+  overflow: hidden;
+}
+
+.label-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+  font-weight: 600;
+  font-size: 14px;
+  color: #212529;
+}
+
+.label-modal-close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  line-height: 1;
+  color: #6c757d;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.label-modal-close:hover {
+  background: #e9ecef;
+  color: #212529;
+}
+
+.label-modal-content {
+  padding: 16px;
+}
+
+.label-setting-group {
+  margin-bottom: 16px;
+}
+
+.label-setting-group:last-child {
+  margin-bottom: 0;
+}
+
+.label-setting-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #495057;
+}
+
+.font-size-control {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.font-size-slider {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: #dee2e6;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.font-size-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #007bff;
+  cursor: pointer;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.font-size-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #007bff;
+  cursor: pointer;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.font-size-value {
+  min-width: 45px;
+  text-align: right;
+  font-size: 13px;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.color-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.color-picker-input {
+  width: 50px;
+  height: 36px;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 2px;
+}
+
+.color-hex-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: monospace;
+  color: #495057;
+}
+
+.color-hex-input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+/* RGBA Color Picker */
+.rgba-picker-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.color-rgba-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: monospace;
+  color: #495057;
+}
+
+.color-rgba-input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.rgba-inputs-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.rgba-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.rgba-input-group label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6c757d;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.rgba-input {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: monospace;
+  color: #495057;
+  text-align: center;
+}
+
+.rgba-input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.color-preview {
+  user-select: none;
+  pointer-events: none;
 }
 
 /* Vertical Resize Handle */

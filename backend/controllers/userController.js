@@ -133,6 +133,112 @@ const getUser = asyncHandler(async (req, res) => {
     
 });
 
+const getSelectedProject = asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+
+    // Get user profile with selected_project_id
+    const { data: profile, error } = await req.supabase
+        .from('user_profiles')
+        .select('selected_project_id')
+        .eq('id', userId)
+        .single();
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+        return res.status(400).json({
+            success: false,
+            error: error.message
+        });
+    }
+
+    // If no profile exists or no selected project, return null
+    const selectedProjectId = profile?.selected_project_id || null;
+
+    // If there's a selected project ID, fetch the full project
+    if (selectedProjectId) {
+        const { data: project, error: projectError } = await req.supabase
+            .from('projects')
+            .select('*')
+            .eq('id', selectedProjectId)
+            .single();
+
+        if (projectError) {
+            // Project might have been deleted, clear the selection
+            await req.supabase
+                .from('user_profiles')
+                .update({ selected_project_id: null })
+                .eq('id', userId);
+            
+            return res.status(200).json(null);
+        }
+
+        return res.status(200).json(project);
+    }
+
+    res.status(200).json(null);
+});
+
+const setSelectedProject = asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+    const { projectId } = req.body;
+
+    // If projectId is provided, verify the project exists and user has access
+    if (projectId) {
+        const { data: projectAccess } = await req.supabase
+            .from('project_users')
+            .select('project_id')
+            .eq('project_id', projectId)
+            .eq('user_id', userId)
+            .single();
+
+        if (!projectAccess) {
+            return res.status(403).json({
+                success: false,
+                error: 'Access denied to this project'
+            });
+        }
+    }
+
+    // Upsert user profile with selected_project_id
+    const { data, error } = await req.supabase
+        .from('user_profiles')
+        .upsert({
+            id: userId,
+            selected_project_id: projectId || null,
+            updated_at: new Date().toISOString()
+        }, {
+            onConflict: 'id'
+        })
+        .select()
+        .single();
+
+    if (error) {
+        return res.status(400).json({
+            success: false,
+            error: error.message
+        });
+    }
+
+    // If projectId is set, return the full project
+    if (projectId) {
+        const { data: project, error: projectError } = await req.supabase
+            .from('projects')
+            .select('*')
+            .eq('id', projectId)
+            .single();
+
+        if (projectError) {
+            return res.status(400).json({
+                success: false,
+                error: projectError.message
+            });
+        }
+
+        return res.status(200).json(project);
+    }
+
+    res.status(200).json(null);
+});
+
 const extractTokenFromHeader = (req) => {
     const authHeader = req.headers.authorization || req.headers.Authorization;
     
@@ -150,4 +256,4 @@ const extractTokenFromHeader = (req) => {
     return authHeader;
 };
 
-export default {registerUser, loginUser, getUser}
+export default {registerUser, loginUser, getUser, getSelectedProject, setSelectedProject}
