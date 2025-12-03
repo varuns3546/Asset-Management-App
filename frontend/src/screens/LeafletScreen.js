@@ -20,6 +20,7 @@ const LeafletScreen = () => {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [showLabels, setShowLabels] = useState(true);
   const [labelFontSize, setLabelFontSize] = useState(12);
+  const [labelColor, setLabelColor] = useState('#000000');
   const containerRef = useRef(null);
 
   // Load user on mount
@@ -87,6 +88,8 @@ const LeafletScreen = () => {
         setShowLabels={setShowLabels}
         labelFontSize={labelFontSize}
         setLabelFontSize={setLabelFontSize}
+        labelColor={labelColor}
+        setLabelColor={setLabelColor}
       />
       <div className="map-content-container">
         <LeftMapPanel 
@@ -104,6 +107,7 @@ const LeafletScreen = () => {
             featureTypes={currentFeatureTypes || []}
             showLabels={showLabels}
             labelFontSize={labelFontSize}
+            labelColor={labelColor}
           />
         </div>
       </div>
