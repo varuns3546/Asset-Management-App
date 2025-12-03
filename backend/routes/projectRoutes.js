@@ -30,14 +30,14 @@ router.post('/:id/hierarchy/upload', uploadHierarchyFile);
 router.post('/:id/hierarchy/import', importHierarchyData);
 
 // Individual feature routes
-router.post('/:id/hierarchy/items', createFeature);
-router.put('/:id/hierarchy/items/:itemId', updateFeature);
-router.delete('/:id/hierarchy/items/:itemId', deleteFeature);
+router.post('/:id/hierarchy/features', createFeature);
+router.put('/:id/hierarchy/features/:featureId', updateFeature);
+router.delete('/:id/hierarchy/features/:featureId', deleteFeature);
 
 // Feature types routes
-router.get('/:id/hierarchy/item-types', getFeatureTypes);
-router.post('/:id/hierarchy/item-types', createFeatureType);
-router.put('/:id/hierarchy/item-types/:itemTypeId', updateFeatureType);
-router.delete('/:id/hierarchy/item-types/:itemTypeId', deleteFeatureType);
+router.get('/:id/hierarchy/feature-types', getFeatureTypes);
+router.post('/:id/hierarchy/feature-types', createFeatureType);
+router.put('/:id/hierarchy/feature-types/:featureTypeId', updateFeatureType);
+router.delete('/:id/hierarchy/feature-types/:featureTypeId', deleteFeatureType);
 
 export default router;

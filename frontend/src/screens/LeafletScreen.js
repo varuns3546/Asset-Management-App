@@ -1,20 +1,39 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import Leaflet from '../components/map/Leaflet';
 import LeftMapPanel from '../components/map/LeftMapPanel';
 import TopMapPanel from '../components/map/TopMapPanel';
 import MapNavbar from '../components/map/MapNavbar';
 import FileUploadModal from '../components/FileUploadModal';
+import { getHierarchy, getFeatureTypes } from '../features/projects/projectSlice';
+import { loadUser } from '../features/auth/authSlice';
 import '../styles/map.css';
 
 const LeafletScreen = () => {
-  const { selectedProject } = useSelector((state) => state.projects);
+  const dispatch = useDispatch();
+  const { selectedProject, currentHierarchy, currentFeatureTypes } = useSelector((state) => state.projects);
+  const { user } = useSelector((state) => state.auth);
   const [isExpanded, setIsExpanded] = useState(true);
   const [panelWidth, setPanelWidth] = useState(320);
   const [topPanelHeight, setTopPanelHeight] = useState(80);
   const [selectedBasemap, setSelectedBasemap] = useState('street');
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [showLabels, setShowLabels] = useState(true);
+  const [labelFontSize, setLabelFontSize] = useState(12);
   const containerRef = useRef(null);
+
+  // Load user on mount
+  useEffect(() => {
+    dispatch(loadUser());
+  }, [dispatch]);
+
+  // Load hierarchy and feature types when project is selected and user is authenticated
+  useEffect(() => {
+    if (selectedProject?.id && user) {
+      dispatch(getHierarchy(selectedProject.id));
+      dispatch(getFeatureTypes(selectedProject.id));
+    }
+  }, [selectedProject?.id, user, dispatch]);
 
   // Update CSS variables based on actual component heights
   useEffect(() => {
@@ -64,6 +83,10 @@ const LeafletScreen = () => {
         setPanelHeight={setTopPanelHeight}
         selectedBasemap={selectedBasemap}
         setSelectedBasemap={setSelectedBasemap}
+        showLabels={showLabels}
+        setShowLabels={setShowLabels}
+        labelFontSize={labelFontSize}
+        setLabelFontSize={setLabelFontSize}
       />
       <div className="map-content-container">
         <LeftMapPanel 
@@ -77,6 +100,10 @@ const LeafletScreen = () => {
             panelWidth={panelWidth} 
             selectedBasemap={selectedBasemap}
             projectCoordinates={projectCoordinates}
+            features={currentHierarchy || []}
+            featureTypes={currentFeatureTypes || []}
+            showLabels={showLabels}
+            labelFontSize={labelFontSize}
           />
         </div>
       </div>

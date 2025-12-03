@@ -350,7 +350,7 @@ const createFeatureType = asyncHandler(async (req, res) => {
 
 
 const deleteFeatureType = asyncHandler(async (req, res) => {
-  const { id: project_id, itemTypeId } = req.params;
+  const { id: project_id, featureTypeId } = req.params;
 
   if (!project_id) {
     return res.status(400).json({
@@ -359,7 +359,7 @@ const deleteFeatureType = asyncHandler(async (req, res) => {
     });
   }
 
-  if (!itemTypeId) {
+  if (!featureTypeId) {
     return res.status(400).json({
       success: false,
       error: 'Feature type ID is required'
@@ -409,9 +409,9 @@ const deleteFeatureType = asyncHandler(async (req, res) => {
     // Update all feature types that have this feature type in their parent_ids
     const updatePromises = [];
     for (const featureType of allFeatureTypes) {
-      if (featureType.parent_ids && Array.isArray(featureType.parent_ids) && featureType.parent_ids.includes(itemTypeId)) {
+      if (featureType.parent_ids && Array.isArray(featureType.parent_ids) && featureType.parent_ids.includes(featureTypeId)) {
         // Remove the deleted feature type ID from parent_ids
-        const updatedParentIds = featureType.parent_ids.filter(id => id !== itemTypeId);
+        const updatedParentIds = featureType.parent_ids.filter(id => id !== featureTypeId);
         
         const updatePromise = req.supabase
           .from('feature_types')
@@ -437,7 +437,7 @@ const deleteFeatureType = asyncHandler(async (req, res) => {
     const { error } = await req.supabase
       .from('feature_types')
       .delete()
-      .eq('id', itemTypeId)
+      .eq('id', featureTypeId)
       .eq('project_id', project_id);
 
     if (error) {
@@ -451,7 +451,7 @@ const deleteFeatureType = asyncHandler(async (req, res) => {
     res.status(200).json({
       success: true,
       message: 'Feature type deleted successfully and parent references cleaned up',
-      id: itemTypeId
+      id: featureTypeId
     });
 
   } catch (error) {
@@ -546,7 +546,7 @@ const createFeature = asyncHandler(async (req, res) => {
 
 // Delete individual feature
 const deleteFeature = asyncHandler(async (req, res) => {
-  const { id: project_id, itemId } = req.params;
+  const { id: project_id, featureId } = req.params;
 
   if (!project_id) {
     return res.status(400).json({
@@ -555,10 +555,10 @@ const deleteFeature = asyncHandler(async (req, res) => {
     });
   }
 
-  if (!itemId) {
+  if (!featureId) {
     return res.status(400).json({
       success: false,
-      error: 'Item ID is required'
+      error: 'Feature ID is required'
     });
   }
 
@@ -590,7 +590,7 @@ const deleteFeature = asyncHandler(async (req, res) => {
     const { error } = await req.supabase
       .from('features')
       .delete()
-      .eq('id', itemId)
+      .eq('id', featureId)
       .eq('project_id', project_id);
 
     if (error) {
@@ -604,7 +604,7 @@ const deleteFeature = asyncHandler(async (req, res) => {
     res.status(200).json({
       success: true,
       message: 'Feature deleted successfully',
-      data: { id: itemId }
+      data: { id: featureId }
     });
 
   } catch (error) {
@@ -618,7 +618,7 @@ const deleteFeature = asyncHandler(async (req, res) => {
 
 const updateFeatureType = asyncHandler(async (req, res) => {
   const { name, description, parent_ids, attributes, has_coordinates, icon, icon_color } = req.body;
-  const { id: project_id, itemTypeId } = req.params;
+  const { id: project_id, featureTypeId } = req.params;
 
   if (!project_id) {
     return res.status(400).json({
@@ -627,7 +627,7 @@ const updateFeatureType = asyncHandler(async (req, res) => {
     });
   }
 
-  if (!itemTypeId) {
+  if (!featureTypeId) {
     return res.status(400).json({
       success: false,
       error: 'Feature Type ID is required'
@@ -678,7 +678,7 @@ const updateFeatureType = asyncHandler(async (req, res) => {
         icon: icon || null,
         icon_color: icon_color || null
       })
-      .eq('id', itemTypeId)
+      .eq('id', featureTypeId)
       .eq('project_id', project_id)
       .select()
       .single();
@@ -696,7 +696,7 @@ const updateFeatureType = asyncHandler(async (req, res) => {
     const { error: deleteError } = await req.supabase
       .from('attributes')
       .delete()
-      .eq('item_type_id', itemTypeId);
+      .eq('item_type_id', featureTypeId);
 
     if (deleteError) {
       console.error('Error deleting existing attributes:', deleteError);
@@ -705,7 +705,7 @@ const updateFeatureType = asyncHandler(async (req, res) => {
     // Then insert new attributes if they exist
     if (attributes && attributes.length > 0) {
       const attributesToInsert = attributes.map(attribute => ({
-        item_type_id: itemTypeId,
+        item_type_id: featureTypeId,
         title: attribute.trim()
       }));
 
@@ -738,7 +738,7 @@ const updateFeatureType = asyncHandler(async (req, res) => {
 
 const updateFeature = asyncHandler(async (req, res) => {
   const { title, item_type_id, parent_id, beginning_latitude, end_latitude, beginning_longitude, end_longitude } = req.body;
-  const { id: project_id, itemId } = req.params;
+  const { id: project_id, featureId } = req.params;
 
   if (!project_id) {
     return res.status(400).json({
@@ -747,7 +747,7 @@ const updateFeature = asyncHandler(async (req, res) => {
     });
   }
 
-  if (!itemId) {
+  if (!featureId) {
     return res.status(400).json({
       success: false,
       error: 'Feature ID is required'
@@ -799,7 +799,7 @@ const updateFeature = asyncHandler(async (req, res) => {
         beginning_longitude: beginning_longitude || null,
         end_longitude: end_longitude || null
       })
-      .eq('id', itemId)
+      .eq('id', featureId)
       .eq('project_id', project_id)
       .select()
       .single();

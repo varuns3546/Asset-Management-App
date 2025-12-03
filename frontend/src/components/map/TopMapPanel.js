@@ -1,7 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { basemaps } from './Leaflet';
 
-const TopMapPanel = ({ panelHeight, setPanelHeight, selectedBasemap, setSelectedBasemap }) => {
+const TopMapPanel = ({ 
+  panelHeight, 
+  setPanelHeight, 
+  selectedBasemap, 
+  setSelectedBasemap,
+  showLabels,
+  setShowLabels,
+  labelFontSize,
+  setLabelFontSize
+}) => {
   const [isResizing, setIsResizing] = useState(false);
   const [startY, setStartY] = useState(0);
   const [startHeight, setStartHeight] = useState(0);
@@ -50,7 +59,7 @@ const TopMapPanel = ({ panelHeight, setPanelHeight, selectedBasemap, setSelected
     };
   }, [isResizing, startY, startHeight, minHeight, maxHeight, setPanelHeight]);
 
-  // Close dropdown when clicking outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -70,6 +79,22 @@ const TopMapPanel = ({ panelHeight, setPanelHeight, selectedBasemap, setSelected
   const handleBasemapSelect = (basemapKey) => {
     setSelectedBasemap(basemapKey);
     setShowBasemapDropdown(false);
+  };
+
+  const handleLabelToggle = () => {
+    setShowLabels(!showLabels);
+  };
+
+  const handleIncreaseFontSize = () => {
+    if (labelFontSize < 48) {
+      setLabelFontSize(labelFontSize + 1);
+    }
+  };
+
+  const handleDecreaseFontSize = () => {
+    if (labelFontSize > 6) {
+      setLabelFontSize(labelFontSize - 1);
+    }
   };
 
   return (
@@ -99,6 +124,30 @@ const TopMapPanel = ({ panelHeight, setPanelHeight, selectedBasemap, setSelected
                 ))}
               </div>
             )}
+          </div>
+          <div className="label-control-container">
+            <button 
+              className={`toolbar-btn label-btn ${showLabels ? 'active' : ''}`}
+              onClick={handleLabelToggle}
+            >
+              {showLabels && (
+                <span 
+                  className="label-size-btn-inline"
+                  onClick={(e) => { e.stopPropagation(); handleDecreaseFontSize(); }}
+                >
+                  −
+                </span>
+              )}
+              <span>Labels</span>
+              {showLabels && (
+                <span 
+                  className="label-size-btn-inline"
+                  onClick={(e) => { e.stopPropagation(); handleIncreaseFontSize(); }}
+                >
+                  +
+                </span>
+              )}
+            </button>
           </div>
         </div>
       </div>
