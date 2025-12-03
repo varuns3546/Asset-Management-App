@@ -1,7 +1,11 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
 import Map from '@arcgis/core/Map';
 import MapView from '@arcgis/core/views/MapView';
 import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
+import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
+import MapImageLayer from '@arcgis/core/layers/MapImageLayer';
+import TileLayer from '@arcgis/core/layers/TileLayer';
+import VectorTileLayer from '@arcgis/core/layers/VectorTileLayer';
 import Graphic from '@arcgis/core/Graphic';
 import Point from '@arcgis/core/geometry/Point';
 import Polyline from '@arcgis/core/geometry/Polyline';
@@ -15,7 +19,7 @@ import ARCGIS_CONFIG from '../config/arcgisConfig';
 import { ITEM_TYPE_ICON_MAP, DEFAULT_ITEM_TYPE_ICON } from '../constants/itemTypeIcons';
 import '../styles/map.css';
 
-const MapComponent = ({ 
+const MapComponent = forwardRef(({ 
   hierarchyItems = [], 
   itemTypes = [],
   selectedItem = null,
@@ -23,12 +27,113 @@ const MapComponent = ({
   selectedProject = null,
   height = '500px',
   mapStyle = 'streets'
-}) => {
+}, ref) => {
   const mapRef = useRef(null);
   const mapViewRef = useRef(null);
+  const mapInstanceRef = useRef(null);
   const graphicsLayerRef = useRef(null);
+  const externalLayersRef = useRef([]);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapError, setMapError] = useState(null);
+  const [externalLayers, setExternalLayers] = useState([]);
+
+  // Expose methods to parent component
+  useImperativeHandle(ref, () => ({
+    addLayer: async (layerInfo) => {
+      console.log('Map.addLayer called:', layerInfo);
+      console.log('Map instance available:', !!mapInstanceRef.current);
+      console.log('Map loaded:', mapLoaded);
+      
+      if (!mapInstanceRef.current) {
+        throw new Error('Map instance is not available');
+      }
+      
+      if (!mapLoaded) {
+        throw new Error('Map is not fully loaded yet. Please wait a moment and try again.');
+      }
+
+      let layer;
+      const { url, type, name } = layerInfo;
+
+      try {
+        console.log('Creating layer of type:', type);
+        // Create the appropriate layer type
+        switch (type) {
+          case 'feature':
+            layer = new FeatureLayer({
+              url: url,
+              title: name
+            });
+            break;
+          case 'map-image':
+            layer = new MapImageLayer({
+              url: url,
+              title: name
+            });
+            break;
+          case 'tile':
+            layer = new TileLayer({
+              url: url,
+              title: name
+            });
+            break;
+          case 'vector-tile':
+            layer = new VectorTileLayer({
+              url: url,
+              title: name
+            });
+            break;
+          default:
+            throw new Error(`Unsupported layer type: ${type}`);
+        }
+
+        console.log('Layer created, adding to map...');
+        // Add layer to map
+        mapInstanceRef.current.add(layer);
+
+        console.log('Waiting for layer to load...');
+        // Wait for layer to load
+        await layer.load();
+        console.log('Layer loaded successfully');
+
+        // Store layer reference
+        const layerId = `layer_${Date.now()}`;
+        const layerData = {
+          id: layerId,
+          layer: layer,
+          info: layerInfo
+        };
+
+        externalLayersRef.current.push(layerData);
+        setExternalLayers([...externalLayersRef.current]);
+        
+        console.log('Layer added with ID:', layerId);
+        return layerId;
+      } catch (error) {
+        console.error('Error adding layer:', error);
+        console.error('Error details:', error.details || error.message);
+        if (layer && mapInstanceRef.current) {
+          console.log('Removing failed layer from map');
+          mapInstanceRef.current.remove(layer);
+        }
+        throw new Error(`Failed to add layer: ${error.message || 'Unknown error'}`);
+      }
+    },
+    removeLayer: (layerId) => {
+      const layerIndex = externalLayersRef.current.findIndex(l => l.id === layerId);
+      if (layerIndex !== -1) {
+        const layerData = externalLayersRef.current[layerIndex];
+        if (mapInstanceRef.current && layerData.layer) {
+          mapInstanceRef.current.remove(layerData.layer);
+        }
+        externalLayersRef.current.splice(layerIndex, 1);
+        setExternalLayers([...externalLayersRef.current]);
+      }
+    },
+    getExternalLayers: () => {
+      return externalLayersRef.current;
+    }
+  }), [mapLoaded]);
 
   useEffect(() => {
     try {
@@ -46,6 +151,9 @@ const MapComponent = ({
     const map = new Map({
       basemap: basemapStyle
     });
+
+    // Store map instance reference
+    mapInstanceRef.current = map;
 
     // Determine map center - use project coordinates if available, otherwise use default
     let mapCenter = [ARCGIS_CONFIG.defaultCenter.longitude, ARCGIS_CONFIG.defaultCenter.latitude];
@@ -80,9 +188,20 @@ const MapComponent = ({
 
     // Cleanup function
     return () => {
+      // Remove all external layers
+      externalLayersRef.current.forEach(layerData => {
+        if (layerData.layer && map) {
+          map.remove(layerData.layer);
+        }
+      });
+      externalLayersRef.current = [];
+      setExternalLayers([]);
+
       if (mapView) {
         mapView.destroy();
       }
+      
+      mapInstanceRef.current = null;
     };
     } catch (error) {
       console.error('MapComponent: Error initializing map:', error);
@@ -390,6 +509,9 @@ const MapComponent = ({
             }
             return false;
           }).length} assets with coordinates
+          {externalLayers.length > 0 && (
+            <span className="external-layers-count"> | {externalLayers.length} external layer{externalLayers.length !== 1 ? 's' : ''}</span>
+          )}
         </div>
       </div>
       
@@ -414,6 +536,8 @@ const MapComponent = ({
       )}
     </div>
   );
-};
+});
+
+MapComponent.displayName = 'MapComponent';
 
 export default MapComponent;

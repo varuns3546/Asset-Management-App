@@ -69,6 +69,57 @@
     padding: 36px;
 }
 
+/* Add Layer Modal Styles */
+.content:has(.add-layer-modal) {
+    max-width: 800px;
+}
+
+.content:has(.add-layer-modal) .header {
+    padding: 24px 30px;
+}
+
+.content:has(.add-layer-modal) .title {
+    font-size: 1.75rem;
+}
+
+.content:has(.add-layer-modal) .close-btn {
+    font-size: 2rem;
+}
+
+.content:has(.add-layer-modal) .body {
+    padding: 30px;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+/* Tab Navigation Styles */
+.tab-navigation button {
+    transition: all 0.2s ease;
+}
+
+.tab-navigation button:hover {
+    color: #0056b3 !important;
+}
+
+/* Search Results Styles */
+.search-results::-webkit-scrollbar {
+    width: 8px;
+}
+
+.search-results::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.search-results::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.search-results::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
 .header {
     display: flex;
     justify-content: space-between;
@@ -739,7 +790,8 @@
     }
     
     .content:has(.create-project-modal),
-    .content:has(.open-project-modal) {
+    .content:has(.open-project-modal),
+    .content:has(.add-layer-modal) {
         max-width: 95%;
     }
     

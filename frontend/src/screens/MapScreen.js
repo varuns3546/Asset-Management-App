@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { getHierarchy, getHierarchyItemTypes, updateHierarchyItemType } from '../features/projects/projectSlice';
 import { loadUser } from '../features/auth/authSlice';
 import Map from '../components/Map';
 import HierarchyForm from '../components/structure/HierarchyForm';
+import AddLayerModal from '../components/AddLayerModal';
 import { ITEM_TYPE_ICON_MAP, ITEM_TYPE_ICON_OPTIONS, ITEM_TYPE_COLOR_OPTIONS, DEFAULT_ITEM_TYPE_ICON } from '../constants/itemTypeIcons';
 import ARCGIS_CONFIG from '../config/arcgisConfig';
 import '../styles/map.css';
@@ -14,6 +15,7 @@ const MapScreen = () => {
     const { user } = useSelector((state) => state.auth);
     const [selectedItem, setSelectedItem] = useState(null);
     const dispatch = useDispatch();
+    const mapRef = useRef(null);
     const [activeTypeId, setActiveTypeId] = useState(null);
     const [editingTypeId, setEditingTypeId] = useState(null);
     const [typeIconDraft, setTypeIconDraft] = useState(DEFAULT_ITEM_TYPE_ICON);
@@ -21,6 +23,9 @@ const MapScreen = () => {
     const [updatingType, setUpdatingType] = useState(false);
     const [typeEditError, setTypeEditError] = useState(null);
     const [mapStyle, setMapStyle] = useState('streets');
+    const [isAddLayerModalOpen, setIsAddLayerModalOpen] = useState(false);
+    const [loadedLayers, setLoadedLayers] = useState([]);
+    const [layerError, setLayerError] = useState(null);
     const mapTypeOptions = [
         { value: 'streets', label: 'Streets' },
         { value: 'satellite', label: 'Satellite' },
@@ -137,6 +142,45 @@ const MapScreen = () => {
         }
     };
 
+    const handleAddLayer = async (layerInfo) => {
+        console.log('handleAddLayer called with:', layerInfo);
+        
+        if (!mapRef.current) {
+            console.error('Map ref is not available');
+            throw new Error('Map is not initialized');
+        }
+
+        try {
+            setLayerError(null);
+            console.log('Calling map.addLayer...');
+            const layerId = await mapRef.current.addLayer(layerInfo);
+            console.log('Layer added successfully with ID:', layerId);
+            setLoadedLayers(prevLayers => [...prevLayers, { id: layerId, ...layerInfo }]);
+        } catch (error) {
+            console.error('Error in handleAddLayer:', error);
+            setLayerError(error.message);
+            throw error;
+        }
+    };
+
+    const handleRemoveLayer = (layerId) => {
+        console.log('Removing layer with ID:', layerId);
+        if (mapRef.current) {
+            mapRef.current.removeLayer(layerId);
+            setLoadedLayers(prevLayers => prevLayers.filter(layer => layer.id !== layerId));
+        }
+    };
+
+    const handleOpenAddLayerModal = () => {
+        setIsAddLayerModalOpen(true);
+        setLayerError(null);
+    };
+
+    const handleCloseAddLayerModal = () => {
+        setIsAddLayerModalOpen(false);
+        setLayerError(null);
+    };
+
 
     return (
         <div className="map-screen">
@@ -148,6 +192,13 @@ const MapScreen = () => {
                             <div className="map-screen-info">
                                 <span>{itemsWithCoordinates.length} assets with coordinates</span>
                             </div>
+                            <button 
+                                className="btn btn-primary btn-sm"
+                                onClick={handleOpenAddLayerModal}
+                                style={{ marginRight: '10px' }}
+                            >
+                                + Add Layer
+                            </button>
                             {mapTypeOptions.length > 0 && (
                                 <div className="map-screen-controls">
                                     <label htmlFor="map-style-select">Map Type</label>
@@ -270,6 +321,7 @@ const MapScreen = () => {
                                 </div>
                                 <div className="map-view-wrapper">
                                     <Map 
+                                        ref={mapRef}
                                         hierarchyItems={currentHierarchy || []}
                                         itemTypes={currentItemTypes || []}
                                         selectedItem={selectedItem}
@@ -279,6 +331,39 @@ const MapScreen = () => {
                                         mapStyle={mapStyle}
                                     />
                                 </div>
+                                
+                                {/* Layer Error Display */}
+                                {layerError && (
+                                    <div className="external-layers-panel" style={{ marginTop: '15px' }}>
+                                        <div className="error-message" style={{ fontSize: '12px', color: '#dc3545' }}>
+                                            <strong>Error:</strong> {layerError}
+                                        </div>
+                                    </div>
+                                )}
+                                
+                                {/* External Layers List */}
+                                {loadedLayers.length > 0 && (
+                                    <div className="external-layers-panel" style={{ marginTop: layerError ? '10px' : '15px' }}>
+                                        <h4>External Layers ({loadedLayers.length})</h4>
+                                        <ul className="external-layers-list">
+                                            {loadedLayers.map(layer => (
+                                                <li key={layer.id} className="external-layer-item">
+                                                    <span className="external-layer-name" title={layer.url}>
+                                                        {layer.name}
+                                                    </span>
+                                                    <button
+                                                        type="button"
+                                                        className="external-layer-remove"
+                                                        onClick={() => handleRemoveLayer(layer.id)}
+                                                        title="Remove layer"
+                                                    >
+                                                        ×
+                                                    </button>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -300,6 +385,13 @@ const MapScreen = () => {
                     <p>Please select a project to view its asset map</p>
                 </div>
             )}
+            
+            {/* Add Layer Modal */}
+            <AddLayerModal
+                isOpen={isAddLayerModalOpen}
+                onClose={handleCloseAddLayerModal}
+                onAddLayer={handleAddLayer}
+            />
         </div>
     );
 };
