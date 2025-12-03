@@ -14,7 +14,6 @@ import ItemTypeScreen from "./screens/ItemTypeScreen";
 import MapScreen from "./screens/MapScreen";
 import Navbar from "./components/Navbar";
 import Modal from "./components/Modal";
-import LeafletScreen from "./screens/LeafletScreen";
 
 
 function AppContent() {
@@ -93,7 +92,6 @@ function AppContent() {
           <Route path="/hierarchies" element={<HierarchyScreen />} />
           <Route path="/item-types" element={<ItemTypeScreen />} />
           <Route path="/map" element={<MapScreen />} />
-          <Route path="/leaflet" element={<LeafletScreen />} />
         </Routes>
       </div>
       

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { basemaps } from './Leaflet';
+import { basemaps } from './Map';
 
 const TopMapPanel = ({ 
   panelHeight, 
@@ -22,6 +22,7 @@ const TopMapPanel = ({
   const [showLabelModal, setShowLabelModal] = useState(false);
   const panelRef = useRef(null);
   const dropdownRef = useRef(null);
+  const labelModalRef = useRef(null);
 
   const minHeight = 10;
   const maxHeight = 300;
@@ -70,16 +71,19 @@ const TopMapPanel = ({
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setShowBasemapDropdown(false);
       }
+      if (labelModalRef.current && !labelModalRef.current.contains(event.target)) {
+        setShowLabelModal(false);
+      }
     };
 
-    if (showBasemapDropdown) {
+    if (showBasemapDropdown || showLabelModal) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showBasemapDropdown]);
+  }, [showBasemapDropdown, showLabelModal]);
 
   const handleBasemapSelect = (basemapKey) => {
     setSelectedBasemap(basemapKey);
@@ -177,7 +181,7 @@ const TopMapPanel = ({
               </div>
             )}
           </div>
-          <div className="label-control-container">
+          <div className="label-control-container" ref={labelModalRef}>
             <button 
               className={`toolbar-btn ${showLabels ? 'active' : ''}`}
               onClick={handleLabelClick}
