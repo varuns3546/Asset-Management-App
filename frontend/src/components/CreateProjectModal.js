@@ -1,5 +1,5 @@
 import '../styles/projectComponents.css'
-import { createProject } from '../features/projects/projectSlice'
+import { createProject, setSelectedProjectAsync } from '../features/projects/projectSlice'
 import { useDispatch } from 'react-redux'
 import { useState } from 'react'
 const CreateProjectModal = ({ onClose }) => {
@@ -11,13 +11,17 @@ const CreateProjectModal = ({ onClose }) => {
         longitude: ''
     })
     const { title, description, latitude, longitude } = formData
-    const handleCreateProject = () => {
+    const handleCreateProject = async () => {
         if (title.trim() === '') {
             console.log('Project title is required')
             return
         }
         else{
-            dispatch(createProject(formData))
+            const result = await dispatch(createProject(formData))
+            // If project was created successfully, set it as selected in user_profiles
+            if (createProject.fulfilled.match(result) && result.payload?.id) {
+                await dispatch(setSelectedProjectAsync(result.payload.id))
+            }
             setFormData({
                 title: '',
                 description: '',

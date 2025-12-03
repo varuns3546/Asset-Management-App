@@ -21,6 +21,7 @@ const LeafletScreen = () => {
   const [showLabels, setShowLabels] = useState(true);
   const [labelFontSize, setLabelFontSize] = useState(12);
   const [labelColor, setLabelColor] = useState('#000000');
+  const [labelBackgroundColor, setLabelBackgroundColor] = useState('rgba(255, 255, 255, 0.6)');
   const containerRef = useRef(null);
 
   // Load user on mount
@@ -90,6 +91,8 @@ const LeafletScreen = () => {
         setLabelFontSize={setLabelFontSize}
         labelColor={labelColor}
         setLabelColor={setLabelColor}
+        labelBackgroundColor={labelBackgroundColor}
+        setLabelBackgroundColor={setLabelBackgroundColor}
       />
       <div className="map-content-container">
         <LeftMapPanel 
@@ -98,7 +101,14 @@ const LeafletScreen = () => {
           panelWidth={panelWidth}
           setPanelWidth={setPanelWidth}
         />
-        <div style={{ width: mapWidth, height: '100%', position: 'relative' }}>
+        <div style={{ 
+          width: mapWidth, 
+          height: '100%', 
+          position: 'relative',
+          flex: 1,
+          minHeight: 0,
+          overflow: 'hidden'
+        }}>
           <Leaflet 
             panelWidth={panelWidth} 
             selectedBasemap={selectedBasemap}
@@ -108,6 +118,7 @@ const LeafletScreen = () => {
             showLabels={showLabels}
             labelFontSize={labelFontSize}
             labelColor={labelColor}
+            labelBackgroundColor={labelBackgroundColor}
           />
         </div>
       </div>

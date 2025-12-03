@@ -1,33 +1,9 @@
 import {createSlice, createAsyncThunk} from '@reduxjs/toolkit'          
 import projectService from './projectService'
 
-// Load selected project from localStorage on initialization
-const getInitialSelectedProject = () => {
-    try {
-        const savedProject = localStorage.getItem('selectedProject')
-        return savedProject ? JSON.parse(savedProject) : null
-    } catch (error) {
-        console.error('Error loading selected project from localStorage:', error)
-        return null
-    }
-}
-
-// Helper function to save selected project to localStorage
-const saveSelectedProjectToStorage = (project) => {
-    try {
-        if (project) {
-            localStorage.setItem('selectedProject', JSON.stringify(project))
-        } else {
-            localStorage.removeItem('selectedProject')
-        }
-    } catch (error) {
-        console.error('Error saving selected project to localStorage:', error)
-    }
-}
-
 const initialState = {
     projects: [],
-    selectedProject: getInitialSelectedProject(),
+    selectedProject: null,
     // Single hierarchy object instead of array
     currentHierarchy: null,
     // Feature types for the current project
@@ -398,6 +374,42 @@ export const removeUserFromProject = createAsyncThunk(
     }
 )
 
+// Get selected project from user_profiles
+export const getSelectedProject = createAsyncThunk(
+    'projects/getSelectedProject',
+    async (_, thunkAPI) => {
+        try {
+            return await projectService.getUserSelectedProject()
+        } catch (error) {
+            const message =
+                (error.response && 
+                    error.response.data &&
+                    error.response.data.message) ||
+                error.message ||
+                error.toString()
+            return thunkAPI.rejectWithValue(message)
+        }
+    }
+)
+
+// Set selected project in user_profiles
+export const setSelectedProjectAsync = createAsyncThunk(
+    'projects/setSelectedProjectAsync',
+    async (projectId, thunkAPI) => {
+        try {
+            return await projectService.setUserSelectedProject(projectId)
+        } catch (error) {
+            const message =
+                (error.response && 
+                    error.response.data &&
+                    error.response.data.message) ||
+                error.message ||
+                error.toString()
+            return thunkAPI.rejectWithValue(message)
+        }
+    }
+)
+
 export const projectSlice = createSlice({
     name: 'projects',
     initialState,
@@ -410,11 +422,9 @@ export const projectSlice = createSlice({
         },
         setSelectedProject: (state, action) => {
             state.selectedProject = action.payload
-            saveSelectedProjectToStorage(action.payload)
         },
         clearSelectedProject: (state) => {
             state.selectedProject = null
-            saveSelectedProjectToStorage(null)
         },
         setCurrentHierarchy: (state, action) => {
             state.currentHierarchy = action.payload 
@@ -430,7 +440,35 @@ export const projectSlice = createSlice({
                 state.isSuccess = true
                 state.projects.push(action.payload)
                 state.selectedProject = action.payload
-                saveSelectedProjectToStorage(action.payload)
+                // Automatically set the newly created project as selected in user_profiles
+                // This will be handled by dispatching setSelectedProjectAsync after createProject
+            })
+            .addCase(getSelectedProject.pending, (state) => {
+                state.isLoading = true
+            })
+            .addCase(getSelectedProject.fulfilled, (state, action) => {
+                state.isLoading = false
+                state.isSuccess = true
+                state.selectedProject = action.payload
+            })
+            .addCase(getSelectedProject.rejected, (state, action) => {
+                state.isLoading = false
+                state.isError = true
+                state.message = action.payload
+                state.selectedProject = null
+            })
+            .addCase(setSelectedProjectAsync.pending, (state) => {
+                state.isLoading = true
+            })
+            .addCase(setSelectedProjectAsync.fulfilled, (state, action) => {
+                state.isLoading = false
+                state.isSuccess = true
+                state.selectedProject = action.payload
+            })
+            .addCase(setSelectedProjectAsync.rejected, (state, action) => {
+                state.isLoading = false
+                state.isError = true
+                state.message = action.payload
             })
             .addCase(createProject.rejected, (state, action) => {
                 state.isLoading = false

@@ -1,7 +1,7 @@
 import '../styles/projectComponents.css'
 import { useEffect, useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
-import { getProjects, setSelectedProject } from '../features/projects/projectSlice'
+import { getProjects, setSelectedProjectAsync } from '../features/projects/projectSlice'
 import { loadUser } from '../features/auth/authSlice'
 
 const OpenProjectModal = ({ onClose }) => {
@@ -23,22 +23,18 @@ const OpenProjectModal = ({ onClose }) => {
     }, [dispatch, user])
 
     // Debug logging
-    const handleOpenProject = () => {
+    const handleOpenProject = async () => {
         if (!selectedProjectId) {
             return
         }
         
-        const selectedProject = projects.find(p => p.id === selectedProjectId)
-        
-        // Set the selected project in global state
-        dispatch(setSelectedProject(selectedProject))
+        // Set the selected project in user_profiles and global state
+        await dispatch(setSelectedProjectAsync(selectedProjectId))
         
         // Close the modal
         if (onClose) {
             onClose()
         }
-        
-        // TODO: Add logic to actually open the project
     }
 
     const handleCancel = () => {

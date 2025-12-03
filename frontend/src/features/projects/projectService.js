@@ -166,6 +166,47 @@ const removeUserFromProject = async (projectId, userId, token) => {
     return response.data;
 }
 
+// User profile service functions - use user API endpoint
+const getUserSelectedProject = async () => {
+    // Get token from localStorage
+    const user = localStorage.getItem('user');
+    if (!user) {
+        throw new Error('User not authenticated');
+    }
+    const userData = JSON.parse(user);
+    const token = userData.token;
+
+    const userApi = axios.create({
+        baseURL: process.env.REACT_APP_API_BASE_URL + '/api/users',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+    });
+    const response = await userApi.get('/selected-project');
+    return response.data;
+}
+
+const setUserSelectedProject = async (projectId) => {
+    // Get token from localStorage
+    const user = localStorage.getItem('user');
+    if (!user) {
+        throw new Error('User not authenticated');
+    }
+    const userData = JSON.parse(user);
+    const token = userData.token;
+
+    const userApi = axios.create({
+        baseURL: process.env.REACT_APP_API_BASE_URL + '/api/users',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+    });
+    const response = await userApi.put('/selected-project', { projectId });
+    return response.data;
+}
+
 const projectService = {
     getProjects,
     getProject,
@@ -186,7 +227,9 @@ const projectService = {
     importHierarchyData,
     getProjectUsers,
     addUserToProject,
-    removeUserFromProject
+    removeUserFromProject,
+    getUserSelectedProject,
+    setUserSelectedProject
 }
 
 export default projectService;
