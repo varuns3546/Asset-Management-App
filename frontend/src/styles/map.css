@@ -1,6 +1,6 @@
 /* Base styles for all screen sizes */
 .leaflet-screen-container {
-  height: 100vh;
+  height: calc(100vh - var(--main-navbar-height, 53px));
   width: 100%;
   position: relative;
   overflow: hidden;
@@ -10,8 +10,8 @@
   --main-navbar-height: 53px; /* Approximate main navbar height (reduced by 25%) */
   --map-navbar-height: 60px; /* Map navbar height */
   --top-panel-height: 10px; /* Top panel default height */
-  padding-top: calc(var(--map-navbar-height, 60px) + var(--top-panel-height, 80px));
   box-sizing: border-box;
+  padding-top: var(--map-navbar-height, 60px);
 }
 
 /* Map Navbar Styles */
@@ -157,6 +157,8 @@
   overflow: hidden;
   margin-top: 0;
   min-height: 0; /* Important for flex children */
+  position: relative;
+  width: 100%;
 }
 
 /* Leaflet Map Container Styles */
@@ -199,14 +201,45 @@
 
 /* Left Panel Styles */
 .left-panel {
-  position: relative;
-  height: 100%;
+  position: fixed;
+  top: calc(var(--main-navbar-height, 53px) + var(--map-navbar-height, 60px) + var(--top-panel-height, 80px));
+  left: 0;
+  bottom: 0;
   background: #ffffff;
   border-right: 2px solid #333;
   z-index: 10;
   overflow-y: auto;
   overflow-x: hidden;
   flex-shrink: 0;
+  box-sizing: border-box;
+  padding-top: 0;
+}
+
+/* Ensure left panel header is always visible */
+.left-panel-header {
+  padding: 15px;
+  border-bottom: 1px solid #dee2e6;
+  background: #f8f9fa;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.left-panel-header {
+  padding: 15px;
+  border-bottom: 1px solid #dee2e6;
+  background: #f8f9fa;
+}
+
+.left-panel-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #212529;
+}
+
+.left-panel-content {
+  padding: 15px;
 }
 
 .left-panel.expanded {
@@ -314,11 +347,11 @@
   border-bottom: 2px solid #333;
   z-index: 20;
   flex-shrink: 0;
-  position: fixed;
-  top: calc(var(--main-navbar-height, 53px) + var(--map-navbar-height, 60px));
-  left: 0;
-  right: 0;
+  position: relative;
   overflow: visible;
+  min-height: 50px;
+  display: flex;
+  flex-direction: column;
 }
 
 .top-panel-content {
@@ -328,6 +361,15 @@
   padding: 15px 20px;
   line-height: 1;
   margin: 0;
+  flex: 1;
+  min-height: 50px;
+  overflow: visible;
+  max-width: 100%;
+}
+
+/* Reduce padding when panel is small */
+.top-panel.panel-small .top-panel-content {
+  padding: 8px 12px;
 }
 
 .top-panel-content h2 {
@@ -341,9 +383,16 @@
   display: flex;
   gap: 10px;
   align-items: center;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   margin: 0;
   padding: 0;
+  overflow: visible;
+  max-width: 100%;
+}
+
+/* Reduce gap when panel is small */
+.top-panel.panel-small .toolbar-actions {
+  gap: 5px;
 }
 
 .toolbar-btn {
@@ -354,12 +403,20 @@
   font-size: 14px;
   color: #495057;
   cursor: pointer;
-  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, padding 0.2s ease, font-size 0.2s ease;
   white-space: nowrap;
-  flex-shrink: 0;
+  flex-shrink: 1;
   height: auto;
   min-height: 36px;
   box-sizing: border-box;
+  max-width: 100%;
+}
+
+/* Scale down buttons when panel is small (height < 60px) - max 30% reduction */
+.top-panel.panel-small .toolbar-btn {
+  padding: 5.6px 11.2px; /* 30% reduction: 8px * 0.7 = 5.6px, 16px * 0.7 = 11.2px */
+  font-size: 9.8px; /* 30% reduction: 14px * 0.7 = 9.8px */
+  min-height: 25.2px; /* 30% reduction: 36px * 0.7 = 25.2px */
 }
 
 .toolbar-btn:hover {

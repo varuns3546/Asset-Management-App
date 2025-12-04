@@ -2,6 +2,9 @@ import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { MapContainer, TileLayer, CircleMarker, Popup, Tooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import MarkerClusterGroup from 'react-leaflet-cluster';
+import 'react-leaflet-cluster/dist/assets/MarkerCluster.css';
+import 'react-leaflet-cluster/dist/assets/MarkerCluster.Default.css';
 import Spinner from '../Spinner';
 import '../../styles/spinner.css';
 // Fix for default marker icons in Leaflet with webpack
@@ -390,6 +393,7 @@ const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, featu
         <MapContainer 
           center={position} 
           zoom={13} 
+          maxZoom={18}
           className="leaflet-map-container"
           style={{ 
             width: '100%', 
@@ -398,6 +402,7 @@ const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, featu
           key={projectCoordinates ? `${projectCoordinates[0]}-${projectCoordinates[1]}` : 'default'}
           scrollWheelZoom={true}
           zoomControl={true}
+          preferCanvas={true}
         >
         <MapResizeHandler panelWidth={panelWidth} />
         <MapReadyTracker 
@@ -420,60 +425,74 @@ const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, featu
         />
       )}
       
-      {featuresWithCoordinates.map(feature => (
-        <CircleMarker
-          key={feature.id}
-          center={[
-            parseFloat(feature.beginning_latitude),
-            parseFloat(feature.beginning_longitude)
-          ]}
-          radius={4}
-          pathOptions={{
-            fillColor: getFeatureColor(feature),
-            fillOpacity: 0.8,
-            color: '#333',
-            weight: 2
-          }}
-        >
-          {showLabels && (
-            <Tooltip 
-              permanent 
-              direction="right" 
-              offset={[8, 0]}
-              className="feature-label"
-              style={{
-                backgroundColor: 'transparent',
-                border: 'none',
-                boxShadow: 'none',
-                padding: 0
-              }}
-            >
-              <span style={{ 
-                fontSize: `${labelFontSize}px`, 
-                color: labelColor,
-                backgroundColor: labelBackgroundColor,
-                padding: '2px 6px',
-                borderRadius: '3px',
-                display: 'inline-block'
-              }}>
-                {feature.title}
-              </span>
-            </Tooltip>
-          )}
-          <Popup>
-            <div style={{ minWidth: '150px' }}>
-              <strong style={{ fontSize: '14px' }}>{feature.title}</strong>
-              <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-                Type: {getFeatureTypeName(feature)}
+      <MarkerClusterGroup
+        chunkedLoading
+        chunkDelay={200}
+        maxClusterRadius={60}
+        spiderfyOnMaxZoom={true}
+        showCoverageOnHover={false}
+        zoomToBoundsOnClick={true}
+        zoomToBoundsOptions={{ padding: [100, 100], maxZoom: 15 }}
+        disableClusteringAtZoom={13}
+        removeOutsideVisibleBounds={true}
+        animate={false}
+        spiderfyDistanceMultiplier={2}
+      >
+        {featuresWithCoordinates.map(feature => (
+          <CircleMarker
+            key={feature.id}
+            center={[
+              parseFloat(feature.beginning_latitude),
+              parseFloat(feature.beginning_longitude)
+            ]}
+            radius={4}
+            pathOptions={{
+              fillColor: getFeatureColor(feature),
+              fillOpacity: 0.8,
+              color: '#333',
+              weight: 2
+            }}
+          >
+            {showLabels && (
+              <Tooltip 
+                permanent 
+                direction="right" 
+                offset={[8, 0]}
+                className="feature-label"
+                style={{
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  boxShadow: 'none',
+                  padding: 0
+                }}
+              >
+                <span style={{ 
+                  fontSize: `${labelFontSize}px`, 
+                  color: labelColor,
+                  backgroundColor: labelBackgroundColor,
+                  padding: '2px 6px',
+                  borderRadius: '3px',
+                  display: 'inline-block'
+                }}>
+                  {feature.title}
+                </span>
+              </Tooltip>
+            )}
+            <Popup>
+              <div style={{ minWidth: '150px' }}>
+                <strong style={{ fontSize: '14px' }}>{feature.title}</strong>
+                <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                  Type: {getFeatureTypeName(feature)}
+                </div>
+                <div style={{ fontSize: '11px', color: '#888', marginTop: '4px' }}>
+                  Lat: {parseFloat(feature.beginning_latitude).toFixed(6)}<br />
+                  Lng: {parseFloat(feature.beginning_longitude).toFixed(6)}
+                </div>
               </div>
-              <div style={{ fontSize: '11px', color: '#888', marginTop: '4px' }}>
-                Lat: {parseFloat(feature.beginning_latitude).toFixed(6)}<br />
-                Lng: {parseFloat(feature.beginning_longitude).toFixed(6)}
-              </div>
-            </div>
-          </Popup>
-        </CircleMarker>
-      ))}
+            </Popup>
+          </CircleMarker>
+        ))}
+      </MarkerClusterGroup>
         </MapContainer>
       </div>
     </div>

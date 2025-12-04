@@ -154,8 +154,12 @@ const TopMapPanel = ({
     }
   };
 
+  // Determine if panel is small for responsive button sizing
+  const isSmallPanel = panelHeight < 60;
+  const panelClass = `top-panel ${isSmallPanel ? 'panel-small' : ''}`;
+
   return (
-    <div ref={panelRef} className="top-panel" style={{ height: `${panelHeight}px` }}>
+    <div ref={panelRef} className={panelClass} style={{ height: `${panelHeight}px` }}>
       <div className="top-panel-content">
         <div className="toolbar-actions">    
           <button className="toolbar-btn">Search</button>

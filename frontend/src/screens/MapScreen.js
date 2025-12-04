@@ -62,6 +62,34 @@ const MapScreen = () => {
     }
   }, [topPanelHeight]);
 
+  // Prevent body scrolling when map screen is mounted
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    const originalOverflowY = document.body.style.overflowY;
+    const originalHeight = document.body.style.height;
+    const originalHtmlOverflow = document.documentElement.style.overflow;
+    const originalHtmlOverflowY = document.documentElement.style.overflowY;
+    const originalHtmlHeight = document.documentElement.style.height;
+
+    // Prevent scrolling on body and html
+    document.body.style.overflow = 'hidden';
+    document.body.style.overflowY = 'hidden';
+    document.body.style.height = '100vh';
+    document.documentElement.style.overflow = 'hidden';
+    document.documentElement.style.overflowY = 'hidden';
+    document.documentElement.style.height = '100vh';
+
+    // Cleanup: restore original styles when component unmounts
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.body.style.overflowY = originalOverflowY;
+      document.body.style.height = originalHeight;
+      document.documentElement.style.overflow = originalHtmlOverflow;
+      document.documentElement.style.overflowY = originalHtmlOverflowY;
+      document.documentElement.style.height = originalHtmlHeight;
+    };
+  }, []);
+
   const handleFileSelect = (file) => {
     // TODO: Handle file upload for layer creation
     console.log('File selected:', file);
@@ -102,12 +130,14 @@ const MapScreen = () => {
           setPanelWidth={setPanelWidth}
         />
         <div style={{ 
-          width: mapWidth, 
+          width: '100%', 
           height: '100%', 
           position: 'relative',
           flex: 1,
           minHeight: 0,
-          overflow: 'hidden'
+          overflow: 'hidden',
+          marginLeft: isExpanded ? `${panelWidth}px` : '0',
+          transition: 'margin-left 0.3s ease-in-out'
         }}>
           <Map 
             panelWidth={panelWidth} 
