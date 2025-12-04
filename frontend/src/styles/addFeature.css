@@ -1,0 +1,265 @@
+.add-feature-modal {
+  max-width: 650px;
+  margin: 0 auto;
+}
+
+/* Form Sections */
+.form-section {
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.form-section:last-of-type {
+  border-bottom: none;
+}
+
+.section-header {
+  margin-bottom: 16px;
+}
+
+.section-header h3 {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #212529;
+}
+
+.geometry-help {
+  font-size: 13px;
+  color: #6c757d;
+  font-style: italic;
+}
+
+/* Coordinates Container */
+.coordinates-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.coordinate-row {
+  display: grid;
+  grid-template-columns: 40px 1fr 1fr auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.coord-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: #007bff;
+  color: #ffffff;
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.coord-input {
+  padding: 8px 12px;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #495057;
+}
+
+.coord-input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.remove-coord-btn {
+  width: 32px;
+  height: 32px;
+  border: 1px solid #dc3545;
+  background: #ffffff;
+  color: #dc3545;
+  border-radius: 4px;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.remove-coord-btn:hover:not(:disabled) {
+  background: #dc3545;
+  color: #ffffff;
+}
+
+.remove-coord-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.add-coord-btn {
+  padding: 10px 16px;
+  border: 2px dashed #007bff;
+  background: transparent;
+  color: #007bff;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.add-coord-btn:hover {
+  background: #e7f3ff;
+  border-style: solid;
+}
+
+/* Coordinate Examples */
+.coordinate-examples {
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 4px;
+  font-size: 13px;
+  color: #495057;
+}
+
+.coordinate-examples strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #212529;
+}
+
+.example-row {
+  margin-bottom: 4px;
+}
+
+.example-row span:first-child {
+  font-weight: 600;
+  margin-right: 8px;
+}
+
+/* Attributes Grid */
+.attributes-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.attr-type-badge {
+  margin-left: 6px;
+  padding: 2px 6px;
+  background: #e9ecef;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #6c757d;
+  text-transform: uppercase;
+}
+
+/* Form Groups */
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #495057;
+}
+
+.form-input,
+.form-select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #495057;
+  transition: border-color 0.2s ease;
+}
+
+.form-input:focus,
+.form-select:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+/* Error Message */
+.error-message {
+  padding: 12px 16px;
+  background: #f8d7da;
+  border: 1px solid #f5c2c7;
+  border-radius: 4px;
+  color: #842029;
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+/* Modal Actions */
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #e9ecef;
+}
+
+.btn-primary,
+.btn-secondary {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-primary {
+  background: #007bff;
+  color: #ffffff;
+}
+
+.btn-primary:hover {
+  background: #0056b3;
+}
+
+.btn-secondary {
+  background: #6c757d;
+  color: #ffffff;
+}
+
+.btn-secondary:hover {
+  background: #5a6268;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .coordinate-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .coord-number {
+    grid-column: 1 / -1;
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
+  }
+
+  .remove-coord-btn {
+    grid-column: 1 / -1;
+  }
+
+  .attributes-grid {
+    grid-template-columns: 1fr;
+  }
+}
+

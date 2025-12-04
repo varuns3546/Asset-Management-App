@@ -1,0 +1,264 @@
+.layer-panel {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+}
+
+.layer-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid #dee2e6;
+  background: #f8f9fa;
+}
+
+.layer-panel-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #212529;
+}
+
+.layer-count {
+  background: #007bff;
+  color: #ffffff;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Layer List */
+.layer-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.layer-item {
+  background: #ffffff;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  transition: all 0.2s ease;
+}
+
+.layer-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.layer-item.layer-hidden {
+  opacity: 0.6;
+}
+
+/* Layer Header */
+.layer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+
+.layer-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.layer-expand-btn {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  color: #6c757d;
+  transition: color 0.2s ease;
+  flex-shrink: 0;
+}
+
+.layer-expand-btn:hover {
+  color: #212529;
+}
+
+.layer-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.layer-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.layer-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #212529;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.layer-type {
+  font-size: 12px;
+  color: #6c757d;
+}
+
+/* Layer Actions */
+.layer-actions {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.layer-visibility-btn {
+  background: none;
+  border: none;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 18px;
+  transition: transform 0.2s ease;
+}
+
+.layer-visibility-btn:hover {
+  transform: scale(1.1);
+}
+
+.layer-visibility-btn.hidden {
+  opacity: 0.5;
+}
+
+/* Layer Details */
+.layer-details {
+  padding: 12px;
+  border-top: 1px solid #e9ecef;
+  background: #f8f9fa;
+}
+
+.layer-detail-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.layer-detail-row:last-of-type {
+  margin-bottom: 12px;
+}
+
+.detail-label {
+  font-weight: 600;
+  color: #495057;
+  min-width: 80px;
+}
+
+.detail-value {
+  color: #6c757d;
+  flex: 1;
+  word-break: break-word;
+}
+
+/* Layer Action Buttons */
+.layer-action-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.layer-action-btn {
+  flex: 1;
+  padding: 6px 12px;
+  border: 1px solid #dee2e6;
+  background: #ffffff;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.layer-action-btn:hover {
+  background: #e9ecef;
+  border-color: #adb5bd;
+}
+
+.layer-action-btn.primary {
+  color: #007bff;
+  border-color: #007bff;
+  font-weight: 600;
+}
+
+.layer-action-btn.primary:hover {
+  background: #007bff;
+  color: #ffffff;
+}
+
+.layer-action-btn.danger {
+  color: #dc3545;
+  border-color: #dc3545;
+}
+
+.layer-action-btn.danger:hover {
+  background: #dc3545;
+  color: #ffffff;
+}
+
+/* Empty State */
+.layer-panel-empty {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.empty-state {
+  text-align: center;
+  color: #6c757d;
+}
+
+.empty-icon {
+  font-size: 48px;
+  display: block;
+  margin-bottom: 12px;
+  opacity: 0.5;
+}
+
+.empty-state p {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: #495057;
+}
+
+.empty-hint {
+  font-size: 13px;
+  color: #6c757d;
+}
+
+/* Scrollbar Styling */
+.layer-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.layer-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.layer-list::-webkit-scrollbar-thumb {
+  background: #cbd5e0;
+  border-radius: 3px;
+}
+
+.layer-list::-webkit-scrollbar-thumb:hover {
+  background: #a0aec0;
+}
+

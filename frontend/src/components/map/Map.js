@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
-import { MapContainer, TileLayer, CircleMarker, Popup, Tooltip, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, CircleMarker, Popup, Tooltip, useMap, Polyline, Polygon } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import MarkerClusterGroup from 'react-leaflet-cluster';
@@ -309,7 +309,7 @@ const MapReadyTracker = ({ targetCenter, onMapReady }) => {
   return null;
 };
 
-const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, features = [], featureTypes = [], showLabels = true, labelFontSize = 12, labelColor = '#000000', labelBackgroundColor = 'rgba(255, 255, 255, 0.6)' }) => {
+const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, features = [], featureTypes = [], showLabels = true, labelFontSize = 12, labelColor = '#000000', labelBackgroundColor = 'rgba(255, 255, 255, 0.6)', layers = [], layerFeatures = {} }) => {
   const [isMapLoading, setIsMapLoading] = useState(true);
   const mapReadyCalledRef = useRef(false);
   
@@ -493,6 +493,109 @@ const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, featu
           </CircleMarker>
         ))}
       </MarkerClusterGroup>
+
+      {/* Render custom layer features */}
+      {layers.filter(layer => layer.visible).map(layer => {
+        const features = layer.features || []; // Get features from layer object
+        const layerColor = layer.style?.color || '#3388ff';
+        
+        return features.map(feature => {
+          if (layer.geometryType === 'point') {
+            // Point feature - coordinates are stored as [lat, lng]
+            const [lat, lng] = feature.coordinates[0];
+            return (
+              <CircleMarker
+                key={`layer-${layer.id}-feature-${feature.id}`}
+                center={[lat, lng]}
+                radius={6}
+                pathOptions={{
+                  fillColor: layerColor,
+                  fillOpacity: 0.8,
+                  color: '#000',
+                  weight: 2
+                }}
+              >
+                <Popup>
+                  <div style={{ minWidth: '150px' }}>
+                    <strong style={{ fontSize: '14px' }}>{feature.name || 'Unnamed'}</strong>
+                    <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                      Layer: {layer.name}
+                    </div>
+                    {Object.entries(feature.properties || {}).map(([key, value]) => (
+                      <div key={key} style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>
+                        {key}: {value}
+                      </div>
+                    ))}
+                  </div>
+                </Popup>
+              </CircleMarker>
+            );
+          } else if (layer.geometryType === 'line' || layer.geometryType === 'linestring') {
+            // Line feature - coordinates are already [lat, lng] arrays
+            return (
+              <Polyline
+                key={`layer-${layer.id}-feature-${feature.id}`}
+                positions={feature.coordinates}
+                pathOptions={{
+                  color: layerColor,
+                  weight: 3,
+                  opacity: 0.8
+                }}
+              >
+                <Popup>
+                  <div style={{ minWidth: '150px' }}>
+                    <strong style={{ fontSize: '14px' }}>{feature.name || 'Unnamed'}</strong>
+                    <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                      Layer: {layer.name}
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>
+                      Points: {feature.coordinates.length}
+                    </div>
+                    {Object.entries(feature.properties || {}).map(([key, value]) => (
+                      <div key={key} style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>
+                        {key}: {value}
+                      </div>
+                    ))}
+                  </div>
+                </Popup>
+              </Polyline>
+            );
+          } else if (layer.geometryType === 'polygon') {
+            // Polygon feature - coordinates are already [lat, lng] arrays
+            return (
+              <Polygon
+                key={`layer-${layer.id}-feature-${feature.id}`}
+                positions={feature.coordinates}
+                pathOptions={{
+                  fillColor: layerColor,
+                  fillOpacity: 0.4,
+                  color: layerColor,
+                  weight: 2,
+                  opacity: 0.8
+                }}
+              >
+                <Popup>
+                  <div style={{ minWidth: '150px' }}>
+                    <strong style={{ fontSize: '14px' }}>{feature.name || 'Unnamed'}</strong>
+                    <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                      Layer: {layer.name}
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>
+                      Points: {feature.coordinates.length}
+                    </div>
+                    {Object.entries(feature.properties || {}).map(([key, value]) => (
+                      <div key={key} style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>
+                        {key}: {value}
+                      </div>
+                    ))}
+                  </div>
+                </Popup>
+              </Polygon>
+            );
+          }
+          return null;
+        });
+      })}
         </MapContainer>
       </div>
     </div>

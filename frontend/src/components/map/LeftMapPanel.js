@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
+import LayerPanel from './LayerPanel';
 
-const MapPanel = ({ isExpanded, setIsExpanded, panelWidth, setPanelWidth }) => {
+const MapPanel = ({ isExpanded, setIsExpanded, panelWidth, setPanelWidth, layers, onToggleLayer, onRemoveLayer, onEditLayer, onStyleLayer, onAddFeature }) => {
   const [isResizing, setIsResizing] = useState(false);
 
   const minWidth = 250;
@@ -51,26 +52,14 @@ const MapPanel = ({ isExpanded, setIsExpanded, panelWidth, setPanelWidth }) => {
         className={`left-panel ${isExpanded ? 'expanded' : 'collapsed'}`}
         style={{ width: isExpanded ? `${panelWidth}px` : '320px' }}
       >
-        <div className="left-panel-header">
-          <h2>Map Controls</h2>
-        </div>
-        
-        <div className="left-panel-content">
-          <div className="panel-section">
-            <h3>Layers</h3>
-            <p>Select map layers to display</p>
-          </div>
-          
-          <div className="panel-section">
-            <h3>Filters</h3>
-            <p>Filter map features</p>
-          </div>
-          
-          <div className="panel-section">
-            <h3>Legend</h3>
-            <p>Map symbols and markers</p>
-          </div>
-        </div>
+        <LayerPanel
+          layers={layers}
+          onToggleLayer={onToggleLayer}
+          onRemoveLayer={onRemoveLayer}
+          onEditLayer={onEditLayer}
+          onStyleLayer={onStyleLayer}
+          onAddFeature={onAddFeature}
+        />
 
         {isExpanded && (
           <div 

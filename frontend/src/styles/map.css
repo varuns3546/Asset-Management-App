@@ -26,6 +26,7 @@
   top: var(--main-navbar-height, 53px);
   left: 0;
   right: 0;
+  overflow: visible;
 }
 
 .map-navbar-content {
@@ -34,6 +35,8 @@
   justify-content: flex-start;
   padding: 15px 25px;
   gap: 15px;
+  overflow: visible;
+  position: relative;
 }
 
 .map-navbar-center {
@@ -41,6 +44,8 @@
   align-items: center;
   gap: 15px;
   flex-wrap: nowrap;
+  overflow: visible;
+  position: relative;
 }
 
 .map-view {
@@ -84,19 +89,21 @@
 /* Navbar Layer Dropdown */
 .navbar-layer-dropdown-container {
   position: relative;
+  z-index: 100;
 }
 
 .navbar-layer-dropdown {
   position: absolute;
   top: 100%;
   left: 0;
-  margin-top: 8px;
+  margin-top: 5px;
   background: #ffffff;
   border: 2px solid #333;
   border-radius: 4px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   min-width: 180px;
   z-index: 10000;
+  overflow: visible;
 }
 
 .esri-popup__content {
@@ -113,28 +120,44 @@
   flex-direction: column;
 }
 
+.navbar-layer-option {
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  font-size: 14px;
+  color: #495057;
+  user-select: none;
+  position: relative;
+}
+
 .navbar-layer-option:hover {
   background: #f8f9fa;
 }
 
 .navbar-layer-option:first-child {
-  border-radius: 2px 2px 0 0;
+  border-radius: 0;
 }
 
 .navbar-layer-option:last-child {
-  border-radius: 0 0 2px 2px;
+  border-radius: 0;
 }
 
 .navbar-layer-option.has-submenu {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  position: relative;
 }
 
 .submenu-arrow {
   margin-left: 10px;
   font-size: 10px;
   color: #6c757d;
+  transition: transform 0.2s ease;
+}
+
+.navbar-layer-option.has-submenu:hover .submenu-arrow {
+  color: #495057;
 }
 
 /* Submenu */
@@ -146,7 +169,7 @@
   background: #ffffff;
   border: 2px solid #333;
   border-radius: 4px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   min-width: 180px;
   z-index: 10001;
 }
