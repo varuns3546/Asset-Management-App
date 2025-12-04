@@ -1,11 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useSelector } from 'react-redux';
+import CreateLayerModal from '../CreateLayerModal';
 
-const MapNavbar = ({ onOpenUploadModal }) => {
+const MapNavbar = ({ onOpenUploadModal, onCreateLayer }) => {
   const { selectedProject } = useSelector((state) => state.projects);
   const [showViewDropdown, setShowViewDropdown] = useState(false);
   const [showLayerDropdown, setShowLayerDropdown] = useState(false);
   const [showCreateSubmenu, setShowCreateSubmenu] = useState(false);
+  const [showCreateLayerModal, setShowCreateLayerModal] = useState(false);
   const viewDropdownRef = useRef(null);
   const layerDropdownRef = useRef(null);
 
@@ -41,8 +43,14 @@ const MapNavbar = ({ onOpenUploadModal }) => {
   const handleInputData = () => {
     setShowLayerDropdown(false);
     setShowCreateSubmenu(false);
-    // TODO: Implement input data functionality
-    console.log('Input Data clicked');
+    setShowCreateLayerModal(true);
+  };
+
+  const handleImportFromOSM = () => {
+    setShowLayerDropdown(false);
+    setShowCreateSubmenu(false);
+    // TODO: Implement import from OpenStreetMap functionality
+    console.log('Import from OpenStreetMap clicked');
   };
 
   const handleLayersClick = () => {
@@ -52,9 +60,10 @@ const MapNavbar = ({ onOpenUploadModal }) => {
   };
 
   return (
-    <div className="map-navbar">
-      <div className="map-navbar-content">
-        <div className="map-navbar-center">
+    <>
+      <div className="map-navbar">
+        <div className="map-navbar-content">
+          <div className="map-navbar-center">
           <div className="navbar-layer-dropdown-container" ref={viewDropdownRef}>
             <button 
               className="navbar-btn"
@@ -103,6 +112,12 @@ const MapNavbar = ({ onOpenUploadModal }) => {
                       >
                         Input Data
                       </div>
+                      <div
+                        className="navbar-layer-option"
+                        onClick={handleImportFromOSM}
+                      >
+                        Import from OpenStreetMap
+                      </div>
                     </div>
                   )}
                 </div>
@@ -112,6 +127,16 @@ const MapNavbar = ({ onOpenUploadModal }) => {
         </div>
       </div>
     </div>
+
+    {selectedProject && (
+      <CreateLayerModal
+        isOpen={showCreateLayerModal}
+        onClose={() => setShowCreateLayerModal(false)}
+        projectId={selectedProject.id}
+        onCreateLayer={onCreateLayer}
+      />
+    )}
+  </>
   );
 };
 
