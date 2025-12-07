@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from "react-redux";
 
 import { loadUser } from "./features/auth/authSlice";
 import { getSelectedProject } from "./features/projects/projectSlice"
+import authService from "./features/auth/authService";
 import "./utils/axiosInterceptor"; // Initialize axios interceptor
 import LoginScreen from "./screens/LoginScreen";
 import RegisterScreen from "./screens/RegisterScreen";
@@ -53,9 +54,11 @@ function AppContent() {
   const showNavbar = !hideNavbarRoutes.includes(location.pathname);
   
   // Load selected project from user_profiles when user is loaded
+  // Also initialize token refresh timer
   useEffect(() => {
     if (user) {
       dispatch(getSelectedProject());
+      authService.initializeRefreshTimer();
     }
   }, [user, dispatch]);
   

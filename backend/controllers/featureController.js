@@ -40,7 +40,7 @@ const getHierarchy = asyncHandler(async (req, res) => {
   try {
     // Get all features for this project
     const { data: features, error } = await req.supabase
-      .from('features')
+      .from('hierarchy_features')
       .select('*')
       .eq('project_id', project_id)
       .order('created_at');
@@ -105,7 +105,7 @@ const deleteHierarchy = asyncHandler(async (req, res) => {
   try {
     // Delete all features for this project
     const { error } = await req.supabase
-      .from('features')
+      .from('hierarchy_features')
       .delete()
       .eq('project_id', project_id);
 
@@ -169,7 +169,7 @@ const getFeatureTypes = asyncHandler(async (req, res) => {
   try {
     // Get all feature types for this project
     const { data: featureTypes, error } = await req.supabase
-      .from('feature_types')
+      .from('hierarchy_feature_types')
       .select('*')
       .eq('project_id', project_id)
       .order('created_at');
@@ -272,7 +272,7 @@ const createFeatureType = asyncHandler(async (req, res) => {
 
   try {
     const { data: featureType, error } = await req.supabase
-      .from('feature_types')
+      .from('hierarchy_feature_types')
       .insert({
         title: name.trim(),
         description: description || null,
@@ -394,7 +394,7 @@ const deleteFeatureType = asyncHandler(async (req, res) => {
   try {
     // First, get all feature types that might reference this feature type as a parent
     const { data: allFeatureTypes, error: fetchError } = await req.supabase
-      .from('feature_types')
+      .from('hierarchy_feature_types')
       .select('id, parent_ids')
       .eq('project_id', project_id);
 
@@ -414,7 +414,7 @@ const deleteFeatureType = asyncHandler(async (req, res) => {
         const updatedParentIds = featureType.parent_ids.filter(id => id !== featureTypeId);
         
         const updatePromise = req.supabase
-          .from('feature_types')
+          .from('hierarchy_feature_types')
           .update({ parent_ids: updatedParentIds.length > 0 ? updatedParentIds : null })
           .eq('id', featureType.id);
         
@@ -435,7 +435,7 @@ const deleteFeatureType = asyncHandler(async (req, res) => {
 
     // Now delete the feature type
     const { error } = await req.supabase
-      .from('feature_types')
+      .from('hierarchy_feature_types')
       .delete()
       .eq('id', featureTypeId)
       .eq('project_id', project_id);
@@ -508,7 +508,7 @@ const createFeature = asyncHandler(async (req, res) => {
 
   try {
     const { data: feature, error } = await req.supabase
-      .from('features')
+      .from('hierarchy_features')
       .insert({
         title: title.trim(),
         item_type_id: item_type_id || null,
@@ -588,7 +588,7 @@ const deleteFeature = asyncHandler(async (req, res) => {
 
   try {
     const { error } = await req.supabase
-      .from('features')
+      .from('hierarchy_features')
       .delete()
       .eq('id', featureId)
       .eq('project_id', project_id);
@@ -669,7 +669,7 @@ const updateFeatureType = asyncHandler(async (req, res) => {
   try {
     // Update the feature type
     const { data: featureType, error: updateError } = await req.supabase
-      .from('feature_types')
+      .from('hierarchy_feature_types')
       .update({
         title: name.trim(),
         description: description || null,
@@ -789,7 +789,7 @@ const updateFeature = asyncHandler(async (req, res) => {
   try {
     // Update the feature
     const { data: feature, error: updateError } = await req.supabase
-      .from('features')
+      .from('hierarchy_features')
       .update({
         title: title.trim(),
         item_type_id: item_type_id || null,
@@ -1005,7 +1005,7 @@ const importHierarchyData = asyncHandler(async (req, res) => {
 
         // Get feature type to check has_coordinates
         const { data: featureType } = await req.supabase
-          .from('feature_types')
+          .from('hierarchy_feature_types')
           .select('has_coordinates')
           .eq('id', itemTypeId)
           .eq('project_id', project_id)
@@ -1047,7 +1047,7 @@ const importHierarchyData = asyncHandler(async (req, res) => {
 
         // Insert feature
         const { data: createdFeature, error } = await req.supabase
-          .from('features')
+          .from('hierarchy_features')
           .insert(featureData)
           .select()
           .single();
@@ -1081,7 +1081,7 @@ const importHierarchyData = asyncHandler(async (req, res) => {
 
         // Update parent_id
         const { error } = await req.supabase
-          .from('features')
+          .from('hierarchy_features')
           .update({ parent_id: parentId })
           .eq('id', titleToIdMap[title]);
 
