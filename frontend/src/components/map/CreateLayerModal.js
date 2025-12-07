@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import Modal from './Modal';
-import '../styles/modal.css';
-import '../styles/createLayer.css';
+import Modal from '../Modal';
+import '../../styles/modal.css';
+import '../../styles/createLayer.css';
 
 const CreateLayerModal = ({ isOpen, onClose, projectId, onCreateLayer }) => {
   const [layerType, setLayerType] = useState('vector'); // 'vector' or 'raster'

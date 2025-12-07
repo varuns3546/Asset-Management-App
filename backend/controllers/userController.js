@@ -86,9 +86,40 @@ const loginUser = asyncHandler(async (req, res) => {
         lastName: metaData.lastName,
         role: data.user.app_metadata.role,
         token: data.session.access_token,
-
+        refreshToken: data.session.refresh_token,
+        expiresAt: data.session.expires_at,
     })
 
+})
+
+const refreshToken = asyncHandler(async (req, res) => {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+        res.status(400);
+        throw new Error('Refresh token is required');
+    }
+
+    const { data, error } = await supabase.auth.refreshSession({
+        refresh_token: refreshToken
+    });
+
+    if (error) {
+        res.status(401);
+        throw new Error('Invalid or expired refresh token');
+    }
+
+    const metaData = data.user.user_metadata;
+    res.json({
+        id: data.user.id,
+        email: metaData.email,
+        firstName: metaData.firstName,
+        lastName: metaData.lastName,
+        role: data.user.app_metadata.role,
+        token: data.session.access_token,
+        refreshToken: data.session.refresh_token,
+        expiresAt: data.session.expires_at,
+    });
 })
 
 const getUser = asyncHandler(async (req, res) => {
@@ -256,4 +287,4 @@ const extractTokenFromHeader = (req) => {
     return authHeader;
 };
 
-export default {registerUser, loginUser, getUser, getSelectedProject, setSelectedProject}
+export default {registerUser, loginUser, getUser, getSelectedProject, setSelectedProject, refreshToken}

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import '../styles/modal.css';
+import '../../styles/modal.css';
 
 const AddLayerModal = ({ isOpen, onClose, onAddLayer }) => {
   const [layerUrl, setLayerUrl] = useState('');

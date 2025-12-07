@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import Modal from './Modal';
-import '../styles/modal.css';
-import '../styles/addFeature.css';
+import Modal from '../Modal';
+import '../../styles/modal.css';
+import '../../styles/addFeature.css';
 
 const AddFeatureModal = ({ isOpen, onClose, layer, onAddFeature }) => {
   const [featureName, setFeatureName] = useState('');

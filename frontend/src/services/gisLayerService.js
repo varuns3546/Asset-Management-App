@@ -1,4 +1,6 @@
 import axios from 'axios';
+import store from '../app/store';
+import { logout } from '../features/auth/authSlice';
 
 const API_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3001';
 
@@ -27,6 +29,19 @@ gisApi.interceptors.request.use(
     return config;
   },
   (error) => Promise.reject(error)
+);
+
+// Add response interceptor to handle 401 errors (session expired)
+gisApi.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      console.log('Session expired, logging out...');
+      store.dispatch(logout());
+      window.location.href = '/';
+    }
+    return Promise.reject(error);
+  }
 );
 
 // Get all layers for a project

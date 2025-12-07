@@ -359,6 +359,218 @@
     color: #dc2626;
 }
 
+.file-item-icon {
+    font-size: 16px;
+}
+
+/* File Tabs */
+.file-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 2px solid #e5e7eb;
+    margin-bottom: 20px;
+}
+
+.file-tab {
+    flex: 1;
+    padding: 14px 20px;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    font-size: 16px;
+    font-weight: 500;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: -2px;
+}
+
+.file-tab:hover:not(:disabled) {
+    color: #3b82f6;
+    background-color: #f0f9ff;
+}
+
+.file-tab.active {
+    color: #3b82f6;
+    border-bottom-color: #3b82f6;
+    background-color: #eff6ff;
+}
+
+.file-tab:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Upload Progress */
+.upload-progress {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    background-color: #f0f9ff;
+    border-radius: 6px;
+}
+
+.progress-bar {
+    height: 8px;
+    background-color: #e5e7eb;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6, #60a5fa);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.progress-text {
+    font-size: 13px;
+    color: #3b82f6;
+    text-align: center;
+}
+
+/* Button outline style */
+.btn-outline {
+    background-color: transparent;
+    color: #3b82f6;
+    border: 2px solid #3b82f6;
+}
+
+.btn-outline:hover:not(:disabled) {
+    background-color: #eff6ff;
+}
+
+/* Cloud Files */
+.cloud-files-container {
+    min-height: 200px;
+    max-height: 350px;
+    overflow-y: auto;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background-color: #fafafa;
+}
+
+.cloud-files-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 40px;
+    color: #6b7280;
+}
+
+.loading-spinner {
+    font-size: 32px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.cloud-files-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 40px 20px;
+    color: #6b7280;
+    text-align: center;
+}
+
+.cloud-files-empty .empty-icon {
+    font-size: 48px;
+    opacity: 0.5;
+}
+
+.cloud-files-empty p {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 500;
+    color: #374151;
+}
+
+.cloud-files-empty .empty-hint {
+    font-size: 13px;
+    color: #9ca3af;
+}
+
+.cloud-files-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.cloud-file-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid #e5e7eb;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.cloud-file-item:last-child {
+    border-bottom: none;
+}
+
+.cloud-file-item:hover {
+    background-color: #f3f4f6;
+}
+
+.cloud-file-item.selected {
+    background-color: #dbeafe;
+    border-left: 3px solid #3b82f6;
+}
+
+.cloud-file-icon {
+    font-size: 24px;
+    flex-shrink: 0;
+}
+
+.cloud-file-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.cloud-file-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: #1f2937;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cloud-file-meta {
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.cloud-file-delete {
+    background: none;
+    border: none;
+    padding: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    opacity: 0.5;
+    transition: opacity 0.2s ease;
+    border-radius: 4px;
+}
+
+.cloud-file-delete:hover {
+    opacity: 1;
+    background-color: #fee2e2;
+}
+
 .remove-file-btn {
     background: none;
     border: none;

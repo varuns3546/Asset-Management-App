@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useSelector } from 'react-redux';
-import CreateLayerModal from '../CreateLayerModal';
+import CreateLayerModal from './CreateLayerModal';
 
 const MapNavbar = ({ onOpenUploadModal, onCreateLayer }) => {
   const { selectedProject } = useSelector((state) => state.projects);

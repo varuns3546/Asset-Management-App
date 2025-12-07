@@ -5,7 +5,7 @@ import LeftMapPanel from '../components/map/LeftMapPanel';
 import TopMapPanel from '../components/map/TopMapPanel';
 import MapNavbar from '../components/map/MapNavbar';
 import FileUploadModal from '../components/FileUploadModal';
-import AddFeatureModal from '../components/AddFeatureModal';
+import AddFeatureModal from '../components/map/AddFeatureModal';
 import { getHierarchy, getFeatureTypes } from '../features/projects/projectSlice';
 import { loadUser } from '../features/auth/authSlice';
 import * as gisLayerService from '../services/gisLayerService';
@@ -247,7 +247,6 @@ const MapScreen = () => {
   };
 
   const handleRemoveLayer = async (layerId) => {
-    if (!window.confirm('Are you sure you want to remove this layer?')) return;
     if (!selectedProject?.id) return;
 
     try {
@@ -326,6 +325,29 @@ const MapScreen = () => {
     }
   };
 
+  const handleRemoveFeature = async (layerId, featureId) => {
+    if (!selectedProject?.id) return;
+
+    try {
+      await gisLayerService.deleteFeature(selectedProject.id, layerId, featureId);
+      
+      // Update local state (use == for loose comparison since layerId might be string from Object.entries)
+      setLayers(prev => prev.map(layer => 
+        String(layer.id) === String(layerId)
+          ? {
+              ...layer,
+              features: layer.features.filter(f => String(f.id) !== String(featureId)),
+              featureCount: (layer.featureCount || 1) - 1
+            }
+          : layer
+      ));
+      console.log('Feature deleted from database');
+    } catch (error) {
+      console.error('Error deleting feature:', error);
+      alert('Failed to delete feature');
+    }
+  };
+
   const mapWidth = isExpanded ? `calc(100% - ${panelWidth}px)` : '100%';
 
   // Extract coordinates from selected project
@@ -367,6 +389,7 @@ const MapScreen = () => {
           onEditLayer={handleEditLayer}
           onStyleLayer={handleStyleLayer}
           onAddFeature={handleAddFeatureToLayer}
+          onRemoveFeature={handleRemoveFeature}
         />
         <div style={{ 
           width: '100%', 
