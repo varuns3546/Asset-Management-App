@@ -38,25 +38,25 @@ const getHierarchy = asyncHandler(async (req, res) => {
   }
 
   try {
-    // Get all features for this project
-    const { data: features, error } = await req.supabase
-      .from('hierarchy_features')
+    // Get all assets for this project
+    const { data: assets, error } = await req.supabase
+      .from('assets')
       .select('*')
       .eq('project_id', project_id)
       .order('created_at');
 
     if (error) {
-      console.error('Error fetching features:', error);
+      console.error('Error fetching assets:', error);
       return res.status(500).json({ 
         success: false,
-        error: 'Failed to fetch features' 
+        error: 'Failed to fetch assets' 
       });
     }
     
-    // Return the features (empty array if none exist)
+    // Return the assets (empty array if none exist)
     res.status(200).json({
       success: true,
-      data: features || []
+      data: assets || []
     });
 
   } catch (error) {
@@ -103,17 +103,17 @@ const deleteHierarchy = asyncHandler(async (req, res) => {
   }
 
   try {
-    // Delete all features for this project
+    // Delete all assets for this project
     const { error } = await req.supabase
-      .from('hierarchy_features')
+      .from('assets')
       .delete()
       .eq('project_id', project_id);
 
     if (error) {
-      console.error('Error deleting features:', error);
+      console.error('Error deleting assets:', error);
       return res.status(500).json({
         success: false,
-        error: 'Failed to delete features'
+        error: 'Failed to delete assets'
       });
     }
 
@@ -131,7 +131,7 @@ const deleteHierarchy = asyncHandler(async (req, res) => {
   }
 });
 
-const getFeatureTypes = asyncHandler(async (req, res) => {
+const getAssetTypes = asyncHandler(async (req, res) => {
   const { id: project_id } = req.params;
 
   if (!project_id) {
@@ -167,68 +167,68 @@ const getFeatureTypes = asyncHandler(async (req, res) => {
   }
 
   try {
-    // Get all feature types for this project
-    const { data: featureTypes, error } = await req.supabase
-      .from('hierarchy_feature_types')
+    // Get all asset types for this project
+    const { data: assetTypes, error } = await req.supabase
+      .from('asset_types')
       .select('*')
       .eq('project_id', project_id)
       .order('created_at');
 
     if (error) {
-      console.error('Error fetching feature types:', error);
+      console.error('Error fetching asset types:', error);
       return res.status(500).json({ 
         success: false,
-        error: 'Failed to fetch feature types' 
+        error: 'Failed to fetch asset types' 
       });
     }
 
-    // Fetch attributes for each feature type
-    if (featureTypes && featureTypes.length > 0) {
-      const featureTypeIds = featureTypes.map(item => item.id);
+    // Fetch attributes for each asset type
+    if (assetTypes && assetTypes.length > 0) {
+      const assetTypeIds = assetTypes.map(item => item.id);
       const { data: attributes, error: attributesError } = await req.supabase
         .from('attributes')
         .select('*')
-        .in('item_type_id', featureTypeIds);
+        .in('item_type_id', assetTypeIds);
 
       if (attributesError) {
         console.error('Error fetching attributes:', attributesError);
         // Continue without attributes if there's an error
       } else {
         // Group attributes by item_type_id
-        const attributesByFeatureType = {};
+        const attributesByAssetType = {};
         if (attributes) {
           attributes.forEach(attr => {
-            if (!attributesByFeatureType[attr.item_type_id]) {
-              attributesByFeatureType[attr.item_type_id] = [];
+            if (!attributesByAssetType[attr.item_type_id]) {
+              attributesByAssetType[attr.item_type_id] = [];
             }
-            attributesByFeatureType[attr.item_type_id].push(attr.title);
+            attributesByAssetType[attr.item_type_id].push(attr.title);
           });
         }
 
-        // Add attributes to each feature type
-        featureTypes.forEach(featureType => {
-          featureType.attributes = attributesByFeatureType[featureType.id] || [];
+        // Add attributes to each asset type
+        assetTypes.forEach(assetType => {
+          assetType.attributes = attributesByAssetType[assetType.id] || [];
         });
       }
     }
 
-    // Return the feature types (empty array if none exist)
+    // Return the asset types (empty array if none exist)
     res.status(200).json({
       success: true,
-      data: featureTypes || []
+      data: assetTypes || []
     });
 
   } catch (error) {
-    console.error('Error in getFeatureTypes:', error);
+    console.error('Error in getAssetTypes:', error);
     res.status(500).json({
       success: false,
-      error: 'Internal server error while fetching feature types'
+      error: 'Internal server error while fetching asset types'
     });
   }
 });
 
-const createFeatureType = asyncHandler(async (req, res) => {
-  const { name, description, parent_ids, attributes, has_coordinates, icon, icon_color } = req.body;
+const createAssetType = asyncHandler(async (req, res) => {
+  const { name, description, parent_ids, subtype_of_id, attributes, has_coordinates, icon, icon_color } = req.body;
   const { id: project_id } = req.params;
 
   if (!project_id) {
@@ -241,7 +241,7 @@ const createFeatureType = asyncHandler(async (req, res) => {
   if (!name || !name.trim()) {
     return res.status(400).json({
       success: false,
-      error: 'Feature type name is required'
+      error: 'Hierarchy feature type name is required'
     });
   }
 
@@ -271,13 +271,14 @@ const createFeatureType = asyncHandler(async (req, res) => {
   }
 
   try {
-    const { data: featureType, error } = await req.supabase
-      .from('hierarchy_feature_types')
+    const { data: assetType, error } = await req.supabase
+      .from('asset_types')
       .insert({
         title: name.trim(),
         description: description || null,
         project_id: project_id,
         parent_ids: parent_ids || null,
+        subtype_of_id: subtype_of_id || null,
         has_coordinates: has_coordinates || false,
         icon: icon || null,
         icon_color: icon_color || null
@@ -286,10 +287,10 @@ const createFeatureType = asyncHandler(async (req, res) => {
       .single();
 
     if (error) {
-      console.error('Error creating feature type:', error);
+      console.error('Error creating asset type:', error);
       return res.status(500).json({
         success: false,
-        error: 'Failed to create feature type'
+        error: 'Failed to create asset type'
       });
     }
 
@@ -297,7 +298,7 @@ const createFeatureType = asyncHandler(async (req, res) => {
     console.log('Attributes received:', attributes);
     if (attributes && attributes.length > 0) {
       const attributesToInsert = attributes.map(attribute => ({
-        item_type_id: featureType.id,
+        item_type_id: assetType.id,
         title: attribute.trim()
       }));
 
@@ -324,7 +325,7 @@ const createFeatureType = asyncHandler(async (req, res) => {
       if (attributesError) {
         console.error('Error creating attributes:', attributesError);
         console.error('Full error details:', JSON.stringify(attributesError, null, 2));
-        // Note: We don't return an error here since the feature type was created successfully
+        // Note: We don't return an error here since the asset type was created successfully
         // The attributes can be added later if needed
       } else {
         console.log('Successfully created attributes:', insertedAttributes);
@@ -335,21 +336,21 @@ const createFeatureType = asyncHandler(async (req, res) => {
 
     res.status(201).json({
       success: true,
-      data: featureType
+      data: assetType
     });
 
   } catch (error) {
-    console.error('Error in createFeatureType:', error);
+    console.error('Error in createAssetType:', error);
     res.status(500).json({
       success: false,
-      error: 'Internal server error while creating feature type'
+      error: 'Internal server error while creating asset type'
     });
   }
 });
 
 
 
-const deleteFeatureType = asyncHandler(async (req, res) => {
+const deleteAssetType = asyncHandler(async (req, res) => {
   const { id: project_id, featureTypeId } = req.params;
 
   if (!project_id) {
@@ -362,7 +363,7 @@ const deleteFeatureType = asyncHandler(async (req, res) => {
   if (!featureTypeId) {
     return res.status(400).json({
       success: false,
-      error: 'Feature type ID is required'
+      error: 'Asset type ID is required'
     });
   }
 
@@ -392,31 +393,31 @@ const deleteFeatureType = asyncHandler(async (req, res) => {
   }
 
   try {
-    // First, get all feature types that might reference this feature type as a parent
-    const { data: allFeatureTypes, error: fetchError } = await req.supabase
-      .from('hierarchy_feature_types')
+    // First, get all asset types that might reference this asset type as a parent
+    const { data: allAssetTypes, error: fetchError } = await req.supabase
+      .from('asset_types')
       .select('id, parent_ids')
       .eq('project_id', project_id);
 
     if (fetchError) {
-      console.error('Error fetching feature types for cleanup:', fetchError);
+      console.error('Error fetching asset types for cleanup:', fetchError);
       return res.status(500).json({
         success: false,
-        error: 'Failed to fetch feature types for cleanup'
+        error: 'Failed to fetch asset types for cleanup'
       });
     }
 
-    // Update all feature types that have this feature type in their parent_ids
+    // Update all asset types that have this asset type in their parent_ids
     const updatePromises = [];
-    for (const featureType of allFeatureTypes) {
-      if (featureType.parent_ids && Array.isArray(featureType.parent_ids) && featureType.parent_ids.includes(featureTypeId)) {
-        // Remove the deleted feature type ID from parent_ids
-        const updatedParentIds = featureType.parent_ids.filter(id => id !== featureTypeId);
+    for (const assetType of allAssetTypes) {
+      if (assetType.parent_ids && Array.isArray(assetType.parent_ids) && assetType.parent_ids.includes(featureTypeId)) {
+        // Remove the deleted asset type ID from parent_ids
+        const updatedParentIds = assetType.parent_ids.filter(id => id !== featureTypeId);
         
         const updatePromise = req.supabase
-          .from('hierarchy_feature_types')
+          .from('asset_types')
           .update({ parent_ids: updatedParentIds.length > 0 ? updatedParentIds : null })
-          .eq('id', featureType.id);
+          .eq('id', assetType.id);
         
         updatePromises.push(updatePromise);
       }
@@ -433,38 +434,38 @@ const deleteFeatureType = asyncHandler(async (req, res) => {
       }
     }
 
-    // Now delete the feature type
+    // Now delete the asset type
     const { error } = await req.supabase
-      .from('hierarchy_feature_types')
+      .from('asset_types')
       .delete()
       .eq('id', featureTypeId)
       .eq('project_id', project_id);
 
     if (error) {
-      console.error('Error deleting feature type:', error);
+      console.error('Error deleting asset type:', error);
       return res.status(500).json({
         success: false,
-        error: 'Failed to delete feature type'
+        error: 'Failed to delete asset type'
       });
     }
 
     res.status(200).json({
       success: true,
-      message: 'Feature type deleted successfully and parent references cleaned up',
+      message: 'Asset type deleted successfully and parent references cleaned up',
       id: featureTypeId
     });
 
   } catch (error) {
-    console.error('Error in deleteFeatureType:', error);
+    console.error('Error in deleteAssetType:', error);
     res.status(500).json({
       success: false,
-      error: 'Internal server error while deleting feature type'
+      error: 'Internal server error while deleting asset type'
     });
   }
 });
 
-// Create individual feature
-const createFeature = asyncHandler(async (req, res) => {
+// Create individual asset
+const createAsset = asyncHandler(async (req, res) => {
   const { title, item_type_id, parent_id, beginning_latitude, end_latitude, beginning_longitude, end_longitude } = req.body;
   const { id: project_id } = req.params;
 
@@ -507,8 +508,8 @@ const createFeature = asyncHandler(async (req, res) => {
   }
 
   try {
-    const { data: feature, error } = await req.supabase
-      .from('hierarchy_features')
+    const { data: asset, error } = await req.supabase
+      .from('assets')
       .insert({
         title: title.trim(),
         item_type_id: item_type_id || null,
@@ -523,29 +524,29 @@ const createFeature = asyncHandler(async (req, res) => {
       .single();
 
     if (error) {
-      console.error('Error creating feature:', error);
+      console.error('Error creating asset:', error);
       return res.status(500).json({
         success: false,
-        error: 'Failed to create feature'
+        error: 'Failed to create asset'
       });
     }
 
     res.status(201).json({
       success: true,
-      data: feature
+      data: asset
     });
 
   } catch (error) {
-    console.error('Error in createFeature:', error);
+    console.error('Error in createAsset:', error);
     res.status(500).json({
       success: false,
-      error: 'Internal server error while creating feature'
+      error: 'Internal server error while creating asset'
     });
   }
 });
 
-// Delete individual feature
-const deleteFeature = asyncHandler(async (req, res) => {
+// Delete individual asset
+const deleteAsset = asyncHandler(async (req, res) => {
   const { id: project_id, featureId } = req.params;
 
   if (!project_id) {
@@ -558,7 +559,7 @@ const deleteFeature = asyncHandler(async (req, res) => {
   if (!featureId) {
     return res.status(400).json({
       success: false,
-      error: 'Feature ID is required'
+      error: 'Hierarchy feature ID is required'
     });
   }
 
@@ -588,36 +589,36 @@ const deleteFeature = asyncHandler(async (req, res) => {
 
   try {
     const { error } = await req.supabase
-      .from('hierarchy_features')
+      .from('assets')
       .delete()
       .eq('id', featureId)
       .eq('project_id', project_id);
 
     if (error) {
-      console.error('Error deleting feature:', error);
+      console.error('Error deleting asset:', error);
       return res.status(500).json({
         success: false,
-        error: 'Failed to delete feature'
+        error: 'Failed to delete asset'
       });
     }
 
     res.status(200).json({
       success: true,
-      message: 'Feature deleted successfully',
+      message: 'Asset deleted successfully',
       data: { id: featureId }
     });
 
   } catch (error) {
-    console.error('Error in deleteFeature:', error);
+    console.error('Error in deleteAsset:', error);
     res.status(500).json({
       success: false,
-      error: 'Internal server error while deleting feature'
+      error: 'Internal server error while deleting asset'
     });
   }
 });
 
-const updateFeatureType = asyncHandler(async (req, res) => {
-  const { name, description, parent_ids, attributes, has_coordinates, icon, icon_color } = req.body;
+const updateAssetType = asyncHandler(async (req, res) => {
+  const { name, description, parent_ids, subtype_of_id, attributes, has_coordinates, icon, icon_color } = req.body;
   const { id: project_id, featureTypeId } = req.params;
 
   if (!project_id) {
@@ -630,14 +631,14 @@ const updateFeatureType = asyncHandler(async (req, res) => {
   if (!featureTypeId) {
     return res.status(400).json({
       success: false,
-      error: 'Feature Type ID is required'
+      error: 'Asset Type ID is required'
     });
   }
 
   if (!name || !name.trim()) {
     return res.status(400).json({
       success: false,
-      error: 'Feature type name is required'
+      error: 'Hierarchy feature type name is required'
     });
   }
 
@@ -667,13 +668,14 @@ const updateFeatureType = asyncHandler(async (req, res) => {
   }
 
   try {
-    // Update the feature type
-    const { data: featureType, error: updateError } = await req.supabase
-      .from('hierarchy_feature_types')
+    // Update the asset type
+    const { data: assetType, error: updateError } = await req.supabase
+      .from('asset_types')
       .update({
         title: name.trim(),
         description: description || null,
         parent_ids: parent_ids || null,
+        subtype_of_id: subtype_of_id || null,
         has_coordinates: has_coordinates || false,
         icon: icon || null,
         icon_color: icon_color || null
@@ -684,15 +686,15 @@ const updateFeatureType = asyncHandler(async (req, res) => {
       .single();
 
     if (updateError) {
-      console.error('Error updating feature type:', updateError);
+      console.error('Error updating asset type:', updateError);
       return res.status(500).json({
         success: false,
-        error: 'Failed to update feature type'
+        error: 'Failed to update asset type'
       });
     }
 
     // Handle attributes - always delete existing and insert new ones
-    // First, delete existing attributes for this feature type
+    // First, delete existing attributes for this asset type
     const { error: deleteError } = await req.supabase
       .from('attributes')
       .delete()
@@ -724,19 +726,19 @@ const updateFeatureType = asyncHandler(async (req, res) => {
 
     res.status(200).json({
       success: true,
-      data: featureType
+      data: assetType
     });
 
   } catch (error) {
-    console.error('Error in updateFeatureType:', error);
+    console.error('Error in updateAssetType:', error);
     res.status(500).json({
       success: false,
-      error: 'Internal server error while updating feature type'
+      error: 'Internal server error while updating asset type'
     });
   }
 });
 
-const updateFeature = asyncHandler(async (req, res) => {
+const updateAsset = asyncHandler(async (req, res) => {
   const { title, item_type_id, parent_id, beginning_latitude, end_latitude, beginning_longitude, end_longitude } = req.body;
   const { id: project_id, featureId } = req.params;
 
@@ -750,14 +752,14 @@ const updateFeature = asyncHandler(async (req, res) => {
   if (!featureId) {
     return res.status(400).json({
       success: false,
-      error: 'Feature ID is required'
+      error: 'Hierarchy feature ID is required'
     });
   }
 
   if (!title || !title.trim()) {
     return res.status(400).json({
       success: false,
-      error: 'Feature title is required'
+      error: 'Asset title is required'
     });
   }
 
@@ -787,9 +789,9 @@ const updateFeature = asyncHandler(async (req, res) => {
   }
 
   try {
-    // Update the feature
-    const { data: feature, error: updateError } = await req.supabase
-      .from('hierarchy_features')
+    // Update the hierarchy feature
+    const { data: hierarchyFeature, error: updateError } = await req.supabase
+      .from('assets')
       .update({
         title: title.trim(),
         item_type_id: item_type_id || null,
@@ -805,23 +807,23 @@ const updateFeature = asyncHandler(async (req, res) => {
       .single();
 
     if (updateError) {
-      console.error('Error updating feature:', updateError);
+      console.error('Error updating asset:', updateError);
       return res.status(500).json({
         success: false,
-        error: 'Failed to update feature'
+        error: 'Failed to update asset'
       });
     }
 
     res.status(200).json({
       success: true,
-      data: feature
+      data: asset
     });
 
   } catch (error) {
-    console.error('Error in updateFeature:', error);
+    console.error('Error in updateAsset:', error);
     res.status(500).json({
       success: false,
-      error: 'Internal server error while updating feature'
+      error: 'Internal server error while updating asset'
     });
   }
 });
@@ -999,56 +1001,56 @@ const importHierarchyData = asyncHandler(async (req, res) => {
         }
 
         if (!itemTypeId) {
-          errors.push({ row: i + 1, error: 'Feature type is required' });
+          errors.push({ row: i + 1, error: 'Asset type is required' });
           continue;
         }
 
-        // Get feature type to check has_coordinates
-        const { data: featureType } = await req.supabase
-          .from('hierarchy_feature_types')
+        // Get asset type to check has_coordinates
+        const { data: assetType } = await req.supabase
+          .from('asset_types')
           .select('has_coordinates')
           .eq('id', itemTypeId)
           .eq('project_id', project_id)
           .single();
 
-        // Build feature data
-        const featureData = {
+        // Build asset data
+        const assetData = {
           title,
           item_type_id: itemTypeId,
           project_id: project_id,
           parent_id: null // Set in pass 2
         };
 
-        // Add coordinates only if feature type has_coordinates is true
-        if (featureType?.has_coordinates) {
-          if (row.beginning_latitude) itemData.beginning_latitude = parseFloat(row.beginning_latitude);
-          if (row.end_latitude) itemData.end_latitude = parseFloat(row.end_latitude);
-          if (row.beginning_longitude) itemData.beginning_longitude = parseFloat(row.beginning_longitude);
-          if (row.end_longitude) itemData.end_longitude = parseFloat(row.end_longitude);
+        // Add coordinates only if asset type has_coordinates is true
+        if (assetType?.has_coordinates) {
+          if (row.beginning_latitude) assetData.beginning_latitude = parseFloat(row.beginning_latitude);
+          if (row.end_latitude) assetData.end_latitude = parseFloat(row.end_latitude);
+          if (row.beginning_longitude) assetData.beginning_longitude = parseFloat(row.beginning_longitude);
+          if (row.end_longitude) assetData.end_longitude = parseFloat(row.end_longitude);
 
           // Validate coordinate ranges
-          if (featureData.beginning_latitude && (featureData.beginning_latitude < -90 || featureData.beginning_latitude > 90)) {
+          if (assetData.beginning_latitude && (assetData.beginning_latitude < -90 || assetData.beginning_latitude > 90)) {
             errors.push({ row: i + 1, error: 'Beginning latitude must be between -90 and 90' });
             continue;
           }
-          if (featureData.end_latitude && (featureData.end_latitude < -90 || featureData.end_latitude > 90)) {
+          if (assetData.end_latitude && (assetData.end_latitude < -90 || assetData.end_latitude > 90)) {
             errors.push({ row: i + 1, error: 'End latitude must be between -90 and 90' });
             continue;
           }
-          if (featureData.beginning_longitude && (featureData.beginning_longitude < -180 || featureData.beginning_longitude > 180)) {
+          if (assetData.beginning_longitude && (assetData.beginning_longitude < -180 || assetData.beginning_longitude > 180)) {
             errors.push({ row: i + 1, error: 'Beginning longitude must be between -180 and 180' });
             continue;
           }
-          if (featureData.end_longitude && (featureData.end_longitude < -180 || featureData.end_longitude > 180)) {
+          if (assetData.end_longitude && (assetData.end_longitude < -180 || assetData.end_longitude > 180)) {
             errors.push({ row: i + 1, error: 'End longitude must be between -180 and 180' });
             continue;
           }
         }
 
-        // Insert feature
-        const { data: createdFeature, error } = await req.supabase
-          .from('hierarchy_features')
-          .insert(featureData)
+        // Insert asset
+        const { data: createdAsset, error } = await req.supabase
+          .from('assets')
+          .insert(assetData)
           .select()
           .single();
 
@@ -1058,7 +1060,7 @@ const importHierarchyData = asyncHandler(async (req, res) => {
         }
 
         // Store title-to-id mapping
-        titleToIdMap[title] = createdFeature.id;
+        titleToIdMap[title] = createdAsset.id;
         importedCount++;
       } catch (error) {
         errors.push({ row: i + 1, error: error.message });
@@ -1081,7 +1083,7 @@ const importHierarchyData = asyncHandler(async (req, res) => {
 
         // Update parent_id
         const { error } = await req.supabase
-          .from('hierarchy_features')
+          .from('assets')
           .update({ parent_id: parentId })
           .eq('id', titleToIdMap[title]);
 
@@ -1111,13 +1113,14 @@ const importHierarchyData = asyncHandler(async (req, res) => {
 export default {
   getHierarchy,
   deleteHierarchy,
-  createFeature,
-  updateFeature,
-  deleteFeature,
-  getFeatureTypes,
-  createFeatureType,
-  updateFeatureType,
-  deleteFeatureType,
+  createAsset,
+  updateAsset,
+  deleteAsset,
+  getAssetTypes,
+  createAssetType,
+  updateAssetType,
+  deleteAssetType,
   uploadHierarchyFile,
   importHierarchyData
 };
+

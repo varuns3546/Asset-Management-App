@@ -214,25 +214,28 @@
 /* Vertical node layout - siblings stack vertically */
 .vertical-node {
     position: relative;
-    margin-bottom: 8px;
+    margin-bottom: 0; /* Remove bottom margin, gap is handled by parent container */
 }
 
-/* Node row contains the node content and its children */
+/* Node row contains the node content and children types (horizontal) */
 .node-row {
     display: flex;
     flex-direction: row;
     align-items: flex-start;
     position: relative;
+    flex-wrap: nowrap;
 }
 
-/* Vertical children appear to the right of parent */
+/* Vertical children (sub-types) appear below parent - stacked vertically */
 .vertical-children {
     display: flex;
     flex-direction: column;
+    margin-top: 8px;
     margin-left: 30px;
     padding-left: 20px;
     border-left: 2px solid #dee2e6;
     position: relative;
+    gap: 8px; /* Add spacing between stacked sub-types */
 }
 
 /* Connecting line from parent to children container */
@@ -242,7 +245,7 @@
     left: -2px;
     top: -8px;
     width: 20px;
-    height: 20px;
+    height: 8px;
     border-left: 2px solid #dee2e6;
     border-bottom: 2px solid #dee2e6;
     border-bottom-left-radius: 8px;
@@ -261,6 +264,45 @@
 
 /* First child doesn't need the small horizontal line (covered by the main connector) */
 .vertical-children > .vertical-node:first-child::before {
+    display: none;
+}
+
+/* Horizontal children appear to the right of parent */
+.horizontal-children {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    margin-left: 30px;
+    padding-left: 20px;
+    border-left: 2px solid #dee2e6;
+    position: relative;
+    gap: 18px;
+}
+
+/* Connecting line from parent to children container (horizontal) */
+.horizontal-children::before {
+    content: '';
+    position: absolute;
+    left: -2px;
+    top: 16px;
+    width: 20px;
+    height: 2px;
+    background-color: #dee2e6;
+}
+
+/* Vertical line connecting each child to the horizontal line */
+.horizontal-children > .vertical-node::before {
+    content: '';
+    position: absolute;
+    left: -20px;
+    top: 16px;
+    width: 2px;
+    height: 20px;
+    background-color: #dee2e6;
+}
+
+/* First child doesn't need the vertical line (covered by the main connector) */
+.horizontal-children > .vertical-node:first-child::before {
     display: none;
 }
 

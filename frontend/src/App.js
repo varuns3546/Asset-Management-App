@@ -11,7 +11,7 @@ import LoginScreen from "./screens/LoginScreen";
 import RegisterScreen from "./screens/RegisterScreen";
 import HomeScreen from "./screens/HomeScreen";
 import HierarchyScreen from "./screens/HierarchyScreen";
-import ItemTypeScreen from "./screens/ItemTypeScreen";
+import AssetTypeScreen from "./screens/AssetTypeScreen";
 import MapScreen from "./screens/MapScreen";
 import Navbar from "./components/Navbar";
 import Modal from "./components/Modal";
@@ -93,7 +93,7 @@ function AppContent() {
           <Route path="/register" element={<RegisterScreen />} />
           <Route path="/home" element={<HomeScreen />} />
           <Route path="/hierarchies" element={<HierarchyScreen />} />
-          <Route path="/item-types" element={<ItemTypeScreen />} />
+          <Route path="/asset-types" element={<AssetTypeScreen />} />
           <Route path="/map" element={<MapScreen />} />
         </Routes>
       </div>
