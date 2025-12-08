@@ -226,44 +226,81 @@
     flex-wrap: nowrap;
 }
 
+/* Connecting line from parent node-content to horizontal children - only show if children exist */
+.node-row:has(.horizontal-children .vertical-node)::after {
+    content: '';
+    position: absolute;
+    left: calc(100% + 0px); /* Start from right edge of node-content */
+    top: 50%;
+    width: 50px; /* Extend to reach the children container (30px margin + 20px padding) */
+    height: 2px;
+    background-color: #dee2e6;
+    transform: translateY(-50%);
+    z-index: 1;
+    pointer-events: none;
+}
+
 /* Vertical children (sub-types) appear below parent - stacked vertically */
 .vertical-children {
     display: flex;
     flex-direction: column;
     margin-top: 8px;
-    margin-left: 30px;
-    padding-left: 20px;
-    border-left: 2px solid #dee2e6;
+    margin-left: 15px; /* Slight indentation to the right */
+    padding-left: 0; /* No padding needed */
     position: relative;
     gap: 8px; /* Add spacing between stacked sub-types */
 }
 
-/* Connecting line from parent to children container */
-.vertical-children::before {
+/* Connecting line from parent node-row to vertical children - only show if children exist */
+.vertical-node:has(.vertical-children .vertical-node) .node-row::after {
     content: '';
     position: absolute;
-    left: -2px;
-    top: -8px;
-    width: 20px;
+    left: 15px; /* Align with sub-types indentation */
+    bottom: -8px;
+    width: 2px;
     height: 8px;
-    border-left: 2px solid #dee2e6;
-    border-bottom: 2px solid #dee2e6;
-    border-bottom-left-radius: 8px;
+    background-color: #dee2e6;
+    z-index: 1;
+    pointer-events: none;
 }
 
-/* Small horizontal line connecting each child to the vertical line */
-.vertical-children > .vertical-node::before {
+
+
+/* Only show vertical line if there are multiple children - positioned to align with sub-types */
+.vertical-children:has(.vertical-node:nth-child(2)) {
+    border-left: 2px solid #dee2e6;
+    padding-left: 0; /* No padding */
+}
+
+/* Connecting line from parent to children container - only show if children exist */
+.vertical-children:has(.vertical-node)::before {
     content: '';
     position: absolute;
-    left: -20px;
-    top: 16px;
-    width: 20px;
-    height: 2px;
-    background-color: #dee2e6;
+    left: 0; /* Start from parent's left edge */
+    top: -8px;
+    width: 0; /* No horizontal line needed, just vertical connection */
+    height: 8px;
+    border-bottom: 2px solid #dee2e6;
+    border-bottom-left-radius: 0; /* No curve needed */
+}
+
+/* Only show connecting line if there are children */
+.vertical-children:empty::before {
+    display: none;
+}
+
+/* Small horizontal line connecting each child to the vertical line - not needed when aligned directly */
+.vertical-children > .vertical-node::before {
+    display: none; /* No horizontal connector needed when aligned directly under parent */
 }
 
 /* First child doesn't need the small horizontal line (covered by the main connector) */
 .vertical-children > .vertical-node:first-child::before {
+    display: none;
+}
+
+/* Single child doesn't need horizontal connector line */
+.vertical-children:has(.vertical-node:only-child) > .vertical-node::before {
     display: none;
 }
 
@@ -274,27 +311,41 @@
     align-items: flex-start;
     margin-left: 30px;
     padding-left: 20px;
-    border-left: 2px solid #dee2e6;
     position: relative;
     gap: 18px;
 }
 
-/* Connecting line from parent to children container (horizontal) */
-.horizontal-children::before {
+/* Only show vertical line if there are multiple children */
+.horizontal-children:has(.vertical-node:nth-child(2)) {
+    border-left: 2px solid #dee2e6;
+    margin-left: 0; /* Remove margin when showing border to align properly */
+    padding-left: 20px;
+}
+
+/* Connecting line from parent to children container (horizontal) - only show if children exist */
+.horizontal-children:has(.vertical-node)::before {
     content: '';
     position: absolute;
-    left: -2px;
-    top: 16px;
-    width: 20px;
+    left: -30px; /* Extend back to parent (30px margin + 20px padding) */
+    top: 50%;
+    width: 50px;
     height: 2px;
     background-color: #dee2e6;
+    transform: translateY(-50%);
+    z-index: 1;
+    pointer-events: none;
+}
+
+/* Only show connecting line if there are children */
+.horizontal-children:empty::before {
+    display: none;
 }
 
 /* Vertical line connecting each child to the horizontal line */
 .horizontal-children > .vertical-node::before {
     content: '';
     position: absolute;
-    left: -20px;
+    left: -50px; /* Extend back to the horizontal line from node-row::after */
     top: 16px;
     width: 2px;
     height: 20px;
@@ -303,6 +354,11 @@
 
 /* First child doesn't need the vertical line (covered by the main connector) */
 .horizontal-children > .vertical-node:first-child::before {
+    display: none;
+}
+
+/* Single child doesn't need vertical connector line */
+.horizontal-children:has(.vertical-node:only-child) > .vertical-node::before {
     display: none;
 }
 
