@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { getFeatureTypes, deleteFeatureType, reset } from '../features/projects/projectSlice';
 import { loadUser } from '../features/auth/authSlice';
-import ItemTypeForm from '../components/structure/ItemTypeForm';
-import ItemTypeTree from '../components/structure/ItemTypeTree';
+import AssetTypeForm from '../components/structure/AssetTypeForm';
+import AssetTypeTree from '../components/structure/AssetTypeTree';
 import '../styles/structureScreen.css';
-const ItemTypeScreen = () => {
+const AssetTypeScreen = () => {
     const { selectedProject, currentFeatureTypes } = useSelector((state) => state.projects);
     const { user } = useSelector((state) => state.auth);
     const [selectedItem, setSelectedItem] = useState(null);
@@ -13,7 +13,7 @@ const ItemTypeScreen = () => {
 
     // Debug: Log when currentFeatureTypes change
     useEffect(() => {
-        console.log('ItemTypeScreen currentFeatureTypes updated:', currentFeatureTypes);
+        console.log('AssetTypeScreen currentFeatureTypes updated:', currentFeatureTypes);
     }, [currentFeatureTypes]);  
 
     useEffect(() => {
@@ -30,15 +30,15 @@ const ItemTypeScreen = () => {
         }
     }, [selectedProject, user, dispatch]);
 
-    const handleRemoveItemType = async (itemTypeId) => {
+    const handleRemoveAssetType = async (assetTypeId) => {
         try {
             await dispatch(deleteFeatureType({
                 projectId: selectedProject.id,
-                featureTypeId: itemTypeId
+                featureTypeId: assetTypeId
             })).unwrap();
             
             // Clear selected item if the deleted item type was selected
-            if (selectedItem && selectedItem.id === itemTypeId) {
+            if (selectedItem && selectedItem.id === assetTypeId) {
                 setSelectedItem(null);
             }
         } catch (error) {
@@ -48,7 +48,7 @@ const ItemTypeScreen = () => {
     };
 
     const handleItemClick = (item) => {
-        console.log('ItemType selected in ItemTypeScreen:', item);
+        console.log('AssetType selected in AssetTypeScreen:', item);
         setSelectedItem(item);
     };
 
@@ -62,17 +62,17 @@ const ItemTypeScreen = () => {
                 <div className="hierarchy-container">
                     <div className="hierarchy-header">
                         <h2 className="hierarchy-title">
-                            {selectedItem ? `Edit Item Type: ${selectedItem.title}` : 'Item Types'} - {selectedProject.title}
+                            {selectedItem ? `Edit Asset Type: ${selectedItem.title}` : 'Asset Types'} - {selectedProject.title}
                         </h2>
                     </div>
                     <div className="hierarchy-layout">
                         {/* Left side - Edit Form */}
                         <div className="hierarchy-left-panel">
                             <div className="hierarchy-edit-container">
-                                <ItemTypeForm 
-                                    itemTypes={currentFeatureTypes || []}
-                                    selectedItem={selectedItem}
-                                    onItemSelect={handleItemSelect}
+                                <AssetTypeForm 
+                                    assetTypes={currentFeatureTypes || []}
+                                    selectedAsset={selectedItem}
+                                    onAssetSelect={handleItemSelect}
                                 />
                             </div>
                         </div>
@@ -82,17 +82,17 @@ const ItemTypeScreen = () => {
                             {(currentFeatureTypes && currentFeatureTypes.length > 0) ? (
                                 <div className="hierarchy-tree-container">
                                     <div className="hierarchy-tree-content">
-                                        <ItemTypeTree 
+                                        <AssetTypeTree 
                                             key={currentFeatureTypes.length} 
-                                            itemTypes={currentFeatureTypes}
-                                            onRemoveItemType={handleRemoveItemType}
-                                            onItemClick={handleItemClick}
+                                            assetTypes={currentFeatureTypes || []}
+                                            onRemoveAssetType={handleRemoveAssetType}
+                                            onAssetClick={handleItemClick}
                                         />
                                     </div>
                                 </div>
                             ) : (
                                 <div className="no-hierarchy-selected">
-                                    <h3>No Items</h3>
+                                    <h3>No Asset Types</h3>
                                     <p>Add items to see the hierarchy tree</p>
                                 </div>
                             )}
@@ -102,11 +102,11 @@ const ItemTypeScreen = () => {
             ) : (
                 <div className="no-project-selected">
                     <h2>No Project Selected</h2>
-                    <p>Please select a project to view its hierarchy</p>
+                    <p>Please select a project to view its asset types</p>
                 </div>
             )}
         </div>
     );
 }
 
-export default ItemTypeScreen;
+export default AssetTypeScreen;

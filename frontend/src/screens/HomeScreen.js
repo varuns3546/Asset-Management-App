@@ -1,7 +1,13 @@
 import { useSelector } from 'react-redux'
+import Spinner from '../components/Spinner'
 import '../styles/homeScreen.css'
+
 const HomeScreen = () => {
-    const { selectedProject } = useSelector((state) => state.projects)
+    const { selectedProject, isLoading } = useSelector((state) => state.projects)
+
+    if (isLoading) {
+        return <Spinner />
+    }
 
     return (
         <div>

@@ -6,7 +6,7 @@ import bodyParser from 'body-parser'
 import userRoutes from './routes/userRoutes.js'
 import projectRoutes from './routes/projectRoutes.js'
 import leafletShapesRoutes from './routes/leafletShapesRoutes.js'
-import gisLayerRoutes from './routes/gisLayerRoutes.js'
+import gisRoutes from './routes/gisRoutes.js'
 import fileRoutes from './routes/fileRoutes.js'
 
 dotenv.config();
@@ -19,7 +19,7 @@ app.use(bodyParser.urlencoded({ extended: true })); // Parse URL-encoded forms
 app.use('/api/users', userRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/leaflet-shapes', leafletShapesRoutes);
-app.use('/api/gis', gisLayerRoutes);
+app.use('/api/gis', gisRoutes);
 app.use('/api/files', fileRoutes);
 app.get("/", (req, res) => {
   res.send("API is running");
