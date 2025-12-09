@@ -23,10 +23,8 @@ A full-stack web application for managing assets with GIS capabilities, hierarch
 ## ✨ Features
 
 ### Core Functionality
-- **User Authentication** - Secure registration and login system with JWT
 - **Project Management** - Create, open, and manage multiple projects
 - **Asset Hierarchy** - Define and manage complex asset hierarchies
-- **Asset Types** - Categorize assets with custom types and attributes
 - **Questionnaires** - Data collection and assessment forms
 
 ### GIS & Mapping
@@ -40,7 +38,6 @@ A full-stack web application for managing assets with GIS capabilities, hierarch
 ### Data Management
 - **File Upload** - Support for various file formats including Excel
 - **Hierarchy Import** - Import asset hierarchies from spreadsheets
-- **Data Validation** - Column matching and preview before import
 - **Export Capabilities** - Export data in various formats
 
 ## 🛠 Tech Stack
@@ -250,9 +247,6 @@ Asset-Management-App/
 │   │   ├── App.js
 │   │   └── index.js
 │   └── package.json
-├── GIS_LAYERS_IMPLEMENTATION_SUMMARY.md
-├── HIERARCHY_IMPORT_GUIDE.md
-├── SETUP_INSTRUCTIONS.md
 └── README.md
 ```
 
