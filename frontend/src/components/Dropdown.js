@@ -23,6 +23,7 @@ const Dropdown = ({title, options, isOpen, onToggle, onOpenModal, onCloseModal})
                 'Item Types': '/asset-types',
                 'Map': '/map',
                 'Leaflet': '/leaflet',
+                'Questionnaire': '/questionnaire',
             }
             
             if (routeMap[option]) {

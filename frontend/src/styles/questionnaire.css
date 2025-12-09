@@ -1,0 +1,261 @@
+.questionnaire-screen {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background-color: #f5f5f5;
+}
+
+.questionnaire-header {
+  margin-bottom: 30px;
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.questionnaire-header h1 {
+  font-size: 2rem;
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.questionnaire-header p {
+  color: #666;
+  font-size: 1rem;
+}
+
+.no-project-message {
+  background: white;
+  padding: 60px 40px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.no-project-message h2 {
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.no-project-message p {
+  color: #666;
+  font-size: 1.1rem;
+}
+
+.questionnaire-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.asset-selection {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.asset-selection h2 {
+  font-size: 1.2rem;
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.asset-dropdown {
+  width: 100%;
+  padding: 12px;
+  font-size: 1rem;
+  border: 2px solid #ddd;
+  border-radius: 4px;
+  background-color: white;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.asset-dropdown:hover {
+  border-color: #4a90e2;
+}
+
+.asset-dropdown:focus {
+  outline: none;
+  border-color: #4a90e2;
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 40px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #4a90e2;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading p {
+  font-size: 1.1rem;
+  color: #666;
+}
+
+.questionnaire-form {
+  background: white;
+  padding: 30px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.asset-info {
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #eee;
+}
+
+.asset-info h2 {
+  font-size: 1.5rem;
+  margin-bottom: 8px;
+  color: #333;
+}
+
+.asset-type {
+  color: #666;
+  font-style: italic;
+  font-size: 1rem;
+}
+
+.no-attributes {
+  text-align: center;
+  padding: 60px 40px;
+  color: #999;
+}
+
+.no-attributes p {
+  margin-bottom: 10px;
+  font-size: 1.1rem;
+}
+
+.no-attributes strong {
+  color: #4a90e2;
+}
+
+.questions-container {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.question-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.question-item label {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-weight: 500;
+  font-size: 1.05rem;
+  color: #333;
+}
+
+.question-number {
+  color: #4a90e2;
+  font-weight: 600;
+  min-width: 30px;
+}
+
+.question-text {
+  flex: 1;
+}
+
+.response-input {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-family: inherit;
+  resize: vertical;
+  transition: border-color 0.2s;
+}
+
+.response-input:focus {
+  outline: none;
+  border-color: #4a90e2;
+}
+
+.response-input::placeholder {
+  color: #aaa;
+}
+
+.form-actions {
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 2px solid #eee;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.submit-button {
+  padding: 12px 30px;
+  background-color: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.submit-button:hover:not(:disabled) {
+  background-color: #357abd;
+}
+
+.submit-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .questionnaire-screen {
+    padding: 10px;
+  }
+
+  .questionnaire-header {
+    padding: 15px;
+  }
+
+  .questionnaire-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .questionnaire-form {
+    padding: 20px;
+  }
+
+  .asset-info h2 {
+    font-size: 1.3rem;
+  }
+
+  .question-item label {
+    font-size: 1rem;
+  }
+}
+
