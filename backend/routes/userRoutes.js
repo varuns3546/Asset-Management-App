@@ -1,7 +1,14 @@
 import express from 'express';
 import userController from '../controllers/userController.js';
 import supabaseClient from '../config/supabaseClient.js';
-const {registerUser, loginUser, getUser, getSelectedProject, setSelectedProject, refreshToken} = userController
+const {
+  registerUser,
+  loginUser,
+  getUser,
+  getSelectedProject,
+  setSelectedProject,
+  refreshToken
+} = userController;
 const { authenticateUser } = supabaseClient;
 const router = express.Router();
 

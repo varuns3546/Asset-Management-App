@@ -56,10 +56,61 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.asset-selection h2 {
-  font-size: 1.2rem;
-  margin-bottom: 10px;
+.filter-section {
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.filter-group label {
+  font-weight: 500;
   color: #333;
+  font-size: 1rem;
+}
+
+.filter-dropdown {
+  padding: 10px 12px;
+  font-size: 0.95rem;
+  border: 2px solid #ddd;
+  border-radius: 4px;
+  background-color: white;
+  cursor: pointer;
+  transition: border-color 0.2s;
+  min-width: 180px;
+}
+
+.filter-dropdown:hover {
+  border-color: #4a90e2;
+}
+
+.filter-dropdown:focus {
+  outline: none;
+  border-color: #4a90e2;
+}
+
+.asset-count {
+  color: #666;
+  font-size: 0.9rem;
+  font-style: italic;
+}
+
+.asset-select-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.asset-select-group label {
+  font-weight: 500;
+  color: #333;
+  font-size: 1rem;
 }
 
 .asset-dropdown {
@@ -201,6 +252,190 @@
 
 .response-input::placeholder {
   color: #aaa;
+}
+
+.response-number-input {
+  resize: none;
+}
+
+.attribute-type-badge {
+  font-size: 0.85rem;
+  color: #666;
+  font-weight: 400;
+  font-style: italic;
+  margin-left: 8px;
+}
+
+.photo-upload-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.photo-input {
+  padding: 10px;
+  border: 2px dashed #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.photo-input:hover {
+  border-color: #4a90e2;
+}
+
+.photo-preview {
+  padding: 10px;
+  background: #f9f9f9;
+  border-radius: 4px;
+  min-height: 40px;
+}
+
+.photo-gallery {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.photo-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.photo-section-header {
+  font-weight: 600;
+  color: #333;
+  font-size: 0.95rem;
+  padding: 8px 0;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.photo-section-collapsible {
+  display: inline-flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.2s;
+  padding: 8px 12px;
+  border-radius: 4px;
+}
+
+.photo-section-collapsible:hover {
+  background-color: #f5f5f5;
+}
+
+.collapse-icon {
+  color: #666;
+  font-size: 0.85rem;
+  transition: transform 0.2s;
+}
+
+.photo-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.photo-thumbnail {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 8px;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  max-width: 120px;
+}
+
+.photo-thumbnail.photo-new {
+  border: 2px solid #4a90e2;
+  background: #f0f8ff;
+}
+
+.photo-thumbnail.photo-saved {
+  border: 1px solid #ddd;
+  background: white;
+}
+
+.remove-photo-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 24px;
+  height: 24px;
+  background: rgba(255, 0, 0, 0.8);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  line-height: 1;
+  padding: 0;
+  transition: background 0.2s;
+  z-index: 1;
+}
+
+.remove-photo-btn:hover {
+  background: rgba(255, 0, 0, 1);
+}
+
+.photo-thumbnail img {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.photo-placeholder {
+  width: 100px;
+  height: 100px;
+  background: #f0f0f0;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.photo-icon {
+  font-size: 40px;
+  opacity: 0.5;
+}
+
+.photo-name {
+  font-size: 0.75rem;
+  color: #666;
+  text-align: center;
+  word-break: break-word;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.photo-count {
+  color: #4a90e2;
+  font-weight: 500;
+  padding: 8px;
+  width: 100%;
+  text-align: center;
+}
+
+.no-photos {
+  color: #999;
+  font-style: italic;
+  padding: 20px;
+  text-align: center;
+  width: 100%;
 }
 
 .form-actions {

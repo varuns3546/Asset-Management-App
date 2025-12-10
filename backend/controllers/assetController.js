@@ -299,7 +299,8 @@ const createAssetType = asyncHandler(async (req, res) => {
     if (attributes && attributes.length > 0) {
       const attributesToInsert = attributes.map(attribute => ({
         item_type_id: assetType.id,
-        title: attribute.trim()
+        title: typeof attribute === 'string' ? attribute.trim() : attribute.title.trim(),
+        type: typeof attribute === 'string' ? 'text' : (attribute.type || 'text')
       }));
 
       console.log('Attributes to insert:', attributesToInsert);
@@ -708,7 +709,8 @@ const updateAssetType = asyncHandler(async (req, res) => {
     if (attributes && attributes.length > 0) {
       const attributesToInsert = attributes.map(attribute => ({
         item_type_id: featureTypeId,
-        title: attribute.trim()
+        title: typeof attribute === 'string' ? attribute.trim() : attribute.title.trim(),
+        type: typeof attribute === 'string' ? 'text' : (attribute.type || 'text')
       }));
 
       const { data: insertedAttributes, error: attributesError } = await req.supabase

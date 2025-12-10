@@ -47,20 +47,22 @@ const getAssetQuestionnaire = asyncHandler(async (req, res) => {
       }
     }
 
-    // Get attributes for this asset type
-    const { data: attributes, error: attributesError } = await req.supabase
-      .from('attributes')
-      .select('*')
-      .eq('item_type_id', asset.item_type_id)
-      .order('created_at');
+    // Get attributes for this asset type (only if asset has a type)
+    let attributes = [];
+    if (asset.item_type_id) {
+      const { data: attributesData, error: attributesError } = await req.supabase
+        .from('attributes')
+        .select('*')
+        .eq('item_type_id', asset.item_type_id)
+        .order('created_at');
 
-    if (attributesError) {
-      console.error('Error fetching attributes:', attributesError);
-      return res.status(500).json({
-        success: false,
-        error: 'Failed to fetch attributes',
-        details: attributesError.message
-      });
+      if (attributesError) {
+        console.error('Error fetching attributes:', attributesError);
+        // Don't fail the request if attributes can't be fetched
+        // The asset may not have any attributes defined yet
+      } else {
+        attributes = attributesData || [];
+      }
     }
 
     // Get existing responses for this asset (table might not exist yet)
@@ -85,7 +87,7 @@ const getAssetQuestionnaire = asyncHandler(async (req, res) => {
       data: {
         asset,
         assetType,
-        attributes: attributes || [],
+        attributes,
         responses: responsesMap
       }
     });
@@ -156,6 +158,34 @@ const submitQuestionnaireResponses = asyncHandler(async (req, res) => {
         success: false,
         error: 'Failed to save responses'
       });
+    }
+
+    // Save photos to attribute_photos table
+    for (const response of savedResponses) {
+      if (response.response_metadata?.photos && Array.isArray(response.response_metadata.photos)) {
+        // Delete existing photos for this response
+        await req.supabase
+          .from('attribute_photos')
+          .delete()
+          .eq('response_id', response.id);
+
+        // Insert new photos
+        const photosToInsert = response.response_metadata.photos.map(photo => ({
+          response_id: response.id,
+          photo_url: photo.url,
+          file_name: photo.name,
+          file_size: photo.size
+        }));
+
+        const { error: photosError } = await req.supabase
+          .from('attribute_photos')
+          .insert(photosToInsert);
+
+        if (photosError) {
+          console.error('Error saving photos to attribute_photos:', photosError);
+          // Don't fail the request, just log the error
+        }
+      }
     }
 
     res.status(200).json({
