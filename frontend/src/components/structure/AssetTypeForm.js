@@ -19,7 +19,7 @@ const AssetTypeForm = ({
     });
 
     const [parentDropdowns, setParentDropdowns] = useState([{ id: 1, value: '' }]);
-    const [attributes, setAttributes] = useState([{ id: 1, value: '' }]);
+    const [attributes, setAttributes] = useState([{ id: 1, value: '', type: 'text' }]);
     const [subTypes, setSubTypes] = useState([{ id: 1, value: '', existingId: null }]);
     const [selectedExistingSubTypes, setSelectedExistingSubTypes] = useState([]);
     const [existingSubTypeDropdown, setExistingSubTypeDropdown] = useState({ id: 1, value: '' });
@@ -55,11 +55,12 @@ const AssetTypeForm = ({
             if (selectedAsset.attributes && selectedAsset.attributes.length > 0) {
                 const attributesData = selectedAsset.attributes.map((attr, index) => ({
                     id: index + 1,
-                    value: attr
+                    value: typeof attr === 'string' ? attr : attr.title,
+                    type: typeof attr === 'string' ? 'text' : (attr.type || 'text')
                 }));
                 setAttributes(attributesData);
             } else {
-                setAttributes([{ id: 1, value: '' }]);
+                setAttributes([{ id: 1, value: '', type: 'text' }]);
             }
             
             // Load existing sub-types for this asset type (using subtype_of_id)
@@ -94,7 +95,7 @@ const AssetTypeForm = ({
                 attributes: []
             });
             setParentDropdowns([{ id: 1, value: '' }]);
-            setAttributes([{ id: 1, value: '' }]);
+            setAttributes([{ id: 1, value: '', type: 'text' }]);
             setSubTypes([{ id: 1, value: '', existingId: null }]);
             setSelectedExistingSubTypes([]);
             setExistingSubTypeDropdown({ id: 1, value: '' });
@@ -178,11 +179,11 @@ const AssetTypeForm = ({
         }
     }
 
-    const handleAttributeChange = (attributeId, value) => {
+    const handleAttributeChange = (attributeId, field, value) => {
         setAttributes(prev => 
             prev.map(attr => 
                 attr.id === attributeId 
-                    ? { ...attr, value: value }
+                    ? { ...attr, [field]: value }
                     : attr
             )
         );
@@ -190,7 +191,7 @@ const AssetTypeForm = ({
 
     const addAnotherAttribute = () => {
         const newId = Math.max(...attributes.map(a => a.id)) + 1;
-        setAttributes(prev => [...prev, { id: newId, value: '' }]);
+        setAttributes(prev => [...prev, { id: newId, value: '', type: 'text' }]);
     }
 
     const removeAttribute = (attributeId) => {
@@ -272,10 +273,13 @@ const AssetTypeForm = ({
             .map(dropdown => dropdown.value)
             .filter(value => value !== '');
 
-        // Collect attribute values
+        // Collect attribute values with types
         const attributeValues = attributes
-            .map(attr => attr.value)
-            .filter(value => value.trim() !== '');
+            .filter(attr => attr.value.trim() !== '')
+            .map(attr => ({
+                title: attr.value.trim(),
+                type: attr.type || 'text'
+            }));
 
         // Collect sub-type values (new ones to create)
         const newSubTypes = subTypes
@@ -611,14 +615,23 @@ const AssetTypeForm = ({
                 <div className="form-group">
                     <label className="form-label">Attributes:</label>
                     {attributes.map((attribute, index) => (
-                        <div key={attribute.id} className="parent-dropdown-row">
+                        <div key={attribute.id} className="attribute-row">
                             <input
                                 type="text"
                                 value={attribute.value}
-                                onChange={(e) => handleAttributeChange(attribute.id, e.target.value)}
+                                onChange={(e) => handleAttributeChange(attribute.id, 'value', e.target.value)}
                                 placeholder={`Attribute ${index + 1}`}
-                                className="form-input parent-dropdown"
+                                className="form-input attribute-name-input"
                             />
+                            <select
+                                value={attribute.type || 'text'}
+                                onChange={(e) => handleAttributeChange(attribute.id, 'type', e.target.value)}
+                                className="form-select attribute-type-select"
+                            >
+                                <option value="text">Text</option>
+                                <option value="number">Number</option>
+                                <option value="photos">Photos</option>
+                            </select>
                             {attributes.length > 1 && (
                                 <button
                                     type="button"

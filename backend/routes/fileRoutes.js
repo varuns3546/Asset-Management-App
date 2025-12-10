@@ -2,7 +2,13 @@ import express from 'express';
 import fileController from '../controllers/fileController.js';
 import supabaseClient from '../config/supabaseClient.js';
 
-const { uploadFile, listFiles, getFileUrl, downloadFile, deleteFile } = fileController;
+const {
+  uploadFile,
+  listFiles,
+  getFileUrl,
+  downloadFile,
+  deleteFile
+} = fileController;
 const { authenticateUser } = supabaseClient;
 
 const router = express.Router();

@@ -3,8 +3,30 @@ import projectController from '../controllers/projectController.js';
 import assetController from '../controllers/assetController.js';
 import supabaseClient from '../config/supabaseClient.js';
 
-const { getProjects, getProject, createProject, deleteProject, updateProject, getProjectUsers, addUserToProject, removeUserFromProject } = projectController;
-const { getHierarchy, deleteHierarchy, createAsset, updateAsset, deleteAsset, getAssetTypes, createAssetType, updateAssetType, deleteAssetType, uploadHierarchyFile, importHierarchyData } = assetController;
+const {
+  getProjects,
+  getProject,
+  createProject,
+  deleteProject,
+  updateProject,
+  getProjectUsers,
+  addUserToProject,
+  removeUserFromProject
+} = projectController;
+
+const {
+  getHierarchy,
+  deleteHierarchy,
+  createAsset,
+  updateAsset,
+  deleteAsset,
+  getAssetTypes,
+  createAssetType,
+  updateAssetType,
+  deleteAssetType,
+  uploadHierarchyFile,
+  importHierarchyData
+} = assetController;
 const { authenticateUser } = supabaseClient;
 const router = express.Router();
 
