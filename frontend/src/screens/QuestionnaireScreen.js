@@ -18,6 +18,8 @@ const QuestionnaireScreen = () => {
   const [saving, setSaving] = useState(false);
   const [typeFilter, setTypeFilter] = useState('all');
   const [collapsedSections, setCollapsedSections] = useState({});
+  const [assetSearchText, setAssetSearchText] = useState('');
+  const [showAssetDropdown, setShowAssetDropdown] = useState(false);
 
   // Load assets and asset types for the project
   useEffect(() => {
@@ -51,6 +53,18 @@ const QuestionnaireScreen = () => {
       setAssets(currentHierarchy);
     }
   }, [currentHierarchy]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showAssetDropdown && !event.target.closest('.searchable-dropdown')) {
+        setShowAssetDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showAssetDropdown]);
 
   // Load questionnaire when asset is selected
   const handleAssetSelect = async (assetId) => {
@@ -367,13 +381,23 @@ const QuestionnaireScreen = () => {
 
   // Filter assets based on selected type
   const getFilteredAssets = () => {
-    if (typeFilter === 'all') {
-      return assets;
-    } else if (typeFilter === 'no-type') {
-      return assets.filter(asset => !asset.item_type_id);
-    } else {
-      return assets.filter(asset => asset.item_type_id === typeFilter);
+    let filtered = assets;
+    
+    // Filter by type
+    if (typeFilter === 'no-type') {
+      filtered = filtered.filter(asset => !asset.item_type_id);
+    } else if (typeFilter !== 'all') {
+      filtered = filtered.filter(asset => asset.item_type_id === typeFilter);
     }
+    
+    // Filter by search text
+    if (assetSearchText.trim()) {
+      filtered = filtered.filter(asset => 
+        asset.title.toLowerCase().includes(assetSearchText.toLowerCase())
+      );
+    }
+    
+    return filtered;
   };
 
   // Get only asset types that have assets
@@ -381,6 +405,13 @@ const QuestionnaireScreen = () => {
     return assetTypes.filter(type => 
       assets.some(asset => asset.item_type_id === type.id)
     );
+  };
+
+  // Handle asset selection from dropdown
+  const handleAssetSelectFromDropdown = (asset) => {
+    setAssetSearchText(asset.title);
+    setShowAssetDropdown(false);
+    handleAssetSelect(asset.id);
   };
 
   const filteredAssets = getFilteredAssets();
@@ -418,6 +449,8 @@ const QuestionnaireScreen = () => {
                   setSelectedAsset(null);
                   setQuestionnaireData(null);
                   setResponses({});
+                  setAssetSearchText('');
+                  setShowAssetDropdown(false);
                 }}
                 className="filter-dropdown"
               >
@@ -436,24 +469,46 @@ const QuestionnaireScreen = () => {
           </div>
 
           <div className="asset-select-group">
-            <label htmlFor="asset-select">Select Asset:</label>
-            <select
-              id="asset-select"
-              value={selectedAsset?.id || ''}
-              onChange={(e) => handleAssetSelect(e.target.value)}
-              className="asset-dropdown"
-            >
-              <option value="">-- Choose an asset --</option>
-              {filteredAssets.map(asset => {
-                const assetType = assetTypes.find(type => type.id === asset.item_type_id);
-                const typeName = assetType ? assetType.title : 'No Type';
-                return (
-                  <option key={asset.id} value={asset.id}>
-                    {asset.title} ({typeName})
-                  </option>
-                );
-              })}
-            </select>
+            <label htmlFor="asset-search">Select Asset:</label>
+            <div className="searchable-dropdown">
+              <input
+                id="asset-search"
+                type="text"
+                value={assetSearchText}
+                onChange={(e) => {
+                  setAssetSearchText(e.target.value);
+                  setShowAssetDropdown(true);
+                }}
+                onFocus={() => setShowAssetDropdown(true)}
+                placeholder="Type to search or click to browse..."
+                className="asset-search-input"
+              />
+              {showAssetDropdown && filteredAssets.length > 0 && (
+                <div className="asset-dropdown-list">
+                  {filteredAssets.map(asset => {
+                    const assetType = assetTypes.find(type => type.id === asset.item_type_id);
+                    const typeName = assetType ? assetType.title : 'No Type';
+                    return (
+                      <div
+                        key={asset.id}
+                        className="asset-dropdown-item"
+                        onClick={() => handleAssetSelectFromDropdown(asset)}
+                      >
+                        <span className="asset-item-title">{asset.title}</span>
+                        <span className="asset-item-type">({typeName})</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              {showAssetDropdown && assetSearchText && filteredAssets.length === 0 && (
+                <div className="asset-dropdown-list">
+                  <div className="asset-dropdown-item asset-no-results">
+                    No assets found matching "{assetSearchText}"
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
