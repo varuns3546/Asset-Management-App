@@ -36,8 +36,23 @@ const getProjectMetrics = asyncHandler(async (req, res) => {
     const FREE_TIER_DB_LIMIT = 500 * 1024 * 1024; // 500 MB
     const FREE_TIER_STORAGE_LIMIT = 1024 * 1024 * 1024; // 1 GB
 
-    const dbPercentage = (dbMetrics.totalSize / FREE_TIER_DB_LIMIT) * 100;
-    const storagePercentage = (totalStorageSize / FREE_TIER_STORAGE_LIMIT) * 100;
+    // 🚨 TESTING: Override with warning values
+    const TEST_MODE = false;
+    let dbPercentage, storagePercentage;
+    if (TEST_MODE) {
+      // Set to 85% to trigger warning (80-90% = warning, >90% = critical)
+      dbPercentage = 85.5;
+      storagePercentage = 87.2;
+      // Override ALL sizes to match percentages
+      dbMetrics.totalSize = Math.floor(FREE_TIER_DB_LIMIT * 0.855); // 427.5 MB
+      dbMetrics.userDataSize = Math.floor(FREE_TIER_DB_LIMIT * 0.855); // Same for display
+      dbMetrics.overhead = 0; // No overhead in test display
+      totalStorageSize = Math.floor(FREE_TIER_STORAGE_LIMIT * 0.872); // 892.9 MB
+      console.log('⚠️ TEST MODE: Showing warning values');
+    } else {
+      dbPercentage = (dbMetrics.totalSize / FREE_TIER_DB_LIMIT) * 100;
+      storagePercentage = (totalStorageSize / FREE_TIER_STORAGE_LIMIT) * 100;
+    }
 
     res.status(200).json({
       success: true,
@@ -118,7 +133,7 @@ const getAllProjectsMetrics = asyncHandler(async (req, res) => {
       .from('project_files')
       .select('file_size');
 
-    const totalStorageSize = allProjectFiles?.reduce((sum, file) => sum + (file.file_size || 0), 0) || 0;
+    let totalStorageSize = allProjectFiles?.reduce((sum, file) => sum + (file.file_size || 0), 0) || 0;
 
     // Get accurate database size for entire account
     const dbMetrics = await getAccurateDatabaseSize(officialMetrics, {
@@ -132,8 +147,21 @@ const getAllProjectsMetrics = asyncHandler(async (req, res) => {
     const FREE_TIER_DB_LIMIT = 500 * 1024 * 1024; // 500 MB
     const FREE_TIER_STORAGE_LIMIT = 1024 * 1024 * 1024; // 1 GB
 
-    const dbPercentage = (dbMetrics.totalSize / FREE_TIER_DB_LIMIT) * 100;
-    const storagePercentage = (totalStorageSize / FREE_TIER_STORAGE_LIMIT) * 100;
+    // 🚨 TESTING: Override with warning values
+    const TEST_MODE = false;
+    let dbPercentage, storagePercentage;
+    if (TEST_MODE) {
+      dbPercentage = 85.5;
+      storagePercentage = 87.2;
+      dbMetrics.totalSize = Math.floor(FREE_TIER_DB_LIMIT * 0.855);
+      dbMetrics.userDataSize = Math.floor(FREE_TIER_DB_LIMIT * 0.855);
+      dbMetrics.overhead = 0;
+      totalStorageSize = Math.floor(FREE_TIER_STORAGE_LIMIT * 0.872);
+      console.log('⚠️ TEST MODE: All Projects showing warning values');
+    } else {
+      dbPercentage = (dbMetrics.totalSize / FREE_TIER_DB_LIMIT) * 100;
+      storagePercentage = (totalStorageSize / FREE_TIER_STORAGE_LIMIT) * 100;
+    }
 
     // Account-wide official metrics (if available)
     const accountMetrics = officialMetrics ? {
