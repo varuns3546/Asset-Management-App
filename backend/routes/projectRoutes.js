@@ -1,6 +1,8 @@
 import express from 'express';
 import projectController from '../controllers/projectController.js';
 import assetController from '../controllers/assetController.js';
+import { getProjectMetrics, getAllProjectsMetrics } from '../controllers/metricsController.js';
+import { exportProjectData } from '../controllers/exportController.js';
 import supabaseClient from '../config/supabaseClient.js';
 
 const {
@@ -61,5 +63,11 @@ router.get('/:id/hierarchy/feature-types', getAssetTypes);
 router.post('/:id/hierarchy/feature-types', createAssetType);
 router.put('/:id/hierarchy/feature-types/:featureTypeId', updateAssetType);
 router.delete('/:id/hierarchy/feature-types/:featureTypeId', deleteAssetType);
+
+// Metrics and export routes
+// Note: all-projects route must come BEFORE /:id/metrics to avoid route conflicts
+router.get('/all-projects/metrics', getAllProjectsMetrics);
+router.get('/:id/metrics', getProjectMetrics);
+router.get('/:id/export', exportProjectData);
 
 export default router;

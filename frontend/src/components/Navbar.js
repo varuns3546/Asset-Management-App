@@ -38,8 +38,14 @@ const Navbar = ({ onOpenModal, onCloseModal }) => {
         navigate('/')
     }
 
+    const handleHomeClick = () => {
+        navigate('/home')
+        setOpenDropdown(null)
+    }
+
     return (
         <div className="container" ref={navbarRef}>
+            <button className="button" onClick={handleHomeClick}>🏠 Home</button>
             <Dropdown 
                 title="Project" 
                 options={['Save Project', 'Open Project', 'Create Project', 'Upload File']} 
