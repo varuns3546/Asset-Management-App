@@ -225,29 +225,6 @@
   font-size: 0.9rem;
 }
 
-.metric-breakdown {
-  margin: 8px 0;
-  padding: 8px;
-  background: #f5f5f5;
-  border-radius: 4px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 0.85rem;
-}
-
-.breakdown-item {
-  color: #555;
-  display: flex;
-  align-items: center;
-}
-
-.breakdown-item:before {
-  content: "▸";
-  margin-right: 6px;
-  color: #4a90e2;
-  font-weight: bold;
-}
 
 .official-badge {
   font-size: 0.8rem;

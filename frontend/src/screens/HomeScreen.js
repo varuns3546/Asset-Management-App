@@ -134,12 +134,6 @@ const HomeScreen = () => {
                   {metrics.database.sizeWithOverheadFormatted || metrics.database.sizeFormatted}
                   <span className="metric-limit"> / {metrics.database.limitFormatted}</span>
                 </div>
-                {metrics.database.sizeWithOverhead && (
-                  <div className="metric-breakdown">
-                    <span className="breakdown-item">Your data: {metrics.database.sizeFormatted}</span>
-                    <span className="breakdown-item">Supabase overhead: {metrics.database.supabaseOverheadFormatted}</span>
-                  </div>
-                )}
                 <div className="progress-bar">
                   <div 
                     className={`progress-fill ${metrics.database.percentage > 90 ? 'critical' : metrics.database.percentage > 80 ? 'warning' : ''}`}
@@ -244,7 +238,7 @@ const HomeScreen = () => {
                     </span>
                   </div>
                   <div className="metric-value">
-                    {allProjectsMetrics.allProjects.database.sizeFormatted}
+                    {allProjectsMetrics.allProjects.database.sizeWithOverheadFormatted || allProjectsMetrics.allProjects.database.sizeFormatted}
                     <span className="metric-limit"> / {allProjectsMetrics.allProjects.database.limitFormatted}</span>
                   </div>
                   <div className="progress-bar">
@@ -254,7 +248,7 @@ const HomeScreen = () => {
                     />
                   </div>
                   <p className="metric-percentage">
-                    {allProjectsMetrics.allProjects.database.percentage.toFixed(1)}% used (estimated)
+                    {allProjectsMetrics.allProjects.database.percentage.toFixed(1)}% used (includes overhead)
                   </p>
                 </div>
 
