@@ -10,7 +10,7 @@ import ErrorMessage from '../components/forms/ErrorMessage';
 import { getHierarchy, getFeatureTypes } from '../features/projects/projectSlice';
 import * as gisLayerService from '../services/gisLayerService';
 import '../styles/map.css';
-import { useIsMounted } from '../hooks/useIsMounted';
+import { useRouteMount } from '../contexts/RouteMountContext';
 import useProjectData from '../hooks/useProjectData';
 
 const MapScreen = () => {
@@ -30,17 +30,18 @@ const MapScreen = () => {
   const [selectedLayerForFeature, setSelectedLayerForFeature] = useState(null);
   const [error, setError] = useState('');
   const containerRef = useRef(null);
-  const { isMounted } = useIsMounted();
+  const { isRouteMounted } = useRouteMount();
 
 
   // Load hierarchy and feature types when project is selected and user is authenticated
-  useEffect(() => {
+    useEffect(() => {
     if (selectedProject?.id && user) {
-      dispatch(getHierarchy(selectedProject.id));
+            dispatch(getHierarchy(selectedProject.id));
       dispatch(getFeatureTypes(selectedProject.id));
       loadLayersFromDatabase();
     }
-  }, [selectedProject?.id, user, dispatch]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedProject?.id, user, dispatch]); // loadLayersFromDatabase is stable and doesn't need to be in deps
 
   // Load layers from database
   const loadLayersFromDatabase = async () => {
@@ -48,11 +49,11 @@ const MapScreen = () => {
     
     try {
       const response = await gisLayerService.getGisLayers(selectedProject.id);
-      if (response.success && response.data && isMounted()) {
+      if (response.success && response.data && isRouteMounted()) {
         // Convert database layers to local state format
         const loadedLayers = await Promise.all(
           response.data.map(async (dbLayer) => {
-            if (!isMounted()) return null;
+            if (!isRouteMounted()) return null;
             
             // Get features for this layer
             const featuresResponse = await gisLayerService.getLayerFeatures(
@@ -60,7 +61,7 @@ const MapScreen = () => {
               dbLayer.id
             );
             
-            if (!isMounted()) return null;
+            if (!isRouteMounted()) return null;
             
             const features = featuresResponse.success 
               ? featuresResponse.data.map(f => {
@@ -109,12 +110,12 @@ const MapScreen = () => {
           })
         );
         
-        if (isMounted()) {
+        if (isRouteMounted()) {
           setLayers(loadedLayers);
         }
       }
     } catch (error) {
-      if (isMounted()) {
+      if (isRouteMounted()) {
         console.error('Error loading layers:', error);
       }
     }
@@ -179,11 +180,11 @@ const MapScreen = () => {
   };
 
   const handleCreateLayer = async (layerData) => {
-    if (!isMounted()) return;
+    if (!isRouteMounted()) return;
     setError('');
     
     if (!selectedProject?.id) {
-      if (isMounted()) {
+      if (isRouteMounted()) {
         setError('No project selected');
       }
       return;
@@ -209,7 +210,7 @@ const MapScreen = () => {
         }
       );
 
-      if (response.success && isMounted()) {
+      if (response.success && isRouteMounted()) {
         const newLayer = {
           id: response.data.id, // Use database ID
           name: layerData.name,
@@ -227,7 +228,7 @@ const MapScreen = () => {
         setLayers(prev => [...prev, newLayer]);
       }
     } catch (error) {
-      if (isMounted()) {
+      if (isRouteMounted()) {
         const errorMessage = error.response?.data?.error || 'Failed to create layer. Please try again.';
         setError(errorMessage);
       }
@@ -248,13 +249,13 @@ const MapScreen = () => {
       );
 
       // Update local state
-      if (isMounted()) {
+      if (isRouteMounted()) {
         setLayers(prev => prev.map(l => 
           l.id === layerId ? { ...l, visible: !l.visible } : l
         ));
       }
     } catch (error) {
-      if (isMounted()) {
+      if (isRouteMounted()) {
         setError('Failed to update layer visibility');
       }
     }
@@ -266,11 +267,11 @@ const MapScreen = () => {
 
     try {
       await gisLayerService.deleteGisLayer(selectedProject.id, layerId);
-      if (isMounted()) {
+      if (isRouteMounted()) {
         setLayers(prev => prev.filter(layer => layer.id !== layerId));
       }
     } catch (error) {
-      if (isMounted()) {
+      if (isRouteMounted()) {
         setError('Failed to delete layer');
       }
     }
@@ -328,14 +329,14 @@ const MapScreen = () => {
             : l
         );
 
-        if (isMounted()) {
+        if (isRouteMounted()) {
           setLayers(updatedLayers);
           setShowAddFeatureModal(false);
           setSelectedLayerForFeature(null);
         }
       }
     } catch (error) {
-      if (isMounted()) {
+      if (isRouteMounted()) {
         setError('Failed to add feature');
       }
     }
@@ -349,7 +350,7 @@ const MapScreen = () => {
       await gisLayerService.deleteFeature(selectedProject.id, layerId, featureId);
       
       // Update local state (use == for loose comparison since layerId might be string from Object.entries)
-      if (isMounted()) {
+      if (isRouteMounted()) {
         setLayers(prev => prev.map(layer => 
           String(layer.id) === String(layerId)
             ? {
@@ -361,13 +362,11 @@ const MapScreen = () => {
         ));
       }
     } catch (error) {
-      if (isMounted()) {
+      if (isRouteMounted()) {
         setError('Failed to delete feature');
       }
     }
   };
-
-  const mapWidth = isExpanded ? `calc(100% - ${panelWidth}px)` : '100%';
 
   // Extract coordinates from selected project
   // Leaflet expects [latitude, longitude] format
@@ -375,7 +374,7 @@ const MapScreen = () => {
     ? [parseFloat(selectedProject.latitude), parseFloat(selectedProject.longitude)]
     : null;
 
-  return (
+                                                    return (
     
     <div ref={containerRef} className="leaflet-screen-container">
       <ErrorMessage message={error} style={{ position: 'fixed', top: '80px', left: '50%', transform: 'translateX(-50%)', zIndex: 10000, maxWidth: '500px' }} />
@@ -432,9 +431,9 @@ const MapScreen = () => {
             labelColor={labelColor}
             labelBackgroundColor={labelBackgroundColor}
             layers={layers}
-          />
-        </div>
-      </div>
+                                    />
+                                </div>
+                            </div>
       
       {/* File Upload Modal */}
       {selectedProject && (
@@ -456,8 +455,8 @@ const MapScreen = () => {
         layer={selectedLayerForFeature}
         onAddFeature={handleAddFeature}
       />
-    </div>
-  );
+        </div>
+    );
 };
 
 export default MapScreen;

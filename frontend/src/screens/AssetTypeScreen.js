@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { getFeatureTypes, deleteFeatureType, reset } from '../features/projects/projectSlice';
-import { useIsMounted } from '../hooks/useIsMounted';
+import { useRouteMount } from '../contexts/RouteMountContext';
 import useProjectData from '../hooks/useProjectData';
 import AssetTypeForm from '../components/structure/AssetTypeForm';
 import AssetTypeTree from '../components/structure/AssetTypeTree';
@@ -13,7 +13,7 @@ const AssetTypeScreen = () => {
     const { selectedProject, user, dispatch } = useProjectData();
     const [selectedItem, setSelectedItem] = useState(null);
     const [error, setError] = useState('');
-    const { isMounted } = useIsMounted();
+    const { isRouteMounted } = useRouteMount();
 
 
     useEffect(() => {
@@ -35,11 +35,11 @@ const AssetTypeScreen = () => {
             })).unwrap();
             
             // Clear selected item if the deleted item type was selected
-            if (isMounted() && selectedItem && selectedItem.id === assetTypeId) {
+            if (isRouteMounted() && selectedItem && selectedItem.id === assetTypeId) {
                 setSelectedItem(null);
             }
         } catch (error) {
-            if (isMounted()) {
+            if (isRouteMounted()) {
                 setError('Failed to delete item type. Please try again.');
             }
         }

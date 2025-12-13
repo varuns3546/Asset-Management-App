@@ -7,6 +7,7 @@ import { loadUser } from "./features/auth/authSlice";
 import { getSelectedProject } from "./features/projects/projectSlice"
 import authService from "./features/auth/authService";
 import "./utils/axiosInterceptor"; // Initialize axios interceptor
+import { RouteMountProvider } from "./contexts/RouteMountContext";
 import LoginScreen from "./screens/LoginScreen";
 import RegisterScreen from "./screens/RegisterScreen";
 import HomeScreen from "./screens/HomeScreen";
@@ -86,7 +87,7 @@ function AppContent() {
   };
 
   return (
-    <>
+    <RouteMountProvider>
       {showNavbar && <Navbar onOpenModal={openModal} onCloseModal={closeModal} />}
       <div style={{ paddingTop: showNavbar ? '53px' : '0' }}>
         <Routes>
@@ -107,7 +108,7 @@ function AppContent() {
       >
         {modalState.content}
       </Modal>
-    </>
+    </RouteMountProvider>
   );
 }
 
