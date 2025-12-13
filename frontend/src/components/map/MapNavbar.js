@@ -1,6 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
 import CreateLayerModal from './CreateLayerModal';
+import useClickOutside from '../../hooks/useClickOutside';
 
 const MapNavbar = ({ onOpenUploadModal, onCreateLayer }) => {
   const { selectedProject } = useSelector((state) => state.projects);
@@ -8,55 +9,41 @@ const MapNavbar = ({ onOpenUploadModal, onCreateLayer }) => {
   const [showLayerDropdown, setShowLayerDropdown] = useState(false);
   const [showCreateSubmenu, setShowCreateSubmenu] = useState(false);
   const [showCreateLayerModal, setShowCreateLayerModal] = useState(false);
-  const viewDropdownRef = useRef(null);
-  const layerDropdownRef = useRef(null);
-
   // Close dropdowns when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (viewDropdownRef.current && !viewDropdownRef.current.contains(event.target)) {
-        setShowViewDropdown(false);
-      }
-      if (layerDropdownRef.current && !layerDropdownRef.current.contains(event.target)) {
-        setShowLayerDropdown(false);
-        setShowCreateSubmenu(false);
-      }
-    };
+  const viewDropdownRef = useClickOutside(() => {
+    setShowViewDropdown(false);
+  }, showViewDropdown);
 
-    if (showViewDropdown || showLayerDropdown) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [showViewDropdown, showLayerDropdown]);
-
-  const handleCreateFromFile = () => {
+  const layerDropdownRef = useClickOutside(() => {
     setShowLayerDropdown(false);
     setShowCreateSubmenu(false);
+  }, showLayerDropdown);
+
+  const closeLayerDropdown = () => {
+    setShowLayerDropdown(false);
+    setShowCreateSubmenu(false);
+  };
+
+  const handleCreateFromFile = () => {
+    closeLayerDropdown();
     if (onOpenUploadModal) {
       onOpenUploadModal();
     }
   };
 
   const handleInputData = () => {
-    setShowLayerDropdown(false);
-    setShowCreateSubmenu(false);
+    closeLayerDropdown();
     setShowCreateLayerModal(true);
   };
 
   const handleImportFromOSM = () => {
-    setShowLayerDropdown(false);
-    setShowCreateSubmenu(false);
+    closeLayerDropdown();
     // TODO: Implement import from OpenStreetMap functionality
-    console.log('Import from OpenStreetMap clicked');
   };
 
   const handleLayersClick = () => {
     setShowViewDropdown(false);
     // TODO: Implement layers functionality
-    console.log('Layers clicked');
   };
 
   return (

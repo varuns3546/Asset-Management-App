@@ -7,6 +7,7 @@ import HierarchyTree from '../components/structure/HierarchyTree';
 import HierarchyForm from '../components/structure/HierarchyForm';
 import FileUploadModal from '../components/FileUploadModal';
 import HierarchyImportPreview from '../components/HierarchyImportPreview';
+import ErrorMessage from '../components/forms/ErrorMessage';
 import '../styles/structureScreen.css';
 
 const HierarchyScreen = () => {
@@ -16,6 +17,8 @@ const HierarchyScreen = () => {
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
     const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
     const [parsedData, setParsedData] = useState(null);
+    const [error, setError] = useState('');
+    const [successMessage, setSuccessMessage] = useState('');
     const { isMounted } = useIsMounted();
 
     useEffect(() => {
@@ -28,6 +31,7 @@ const HierarchyScreen = () => {
     }, [selectedProject, user, dispatch])
 
     const handleRemoveItem = async (itemId) => {
+        setError('');
         try {
             await dispatch(deleteFeature({
                 projectId: selectedProject.id,
@@ -40,8 +44,7 @@ const HierarchyScreen = () => {
             }
         } catch (error) {
             if (isMounted()) {
-                console.error('Error deleting hierarchy item:', error);
-                alert('Failed to delete hierarchy item. Please try again.');
+                setError('Failed to delete hierarchy item. Please try again.');
             }
         }
     };
@@ -69,13 +72,15 @@ const HierarchyScreen = () => {
             }
         } catch (error) {
             if (isMounted()) {
-                console.error('Error parsing file:', error);
+                setError(error || 'Failed to parse file');
                 throw new Error(error || 'Failed to parse file');
             }
         }
     };
 
     const handleImport = async (columnMappings, itemTypeMap, selectedSheets, itemTypeAttributes, sheetDefaultTypes) => {
+        setError('');
+        setSuccessMessage('');
         try {
             
             // First, create any new item types (from both itemTypeMap and sheetDefaultTypes)
@@ -215,13 +220,17 @@ const HierarchyScreen = () => {
             
             // Show success message
             const { imported, total, errors } = result.data;
-            if (errors && errors.length > 0) {
-                alert(`Import completed with warnings:\n${imported}/${total} items imported successfully.\n\nErrors:\n${errors.slice(0, 5).map(e => `Row ${e.row}: ${e.error}`).join('\n')}`);
-            } else {
-                alert(`Successfully imported ${imported} items from ${selectedSheets.length} sheet(s)!`);
+            if (isMounted()) {
+                if (errors && errors.length > 0) {
+                    setError(`Import completed with warnings: ${imported}/${total} items imported successfully. Errors: ${errors.slice(0, 5).map(e => `Row ${e.row}: ${e.error}`).join(', ')}`);
+                } else {
+                    setSuccessMessage(`Successfully imported ${imported} items from ${selectedSheets.length} sheet(s)!`);
+                }
             }
         } catch (error) {
-            console.error('Error importing data:', error);
+            if (isMounted()) {
+                setError(error || 'Failed to import data');
+            }
             throw new Error(error || 'Failed to import data');
         }
     };
@@ -238,6 +247,12 @@ const HierarchyScreen = () => {
                         >
                             Import Data
                         </button>
+                        <ErrorMessage message={error} />
+                        {successMessage && (
+                            <div className="success-message" style={{ color: '#10b981', marginTop: '10px' }}>
+                                {successMessage}
+                            </div>
+                        )}
                     </div>
                     
                     <div className="hierarchy-layout">

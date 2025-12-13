@@ -293,7 +293,6 @@ const QuestionnaireScreen = () => {
       for (const filePath of photosToDelete) {
         try {
           await questionnaireService.deletePhoto(filePath, user.token);
-          console.log('Deleted photo from storage:', filePath);
         } catch (error) {
           console.error('Error deleting photo:', error);
           // Continue even if deletion fails
@@ -652,6 +651,19 @@ const QuestionnaireScreen = () => {
                                             {existingPhotos.map((photo, idx) => {
                                               const actualIndex = responses[attribute.id].indexOf(photo);
                                               
+                                              // Debug: log photo object to see what we're working with
+                                              console.log('Rendering photo:', {
+                                                index: actualIndex,
+                                                name: photo.name,
+                                                url: photo.url,
+                                                path: photo.path,
+                                                fullPhoto: photo
+                                              });
+                                              
+                                              if (!photo.url) {
+                                                console.warn('Photo missing URL:', photo);
+                                              }
+                                              
                                               return (
                                                 <div key={actualIndex} className="photo-thumbnail photo-saved">
                                                   <button
@@ -661,8 +673,33 @@ const QuestionnaireScreen = () => {
                                                   >
                                                     ×
                                                   </button>
-                                                  <img src={photo.url} alt={photo.name} />
-                                                  <span className="photo-name">{photo.name}</span>
+                                                  {photo.url ? (
+                                                    <img 
+                                                      src={photo.url} 
+                                                      alt={photo.name || 'Photo'} 
+                                                      onError={(e) => {
+                                                        console.error('Failed to load image:', {
+                                                          url: photo.url,
+                                                          name: photo.name,
+                                                          photo: photo
+                                                        });
+                                                        // Hide broken image and show placeholder
+                                                        e.target.style.display = 'none';
+                                                        const placeholder = document.createElement('div');
+                                                        placeholder.className = 'photo-placeholder';
+                                                        placeholder.innerHTML = '<span class="photo-icon">📷</span>';
+                                                        e.target.parentNode.insertBefore(placeholder, e.target);
+                                                      }}
+                                                      onLoad={() => {
+                                                        // Image loaded successfully
+                                                      }}
+                                                    />
+                                                  ) : (
+                                                    <div className="photo-placeholder">
+                                                      <span className="photo-icon">📷</span>
+                                                    </div>
+                                                  )}
+                                                  <span className="photo-name">{photo.name || 'Unknown'}</span>
                                                 </div>
                                               );
                                             })}

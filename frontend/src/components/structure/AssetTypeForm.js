@@ -31,7 +31,6 @@ const AssetTypeForm = ({
 
     // Update form when selectedItem changes
     useEffect(() => {
-        console.log('AssetTypeForm selectedAsset changed:', selectedAsset);
         if (selectedAsset) {
             setNewAssetType({
                 title: selectedAsset.title || '',
@@ -323,8 +322,6 @@ const AssetTypeForm = ({
             let result;
             if (isEditing && selectedAsset) {
                 // Update existing feature type
-                console.log('Updating feature type with data:', assetTypeData);
-                console.log('Attributes being sent:', attributeValues);
                 result = await dispatch(updateFeatureType({
                     projectId: selectedProject.id,
                     featureTypeId: selectedAsset.id,
@@ -335,12 +332,8 @@ const AssetTypeForm = ({
                 
                 // Refresh the feature types list to get updated attributes
                 await dispatch(getFeatureTypes(selectedProject.id));
-                
-                console.log('Feature type updated successfully:', result);
             } else {
                 // Create new feature type
-                console.log('Creating feature type with data:', assetTypeData);
-                console.log('Attributes being sent:', attributeValues);
                 result = await dispatch(createFeatureType({
                     projectId: selectedProject.id,
                     featureTypeData: assetTypeData
@@ -350,13 +343,10 @@ const AssetTypeForm = ({
                 
                 // Refresh the feature types list to get the new feature type with attributes
                 await dispatch(getFeatureTypes(selectedProject.id));
-                
-                console.log('Feature type created successfully:', result);
             }
             
             // Update selected existing types to be sub-types
             if (selectedExistingSubTypes.length > 0 && currentAssetTypeId) {
-                console.log('Updating existing types to be sub-types:', selectedExistingSubTypes);
                 for (const existingTypeId of selectedExistingSubTypes) {
                     try {
                         const existingType = assetTypes?.find(at => at.id === existingTypeId);
@@ -384,7 +374,6 @@ const AssetTypeForm = ({
             
             // Create new sub-types if any were specified
             if (newSubTypes.length > 0 && currentAssetTypeId) {
-                console.log('Creating sub-types:', newSubTypes);
                 for (const subTypeName of newSubTypes) {
                     try {
                         await dispatch(createFeatureType({

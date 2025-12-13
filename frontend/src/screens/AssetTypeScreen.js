@@ -5,18 +5,16 @@ import { useIsMounted } from '../hooks/useIsMounted';
 import useProjectData from '../hooks/useProjectData';
 import AssetTypeForm from '../components/structure/AssetTypeForm';
 import AssetTypeTree from '../components/structure/AssetTypeTree';
+import ErrorMessage from '../components/forms/ErrorMessage';
 import '../styles/structureScreen.css';
 
 const AssetTypeScreen = () => {
     const { currentFeatureTypes } = useSelector((state) => state.projects);
     const { selectedProject, user, dispatch } = useProjectData();
     const [selectedItem, setSelectedItem] = useState(null);
+    const [error, setError] = useState('');
     const { isMounted } = useIsMounted();
 
-    // Debug: Log when currentFeatureTypes change
-    useEffect(() => {
-        console.log('AssetTypeScreen currentFeatureTypes updated:', currentFeatureTypes);
-    }, [currentFeatureTypes]);  
 
     useEffect(() => {
         if (selectedProject && user) {
@@ -29,6 +27,7 @@ const AssetTypeScreen = () => {
     }, [selectedProject, user, dispatch]);
 
     const handleRemoveAssetType = async (assetTypeId) => {
+        setError('');
         try {
             await dispatch(deleteFeatureType({
                 projectId: selectedProject.id,
@@ -41,14 +40,12 @@ const AssetTypeScreen = () => {
             }
         } catch (error) {
             if (isMounted()) {
-                console.error('Error deleting item type:', error);
-                alert('Failed to delete item type. Please try again.');
+                setError('Failed to delete item type. Please try again.');
             }
         }
     };
 
     const handleItemClick = (item) => {
-        console.log('AssetType selected in AssetTypeScreen:', item);
         setSelectedItem(item);
     };
 
@@ -64,6 +61,7 @@ const AssetTypeScreen = () => {
                         <h2 className="hierarchy-title">
                             {selectedItem ? `Edit Asset Type: ${selectedItem.title}` : 'Asset Types'} - {selectedProject.title}
                         </h2>
+                        <ErrorMessage message={error} />
                     </div>
                     <div className="hierarchy-layout">
                         {/* Left side - Edit Form */}

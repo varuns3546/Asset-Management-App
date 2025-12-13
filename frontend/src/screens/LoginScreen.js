@@ -23,9 +23,7 @@ const LoginScreen = () => {
 
 
     useEffect(() => {
-        if (isError) {
-            console.log('error', message)
-        }
+        // Error handling is done via UI display
 
         if (isSuccess || user) {
             navigate('/home')

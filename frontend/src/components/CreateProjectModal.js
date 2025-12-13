@@ -2,38 +2,55 @@ import '../styles/projectComponents.css'
 import { createProject, setSelectedProjectAsync } from '../features/projects/projectSlice'
 import { useDispatch } from 'react-redux'
 import { useState } from 'react'
+import { useFormState } from '../hooks/useFormReset'
+import useAsyncOperation from '../hooks/useAsyncOperation'
+import { validateRequired } from '../utils/validation'
 import FormField from './forms/FormField'
 import ButtonGroup from './forms/ButtonGroup'
+import ErrorMessage from './forms/ErrorMessage'
 const CreateProjectModal = ({ onClose }) => {
     const dispatch = useDispatch()
-    const [formData, setFormData] = useState({
+    const initialState = {
         title: '',
         description: '',
         latitude: '',
         longitude: ''
-    })
+    }
+    const [formData, setFormData, resetForm] = useFormState(initialState)
     const { title, description, latitude, longitude } = formData
-    const handleCreateProject = async () => {
-        if (title.trim() === '') {
-            console.log('Project title is required')
-            return
-        }
-        else{
-            const result = await dispatch(createProject(formData))
+    
+    const { execute: createProjectAsync, loading, error } = useAsyncOperation(
+        async (data) => {
+            const result = await dispatch(createProject(data))
             // If project was created successfully, set it as selected in user_profiles
             if (createProject.fulfilled.match(result) && result.payload?.id) {
                 await dispatch(setSelectedProjectAsync(result.payload.id))
             }
-            setFormData({
-                title: '',
-                description: '',
-                latitude: '',
-                longitude: ''
-            })
-            // Close the modal after creating project
-            if (onClose) {
-                onClose()
+            return result
+        },
+        {
+            onSuccess: () => {
+                resetForm()
+                if (onClose) {
+                    onClose()
+                }
             }
+        }
+    )
+    
+    const [validationError, setValidationError] = useState('')
+    
+    const handleCreateProject = async () => {
+        setValidationError('')
+        const titleError = validateRequired(title, 'Project title')
+        if (titleError) {
+            setValidationError(titleError)
+            return
+        }
+        try {
+            await createProjectAsync(formData)
+        } catch (err) {
+            // Error is handled by useAsyncOperation hook
         }
     }
     return (
@@ -77,17 +94,21 @@ const CreateProjectModal = ({ onClose }) => {
                 inputProps={{ step: 'any' }}
             />
             
+            <ErrorMessage message={error || validationError} />
+            
             <ButtonGroup
                 buttons={[
                     {
                         label: 'Cancel',
                         variant: 'secondary',
-                        onClick: () => onClose && onClose()
+                        onClick: () => onClose && onClose(),
+                        disabled: loading
                     },
                     {
-                        label: 'Create Project',
+                        label: loading ? 'Creating...' : 'Create Project',
                         variant: 'success',
-                        onClick: handleCreateProject
+                        onClick: handleCreateProject,
+                        disabled: loading
                     }
                 ]}
             />

@@ -3,6 +3,8 @@ import Modal from '../Modal';
 import ButtonGroup from '../forms/ButtonGroup';
 import ErrorMessage from '../forms/ErrorMessage';
 import FormField from '../forms/FormField';
+import useFormReset from '../../hooks/useFormReset';
+import { findDuplicates } from '../../utils/validation';
 import '../../styles/modal.css';
 import '../../styles/createLayer.css';
 
@@ -17,6 +19,28 @@ const CreateLayerModal = ({ isOpen, onClose, projectId, onCreateLayer }) => {
   ]);
   const [coordinateSystem, setCoordinateSystem] = useState('EPSG:4326'); // WGS 84
   const [error, setError] = useState('');
+  
+  const initialState = {
+    layerName: '',
+    description: '',
+    layerType: 'vector',
+    geometryType: 'point',
+    coordinateSystem: 'EPSG:4326',
+    attributes: [
+      { name: 'id', type: 'integer', isPrimary: true },
+      { name: 'name', type: 'string', isPrimary: false }
+    ]
+  };
+  
+  const resetForm = useFormReset(initialState, () => {
+    setLayerName(initialState.layerName);
+    setDescription(initialState.description);
+    setLayerType(initialState.layerType);
+    setGeometryType(initialState.geometryType);
+    setCoordinateSystem(initialState.coordinateSystem);
+    setAttributes(initialState.attributes);
+    setError('');
+  });
 
   const attributeTypes = [
     { value: 'string', label: 'Text (String)' },
@@ -68,8 +92,7 @@ const CreateLayerModal = ({ isOpen, onClose, projectId, onCreateLayer }) => {
     }
 
     // Validate attributes
-    const attributeNames = attributes.map(attr => attr.name);
-    const duplicates = attributeNames.filter((name, index) => attributeNames.indexOf(name) !== index);
+    const duplicates = findDuplicates(attributes, attr => attr.name);
     if (duplicates.length > 0) {
       setError(`Duplicate attribute names found: ${duplicates.join(', ')}`);
       return;
@@ -87,8 +110,6 @@ const CreateLayerModal = ({ isOpen, onClose, projectId, onCreateLayer }) => {
 
     try {
       // TODO: Implement API call to create layer
-      console.log('Creating layer:', layerData);
-      
       // Call the onCreateLayer callback to add layer to state
       if (onCreateLayer) {
         onCreateLayer(layerData);
@@ -102,18 +123,6 @@ const CreateLayerModal = ({ isOpen, onClose, projectId, onCreateLayer }) => {
     }
   };
 
-  const resetForm = () => {
-    setLayerName('');
-    setDescription('');
-    setLayerType('vector');
-    setGeometryType('point');
-    setCoordinateSystem('EPSG:4326');
-    setAttributes([
-      { name: 'id', type: 'integer', isPrimary: true },
-      { name: 'name', type: 'string', isPrimary: false }
-    ]);
-    setError('');
-  };
 
   const handleClose = () => {
     resetForm();
