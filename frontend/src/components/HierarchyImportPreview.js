@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import Modal from './Modal';
+import ButtonGroup from './forms/ButtonGroup';
 import { autoMapColumns, normalizeColumnName } from '../utils/columnMatcher';
 import '../styles/modal.css';
 
@@ -787,20 +788,22 @@ const HierarchyImportPreview = ({
 
                 {/* Action Buttons */}
                 <div className="upload-actions">
-                    <button
-                        className="btn btn-secondary"
-                        onClick={onClose}
-                        disabled={importing}
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        className="btn btn-primary"
-                        onClick={handleImport}
-                        disabled={importing || selectedSheets.length === 0}
-                    >
-                        {importing ? 'Importing...' : `Import ${totalRowsAllSheets} Items${hasMultipleSheets ? ` from ${selectedSheets.length} Sheet(s)` : ''}`}
-                    </button>
+                    <ButtonGroup
+                        buttons={[
+                            {
+                                label: 'Cancel',
+                                variant: 'secondary',
+                                onClick: onClose,
+                                disabled: importing
+                            },
+                            {
+                                label: importing ? 'Importing...' : `Import ${totalRowsAllSheets} Items${hasMultipleSheets ? ` from ${selectedSheets.length} Sheet(s)` : ''}`,
+                                variant: 'primary',
+                                onClick: handleImport,
+                                disabled: importing || selectedSheets.length === 0
+                            }
+                        ]}
+                    />
                 </div>
             </div>
         </Modal>

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { getHierarchy, deleteFeature, getFeatureTypes, reset, uploadHierarchyFile, importHierarchyData, createFeatureType } from '../features/projects/projectSlice';
-import { loadUser } from '../features/auth/authSlice';
+import { useIsMounted } from '../hooks/useIsMounted';
+import useProjectData from '../hooks/useProjectData';
 import HierarchyTree from '../components/structure/HierarchyTree';
 import HierarchyForm from '../components/structure/HierarchyForm';
 import FileUploadModal from '../components/FileUploadModal';
@@ -9,16 +10,13 @@ import HierarchyImportPreview from '../components/HierarchyImportPreview';
 import '../styles/structureScreen.css';
 
 const HierarchyScreen = () => {
-    const { selectedProject, currentHierarchy, currentFeatureTypes } = useSelector((state) => state.projects);
-    const { user } = useSelector((state) => state.auth);
+    const { currentHierarchy, currentFeatureTypes } = useSelector((state) => state.projects);
+    const { selectedProject, user, dispatch } = useProjectData();
     const [selectedItem, setSelectedItem] = useState(null);
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
     const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
     const [parsedData, setParsedData] = useState(null);
-
-    const dispatch = useDispatch();
-    
-    useEffect(() => {dispatch(loadUser())}, [dispatch])
+    const { isMounted } = useIsMounted();
 
     useEffect(() => {
         if (selectedProject && user) {
@@ -26,9 +24,6 @@ const HierarchyScreen = () => {
             dispatch(reset());
             dispatch(getHierarchy(selectedProject.id));
             dispatch(getFeatureTypes(selectedProject.id));
-        }
-        return () => {
-            dispatch(reset())
         }
     }, [selectedProject, user, dispatch])
 
@@ -40,12 +35,14 @@ const HierarchyScreen = () => {
             })).unwrap();
             
             // Clear selected item if the deleted item was selected
-            if (selectedItem && selectedItem.id === itemId) {
+            if (isMounted() && selectedItem && selectedItem.id === itemId) {
                 setSelectedItem(null);
             }
         } catch (error) {
-            console.error('Error deleting hierarchy item:', error);
-            alert('Failed to delete hierarchy item. Please try again.');
+            if (isMounted()) {
+                console.error('Error deleting hierarchy item:', error);
+                alert('Failed to delete hierarchy item. Please try again.');
+            }
         }
     };
 
@@ -66,11 +63,15 @@ const HierarchyScreen = () => {
             })).unwrap();
             
             // Store parsed data and show preview modal
-            setParsedData(result.data);
-            setIsPreviewModalOpen(true);
+            if (isMounted()) {
+                setParsedData(result.data);
+                setIsPreviewModalOpen(true);
+            }
         } catch (error) {
-            console.error('Error parsing file:', error);
-            throw new Error(error || 'Failed to parse file');
+            if (isMounted()) {
+                console.error('Error parsing file:', error);
+                throw new Error(error || 'Failed to parse file');
+            }
         }
     };
 

@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import Modal from '../Modal';
+import ButtonGroup from '../forms/ButtonGroup';
+import ErrorMessage from '../forms/ErrorMessage';
+import FormField from '../forms/FormField';
 import '../../styles/modal.css';
 import '../../styles/addFeature.css';
 
@@ -150,17 +153,15 @@ const AddFeatureModal = ({ isOpen, onClose, layer, onAddFeature }) => {
         {/* Feature Name */}
         <div className="form-section">
           <h3>Feature Information</h3>
-          <div className="form-group">
-            <label htmlFor="featureName">Feature Name *</label>
-            <input
-              id="featureName"
-              type="text"
-              value={featureName}
-              onChange={(e) => setFeatureName(e.target.value)}
-              placeholder="Enter feature name"
-              className="form-input"
-            />
-          </div>
+          <FormField
+            label="Feature Name *"
+            id="featureName"
+            type="text"
+            value={featureName}
+            onChange={(e) => setFeatureName(e.target.value)}
+            placeholder="Enter feature name"
+            required
+          />
         </div>
 
         {/* Coordinates */}
@@ -276,20 +277,24 @@ const AddFeatureModal = ({ isOpen, onClose, layer, onAddFeature }) => {
         )}
 
         {/* Error Message */}
-        {error && (
-          <div className="error-message">
-            {error}
-          </div>
-        )}
+        <ErrorMessage message={error} />
 
         {/* Actions */}
         <div className="modal-actions">
-          <button onClick={handleClose} className="btn-secondary">
-            Cancel
-          </button>
-          <button onClick={handleAddFeature} className="btn-primary">
-            Add Feature
-          </button>
+          <ButtonGroup
+            buttons={[
+              {
+                label: 'Cancel',
+                variant: 'secondary',
+                onClick: handleClose
+              },
+              {
+                label: 'Add Feature',
+                variant: 'primary',
+                onClick: handleAddFeature
+              }
+            ]}
+          />
         </div>
       </div>
     </Modal>

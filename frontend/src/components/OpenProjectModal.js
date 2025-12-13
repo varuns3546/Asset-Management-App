@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { getProjects, setSelectedProjectAsync } from '../features/projects/projectSlice'
 import { loadUser } from '../features/auth/authSlice'
+import ButtonGroup from './forms/ButtonGroup'
+import FormField from './forms/FormField'
 
 const OpenProjectModal = ({ onClose }) => {
     const dispatch = useDispatch()
@@ -153,41 +155,34 @@ const OpenProjectModal = ({ onClose }) => {
     return (
         <div className="open-project-modal">
             {/* Search Section */}
-            <div className="form-group">
-                <label htmlFor="project-search" className="form-label">
-                    Search Projects:
-                </label>
-                <div style={{ position: 'relative' }}>
-                    <input 
-                        type="text" 
-                        id="project-search"
-                        placeholder="Search by project name, description, or ID..."
-                        className="form-input"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        style={{ paddingRight: searchTerm ? '60px' : '18px' }}
-                    />
-                    {searchTerm && (
-                        <button
-                            onClick={clearSearch}
-                            style={{
-                                position: 'absolute',
-                                right: '12px',
-                                top: '50%',
-                                transform: 'translateY(-50%)',
-                                background: 'none',
-                                border: 'none',
-                                cursor: 'pointer',
-                                fontSize: '24px',
-                                color: '#6b7280'
-                            }}
-                            title="Clear search"
-                        >
-                            ×
-                        </button>
-                    )}
-                </div>
-                
+            <div style={{ position: 'relative' }}>
+                <FormField
+                    label="Search Projects:"
+                    id="project-search"
+                    type="text"
+                    placeholder="Search by project name, description, or ID..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    inputProps={{ style: { paddingRight: searchTerm ? '60px' : '18px' } }}
+                />
+                {searchTerm && (
+                    <button
+                        onClick={clearSearch}
+                        style={{
+                            position: 'absolute',
+                            right: '12px',
+                            top: '42px',
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: '24px',
+                            color: '#6b7280'
+                        }}
+                        title="Clear search"
+                    >
+                        ×
+                    </button>
+                )}
                 {/* Search Results Info */}
                 {searchTerm && (
                     <div style={{ fontSize: '18px', color: '#6b7280', marginTop: '6px' }}>
@@ -206,7 +201,7 @@ const OpenProjectModal = ({ onClose }) => {
                     className="form-select"
                     value={selectedProjectId}
                     onChange={(e) => setSelectedProjectId(e.target.value)}
-                    size={Math.min(sortedProjects.length + 1, 8)} // Show up to 8 options
+                    size={Math.min(sortedProjects.length + 1, 8)}
                 >
                     <option value="">Select a project...</option>
                     {sortedProjects.length > 0 ? (
@@ -257,18 +252,21 @@ const OpenProjectModal = ({ onClose }) => {
                 </div>
             )}
             
-            <div className="button-group">
-                <button className="btn btn-secondary" onClick={handleCancel}>
-                    Cancel
-                </button>
-                <button 
-                    className="btn btn-primary" 
-                    onClick={handleOpenProject}
-                    disabled={!selectedProjectId}
-                >
-                    Open Project
-                </button>
-            </div>
+            <ButtonGroup
+                buttons={[
+                    {
+                        label: 'Cancel',
+                        variant: 'secondary',
+                        onClick: handleCancel
+                    },
+                    {
+                        label: 'Open Project',
+                        variant: 'primary',
+                        onClick: handleOpenProject,
+                        disabled: !selectedProjectId
+                    }
+                ]}
+            />
         </div>
     )
 }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
 import Map from '../components/map/Map';
 import LeftMapPanel from '../components/map/LeftMapPanel';
 import TopMapPanel from '../components/map/TopMapPanel';
@@ -7,14 +7,14 @@ import MapNavbar from '../components/map/MapNavbar';
 import FileUploadModal from '../components/FileUploadModal';
 import AddFeatureModal from '../components/map/AddFeatureModal';
 import { getHierarchy, getFeatureTypes } from '../features/projects/projectSlice';
-import { loadUser } from '../features/auth/authSlice';
 import * as gisLayerService from '../services/gisLayerService';
 import '../styles/map.css';
+import { useIsMounted } from '../hooks/useIsMounted';
+import useProjectData from '../hooks/useProjectData';
 
 const MapScreen = () => {
-  const dispatch = useDispatch();
-  const { selectedProject, currentHierarchy, currentFeatureTypes } = useSelector((state) => state.projects);
-  const { user } = useSelector((state) => state.auth);
+  const { currentHierarchy, currentFeatureTypes } = useSelector((state) => state.projects);
+  const { selectedProject, user, dispatch } = useProjectData();
   const [isExpanded, setIsExpanded] = useState(true);
   const [panelWidth, setPanelWidth] = useState(320);
   const [topPanelHeight, setTopPanelHeight] = useState(80);
@@ -28,11 +28,8 @@ const MapScreen = () => {
   const [showAddFeatureModal, setShowAddFeatureModal] = useState(false);
   const [selectedLayerForFeature, setSelectedLayerForFeature] = useState(null);
   const containerRef = useRef(null);
+  const { isMounted } = useIsMounted();
 
-  // Load user on mount
-  useEffect(() => {
-    dispatch(loadUser());
-  }, [dispatch]);
 
   // Load hierarchy and feature types when project is selected and user is authenticated
   useEffect(() => {
@@ -49,15 +46,19 @@ const MapScreen = () => {
     
     try {
       const response = await gisLayerService.getGisLayers(selectedProject.id);
-      if (response.success && response.data) {
+      if (response.success && response.data && isMounted()) {
         // Convert database layers to local state format
         const loadedLayers = await Promise.all(
           response.data.map(async (dbLayer) => {
+            if (!isMounted()) return null;
+            
             // Get features for this layer
             const featuresResponse = await gisLayerService.getLayerFeatures(
               selectedProject.id,
               dbLayer.id
             );
+            
+            if (!isMounted()) return null;
             
             const features = featuresResponse.success 
               ? featuresResponse.data.map(f => {
@@ -106,11 +107,14 @@ const MapScreen = () => {
           })
         );
         
-        setLayers(loadedLayers);
-        console.log('Loaded layers from database:', loadedLayers);
+        if (isMounted()) {
+          setLayers(loadedLayers);
+        }
       }
     } catch (error) {
-      console.error('Error loading layers:', error);
+      if (isMounted()) {
+        console.error('Error loading layers:', error);
+      }
     }
   };
 
@@ -174,8 +178,12 @@ const MapScreen = () => {
   };
 
   const handleCreateLayer = async (layerData) => {
+    if (!isMounted()) return;
+    
     if (!selectedProject?.id) {
-      alert('No project selected');
+      if (isMounted()) {
+        alert('No project selected');
+      }
       return;
     }
 
@@ -199,7 +207,7 @@ const MapScreen = () => {
         }
       );
 
-      if (response.success) {
+      if (response.success && isMounted()) {
         const newLayer = {
           id: response.data.id, // Use database ID
           name: layerData.name,
@@ -215,12 +223,13 @@ const MapScreen = () => {
         };
 
         setLayers(prev => [...prev, newLayer]);
-        console.log('Layer saved to database:', response.data);
       }
     } catch (error) {
-      console.error('Error creating layer:', error);
-      const errorMessage = error.response?.data?.error || 'Failed to create layer. Please try again.';
-      alert(errorMessage);
+      if (isMounted()) {
+        console.error('Error creating layer:', error);
+        const errorMessage = error.response?.data?.error || 'Failed to create layer. Please try again.';
+        alert(errorMessage);
+      }
     }
   };
 
@@ -237,12 +246,16 @@ const MapScreen = () => {
       );
 
       // Update local state
-      setLayers(prev => prev.map(l => 
-        l.id === layerId ? { ...l, visible: !l.visible } : l
-      ));
+      if (isMounted()) {
+        setLayers(prev => prev.map(l => 
+          l.id === layerId ? { ...l, visible: !l.visible } : l
+        ));
+      }
     } catch (error) {
-      console.error('Error updating layer visibility:', error);
-      alert('Failed to update layer visibility');
+      if (isMounted()) {
+        console.error('Error updating layer visibility:', error);
+        alert('Failed to update layer visibility');
+      }
     }
   };
 
@@ -251,11 +264,14 @@ const MapScreen = () => {
 
     try {
       await gisLayerService.deleteGisLayer(selectedProject.id, layerId);
-      setLayers(prev => prev.filter(layer => layer.id !== layerId));
-      console.log('Layer deleted from database');
+      if (isMounted()) {
+        setLayers(prev => prev.filter(layer => layer.id !== layerId));
+      }
     } catch (error) {
-      console.error('Error deleting layer:', error);
-      alert('Failed to delete layer');
+      if (isMounted()) {
+        console.error('Error deleting layer:', error);
+        alert('Failed to delete layer');
+      }
     }
   };
 
@@ -313,9 +329,11 @@ const MapScreen = () => {
             : l
         );
 
-        setLayers(updatedLayers);
-        setShowAddFeatureModal(false);
-        setSelectedLayerForFeature(null);
+        if (isMounted()) {
+          setLayers(updatedLayers);
+          setShowAddFeatureModal(false);
+          setSelectedLayerForFeature(null);
+        }
         
         console.log('Feature saved to database:', response.data);
       }
@@ -332,19 +350,22 @@ const MapScreen = () => {
       await gisLayerService.deleteFeature(selectedProject.id, layerId, featureId);
       
       // Update local state (use == for loose comparison since layerId might be string from Object.entries)
-      setLayers(prev => prev.map(layer => 
-        String(layer.id) === String(layerId)
-          ? {
-              ...layer,
-              features: layer.features.filter(f => String(f.id) !== String(featureId)),
-              featureCount: (layer.featureCount || 1) - 1
-            }
-          : layer
-      ));
-      console.log('Feature deleted from database');
+      if (isMounted()) {
+        setLayers(prev => prev.map(layer => 
+          String(layer.id) === String(layerId)
+            ? {
+                ...layer,
+                features: layer.features.filter(f => String(f.id) !== String(featureId)),
+                featureCount: (layer.featureCount || 1) - 1
+              }
+            : layer
+        ));
+      }
     } catch (error) {
-      console.error('Error deleting feature:', error);
-      alert('Failed to delete feature');
+      if (isMounted()) {
+        console.error('Error deleting feature:', error);
+        alert('Failed to delete feature');
+      }
     }
   };
 

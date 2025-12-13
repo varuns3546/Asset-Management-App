@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+import FormField from '../forms/FormField';
+import ErrorMessage from '../forms/ErrorMessage';
+import ButtonGroup from '../forms/ButtonGroup';
 import '../../styles/modal.css';
 
 const AddLayerModal = ({ isOpen, onClose, onAddLayer }) => {
@@ -205,11 +208,7 @@ const AddLayerModal = ({ isOpen, onClose, onAddLayer }) => {
         </div>
 
         <div className="body">
-          {error && (
-            <div className="error-message" style={{ marginBottom: '15px' }}>
-              {error}
-            </div>
-          )}
+          <ErrorMessage message={error} style={{ marginBottom: '15px' }} />
 
           {/* Tab Navigation */}
           <div className="tab-navigation" style={{ 
@@ -257,53 +256,47 @@ const AddLayerModal = ({ isOpen, onClose, onAddLayer }) => {
           {/* Manual Entry Tab */}
           {activeTab === 'manual' && (
             <>
-              <div className="form-group">
-            <label htmlFor="layer-name">Layer Name (Optional)</label>
-            <input
-              id="layer-name"
-              type="text"
-              className="form-control"
-              value={layerName}
-              onChange={(e) => setLayerName(e.target.value)}
-              placeholder="e.g., My Custom Layer"
-              disabled={isAdding}
-            />
-          </div>
+              <FormField
+                label="Layer Name (Optional)"
+                id="layer-name"
+                type="text"
+                value={layerName}
+                onChange={(e) => setLayerName(e.target.value)}
+                placeholder="e.g., My Custom Layer"
+                disabled={isAdding}
+              />
+              <small className="form-text" style={{ display: 'block', marginTop: '-15px', marginBottom: '15px', fontSize: '14px', color: '#666' }}>
+                Most ArcGIS Online layers are Feature Layers or Map Image Layers
+              </small>
 
-          <div className="form-group">
-            <label htmlFor="layer-type">Layer Type</label>
-            <select
-              id="layer-type"
-              className="form-control"
-              value={layerType}
-              onChange={(e) => setLayerType(e.target.value)}
-              disabled={isAdding}
-            >
-              <option value="feature">Feature Layer</option>
-              <option value="map-image">Map Image Layer</option>
-              <option value="tile">Tile Layer</option>
-              <option value="vector-tile">Vector Tile Layer</option>
-            </select>
-            <small className="form-text">
-              Most ArcGIS Online layers are Feature Layers or Map Image Layers
-            </small>
-          </div>
+              <FormField
+                label="Layer Type"
+                id="layer-type"
+                type="select"
+                value={layerType}
+                onChange={(e) => setLayerType(e.target.value)}
+                disabled={isAdding}
+                selectOptions={[
+                  { value: 'feature', label: 'Feature Layer' },
+                  { value: 'map-image', label: 'Map Image Layer' },
+                  { value: 'tile', label: 'Tile Layer' },
+                  { value: 'vector-tile', label: 'Vector Tile Layer' }
+                ]}
+              />
 
-          <div className="form-group">
-            <label htmlFor="layer-url">Layer URL *</label>
-            <input
-              id="layer-url"
-              type="text"
-              className="form-control"
-              value={layerUrl}
-              onChange={(e) => setLayerUrl(e.target.value)}
-              placeholder="https://services.arcgis.com/..."
-              disabled={isAdding}
-            />
-            <small className="form-text">
-              Enter the REST service URL from ArcGIS Online
-            </small>
-          </div>
+              <FormField
+                label="Layer URL *"
+                id="layer-url"
+                type="text"
+                value={layerUrl}
+                onChange={(e) => setLayerUrl(e.target.value)}
+                placeholder="https://services.arcgis.com/..."
+                disabled={isAdding}
+                required
+              />
+              <small className="form-text" style={{ display: 'block', marginTop: '-15px', marginBottom: '15px', fontSize: '14px', color: '#666' }}>
+                Enter the REST service URL from ArcGIS Online
+              </small>
 
           <div className="sample-layers-section" style={{ marginTop: '20px' }}>
             <h4 style={{ marginBottom: '10px', fontSize: '14px', fontWeight: 'bold' }}>
@@ -510,34 +503,35 @@ const AddLayerModal = ({ isOpen, onClose, onAddLayer }) => {
           
           {/* Action buttons - only show on manual tab */}
           {activeTab === 'manual' && (
-            <div className="button-group">
-              <button 
-                className="btn btn-secondary" 
-                onClick={handleClose}
-                disabled={isAdding}
-              >
-                Cancel
-              </button>
-              <button 
-                className="btn btn-primary" 
-                onClick={handleAddLayer}
-                disabled={isAdding || !layerUrl.trim()}
-              >
-                {isAdding ? 'Adding...' : 'Add Layer'}
-              </button>
-            </div>
+            <ButtonGroup
+              buttons={[
+                {
+                  label: 'Cancel',
+                  variant: 'secondary',
+                  onClick: handleClose,
+                  disabled: isAdding
+                },
+                {
+                  label: isAdding ? 'Adding...' : 'Add Layer',
+                  variant: 'primary',
+                  onClick: handleAddLayer,
+                  disabled: isAdding || !layerUrl.trim()
+                }
+              ]}
+            />
           )}
           
           {/* Close button on search tab */}
           {activeTab === 'search' && (
-            <div className="button-group">
-              <button 
-                className="btn btn-secondary" 
-                onClick={handleClose}
-              >
-                Close
-              </button>
-            </div>
+            <ButtonGroup
+              buttons={[
+                {
+                  label: 'Close',
+                  variant: 'secondary',
+                  onClick: handleClose
+                }
+              ]}
+            />
           )}
         </div>
       </div>

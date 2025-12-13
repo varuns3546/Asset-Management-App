@@ -10,8 +10,7 @@ import '../../styles/spinner.css';
 // Fix for default marker icons in Leaflet with webpack
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
-import iconRetina from 'leaflet/dist/images/marker-icon-2x.png';
-
+import iconRetina from 'leaflet/dist/images/marker-icon-2x.png';    
 // Fix Leaflet default icon issue
 const DefaultIcon = L.icon({
   iconUrl: icon,

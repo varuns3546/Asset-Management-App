@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { createFeature, updateFeature } from '../../features/projects/projectSlice';
+import FormField from '../forms/FormField';
+import ButtonGroup from '../forms/ButtonGroup';
 import '../../styles/structureScreen.css';
 
 const HierarchyForm = ({ 
@@ -206,43 +208,45 @@ const HierarchyForm = ({
                 {isEditing ? `Edit Item: ${selectedItem?.title}` : ''}
             </label>
             <div className="add-item-form">
-                <input
-                    type="text"
+                <FormField
+                    label=""
                     id="itemTitle"
-                    name="title"
+                    type="text"
                     value={newItem.title}
                     onChange={handleNewItemChange}
                     placeholder="Enter item title"
-                    className="form-input"
+                    inputProps={{ name: 'title' }}
                 />
-                <select
+                <FormField
+                    label=""
                     id="item_type_id"
-                    name="item_type_id"
+                    type="select"
                     value={newItem.item_type_id || ''}
                     onChange={handleNewItemChange}
-                    className="form-select"
-                >
-                    <option value="">No item type (optional)</option>
-                    {itemTypes.map(itemType => (
-                        <option key={itemType.id} value={itemType.id}>
-                            {itemType.title}
-                        </option>
-                    ))}
-                </select>
-                <select
+                    selectOptions={[
+                        { value: '', label: 'No item type (optional)' },
+                        ...itemTypes.map(itemType => ({
+                            value: itemType.id,
+                            label: itemType.title
+                        }))
+                    ]}
+                    inputProps={{ name: 'item_type_id' }}
+                />
+                <FormField
+                    label=""
                     id="parent_id"
-                    name="parent_id"
+                    type="select"
                     value={newItem.parent_id || ''}
                     onChange={handleNewItemChange}
-                    className="form-select"
-                >
-                    <option value="">No parent (root item)</option>
-                    {currentHierarchy?.filter(item => item.id !== selectedItem?.id).map(item => (
-                        <option key={item.id} value={item.id}>
-                            {item.title}
-                        </option>
-                    ))}
-                </select>
+                    selectOptions={[
+                        { value: '', label: 'No parent (root item)' },
+                        ...(currentHierarchy?.filter(item => item.id !== selectedItem?.id).map(item => ({
+                            value: item.id,
+                            label: item.title
+                        })) || [])
+                    ]}
+                    inputProps={{ name: 'parent_id' }}
+                />
                 
                 {/* Coordinates fields - only show if item type has coordinates */}
                 {newItem.item_type_id && (() => {
@@ -252,66 +256,46 @@ const HierarchyForm = ({
                     <div className="coordinates-section">
                         <label className="form-label">Coordinates:</label>
                         <div className="coordinates-inputs">
-                            <div className="coordinate-field">
-                                <label htmlFor="beginning_latitude" className="coordinate-label">
-                                    Beginning Latitude
-                                </label>
-                                <input
-                                    id="beginning_latitude"
-                                    name="beginning_latitude"
-                                    type="number"
-                                    step="any"
-                                    value={newItem.beginning_latitude || ''}
-                                    onChange={handleNewItemChange}
-                                    placeholder="-90 to 90"
-                                    className="form-input"
-                                />
-                            </div>
-                            <div className="coordinate-field">
-                                <label htmlFor="end_latitude" className="coordinate-label">
-                                    End Latitude
-                                </label>
-                                <input
-                                    id="end_latitude"
-                                    name="end_latitude"
-                                    type="number"
-                                    step="any"
-                                    value={newItem.end_latitude || ''}
-                                    onChange={handleNewItemChange}
-                                    placeholder="-90 to 90"
-                                    className="form-input"
-                                />
-                            </div>
-                            <div className="coordinate-field">
-                                <label htmlFor="beginning_longitude" className="coordinate-label">
-                                    Beginning Longitude
-                                </label>
-                                <input
-                                    id="beginning_longitude"
-                                    name="beginning_longitude"
-                                    type="number"
-                                    step="any"
-                                    value={newItem.beginning_longitude || ''}
-                                    onChange={handleNewItemChange}
-                                    placeholder="-180 to 180"
-                                    className="form-input"
-                                />
-                            </div>
-                            <div className="coordinate-field">
-                                <label htmlFor="end_longitude" className="coordinate-label">
-                                    End Longitude
-                                </label>
-                                <input
-                                    id="end_longitude"
-                                    name="end_longitude"
-                                    type="number"
-                                    step="any"
-                                    value={newItem.end_longitude || ''}
-                                    onChange={handleNewItemChange}
-                                    placeholder="-180 to 180"
-                                    className="form-input"
-                                />
-                            </div>
+                            <FormField
+                                label="Beginning Latitude"
+                                id="beginning_latitude"
+                                type="number"
+                                value={newItem.beginning_latitude || ''}
+                                onChange={handleNewItemChange}
+                                placeholder="-90 to 90"
+                                inputProps={{ name: 'beginning_latitude', step: 'any' }}
+                                className="coordinate-field"
+                            />
+                            <FormField
+                                label="End Latitude"
+                                id="end_latitude"
+                                type="number"
+                                value={newItem.end_latitude || ''}
+                                onChange={handleNewItemChange}
+                                placeholder="-90 to 90"
+                                inputProps={{ name: 'end_latitude', step: 'any' }}
+                                className="coordinate-field"
+                            />
+                            <FormField
+                                label="Beginning Longitude"
+                                id="beginning_longitude"
+                                type="number"
+                                value={newItem.beginning_longitude || ''}
+                                onChange={handleNewItemChange}
+                                placeholder="-180 to 180"
+                                inputProps={{ name: 'beginning_longitude', step: 'any' }}
+                                className="coordinate-field"
+                            />
+                            <FormField
+                                label="End Longitude"
+                                id="end_longitude"
+                                type="number"
+                                value={newItem.end_longitude || ''}
+                                onChange={handleNewItemChange}
+                                placeholder="-180 to 180"
+                                inputProps={{ name: 'end_longitude', step: 'any' }}
+                                className="coordinate-field"
+                            />
                         </div>
                     </div>
                 )}
@@ -321,9 +305,15 @@ const HierarchyForm = ({
                         {isEditing ? 'Update Item' : 'Add Item'}
                     </button>
                     {isEditing && (
-                        <button onClick={handleCancelEdit} className="btn btn-secondary">
-                            Cancel
-                        </button>
+                        <ButtonGroup
+                            buttons={[
+                                {
+                                    label: 'Cancel',
+                                    variant: 'secondary',
+                                    onClick: handleCancelEdit
+                                }
+                            ]}
+                        />
                     )}
                 </div>
             </div>

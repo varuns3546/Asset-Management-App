@@ -47,10 +47,11 @@ const uploadFile = [
     }
 
     try {
-      // Create unique storage path: projectId/timestamp_filename
+      // Create unique storage path: projectId/files/timestamp_filename
+      // Organized in 'files' folder to separate from photos
       const timestamp = Date.now();
       const sanitizedFileName = req.file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
-      const storagePath = `${projectId}/${timestamp}_${sanitizedFileName}`;
+      const storagePath = `${projectId}/files/${timestamp}_${sanitizedFileName}`;
       
       // Upload to Supabase Storage
       const { data: uploadData, error: uploadError } = await supabaseAdmin.storage

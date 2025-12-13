@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { createFeatureType, updateFeatureType, getFeatureTypes } from '../../features/projects/projectSlice';
+import FormField from '../forms/FormField';
 import '../../styles/structureScreen.css'
 import { ITEM_TYPE_ICON_OPTIONS, ITEM_TYPE_COLOR_OPTIONS, DEFAULT_ITEM_TYPE_ICON } from '../../constants/itemTypeIcons';
 
@@ -474,16 +475,16 @@ const AssetTypeForm = ({
                 </label>
             </div>
             <div className="add-item-form">
-                <input
-                    type="text"
+                <FormField
+                    label=""
                     id="assetTypeTitle"
-                    name="title"
+                    type="text"
                     value={newAssetType.title}
                     onChange={handleNewAssetTypeChange}
                     placeholder={parentDropdowns.some(d => d.value)
                         ? `Enter child type name`
                         : "Enter asset type name (e.g., Location, Position)"}
-                    className="form-input"
+                    inputProps={{ name: 'title' }}
                 />
                 
                 <div className="form-group">
@@ -569,40 +570,37 @@ const AssetTypeForm = ({
                     />
                     <label className="checkbox-label">Has coordinates</label>
                 </div>
-                <div className="form-group">
-                    <label className="form-label">Icon:</label>
-                    <select
-                        value={selectedIcon}
-                        onChange={(e) => setSelectedIcon(e.target.value)}
-                        className="form-select"
-                    >
-                        {ITEM_TYPE_ICON_OPTIONS.map(option => (
-                            <option key={option.key} value={option.key}>
-                                {option.preview}
-                            </option>
-                        ))}
-                    </select>
-                </div>
+                <FormField
+                    label="Icon:"
+                    id="icon-select"
+                    type="select"
+                    value={selectedIcon}
+                    onChange={(e) => setSelectedIcon(e.target.value)}
+                    selectOptions={ITEM_TYPE_ICON_OPTIONS.map(option => ({
+                        value: option.key,
+                        label: option.preview
+                    }))}
+                />
 
                 <div className="form-group">
                     <label className="form-label">Icon Color:</label>
                     <div className="icon-color-select-wrapper">
-                        <select
+                        <FormField
+                            label=""
+                            id="icon-color-select"
+                            type="select"
                             value={iconColor}
                             onChange={(e) => setIconColor(e.target.value)}
-                            className="form-select icon-color-select"
-                            style={{ color: iconColor }}
-                        >
-                            {ITEM_TYPE_COLOR_OPTIONS.map(option => (
-                                <option
-                                    key={option.value}
-                                    value={option.value}
-                                    style={{ color: option.value }}
-                                >
-                                    ■
-                                </option>
-                            ))}
-                        </select>
+                            selectOptions={ITEM_TYPE_COLOR_OPTIONS.map(option => ({
+                                value: option.value,
+                                label: '■'
+                            }))}
+                            className="icon-color-select"
+                            inputProps={{ 
+                                style: { color: iconColor },
+                                className: 'form-select icon-color-select'
+                            }}
+                        />
                         <div
                             className="icon-color-preview"
                             style={{ backgroundColor: iconColor }}
