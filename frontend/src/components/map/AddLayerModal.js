@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import FormField from '../forms/FormField';
 import ErrorMessage from '../forms/ErrorMessage';
 import ButtonGroup from '../forms/ButtonGroup';
+import useAsyncOperation from '../../hooks/useAsyncOperation';
+import { validateUrl } from '../../utils/validation';
 import '../../styles/modal.css';
 
 const AddLayerModal = ({ isOpen, onClose, onAddLayer }) => {
@@ -9,7 +11,7 @@ const AddLayerModal = ({ isOpen, onClose, onAddLayer }) => {
   const [layerType, setLayerType] = useState('feature');
   const [layerName, setLayerName] = useState('');
   const [error, setError] = useState(null);
-  const [isAdding, setIsAdding] = useState(false);
+  const isAdding = isAddingAsync;
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -95,8 +97,6 @@ const AddLayerModal = ({ isOpen, onClose, onAddLayer }) => {
   };
 
   const handleSelectSearchResult = async (result) => {
-    console.log('Search result selected:', result);
-    
     // Determine layer type from result
     let type = 'feature';
     if (result.type === 'Map Service') {
@@ -105,21 +105,16 @@ const AddLayerModal = ({ isOpen, onClose, onAddLayer }) => {
       type = 'tile';
     }
 
-    console.log('Determined layer type:', type);
-
     // Construct the layer URL
     let url = result.url;
-    console.log('Result URL from API:', url);
     
     if (!url && result.id && result.owner) {
       // Fallback URL construction
       url = `https://services.arcgis.com/${result.owner}/arcgis/rest/services/${result.name}/FeatureServer/0`;
-      console.log('Constructed fallback URL:', url);
     }
 
     // If we have a valid URL, directly add the layer
     if (url) {
-      console.log('Attempting to add layer with URL:', url);
       setIsAdding(true);
       setError(null);
       setSearchError(null);
@@ -130,9 +125,7 @@ const AddLayerModal = ({ isOpen, onClose, onAddLayer }) => {
           type: type,
           name: result.title || result.name || 'Custom Layer'
         };
-        console.log('Calling onAddLayer with:', layerData);
         await onAddLayer(layerData);
-        console.log('Layer added successfully!');
 
         // Reset and close modal on success
         handleClose();
@@ -148,7 +141,6 @@ const AddLayerModal = ({ isOpen, onClose, onAddLayer }) => {
         setIsAdding(false);
       }
     } else {
-      console.warn('No URL found for result:', result);
       // No URL found, just populate the form
       setLayerUrl('');
       setLayerName(result.title || result.name || '');
@@ -158,37 +150,40 @@ const AddLayerModal = ({ isOpen, onClose, onAddLayer }) => {
     }
   };
 
+  const { execute: addLayerAsync, loading: isAddingAsync, error: asyncError } = useAsyncOperation(
+    async (data) => {
+      await onAddLayer(data);
+      handleClose();
+    }
+  );
+
   const handleAddLayer = async () => {
     if (!layerUrl.trim()) {
       setError('Please enter a layer URL');
       return;
     }
 
-    // Basic URL validation
-    if (!layerUrl.match(/^https?:\/\/.+/i)) {
-      setError('Please enter a valid URL starting with http:// or https://');
+    // URL validation using utility
+    const urlError = validateUrl(layerUrl);
+    if (urlError) {
+      setError(urlError);
       return;
     }
 
-    setIsAdding(true);
     setError(null);
-
     try {
-      // Pass the layer info to the parent component
-      await onAddLayer({
+      await addLayerAsync({
         url: layerUrl.trim(),
         type: layerType,
         name: layerName.trim() || 'Custom Layer'
       });
-
-      // Reset form and close modal
-      handleClose();
     } catch (err) {
       setError(err.message || 'Failed to add layer. Please check the URL and try again.');
-    } finally {
-      setIsAdding(false);
     }
   };
+  
+  // Combine async error with local error
+  const displayError = error || asyncError;
 
   const handleUseSample = (sample) => {
     setLayerUrl(sample.url);
@@ -208,7 +203,7 @@ const AddLayerModal = ({ isOpen, onClose, onAddLayer }) => {
         </div>
 
         <div className="body">
-          <ErrorMessage message={error} style={{ marginBottom: '15px' }} />
+          <ErrorMessage message={displayError} style={{ marginBottom: '15px' }} />
 
           {/* Tab Navigation */}
           <div className="tab-navigation" style={{ 

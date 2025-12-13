@@ -1,4 +1,7 @@
 import asyncHandler from 'express-async-handler';
+import supabaseClient from '../config/supabaseClient.js';
+
+const { supabaseAdmin } = supabaseClient;
 
 // @desc    Get asset with its type's attributes for questionnaire
 // @route   GET /api/questionnaire/:projectId/asset/:assetId
@@ -74,12 +77,108 @@ const getAssetQuestionnaire = asyncHandler(async (req, res) => {
 
     if (responsesError) {
       console.error('Error fetching responses:', responsesError);
-      console.log('Note: If the table does not exist, you need to run the SQL from QUESTIONNAIRE_SETUP.md');
-      // Don't fail the request if responses table doesn't exist
+            // Don't fail the request if responses table doesn't exist
     } else if (responses) {
-      responses.forEach(r => {
-        responsesMap[r.attribute_id] = r;
-      });
+      // Process each response and ensure photos have valid URLs
+      // Photos are stored in response_metadata.photos in questionnaire_responses table
+      for (const r of responses) {
+        // Get photos from response_metadata (stored in questionnaire_responses table)
+        const responseMetadata = r.response_metadata ? { ...r.response_metadata } : {};
+        
+        // Process photos if they exist in metadata
+        if (responseMetadata.photos && Array.isArray(responseMetadata.photos) && responseMetadata.photos.length > 0) {
+          // Map photos and ensure they have valid public URLs
+          responseMetadata.photos = await Promise.all(responseMetadata.photos.map(async (photo) => {
+            // photo.path contains the storage path, photo.url might be an old URL
+            let photoUrl = photo.url;
+            let filePath = photo.path;
+            
+            console.log('Processing photo:', {
+              name: photo.name || photo.file_name,
+              url: photo.url,
+              path: photo.path,
+              fullPhoto: photo
+            });
+            
+            // Always generate a fresh signed URL since public URLs may not work if bucket is private
+            // Signed URLs work for both public and private buckets
+            if (filePath) {
+              try {
+                // Use signed URL (works for both public and private buckets)
+                const { data: signedUrlData, error: signedError } = await supabaseAdmin.storage
+                  .from('project-files')
+                  .createSignedUrl(filePath, 3600); // 1 hour expiry
+                
+                if (!signedError && signedUrlData) {
+                  photoUrl = signedUrlData.signedUrl;
+                  console.log('Generated signed URL:', {
+                    filePath,
+                    signedUrl: photoUrl
+                  });
+                } else {
+                  console.error('Error generating signed URL:', signedError);
+                  // Fallback to public URL if signed URL fails
+                  try {
+                    const { data: urlData } = supabaseAdmin.storage
+                      .from('project-files')
+                      .getPublicUrl(filePath);
+                    photoUrl = urlData.publicUrl;
+                    console.log('Fallback to public URL:', photoUrl);
+                  } catch (urlError) {
+                    console.error('Error generating public URL:', urlError);
+                  }
+                }
+              } catch (urlError) {
+                console.error('Error generating signed URL for photo path:', filePath, urlError);
+              }
+            } else if (photoUrl && photoUrl.startsWith('http')) {
+              // If we have a URL but no path, try to extract path from it
+              const urlMatch = photoUrl.match(/\/project-files\/(.+)$/);
+              if (urlMatch) {
+                filePath = decodeURIComponent(urlMatch[1]); // Decode in case it's encoded
+                // Generate fresh signed URL
+                try {
+                  const { data: signedUrlData, error: signedError } = await supabaseAdmin.storage
+                    .from('project-files')
+                    .createSignedUrl(filePath, 3600);
+                  if (!signedError && signedUrlData) {
+                    photoUrl = signedUrlData.signedUrl;
+                    console.log('Regenerated signed URL from existing URL:', photoUrl);
+                  }
+                } catch (urlError) {
+                  console.error('Error regenerating signed URL:', filePath, urlError);
+                }
+              }
+            }
+            
+            // Final check: if still no valid URL, log warning
+            if (!photoUrl || !photoUrl.startsWith('http')) {
+              console.warn('Photo has no valid URL:', {
+                name: photo.name || photo.file_name,
+                originalUrl: photo.url,
+                path: photo.path,
+                finalUrl: photoUrl
+              });
+            }
+            
+            return {
+              name: photo.name || photo.file_name || 'Unknown',
+              size: photo.size || photo.file_size || 0,
+              url: photoUrl || photo.url || '',
+              path: filePath || photo.path || photo.url // Keep path for deletion
+            };
+          }));
+        } else {
+          // No photos in metadata
+          responseMetadata.photos = [];
+        }
+
+        // Create response object with processed metadata
+        responsesMap[r.attribute_id] = {
+          ...r,
+          response_metadata: responseMetadata
+        };
+      }
     }
 
     res.status(200).json({
@@ -160,33 +259,9 @@ const submitQuestionnaireResponses = asyncHandler(async (req, res) => {
       });
     }
 
-    // Save photos to attribute_photos table
-    for (const response of savedResponses) {
-      if (response.response_metadata?.photos && Array.isArray(response.response_metadata.photos)) {
-        // Delete existing photos for this response
-        await req.supabase
-          .from('attribute_photos')
-          .delete()
-          .eq('response_id', response.id);
-
-        // Insert new photos
-        const photosToInsert = response.response_metadata.photos.map(photo => ({
-          response_id: response.id,
-          photo_url: photo.url,
-          file_name: photo.name,
-          file_size: photo.size
-        }));
-
-        const { error: photosError } = await req.supabase
-          .from('attribute_photos')
-          .insert(photosToInsert);
-
-        if (photosError) {
-          console.error('Error saving photos to attribute_photos:', photosError);
-          // Don't fail the request, just log the error
-        }
-      }
-    }
+    // Photos are already saved in response_metadata.photos in questionnaire_responses table
+    // No need to save to separate attribute_photos table since it doesn't exist
+    // The photos are stored in the response_metadata JSON field during the upsert above
 
     res.status(200).json({
       success: true,

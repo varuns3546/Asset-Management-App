@@ -12,9 +12,7 @@ const RegisterScreen = () => {
     const {user, isLoading, isError, isSuccess, message} = useSelector(
         (state) => state.auth)
     useEffect(() => {
-        if(isError){
-           console.log('error', message) 
-        }
+        // Error handling is done via UI display
         if(isSuccess || user){
             navigate('/home')
         }

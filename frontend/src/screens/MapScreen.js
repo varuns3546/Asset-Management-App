@@ -6,6 +6,7 @@ import TopMapPanel from '../components/map/TopMapPanel';
 import MapNavbar from '../components/map/MapNavbar';
 import FileUploadModal from '../components/FileUploadModal';
 import AddFeatureModal from '../components/map/AddFeatureModal';
+import ErrorMessage from '../components/forms/ErrorMessage';
 import { getHierarchy, getFeatureTypes } from '../features/projects/projectSlice';
 import * as gisLayerService from '../services/gisLayerService';
 import '../styles/map.css';
@@ -27,6 +28,7 @@ const MapScreen = () => {
   const [layers, setLayers] = useState([]);
   const [showAddFeatureModal, setShowAddFeatureModal] = useState(false);
   const [selectedLayerForFeature, setSelectedLayerForFeature] = useState(null);
+  const [error, setError] = useState('');
   const containerRef = useRef(null);
   const { isMounted } = useIsMounted();
 
@@ -173,16 +175,16 @@ const MapScreen = () => {
 
   const handleFileSelect = (file) => {
     // TODO: Handle file upload for layer creation
-    console.log('File selected:', file);
     setIsUploadModalOpen(false);
   };
 
   const handleCreateLayer = async (layerData) => {
     if (!isMounted()) return;
+    setError('');
     
     if (!selectedProject?.id) {
       if (isMounted()) {
-        alert('No project selected');
+        setError('No project selected');
       }
       return;
     }
@@ -226,9 +228,8 @@ const MapScreen = () => {
       }
     } catch (error) {
       if (isMounted()) {
-        console.error('Error creating layer:', error);
         const errorMessage = error.response?.data?.error || 'Failed to create layer. Please try again.';
-        alert(errorMessage);
+        setError(errorMessage);
       }
     }
   };
@@ -236,6 +237,7 @@ const MapScreen = () => {
   const handleToggleLayer = async (layerId) => {
     const layer = layers.find(l => l.id === layerId);
     if (!layer || !selectedProject?.id) return;
+    setError('');
 
     try {
       // Update in database
@@ -253,14 +255,14 @@ const MapScreen = () => {
       }
     } catch (error) {
       if (isMounted()) {
-        console.error('Error updating layer visibility:', error);
-        alert('Failed to update layer visibility');
+        setError('Failed to update layer visibility');
       }
     }
   };
 
   const handleRemoveLayer = async (layerId) => {
     if (!selectedProject?.id) return;
+    setError('');
 
     try {
       await gisLayerService.deleteGisLayer(selectedProject.id, layerId);
@@ -269,20 +271,17 @@ const MapScreen = () => {
       }
     } catch (error) {
       if (isMounted()) {
-        console.error('Error deleting layer:', error);
-        alert('Failed to delete layer');
+        setError('Failed to delete layer');
       }
     }
   };
 
   const handleEditLayer = (layerId) => {
     // TODO: Implement layer editing
-    console.log('Edit layer:', layerId);
   };
 
   const handleStyleLayer = (layerId) => {
     // TODO: Implement layer styling
-    console.log('Style layer:', layerId);
   };
 
   const handleAddFeatureToLayer = (layer) => {
@@ -334,17 +333,17 @@ const MapScreen = () => {
           setShowAddFeatureModal(false);
           setSelectedLayerForFeature(null);
         }
-        
-        console.log('Feature saved to database:', response.data);
       }
     } catch (error) {
-      console.error('Error adding feature:', error);
-      alert('Failed to add feature');
+      if (isMounted()) {
+        setError('Failed to add feature');
+      }
     }
   };
 
   const handleRemoveFeature = async (layerId, featureId) => {
     if (!selectedProject?.id) return;
+    setError('');
 
     try {
       await gisLayerService.deleteFeature(selectedProject.id, layerId, featureId);
@@ -363,8 +362,7 @@ const MapScreen = () => {
       }
     } catch (error) {
       if (isMounted()) {
-        console.error('Error deleting feature:', error);
-        alert('Failed to delete feature');
+        setError('Failed to delete feature');
       }
     }
   };
@@ -380,6 +378,7 @@ const MapScreen = () => {
   return (
     
     <div ref={containerRef} className="leaflet-screen-container">
+      <ErrorMessage message={error} style={{ position: 'fixed', top: '80px', left: '50%', transform: 'translateX(-50%)', zIndex: 10000, maxWidth: '500px' }} />
       <MapNavbar 
         onOpenUploadModal={() => setIsUploadModalOpen(true)}
         onCreateLayer={handleCreateLayer}

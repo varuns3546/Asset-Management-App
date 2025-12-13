@@ -3,6 +3,9 @@ import { useDispatch, useSelector } from 'react-redux';
 import { createFeature, updateFeature } from '../../features/projects/projectSlice';
 import FormField from '../forms/FormField';
 import ButtonGroup from '../forms/ButtonGroup';
+import ErrorMessage from '../forms/ErrorMessage';
+import { validateHierarchyCoordinates } from '../../utils/coordinateValidator';
+import { useFormState } from '../../hooks/useFormReset';
 import '../../styles/structureScreen.css';
 
 const HierarchyForm = ({ 
@@ -13,7 +16,7 @@ const HierarchyForm = ({
 }) => {
     const dispatch = useDispatch();
     const { selectedProject, currentHierarchy } = useSelector((state) => state.projects);
-    const [newItem, setNewItem] = useState({
+    const initialState = {
         title: '',
         item_type_id: null,
         parent_id: null,
@@ -21,8 +24,10 @@ const HierarchyForm = ({
         end_latitude: '',
         beginning_longitude: '',
         end_longitude: ''
-    });
+    };
+    const [newItem, setNewItem, resetForm] = useFormState(initialState);
     const [isEditing, setIsEditing] = useState(false);
+    const [error, setError] = useState('');
 
     // Update form when selectedItem changes
     useEffect(() => {
@@ -38,15 +43,7 @@ const HierarchyForm = ({
             });
             setIsEditing(true);
         } else {
-            setNewItem({
-                title: '',
-                item_type_id: null,
-                parent_id: null,
-                beginning_latitude: '',
-                end_latitude: '',
-                beginning_longitude: '',
-                end_longitude: ''
-            });
+            resetForm();
             setIsEditing(false);
         }
     }, [selectedItem]);
@@ -75,61 +72,20 @@ const HierarchyForm = ({
     }
 
     const handleAddItem = async () => {
+        setError('');
+        
         if (!newItem.title.trim()) {
-            alert('Please enter an item title');
+            setError('Please enter an item title');
             return;
         }
 
         // Check if coordinates are valid (only validate fields that are filled)
         const selectedItemType = itemTypes.find(type => type.id === newItem.item_type_id);
         if (selectedItemType?.has_coordinates) {
-            // Validate filled coordinate fields
-            if (newItem.beginning_latitude) {
-                const beginLat = parseFloat(newItem.beginning_latitude);
-                if (isNaN(beginLat)) {
-                    alert('Beginning latitude must be a valid number');
-                    return;
-                }
-                if (beginLat < -90 || beginLat > 90) {
-                    alert('Beginning latitude must be between -90 and 90 degrees');
-                    return;
-                }
-            }
-            
-            if (newItem.end_latitude) {
-                const endLat = parseFloat(newItem.end_latitude);
-                if (isNaN(endLat)) {
-                    alert('End latitude must be a valid number');
-                    return;
-                }
-                if (endLat < -90 || endLat > 90) {
-                    alert('End latitude must be between -90 and 90 degrees');
-                    return;
-                }
-            }
-            
-            if (newItem.beginning_longitude) {
-                const beginLng = parseFloat(newItem.beginning_longitude);
-                if (isNaN(beginLng)) {
-                    alert('Beginning longitude must be a valid number');
-                    return;
-                }
-                if (beginLng < -180 || beginLng > 180) {
-                    alert('Beginning longitude must be between -180 and 180 degrees');
-                    return;
-                }
-            }
-            
-            if (newItem.end_longitude) {
-                const endLng = parseFloat(newItem.end_longitude);
-                if (isNaN(endLng)) {
-                    alert('End longitude must be a valid number');
-                    return;
-                }
-                if (endLng < -180 || endLng > 180) {
-                    alert('End longitude must be between -180 and 180 degrees');
-                    return;
-                }
+            const coordError = validateHierarchyCoordinates(newItem);
+            if (coordError) {
+                setError(coordError);
+                return;
             }
         }
 
@@ -163,39 +119,27 @@ const HierarchyForm = ({
                 })).unwrap();
             }
 
-            // Clear form fields AFTER successful save
-            setNewItem({
-                title: '',
-                item_type_id: null,
-                parent_id: currentParentId, // Keep parent selection for efficiency
-                beginning_latitude: '',
-                end_latitude: '',
-                beginning_longitude: '',
-                end_longitude: ''
-            });
+            // Clear form fields AFTER successful save (keep parent selection for efficiency)
+            setNewItem(prev => ({
+                ...initialState,
+                parent_id: currentParentId
+            }));
             setIsEditing(false);
 
             // Clear selection after successful save
             if (onItemSelect) {
                 onItemSelect(null);
             }
+            setError('');
         } catch (error) {
-            console.error('Error creating/updating hierarchy item:', error);
-            alert('Failed to create/update item. Please try again.');
+            setError('Failed to create/update item. Please try again.');
         }
     }
 
     const handleCancelEdit = () => {
-        setNewItem({
-            title: '',
-            item_type_id: null,
-            parent_id: null,
-            beginning_latitude: '',
-            end_latitude: '',
-            beginning_longitude: '',
-            end_longitude: ''
-        });
+        resetForm();
         setIsEditing(false);
+        setError('');
         if (onItemSelect) {
             onItemSelect(null);
         }
@@ -299,6 +243,8 @@ const HierarchyForm = ({
                         </div>
                     </div>
                 )}
+                
+                <ErrorMessage message={error} />
                 
                 <div style={{ display: 'flex', gap: '10px' }}>
                     <button onClick={handleAddItem} className="add-button">

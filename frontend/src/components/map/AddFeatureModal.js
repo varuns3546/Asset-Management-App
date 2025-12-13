@@ -3,6 +3,8 @@ import Modal from '../Modal';
 import ButtonGroup from '../forms/ButtonGroup';
 import ErrorMessage from '../forms/ErrorMessage';
 import FormField from '../forms/FormField';
+import { validateCoordinates } from '../../utils/coordinateValidator';
+import useFormReset from '../../hooks/useFormReset';
 import '../../styles/modal.css';
 import '../../styles/addFeature.css';
 
@@ -11,6 +13,19 @@ const AddFeatureModal = ({ isOpen, onClose, layer, onAddFeature }) => {
   const [coordinates, setCoordinates] = useState([{ lat: '', lng: '' }]);
   const [attributes, setAttributes] = useState({});
   const [error, setError] = useState('');
+  
+  const initialState = {
+    featureName: '',
+    coordinates: [{ lat: '', lng: '' }],
+    attributes: {}
+  };
+  
+  const resetForm = useFormReset(initialState, () => {
+    setFeatureName(initialState.featureName);
+    setCoordinates(initialState.coordinates);
+    setAttributes(initialState.attributes);
+    setError('');
+  });
 
   // Initialize attributes based on layer fields
   React.useEffect(() => {
@@ -48,45 +63,12 @@ const AddFeatureModal = ({ isOpen, onClose, layer, onAddFeature }) => {
     }));
   };
 
-  const validateCoordinates = () => {
-    for (let i = 0; i < coordinates.length; i++) {
-      const { lat, lng } = coordinates[i];
-      
-      if (!lat || !lng) {
-        setError(`Coordinate ${i + 1} is incomplete`);
-        return false;
-      }
-
-      const latitude = parseFloat(lat);
-      const longitude = parseFloat(lng);
-
-      if (isNaN(latitude) || isNaN(longitude)) {
-        setError(`Coordinate ${i + 1} contains invalid numbers`);
-        return false;
-      }
-
-      if (latitude < -90 || latitude > 90) {
-        setError(`Latitude ${i + 1} must be between -90 and 90`);
-        return false;
-      }
-
-      if (longitude < -180 || longitude > 180) {
-        setError(`Longitude ${i + 1} must be between -180 and 180`);
-        return false;
-      }
-    }
-
-    // Validate based on geometry type
-    if (layer.geometryType === 'line' && coordinates.length < 2) {
-      setError('Line geometry requires at least 2 points');
+  const validateCoordinatesInput = () => {
+    const error = validateCoordinates(coordinates, layer?.geometryType);
+    if (error) {
+      setError(error);
       return false;
     }
-
-    if (layer.geometryType === 'polygon' && coordinates.length < 3) {
-      setError('Polygon geometry requires at least 3 points');
-      return false;
-    }
-
     return true;
   };
 
@@ -96,7 +78,7 @@ const AddFeatureModal = ({ isOpen, onClose, layer, onAddFeature }) => {
       return;
     }
 
-    if (!validateCoordinates()) {
+    if (!validateCoordinatesInput()) {
       return;
     }
 
@@ -118,13 +100,6 @@ const AddFeatureModal = ({ isOpen, onClose, layer, onAddFeature }) => {
 
     resetForm();
     onClose();
-  };
-
-  const resetForm = () => {
-    setFeatureName('');
-    setCoordinates([{ lat: '', lng: '' }]);
-    setAttributes({});
-    setError('');
   };
 
   const handleClose = () => {

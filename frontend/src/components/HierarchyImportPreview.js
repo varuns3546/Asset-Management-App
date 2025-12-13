@@ -465,8 +465,6 @@ const HierarchyImportPreview = ({
         setErrors([]);
         
         try {
-            console.log('columnMappings:', columnMappings);
-
             // Pass selected sheets, item type attributes, and sheet default types to import handler 
             await onImport(columnMappings, itemTypeMap, selectedSheets, itemTypeAttributes, sheetDefaultTypes);            
             // Reset importing state on success
