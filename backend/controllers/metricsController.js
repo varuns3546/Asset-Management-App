@@ -29,7 +29,6 @@ const getProjectMetrics = asyncHandler(async (req, res) => {
     // === STEP 5: Override with official storage size if available ===
     if (officialMetrics?.storage_size) {
       totalStorageSize = officialMetrics.storage_size;
-      console.log('✓ Using official storage size:', formatBytes(totalStorageSize));
     }
 
     // === STEP 6: Calculate Percentages ===
@@ -128,12 +127,32 @@ const getAllProjectsMetrics = asyncHandler(async (req, res) => {
       .from('asset_types')
       .select('*', { count: 'exact', head: true });
 
-    // Get total file sizes from database
+    // Get actual file count and size from ALL storage buckets (not just database records)
+    const { fileCount: actualFileCount, totalSize: actualStorageSize, bucketBreakdown = {} } = await getAllStorageFilesCount();
+
+    // Get total file sizes from database (for fallback comparison)
     const { data: allProjectFiles } = await supabaseAdmin
       .from('project_files')
       .select('file_size');
 
-    let totalStorageSize = allProjectFiles?.reduce((sum, file) => sum + (file.file_size || 0), 0) || 0;
+    const dbFileSize = allProjectFiles?.reduce((sum, file) => sum + (file.file_size || 0), 0) || 0;
+    
+    // Priority order for storage size:
+    // 1. Official Supabase storage_size (most accurate - what Supabase dashboard shows)
+    // 2. Bucket enumeration (actual files in storage)
+    // 3. Database records (fallback)
+    let totalStorageSize = 0;
+    
+    if (officialMetrics?.storage_size) {
+      // Use official Supabase storage size (authoritative source)
+      totalStorageSize = officialMetrics.storage_size;
+    } else if (actualStorageSize > 0) {
+      // Fallback to bucket enumeration if official not available
+      totalStorageSize = actualStorageSize;
+    } else {
+      // Last resort: database records
+      totalStorageSize = dbFileSize;
+    }
 
     // Get accurate database size for entire account
     const dbMetrics = await getAccurateDatabaseSize(officialMetrics, {
@@ -205,14 +224,15 @@ const getAllProjectsMetrics = asyncHandler(async (req, res) => {
             limitFormatted: formatBytesAsMB(FREE_TIER_STORAGE_LIMIT),
             percentage: Math.round(storagePercentage * 100) / 100,
             warning: storagePercentage > 80,
-            dataSource: 'calculated'
+            dataSource: officialMetrics?.storage_size ? 'official_api' : 'calculated'
           },
           counts: {
             assets: totalAssets || 0,
             responses: totalResponses || 0,
-            files: totalFiles || 0,
+            files: actualFileCount || 0, // Always use actual storage bucket count, not database table count
             assetTypes: totalAssetTypes || 0
-          }
+          },
+          storageBreakdown: bucketBreakdown || {} // Per-bucket file counts
         },
         accountTotal: accountMetrics,
         usingOfficialMetrics: officialMetrics !== null
@@ -262,7 +282,6 @@ async function getOfficialSupabaseMetrics() {
         if (data.db_size || data.database_size || data.storage_size || 
             data.disk_volume_size_gb || (Array.isArray(data) && data.length > 0)) {
           
-          console.log('✓ Found official metrics at:', endpoint);
           
           if (Array.isArray(data) && data.length > 0) {
             const latest = data[data.length - 1];
@@ -283,8 +302,134 @@ async function getOfficialSupabaseMetrics() {
     }
   }
 
-  console.log('⚠️ Official metrics unavailable');
   return null;
+}
+
+/**
+ * Get total file count and size from ALL storage buckets (account-wide)
+ */
+async function getAllStorageFilesCount() {
+  let totalFileCount = 0;
+  let totalSize = 0;
+  
+  // List all buckets and count files
+  try {
+    const { data: buckets, error: bucketsError } = await supabaseAdmin.storage.listBuckets();
+    
+    if (bucketsError || !buckets) {
+      return { fileCount: 0, totalSize: 0 };
+    }
+    
+    // Count files in each bucket and track per-bucket counts
+    const bucketBreakdown = {};
+    for (const bucket of buckets) {
+      try {
+        const fileCount = await countFilesInBucket(bucket.name);
+        totalFileCount += fileCount.count;
+        totalSize += fileCount.size;
+        bucketBreakdown[bucket.name] = {
+          count: fileCount.count,
+          size: fileCount.size,
+          sizeFormatted: formatBytes(fileCount.size)
+        };
+      } catch (bucketError) {
+        bucketBreakdown[bucket.name] = {
+          count: 0,
+          size: 0,
+          sizeFormatted: '0 Bytes',
+          error: bucketError.message
+        };
+      }
+    }
+    
+    return { fileCount: totalFileCount, totalSize, bucketBreakdown };
+    
+  } catch (error) {
+    console.error('Error in getAllStorageFilesCount:', error);
+    return { fileCount: 0, totalSize: 0 };
+  }
+}
+
+/**
+ * Count all files in a bucket using BFS (breadth-first search) queue approach
+ * This is more reliable than recursion for handling nested folders
+ */
+async function countFilesInBucket(bucketName, limit = 1000) {
+  let totalCount = 0;
+  let totalSize = 0;
+  const foldersToProcess = ['']; // Start with root
+  const processedPaths = new Set();
+  
+  try {
+    while (foldersToProcess.length > 0) {
+      const currentPath = foldersToProcess.shift();
+      
+      // Avoid processing the same path twice
+      if (processedPaths.has(currentPath)) {
+        continue;
+      }
+      processedPaths.add(currentPath);
+      
+      let offset = 0;
+      let hasMore = true;
+      
+      // Paginate through all items in current path
+      while (hasMore) {
+        const { data: items, error } = await supabaseAdmin.storage
+          .from(bucketName)
+          .list(currentPath, {
+            limit,
+            offset,
+            sortBy: { column: 'name', order: 'asc' }
+          });
+        
+        if (error) {
+          break;
+        }
+        
+        if (!items || items.length === 0) {
+          hasMore = false;
+          break;
+        }
+        
+        for (const item of items) {
+          // Determine if it's a file or folder
+          // Files have: id (UUID), metadata with size
+          // Folders have: name, but no id
+          const hasId = item.id !== null && item.id !== undefined && item.id !== '';
+          const hasMetadata = item.metadata !== null && item.metadata !== undefined;
+          
+          if (hasId && hasMetadata) {
+            // It's a file
+            totalCount++;
+            const fileSize = item.metadata?.size || 0;
+            totalSize += fileSize;
+          } else if (item.name && !hasId) {
+            // It's a folder - add to queue for processing
+            const folderPath = currentPath ? `${currentPath}/${item.name}` : item.name;
+            if (!processedPaths.has(folderPath)) {
+              foldersToProcess.push(folderPath);
+            }
+          } else if (item.metadata?.size !== undefined) {
+            // Item has metadata with size, treat as file
+            totalCount++;
+            totalSize += item.metadata.size;
+          }
+        }
+        
+        // Check if more items to fetch
+        if (items.length < limit) {
+          hasMore = false;
+        } else {
+          offset += limit;
+        }
+      }
+    }
+    
+    return { count: totalCount, size: totalSize };
+  } catch (error) {
+    return { count: 0, size: 0 };
+  }
 }
 
 /**
@@ -298,14 +443,10 @@ async function calculateStorageSize(projectId) {
       .single();
     
     if (!error && storageData) {
-      console.log(`✓ Actual storage: ${formatBytes(storageData.total_size)} across ${storageData.file_count} files`);
       return storageData.total_size;
-    } else {
-      console.log('⚠️ get_total_storage_size function not available:', error?.message);
-      console.log('💡 Run GET_TOTAL_STORAGE_SIZE.sql in Supabase SQL Editor');
     }
   } catch (storageError) {
-    console.log('⚠️ Could not get storage size:', storageError.message);
+    // Function not available, continue to fallback
   }
   
   // Fallback: Try listing from buckets (old method)
@@ -330,7 +471,7 @@ async function calculateStorageSize(projectId) {
           }
         }
       } catch (bucketError) {
-        console.log(`Bucket ${bucket.name} not accessible:`, bucketError.message);
+        // Bucket not accessible, skip
       }
     }
   }
@@ -341,10 +482,6 @@ async function calculateStorageSize(projectId) {
     .select('file_size')
     .eq('project_id', projectId);
 
-  if (projectFiles) {
-    const dbFileSize = projectFiles.reduce((sum, file) => sum + (file.file_size || 0), 0);
-    console.log(`DB tracked files: ${formatBytes(dbFileSize)}`);
-  }
 
   return totalSize;
 }
@@ -397,13 +534,6 @@ async function getAccurateDatabaseSize(officialMetrics, counts) {
       const overhead = totalSize - userDataSize;
       const overheadPct = (overhead / totalSize * 100).toFixed(2);
 
-      console.log('✓ Accurate database breakdown (PostgreSQL):');
-      console.log('  - Your tables:', formatBytes(breakdown.user_tables_size));
-      console.log('  - Your indexes:', formatBytes(breakdown.user_indexes_size));
-      console.log('  - TOAST storage:', formatBytes(breakdown.toast_size));
-      console.log('  - System overhead:', formatBytes(breakdown.system_overhead));
-      console.log('  - Total (Supabase counts):', formatBytes(totalSize));
-      console.log(`  - Overhead: ${overheadPct}%`);
 
       return {
         totalSize,
@@ -425,7 +555,6 @@ async function getAccurateDatabaseSize(officialMetrics, counts) {
       };
     }
   } catch (err) {
-    console.log('⚠️ Detailed breakdown function not available:', err.message);
   }
 
   // Priority 2: Try simple total database size function
@@ -440,11 +569,6 @@ async function getAccurateDatabaseSize(officialMetrics, counts) {
       const overhead = totalSize - userDataSize;
       const overheadPct = (overhead / totalSize * 100).toFixed(2);
 
-      console.log('✓ Accurate database size (PostgreSQL):');
-      console.log('  - Your data:', formatBytes(userDataSize));
-      console.log('  - Total overhead:', formatBytes(overhead));
-      console.log('  - Total (Supabase counts):', formatBytes(totalSize));
-      console.log(`  - Overhead: ${overheadPct}%`);
 
       return {
         totalSize,
@@ -457,7 +581,6 @@ async function getAccurateDatabaseSize(officialMetrics, counts) {
       };
     }
   } catch (err) {
-    console.log('⚠️ PostgreSQL size functions not available:', err.message);
   }
 
   // Priority 3: Use official Supabase API metrics
@@ -468,9 +591,6 @@ async function getAccurateDatabaseSize(officialMetrics, counts) {
     const overhead = totalSize - userDataSize;
     const overheadPct = (overhead / totalSize * 100).toFixed(2);
 
-    console.log('✓ Using official Supabase API database size:', formatBytes(totalSize));
-    console.log(`  - Estimated user data: ${formatBytes(userDataSize)} (~55%)`);
-    console.log(`  - Estimated overhead: ${formatBytes(overhead)} (~45%)`);
 
     return {
       totalSize,
@@ -484,8 +604,6 @@ async function getAccurateDatabaseSize(officialMetrics, counts) {
   }
 
   // Priority 4: Improved estimation (last resort)
-  console.log('⚠️ Using improved estimation formula');
-  console.log('💡 For accurate metrics, run the SQL functions from the setup file');
 
   return calculateImprovedEstimate(counts);
 }
@@ -519,10 +637,6 @@ function calculateImprovedEstimate(counts) {
   const totalSize = estimatedDataSize + totalOverhead;
   const overheadPct = (totalOverhead / totalSize * 100).toFixed(2);
 
-  console.log('  - Estimated data:', formatBytes(estimatedDataSize));
-  console.log('  - Estimated overhead:', formatBytes(totalOverhead));
-  console.log('  - Estimated total:', formatBytes(totalSize));
-  console.log(`  - Overhead: ${overheadPct}%`);
 
   return {
     totalSize,

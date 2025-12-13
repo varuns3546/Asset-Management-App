@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import questionnaireService from '../services/questionnaireService';
 import { getHierarchy } from '../features/projects/projectSlice';
+import { useIsMounted } from '../hooks/useIsMounted';
+import useClickOutside from '../hooks/useClickOutside';
 import '../styles/questionnaire.css';
 
 const QuestionnaireScreen = () => {
@@ -20,6 +22,12 @@ const QuestionnaireScreen = () => {
   const [collapsedSections, setCollapsedSections] = useState({});
   const [assetSearchText, setAssetSearchText] = useState('');
   const [showAssetDropdown, setShowAssetDropdown] = useState(false);
+  const { isMounted } = useIsMounted();
+  const dropdownRef = useClickOutside(() => {
+    if (showAssetDropdown) {
+      setShowAssetDropdown(false);
+    }
+  }, showAssetDropdown);
 
   // Load assets and asset types for the project
   useEffect(() => {
@@ -39,11 +47,13 @@ const QuestionnaireScreen = () => {
         user.token
       );
 
-      if (response.success) {
+      if (response.success && isMounted()) {
         setAssetTypes(response.data || []);
       }
     } catch (error) {
-      console.error('Error loading asset types:', error);
+      if (isMounted()) {
+        console.error('Error loading asset types:', error);
+      }
     }
   };
 
@@ -54,28 +64,21 @@ const QuestionnaireScreen = () => {
     }
   }, [currentHierarchy]);
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (showAssetDropdown && !event.target.closest('.searchable-dropdown')) {
-        setShowAssetDropdown(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showAssetDropdown]);
-
   // Load questionnaire when asset is selected
   const handleAssetSelect = async (assetId) => {
     if (!assetId || !selectedProject) {
-      setSelectedAsset(null);
-      setQuestionnaireData(null);
-      setResponses({});
+      if (isMounted()) {
+        setSelectedAsset(null);
+        setQuestionnaireData(null);
+        setResponses({});
+      }
       return;
     }
     
-    setLoading(true);
+    if (isMounted()) {
+      setLoading(true);
+    }
+    
     try {
       const data = await questionnaireService.getAssetQuestionnaire(
         selectedProject.id,
@@ -83,7 +86,7 @@ const QuestionnaireScreen = () => {
         user.token
       );
 
-      if (data.success) {
+      if (data.success && isMounted()) {
         setQuestionnaireData(data.data);
         setSelectedAsset(data.data.asset);
         
@@ -107,10 +110,13 @@ const QuestionnaireScreen = () => {
         setResponses(initialResponses);
       }
     } catch (error) {
-      console.error('Error loading questionnaire:', error);
-      // Silently handle the error - don't show error message to user
+      if (isMounted()) {
+        console.error('Error loading questionnaire:', error);
+      }
     } finally {
-      setLoading(false);
+      if (isMounted()) {
+        setLoading(false);
+      }
     }
   };
 
@@ -470,7 +476,7 @@ const QuestionnaireScreen = () => {
 
           <div className="asset-select-group">
             <label htmlFor="asset-search">Select Asset:</label>
-            <div className="searchable-dropdown">
+            <div className="searchable-dropdown" ref={dropdownRef}>
               <input
                 id="asset-search"
                 type="text"

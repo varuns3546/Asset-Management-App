@@ -37,9 +37,10 @@ const uploadPhoto = [
 
     try {
       // List existing files in this attribute's folder to check for duplicates
-      const folderPath = `${projectId}/${assetId}`;
+      // Use project-files bucket with a photos subfolder to consolidate all files
+      const folderPath = `${projectId}/photos/${assetId}`;
       const { data: existingFiles } = await supabaseAdmin.storage
-        .from('questionnaire-photos')
+        .from('project-files')
         .list(folderPath);
 
       // Get the original filename without extension
@@ -73,9 +74,9 @@ const uploadPhoto = [
       // Create the storage path
       const fileName = `${folderPath}/${attributeId}_${finalFileName}`;
       
-      // Upload to Supabase Storage
+      // Upload to Supabase Storage (using project-files bucket to consolidate)
       const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
-        .from('questionnaire-photos')
+        .from('project-files')
         .upload(fileName, req.file.buffer, {
           contentType: req.file.mimetype,
           upsert: false
@@ -92,7 +93,7 @@ const uploadPhoto = [
 
       // Get public URL
       const { data: urlData } = supabaseAdmin.storage
-        .from('questionnaire-photos')
+        .from('project-files')
         .getPublicUrl(fileName);
 
       // Return the display name (with counter if applicable)
@@ -134,7 +135,7 @@ const deletePhoto = asyncHandler(async (req, res) => {
 
   try {
     const { error } = await supabaseAdmin.storage
-      .from('questionnaire-photos')
+      .from('project-files')
       .remove([filePath]);
 
     if (error) {

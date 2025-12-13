@@ -3,6 +3,7 @@ import { register, reset } from '../features/auth/authSlice'
 import { useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import Spinner from '../components/Spinner'
+import PasswordInput from '../components/auth/PasswordInput'
 import '../styles/auth.css'
 const RegisterScreen = () => {
     const dispatch = useDispatch()
@@ -28,8 +29,6 @@ const RegisterScreen = () => {
         confirmPassword: '', 
         orgPassword: ''
       })
-    const [showPassword, setShowPassword] = useState(false)
-    const [showConfirmPassword, setShowConfirmPassword] = useState(false)
     const [passwordError, setPasswordError] = useState('')
     const{firstName, lastName, email, 
         password, confirmPassword, orgPassword} = formData
@@ -118,47 +117,21 @@ const RegisterScreen = () => {
                     </div>
 
                     <div className="auth-form-group">
-                        <div className="auth-password-container">
-                            <input 
-                                type={showPassword ? "text" : "password"}
-                                placeholder="Password"
-                                value={password}
-                                onChange={(e) => updateField('password', e.target.value)}
-                                className="auth-input"
-                                required
-                                disabled={isLoading}
-                            />
-                            <button
-                                type="button"
-                                className="auth-password-toggle"
-                                onClick={() => setShowPassword(!showPassword)}
-                                disabled={isLoading}
-                            >
-                                {showPassword ? '👁️' : '👁️‍🗨️'}
-                            </button>
-                        </div>
+                        <PasswordInput
+                            value={password}
+                            onChange={(e) => updateField('password', e.target.value)}
+                            placeholder="Password"
+                            disabled={isLoading}
+                        />
                     </div>
 
                     <div className="auth-form-group">
-                        <div className="auth-password-container">
-                            <input 
-                                type={showConfirmPassword ? "text" : "password"}
-                                placeholder="Confirm Password"
-                                value={confirmPassword}
-                                onChange={(e) => updateField('confirmPassword', e.target.value)}
-                                className="auth-input"
-                                required
-                                disabled={isLoading}
-                            />
-                            <button
-                                type="button"
-                                className="auth-password-toggle"
-                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                disabled={isLoading}
-                            >
-                                {showConfirmPassword ? '👁️' : '👁️‍🗨️'}
-                            </button>
-                        </div>
+                        <PasswordInput
+                            value={confirmPassword}
+                            onChange={(e) => updateField('confirmPassword', e.target.value)}
+                            placeholder="Confirm Password"
+                            disabled={isLoading}
+                        />
                     </div>
 
                     <div className="auth-form-group">

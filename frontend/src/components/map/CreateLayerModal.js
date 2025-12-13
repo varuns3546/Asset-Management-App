@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import Modal from '../Modal';
+import ButtonGroup from '../forms/ButtonGroup';
+import ErrorMessage from '../forms/ErrorMessage';
+import FormField from '../forms/FormField';
 import '../../styles/modal.css';
 import '../../styles/createLayer.css';
 
@@ -197,48 +200,40 @@ const CreateLayerModal = ({ isOpen, onClose, projectId, onCreateLayer }) => {
         {/* Basic Information */}
         <div className="form-section">
           <h3>Layer Information</h3>
-          <div className="form-group">
-            <label htmlFor="layerName">Layer Name *</label>
-            <input
-              id="layerName"
-              type="text"
-              value={layerName}
-              onChange={(e) => setLayerName(e.target.value)}
-              placeholder="Enter layer name"
-              className="form-input"
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="description">Description</label>
-            <textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Enter layer description (optional)"
-              className="form-textarea"
-              rows="3"
-            />
-          </div>
+          <FormField
+            label="Layer Name *"
+            id="layerName"
+            type="text"
+            value={layerName}
+            onChange={(e) => setLayerName(e.target.value)}
+            placeholder="Enter layer name"
+            required
+          />
+          <FormField
+            label="Description"
+            id="description"
+            type="textarea"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Enter layer description (optional)"
+            rows={3}
+          />
         </div>
 
         {/* Coordinate System */}
         <div className="form-section">
           <h3>Coordinate Reference System</h3>
-          <div className="form-group">
-            <label htmlFor="coordinateSystem">CRS</label>
-            <select
-              id="coordinateSystem"
-              value={coordinateSystem}
-              onChange={(e) => setCoordinateSystem(e.target.value)}
-              className="form-select"
-            >
-              {coordinateSystems.map(crs => (
-                <option key={crs.value} value={crs.value}>
-                  {crs.label}
-                </option>
-              ))}
-            </select>
-          </div>
+          <FormField
+            label="CRS"
+            id="coordinateSystem"
+            type="select"
+            value={coordinateSystem}
+            onChange={(e) => setCoordinateSystem(e.target.value)}
+            selectOptions={coordinateSystems.map(crs => ({
+              value: crs.value,
+              label: crs.label
+            }))}
+          />
         </div>
 
         {/* Attribute Fields */}
@@ -286,20 +281,24 @@ const CreateLayerModal = ({ isOpen, onClose, projectId, onCreateLayer }) => {
         </div>
 
         {/* Error Message */}
-        {error && (
-          <div className="error-message">
-            {error}
-          </div>
-        )}
+        <ErrorMessage message={error} />
 
         {/* Actions */}
         <div className="modal-actions">
-          <button onClick={handleClose} className="btn-secondary">
-            Cancel
-          </button>
-          <button onClick={handleCreateLayer} className="btn-primary">
-            Create Layer
-          </button>
+          <ButtonGroup
+            buttons={[
+              {
+                label: 'Cancel',
+                variant: 'secondary',
+                onClick: handleClose
+              },
+              {
+                label: 'Create Layer',
+                variant: 'primary',
+                onClick: handleCreateLayer
+              }
+            ]}
+          />
         </div>
       </div>
     </Modal>

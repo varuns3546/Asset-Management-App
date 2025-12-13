@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { getFeatureTypes, deleteFeatureType, reset } from '../features/projects/projectSlice';
-import { loadUser } from '../features/auth/authSlice';
+import { useIsMounted } from '../hooks/useIsMounted';
+import useProjectData from '../hooks/useProjectData';
 import AssetTypeForm from '../components/structure/AssetTypeForm';
 import AssetTypeTree from '../components/structure/AssetTypeTree';
 import '../styles/structureScreen.css';
+
 const AssetTypeScreen = () => {
-    const { selectedProject, currentFeatureTypes } = useSelector((state) => state.projects);
-    const { user } = useSelector((state) => state.auth);
+    const { currentFeatureTypes } = useSelector((state) => state.projects);
+    const { selectedProject, user, dispatch } = useProjectData();
     const [selectedItem, setSelectedItem] = useState(null);
-    const dispatch = useDispatch();
+    const { isMounted } = useIsMounted();
 
     // Debug: Log when currentFeatureTypes change
     useEffect(() => {
@@ -17,16 +19,12 @@ const AssetTypeScreen = () => {
     }, [currentFeatureTypes]);  
 
     useEffect(() => {
-        dispatch(loadUser())
-    }, [dispatch])
-
-    useEffect(() => {
         if (selectedProject && user) {
             dispatch(reset());
             dispatch(getFeatureTypes(selectedProject.id));
         }
         return () => {
-            dispatch(reset())
+            dispatch(reset());
         }
     }, [selectedProject, user, dispatch]);
 
@@ -38,12 +36,14 @@ const AssetTypeScreen = () => {
             })).unwrap();
             
             // Clear selected item if the deleted item type was selected
-            if (selectedItem && selectedItem.id === assetTypeId) {
+            if (isMounted() && selectedItem && selectedItem.id === assetTypeId) {
                 setSelectedItem(null);
             }
         } catch (error) {
-            console.error('Error deleting item type:', error);
-            alert('Failed to delete item type. Please try again.');
+            if (isMounted()) {
+                console.error('Error deleting item type:', error);
+                alert('Failed to delete item type. Please try again.');
+            }
         }
     };
 

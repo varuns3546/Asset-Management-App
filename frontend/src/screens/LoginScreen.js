@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import {useSelector, useDispatch} from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import Spinner from '../components/Spinner'
+import PasswordInput from '../components/auth/PasswordInput'
 import { login, reset } from '../features/auth/authSlice'
 import '../styles/auth.css'
 
@@ -19,7 +20,6 @@ const LoginScreen = () => {
       })
     
     const { email, password } = formData
-    const [showPassword, setShowPassword] = useState(false)
 
 
     useEffect(() => {
@@ -71,25 +71,12 @@ const LoginScreen = () => {
                     </div>
                     
                     <div className="auth-form-group">
-                        <div className="auth-password-container">
-                            <input 
-                                type={showPassword ? "text" : "password"}
-                                placeholder="Password"
-                                value={password}
-                                onChange={(e) => updateField('password', e.target.value)}
-                                className="auth-input"
-                                required
-                                disabled={isLoading}
-                            />
-                            <button
-                                type="button"
-                                className="auth-password-toggle"
-                                onClick={() => setShowPassword(!showPassword)}
-                                disabled={isLoading}
-                            >
-                                {showPassword ? '👁️' : '👁️‍🗨️'}
-                            </button>
-                        </div>
+                        <PasswordInput
+                            value={password}
+                            onChange={(e) => updateField('password', e.target.value)}
+                            placeholder="Password"
+                            disabled={isLoading}
+                        />
                     </div>
 
                     <button 
