@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import metricsService from '../services/metricsService';
 import StorageWarningBanner from '../components/StorageWarningBanner';
-import { useIsMounted } from '../hooks/useIsMounted';
+import { useRouteMount } from '../contexts/RouteMountContext';
 import '../styles/homeScreen.css';
 
 const HomeScreen = () => {
@@ -12,7 +12,7 @@ const HomeScreen = () => {
   const [loading, setLoading] = useState(false);
   const [dismissedWarning, setDismissedWarning] = useState(false);
   const [exporting, setExporting] = useState(false);
-  const { isMounted } = useIsMounted();
+  const { isRouteMounted } = useRouteMount();
 
   // Load account metrics when user is available
   useEffect(() => {
@@ -20,25 +20,26 @@ const HomeScreen = () => {
       loadMetrics();
       setDismissedWarning(false);
     }
-  }, [user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]); // loadMetrics is stable and doesn't need to be in deps
 
   const loadMetrics = async () => {
-    if (isMounted()) {
+    if (isRouteMounted()) {
       setLoading(true);
     }
     try {
       // Fetch account-level metrics (all projects)
       const allProjectsData = await metricsService.getAllProjectsMetrics(user.token);
       
-      if (allProjectsData.success && isMounted()) {
+      if (allProjectsData.success && isRouteMounted()) {
         setMetrics(allProjectsData.data);
       }
     } catch (error) {
-      if (isMounted()) {
+      if (isRouteMounted()) {
         console.error('Error loading metrics:', error);
       }
     } finally {
-      if (isMounted()) {
+      if (isRouteMounted()) {
         setLoading(false);
       }
     }
@@ -49,21 +50,21 @@ const HomeScreen = () => {
       alert('Please select a project to export data.');
       return;
     }
-    if (isMounted()) {
+    if (isRouteMounted()) {
       setExporting(true);
     }
     try {
       await metricsService.exportProjectData(selectedProject.id, user.token);
-      if (isMounted()) {
+      if (isRouteMounted()) {
         alert('Project data exported successfully!');
       }
     } catch (error) {
-      if (isMounted()) {
+      if (isRouteMounted()) {
         console.error('Error exporting data:', error);
         alert('Failed to export project data. Please try again.');
       }
     } finally {
-      if (isMounted()) {
+      if (isRouteMounted()) {
         setExporting(false);
       }
     }

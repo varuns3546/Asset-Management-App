@@ -231,6 +231,42 @@ const submitQuestionnaireResponses = asyncHandler(async (req, res) => {
       });
     }
 
+    // Get existing responses to compare photos
+    const { data: existingResponses, error: fetchError } = await req.supabase
+      .from('questionnaire_responses')
+      .select('attribute_id, response_metadata')
+      .eq('asset_id', assetId)
+      .eq('project_id', projectId);
+
+    if (fetchError) {
+      console.error('Error fetching existing responses:', fetchError);
+      // Continue anyway, we'll just skip photo deletion
+    }
+
+    // Create a map of existing photos by attribute_id
+    const existingPhotosMap = {};
+    if (existingResponses) {
+      existingResponses.forEach(response => {
+        if (response.response_metadata && response.response_metadata.photos) {
+          const photos = response.response_metadata.photos;
+          if (Array.isArray(photos)) {
+            existingPhotosMap[response.attribute_id] = photos.map(photo => {
+              // Get path from photo object
+              if (photo.path) {
+                return photo.path;
+              } else if (photo.url && photo.url.includes('/project-files/')) {
+                const urlMatch = photo.url.match(/\/project-files\/(.+)$/);
+                if (urlMatch) {
+                  return decodeURIComponent(urlMatch[1]);
+                }
+              }
+              return null;
+            }).filter(path => path !== null);
+          }
+        }
+      });
+    }
+
     // Prepare data for upsert
     const responsesToUpsert = responses.map(r => ({
       project_id: projectId,
@@ -242,6 +278,48 @@ const submitQuestionnaireResponses = asyncHandler(async (req, res) => {
       response_metadata: r.metadata || {},
       created_by: req.user.id
     }));
+
+    // Collect photos to delete (photos that were in old response but not in new)
+    const photosToDelete = [];
+    responses.forEach(newResponse => {
+      const attributeId = newResponse.attributeId;
+      const oldPhotos = existingPhotosMap[attributeId] || [];
+      const newPhotos = (newResponse.metadata && newResponse.metadata.photos) || [];
+      
+      // Extract paths from new photos
+      const newPhotoPaths = newPhotos.map(photo => {
+        if (photo.path) {
+          return photo.path;
+        } else if (photo.url && photo.url.includes('/project-files/')) {
+          const urlMatch = photo.url.match(/\/project-files\/(.+)$/);
+          if (urlMatch) {
+            return decodeURIComponent(urlMatch[1]);
+          }
+        }
+        return null;
+      }).filter(path => path !== null);
+
+      // Find photos that were removed
+      oldPhotos.forEach(oldPath => {
+        if (!newPhotoPaths.includes(oldPath)) {
+          photosToDelete.push(oldPath);
+        }
+      });
+    });
+
+    // Delete removed photos from storage
+    if (photosToDelete.length > 0) {
+      const { error: storageError } = await supabaseAdmin.storage
+        .from('project-files')
+        .remove(photosToDelete);
+
+      if (storageError) {
+        console.error('Error deleting removed photos from storage:', storageError);
+        // Continue with response save even if photo deletion fails
+      } else {
+        console.log(`Successfully deleted ${photosToDelete.length} removed photo(s) from storage`);
+      }
+    }
 
     // Upsert responses (insert or update if exists)
     const { data: savedResponses, error: upsertError } = await req.supabase
@@ -259,14 +337,11 @@ const submitQuestionnaireResponses = asyncHandler(async (req, res) => {
       });
     }
 
-    // Photos are already saved in response_metadata.photos in questionnaire_responses table
-    // No need to save to separate attribute_photos table since it doesn't exist
-    // The photos are stored in the response_metadata JSON field during the upsert above
-
     res.status(200).json({
       success: true,
       message: 'Responses saved successfully',
-      data: savedResponses
+      data: savedResponses,
+      deletedPhotos: photosToDelete.length
     });
 
   } catch (error) {
@@ -316,9 +391,100 @@ const getProjectResponses = asyncHandler(async (req, res) => {
   }
 });
 
+// @desc    Delete questionnaire response and associated photos
+// @route   DELETE /api/questionnaire/:projectId/asset/:assetId/response/:responseId
+// @access  Private
+const deleteQuestionnaireResponse = asyncHandler(async (req, res) => {
+  const { projectId, assetId, responseId } = req.params;
+
+  try {
+    // First, get the response to extract photo paths
+    const { data: response, error: fetchError } = await req.supabase
+      .from('questionnaire_responses')
+      .select('*')
+      .eq('id', responseId)
+      .eq('asset_id', assetId)
+      .eq('project_id', projectId)
+      .single();
+
+    if (fetchError || !response) {
+      return res.status(404).json({
+        success: false,
+        error: 'Questionnaire response not found'
+      });
+    }
+
+    // Extract photo paths from response_metadata
+    const photosToDelete = [];
+    if (response.response_metadata && response.response_metadata.photos) {
+      const photos = response.response_metadata.photos;
+      if (Array.isArray(photos)) {
+        photos.forEach(photo => {
+          // Photo path can be in photo.path or extracted from photo.url
+          if (photo.path) {
+            photosToDelete.push(photo.path);
+          } else if (photo.url && photo.url.includes('/project-files/')) {
+            // Extract path from URL if path is not available
+            const urlMatch = photo.url.match(/\/project-files\/(.+)$/);
+            if (urlMatch) {
+              photosToDelete.push(decodeURIComponent(urlMatch[1]));
+            }
+          }
+        });
+      }
+    }
+
+    // Delete photos from storage bucket
+    if (photosToDelete.length > 0) {
+      const { error: storageError } = await supabaseAdmin.storage
+        .from('project-files')
+        .remove(photosToDelete);
+
+      if (storageError) {
+        console.error('Error deleting photos from storage:', storageError);
+        // Continue with response deletion even if photo deletion fails
+        // Log the error but don't fail the request
+      } else {
+        console.log(`Successfully deleted ${photosToDelete.length} photo(s) from storage`);
+      }
+    }
+
+    // Delete the response from the database
+    const { error: deleteError } = await req.supabase
+      .from('questionnaire_responses')
+      .delete()
+      .eq('id', responseId)
+      .eq('asset_id', assetId)
+      .eq('project_id', projectId);
+
+    if (deleteError) {
+      console.error('Error deleting questionnaire response:', deleteError);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to delete questionnaire response',
+        details: deleteError.message
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Questionnaire response and associated photos deleted successfully',
+      deletedPhotos: photosToDelete.length
+    });
+
+  } catch (error) {
+    console.error('Error in deleteQuestionnaireResponse:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error'
+    });
+  }
+});
+
 export {
   getAssetQuestionnaire,
   submitQuestionnaireResponses,
-  getProjectResponses
+  getProjectResponses,
+  deleteQuestionnaireResponse
 };
 

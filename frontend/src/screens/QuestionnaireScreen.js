@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import questionnaireService from '../services/questionnaireService';
 import { getHierarchy } from '../features/projects/projectSlice';
-import { useIsMounted } from '../hooks/useIsMounted';
+import { useRouteMount } from '../contexts/RouteMountContext';
 import useClickOutside from '../hooks/useClickOutside';
 import '../styles/questionnaire.css';
 
@@ -22,7 +22,7 @@ const QuestionnaireScreen = () => {
   const [collapsedSections, setCollapsedSections] = useState({});
   const [assetSearchText, setAssetSearchText] = useState('');
   const [showAssetDropdown, setShowAssetDropdown] = useState(false);
-  const { isMounted } = useIsMounted();
+  const { isRouteMounted } = useRouteMount();
   const dropdownRef = useClickOutside(() => {
     if (showAssetDropdown) {
       setShowAssetDropdown(false);
@@ -35,7 +35,8 @@ const QuestionnaireScreen = () => {
       dispatch(getHierarchy(selectedProject.id));
       loadAssetTypes();
     }
-  }, [selectedProject, dispatch, user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedProject, dispatch, user]); // loadAssetTypes is stable and doesn't need to be in deps
 
   // Load asset types from backend
   const loadAssetTypes = async () => {
@@ -47,11 +48,11 @@ const QuestionnaireScreen = () => {
         user.token
       );
 
-      if (response.success && isMounted()) {
+      if (response.success && isRouteMounted()) {
         setAssetTypes(response.data || []);
       }
     } catch (error) {
-      if (isMounted()) {
+      if (isRouteMounted()) {
         console.error('Error loading asset types:', error);
       }
     }
@@ -67,7 +68,7 @@ const QuestionnaireScreen = () => {
   // Load questionnaire when asset is selected
   const handleAssetSelect = async (assetId) => {
     if (!assetId || !selectedProject) {
-      if (isMounted()) {
+      if (isRouteMounted()) {
         setSelectedAsset(null);
         setQuestionnaireData(null);
         setResponses({});
@@ -75,7 +76,7 @@ const QuestionnaireScreen = () => {
       return;
     }
     
-    if (isMounted()) {
+    if (isRouteMounted()) {
       setLoading(true);
     }
     
@@ -86,7 +87,7 @@ const QuestionnaireScreen = () => {
         user.token
       );
 
-      if (data.success && isMounted()) {
+      if (data.success && isRouteMounted()) {
         setQuestionnaireData(data.data);
         setSelectedAsset(data.data.asset);
         
@@ -110,11 +111,11 @@ const QuestionnaireScreen = () => {
         setResponses(initialResponses);
       }
     } catch (error) {
-      if (isMounted()) {
+      if (isRouteMounted()) {
         console.error('Error loading questionnaire:', error);
       }
     } finally {
-      if (isMounted()) {
+      if (isRouteMounted()) {
         setLoading(false);
       }
     }

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { getHierarchy, deleteFeature, getFeatureTypes, reset, uploadHierarchyFile, importHierarchyData, createFeatureType } from '../features/projects/projectSlice';
-import { useIsMounted } from '../hooks/useIsMounted';
+import { useRouteMount } from '../contexts/RouteMountContext';
 import useProjectData from '../hooks/useProjectData';
 import HierarchyTree from '../components/structure/HierarchyTree';
 import HierarchyForm from '../components/structure/HierarchyForm';
@@ -19,7 +19,7 @@ const HierarchyScreen = () => {
     const [parsedData, setParsedData] = useState(null);
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
-    const { isMounted } = useIsMounted();
+    const { isRouteMounted } = useRouteMount();
 
     useEffect(() => {
         if (selectedProject && user) {
@@ -39,11 +39,11 @@ const HierarchyScreen = () => {
             })).unwrap();
             
             // Clear selected item if the deleted item was selected
-            if (isMounted() && selectedItem && selectedItem.id === itemId) {
+            if (isRouteMounted() && selectedItem && selectedItem.id === itemId) {
                 setSelectedItem(null);
             }
         } catch (error) {
-            if (isMounted()) {
+            if (isRouteMounted()) {
                 setError('Failed to delete hierarchy item. Please try again.');
             }
         }
@@ -66,12 +66,12 @@ const HierarchyScreen = () => {
             })).unwrap();
             
             // Store parsed data and show preview modal
-            if (isMounted()) {
+            if (isRouteMounted()) {
                 setParsedData(result.data);
                 setIsPreviewModalOpen(true);
             }
         } catch (error) {
-            if (isMounted()) {
+            if (isRouteMounted()) {
                 setError(error || 'Failed to parse file');
                 throw new Error(error || 'Failed to parse file');
             }
@@ -220,7 +220,7 @@ const HierarchyScreen = () => {
             
             // Show success message
             const { imported, total, errors } = result.data;
-            if (isMounted()) {
+            if (isRouteMounted()) {
                 if (errors && errors.length > 0) {
                     setError(`Import completed with warnings: ${imported}/${total} items imported successfully. Errors: ${errors.slice(0, 5).map(e => `Row ${e.row}: ${e.error}`).join(', ')}`);
                 } else {
@@ -228,7 +228,7 @@ const HierarchyScreen = () => {
                 }
             }
         } catch (error) {
-            if (isMounted()) {
+            if (isRouteMounted()) {
                 setError(error || 'Failed to import data');
             }
             throw new Error(error || 'Failed to import data');
