@@ -4,6 +4,7 @@ import questionnaireService from '../services/questionnaireService';
 import { getHierarchy } from '../features/projects/projectSlice';
 import { useRouteMount } from '../contexts/RouteMountContext';
 import useClickOutside from '../hooks/useClickOutside';
+import useDebouncedAsync from '../hooks/useDebouncedAsync';
 import '../styles/questionnaire.css';
 
 const QuestionnaireScreen = () => {
@@ -29,34 +30,57 @@ const QuestionnaireScreen = () => {
     }
   }, showAssetDropdown);
 
-  // Load assets and asset types for the project
-  useEffect(() => {
-    if (selectedProject && user) {
+  // Load assets for the project (debounced to prevent excessive calls)
+  useDebouncedAsync(
+    async () => {
+      if (!selectedProject || !user) return;
       dispatch(getHierarchy(selectedProject.id));
-      loadAssetTypes();
+    },
+    [selectedProject?.id, user?.id],
+    {
+      delay: 300,
+      shouldRun: (deps) => {
+        const [projectId, userId] = deps;
+        return !!(projectId && userId);
+      },
+      skipInitialRun: false
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedProject, dispatch, user]); // loadAssetTypes is stable and doesn't need to be in deps
+  );
 
-  // Load asset types from backend
-  const loadAssetTypes = async () => {
-    if (!selectedProject || !user) return;
+  // Load asset types from backend (debounced to prevent excessive calls)
+  useDebouncedAsync(
+    async () => {
+      if (!selectedProject || !user) return;
 
-    try {
-      const response = await questionnaireService.getAssetTypes(
-        selectedProject.id,
-        user.token
-      );
+      try {
+        const response = await questionnaireService.getAssetTypes(
+          selectedProject.id,
+          user.token
+        );
 
-      if (response.success && isRouteMounted()) {
-        setAssetTypes(response.data || []);
+        if (response.success && isRouteMounted()) {
+          setAssetTypes(response.data || []);
+        }
+      } catch (error) {
+        if (isRouteMounted()) {
+          console.error('Error loading asset types:', error);
+        }
       }
-    } catch (error) {
-      if (isRouteMounted()) {
-        console.error('Error loading asset types:', error);
+    },
+    [selectedProject?.id, user?.token],
+    {
+      delay: 300,
+      shouldRun: (deps) => {
+        const [projectId, token] = deps;
+        return !!(projectId && token);
+      },
+      onError: (error) => {
+        if (isRouteMounted()) {
+          console.error('Error loading asset types:', error);
+        }
       }
     }
-  };
+  );
 
   // Update assets when hierarchy changes
   useEffect(() => {

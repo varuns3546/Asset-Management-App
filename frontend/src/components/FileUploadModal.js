@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import Modal from './Modal';
 import * as fileService from '../services/fileService';
+import useDebouncedAsync from '../hooks/useDebouncedAsync';
 import '../styles/modal.css';
 
 const FileUploadModal = ({ isOpen, onClose, onFileSelect, projectId }) => {
@@ -22,13 +23,7 @@ const FileUploadModal = ({ isOpen, onClose, onFileSelect, projectId }) => {
         '.tsv'
     ];
 
-    // Load cloud files when switching to cloud tab
-    useEffect(() => {
-        if (isOpen && activeTab === 'cloud' && projectId) {
-            loadCloudFiles();
-        }
-    }, [isOpen, activeTab, projectId]);
-
+    // Function to load cloud files (extracted for reuse)
     const loadCloudFiles = async () => {
         if (!projectId) return;
         
@@ -47,6 +42,23 @@ const FileUploadModal = ({ isOpen, onClose, onFileSelect, projectId }) => {
             setLoadingCloudFiles(false);
         }
     };
+
+    // Load cloud files when switching to cloud tab (debounced to prevent excessive calls)
+    const { execute: executeLoadCloudFiles } = useDebouncedAsync(
+        loadCloudFiles,
+        [isOpen, activeTab, projectId],
+        {
+            delay: 300,
+            shouldRun: (deps) => {
+                const [open, tab, pid] = deps;
+                return !!(open && tab === 'cloud' && pid);
+            },
+            onError: (err) => {
+                console.error('Error loading cloud files:', err);
+                setError('Failed to load cloud files');
+            }
+        }
+    );
 
     const handleFileChange = (e) => {
         const newFiles = Array.from(e.target.files);

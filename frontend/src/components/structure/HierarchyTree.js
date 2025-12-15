@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import '../../styles/structureTree.css'
 const TreeNode = ({ node, level = 0, onRemove, onItemClick, isItemType = false, isTopLevelItemType = false }) => {
     // Start expanded for top-level item types, collapsed for hierarchy items with children
@@ -103,6 +103,13 @@ const HierarchyTree = ({ hierarchyItems, onRemoveItem, onItemClick, itemTypes = 
     const [zoomLevel, setZoomLevel] = useState(100)
     const [selectedTypeFilter, setSelectedTypeFilter] = useState(null)
     const treeContentRef = useRef(null)
+    const scrollWrapperRef = useRef(null)
+    const filteredContainerRef = useRef(null)
+
+    // Prevent scroll from propagating to parent
+    const handleScroll = (e) => {
+        e.stopPropagation()
+    }
 
 
     // Calculate dynamic spacing and sizing based on zoom level
@@ -124,12 +131,18 @@ const HierarchyTree = ({ hierarchyItems, onRemoveItem, onItemClick, itemTypes = 
         if (!selectedTypeFilter) {
             return items
         }
+        // Handle uncategorized filter
+        if (selectedTypeFilter === 'uncategorized') {
+            return items.filter(item => !item.item_type_id)
+        }
         return items.filter(item => item.item_type_id === selectedTypeFilter)
     }
 
     // Get unique item types from hierarchy items
     const getItemTypesFromHierarchy = () => {
         const typeMap = new Map()
+        let uncategorizedCount = 0
+        
         hierarchyItems.forEach(item => {
             if (item.item_type_id) {
                 const itemType = itemTypes.find(type => type.id === item.item_type_id)
@@ -143,9 +156,24 @@ const HierarchyTree = ({ hierarchyItems, onRemoveItem, onItemClick, itemTypes = 
                     }
                     typeMap.get(item.item_type_id).count++
                 }
+            } else {
+                // Count items without types
+                uncategorizedCount++
             }
         })
-        return Array.from(typeMap.values())
+        
+        const types = Array.from(typeMap.values())
+        
+        // Add uncategorized option if there are items without types
+        if (uncategorizedCount > 0) {
+            types.push({
+                id: 'uncategorized',
+                title: 'Uncategorized (No Type)',
+                count: uncategorizedCount
+            })
+        }
+        
+        return types
     }
 
     // Build tree structure from flat items array
@@ -188,6 +216,18 @@ const HierarchyTree = ({ hierarchyItems, onRemoveItem, onItemClick, itemTypes = 
             })
         })
         
+        // Create a special "Uncategorized" node for items without types
+        const uncategorizedNodeId = 'uncategorized'
+        const uncategorizedNode = {
+            id: uncategorizedNodeId,
+            title: 'Uncategorized (No Type)',
+            item_type_id: null,
+            children: [],
+            isItemType: true,
+            originalType: null
+        }
+        itemTypeMap.set(uncategorizedNodeId, uncategorizedNode)
+        
         // Build item type parent-child relationships
         itemTypes.forEach(type => {
             const typeNode = itemTypeMap.get(type.id)
@@ -227,16 +267,25 @@ const HierarchyTree = ({ hierarchyItems, onRemoveItem, onItemClick, itemTypes = 
                 // This is a root item - attach to its item type node
                 if (item.item_type_id && itemTypeMap.has(item.item_type_id)) {
                     itemTypeMap.get(item.item_type_id).children.push(itemNode)
+                } else if (!item.item_type_id) {
+                    // Item has no type - attach to uncategorized node
+                    uncategorizedNode.children.push(itemNode)
                 }
             }
         })
         
-        // Remove item type nodes that have no children
+        // Add uncategorized node to roots if it has children
+        if (uncategorizedNode.children.length > 0) {
+            itemTypeRoots.push(uncategorizedNode)
+        }
+        
+        // Remove item type nodes that have no children (except uncategorized)
         const pruneEmptyTypes = (nodes) => {
             return nodes.filter(node => {
                 if (node.isItemType) {
                     node.children = pruneEmptyTypes(node.children)
-                    return node.children.length > 0
+                    // Keep uncategorized node even if empty, or keep if it has children
+                    return node.id === uncategorizedNodeId || node.children.length > 0
                 }
                 return true
             })
@@ -262,12 +311,55 @@ const HierarchyTree = ({ hierarchyItems, onRemoveItem, onItemClick, itemTypes = 
     }
 
     const filteredItems = getFilteredItems(hierarchyItems)
-    // Use buildTreeWithItemTypes to show item type hierarchy
-    const treeData = buildTreeWithItemTypes(filteredItems)
+    // Use buildTree to show regular hierarchy (not grouped by item types)
+    const treeData = buildTree(filteredItems)
     const availableTypes = getItemTypesFromHierarchy()
     
-    // Debug logging
-
+    // Calculate and apply uniform width to all nodes
+    useEffect(() => {
+        // Wait for DOM to update
+        const timeoutId = setTimeout(() => {
+            const nodeContents = document.querySelectorAll('.node-content')
+            if (nodeContents.length === 0) return
+            
+            let maxWidth = 0
+            
+            // First, temporarily remove width constraints to measure natural width
+            nodeContents.forEach(node => {
+                const originalWidth = node.style.width
+                const originalMinWidth = node.style.minWidth
+                const originalMaxWidth = node.style.maxWidth
+                
+                // Remove constraints to measure natural width
+                node.style.width = 'auto'
+                node.style.minWidth = '0'
+                node.style.maxWidth = 'none'
+                
+                // Measure the scroll width (includes all content)
+                const width = node.scrollWidth
+                if (width > maxWidth) {
+                    maxWidth = width
+                }
+                
+                // Restore original styles
+                node.style.width = originalWidth
+                node.style.minWidth = originalMinWidth
+                node.style.maxWidth = originalMaxWidth
+            })
+            
+            // Apply the maximum width to all nodes (with some padding for safety)
+            if (maxWidth > 0) {
+                const uniformWidth = Math.max(maxWidth + 4, dynamicStyles.nodeMinWidth) // Add 4px padding, but respect min width
+                nodeContents.forEach(node => {
+                    node.style.width = `${uniformWidth}px`
+                    node.style.minWidth = `${uniformWidth}px`
+                    node.style.maxWidth = `${uniformWidth}px`
+                })
+            }
+        }, 100) // Small delay to ensure DOM is updated
+        
+        return () => clearTimeout(timeoutId)
+    }, [treeData, zoomLevel, selectedTypeFilter, isTreeExpanded, dynamicStyles.nodeMinWidth])
     
     // If no item types are loaded, show a message about creating them
     if (itemTypes?.length === 0) {
@@ -341,9 +433,47 @@ const HierarchyTree = ({ hierarchyItems, onRemoveItem, onItemClick, itemTypes = 
                         </div>
                     )}
                 </div>
+                {/* Show filtered items in the gray section when filter is active */}
+                {selectedTypeFilter && isTreeExpanded && (
+                    <div 
+                        className="filtered-items-container"
+                        ref={filteredContainerRef}
+                        onWheel={handleScroll}
+                        onScroll={handleScroll}
+                    >
+                        <div 
+                            ref={treeContentRef}
+                            className="filtered-tree-content"
+                            style={{ 
+                                '--node-min-width': `${dynamicStyles.nodeMinWidth}px`,
+                                '--node-gap': `${dynamicStyles.nodeGap}px`,
+                                '--node-padding': `${dynamicStyles.nodePadding}px`,
+                                '--node-font-size': `${dynamicStyles.fontSize}px`,
+                                '--vertical-gap': `${dynamicStyles.verticalGap}px`,
+                            }}
+                        >
+                            {treeData.map(rootNode => (
+                                <TreeNode 
+                                    key={rootNode.id} 
+                                    node={rootNode}
+                                    onRemove={onRemoveItem}
+                                    onItemClick={onItemClick}
+                                    isItemType={rootNode.isItemType}
+                                    isTopLevelItemType={rootNode.isItemType}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
-            {isTreeExpanded && (
-                <div className="tree-scroll-wrapper">
+            {/* Show full tree only when no filter is active */}
+            {!selectedTypeFilter && isTreeExpanded && (
+                <div 
+                    className="tree-scroll-wrapper"
+                    ref={scrollWrapperRef}
+                    onWheel={handleScroll}
+                    onScroll={handleScroll}
+                >
                     <div 
                         ref={treeContentRef}
                         className="tree-content"

@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux';
 import { getFeatureTypes, deleteFeatureType, reset } from '../features/projects/projectSlice';
 import { useRouteMount } from '../contexts/RouteMountContext';
 import useProjectData from '../hooks/useProjectData';
+import useDebouncedAsync from '../hooks/useDebouncedAsync';
 import AssetTypeForm from '../components/structure/AssetTypeForm';
 import AssetTypeTree from '../components/structure/AssetTypeTree';
 import ErrorMessage from '../components/forms/ErrorMessage';
@@ -16,15 +17,31 @@ const AssetTypeScreen = () => {
     const { isRouteMounted } = useRouteMount();
 
 
-    useEffect(() => {
-        if (selectedProject && user) {
+    // Load feature types (debounced to prevent excessive calls)
+    useDebouncedAsync(
+        async () => {
+            if (!selectedProject || !user) return;
+            
             dispatch(reset());
             dispatch(getFeatureTypes(selectedProject.id));
+        },
+        [selectedProject?.id, user?.id],
+        {
+            delay: 300,
+            shouldRun: (deps) => {
+                const [projectId, userId] = deps;
+                return !!(projectId && userId);
+            },
+            skipInitialRun: false
         }
+    );
+
+    // Cleanup on unmount
+    useEffect(() => {
         return () => {
             dispatch(reset());
-        }
-    }, [selectedProject, user, dispatch]);
+        };
+    }, [dispatch]);
 
     const handleRemoveAssetType = async (assetTypeId) => {
         setError('');

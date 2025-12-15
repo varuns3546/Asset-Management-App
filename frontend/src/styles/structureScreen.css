@@ -178,15 +178,9 @@
 /* Tree Panel */
 .hierarchy-tree-container {
     height: 100%;
+    width: 100%;
     display: flex;
     flex-direction: column;
-}
-
-.hierarchy-tree-content {
-    flex: 1;
-    position: relative;
-    min-width: 0;
-    min-height: 0;
 }
 
 .no-hierarchy-selected {

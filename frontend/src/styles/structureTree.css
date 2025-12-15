@@ -4,10 +4,13 @@
     border: 1px solid #dee2e6;
     overflow: hidden;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    min-height: 80vh;
     display: grid;
-    grid-template-rows: auto 1fr;
-    height: 80vh;
+    grid-template-rows: auto auto 1fr; /* Added auto for type-filter-section */
+    height: 100%;
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+    overscroll-behavior: contain; /* Prevent scroll chaining to parent */
 }
 
 .tree-controls {
@@ -163,6 +166,30 @@
     padding: 8px 0;
 }
 
+/* Filtered items container - shows items in the gray filter section */
+.filtered-items-container {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #dee2e6;
+    max-height: 400px;
+    overflow-y: auto;
+    overscroll-behavior: contain; /* Prevent scroll chaining to parent */
+}
+
+.filtered-tree-content {
+    padding: 10px 0 30px 0; /* Extra bottom padding to prevent items from being covered */
+    position: relative;
+    --node-min-width: 120px;
+    --node-gap: 18px;
+    --node-padding: 8px;
+    --node-font-size: 14px;
+    --vertical-gap: 20px;
+    transform-origin: top left;
+    box-sizing: border-box;
+    min-width: max-content;
+    min-height: max-content;
+}
+
 /* Scroll wrapper for tree content */
 .tree-scroll-wrapper {
     width: 100%;
@@ -172,11 +199,13 @@
     display: grid;
     grid-template-rows: 1fr;
     min-height: 0;
+    padding-bottom: 20px; /* Extra padding at bottom to prevent items from being cut off */
+    overscroll-behavior: contain; /* Prevent scroll chaining to parent */
 }
 
 /* Add CSS custom properties support to tree-content */
 .tree-content {
-    padding: 20px;
+    padding: 20px 20px 40px 20px; /* Extra bottom padding to prevent items from being covered */
     position: relative;
     /* Default values that will be overridden by JavaScript */
     --node-min-width: 120px;
@@ -401,12 +430,15 @@
     border: 1px solid #dee2e6;
     border-radius: 8px;
     transition: all 0.2s ease;
-    min-width: var(--node-min-width); /* Dynamic min-width */
+    min-width: var(--node-min-width); /* Minimum width for consistency */
+    width: var(--node-min-width); /* Default width, will be overridden by JS */
+    max-width: none; /* Allow JavaScript to set max-width */
     justify-content: space-between;
     position: relative;
     z-index: 2;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     gap: 8px;
+    box-sizing: border-box; /* Include padding and border in width calculation */
 }
 
 
@@ -429,6 +461,9 @@
     color: #333;
     font-size: var(--node-font-size); /* Dynamic font size */
     flex: 1;
+    white-space: normal; /* Allow text to wrap if needed */
+    word-wrap: break-word; /* Break long words if necessary */
+    overflow-wrap: break-word; /* Modern property for word breaking */
 }
 
 .node-indicators {

@@ -259,7 +259,7 @@ const MapReadyTracker = ({ targetCenter, onMapReady }) => {
         return;
       }
 
-      // Only check periodically as a true fallback (very infrequent)
+      // Only check periodically as a true fallback (very infrequent - increased interval to reduce performance impact)
       checkInterval = setInterval(() => {
         try {
           checkIfReady();
@@ -269,7 +269,7 @@ const MapReadyTracker = ({ targetCenter, onMapReady }) => {
             clearInterval(checkInterval);
           }
         }
-      }, 1000);
+      }, 2000); // Increased from 1000ms to 2000ms to reduce performance impact
 
       // Fallback: hide spinner after max delay (increased to give more time)
       timeoutId = setTimeout(() => {
@@ -357,6 +357,27 @@ const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, featu
   const getFeatureTypeName = (feature) => {
     const typeInfo = featureTypeMap[feature.item_type_id];
     return typeInfo?.title || 'Unknown Type';
+  };
+
+  // Convert background color to 30% opacity
+  const getLabelBackgroundColor = (bgColor) => {
+    if (!bgColor) return 'rgba(255, 255, 255, 0.3)';
+    
+    // If it's already rgba, extract RGB values and set alpha to 0.3
+    const rgbaMatch = bgColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
+    if (rgbaMatch) {
+      return `rgba(${rgbaMatch[1]}, ${rgbaMatch[2]}, ${rgbaMatch[3]}, 0.3)`;
+    }
+    // If it's hex, convert to rgba with 0.3 opacity
+    const hexMatch = bgColor.match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i);
+    if (hexMatch) {
+      const r = parseInt(hexMatch[1], 16);
+      const g = parseInt(hexMatch[2], 16);
+      const b = parseInt(hexMatch[3], 16);
+      return `rgba(${r}, ${g}, ${b}, 0.3)`;
+    }
+    // Fallback: return default
+    return 'rgba(255, 255, 255, 0.3)';
   };
 
   // Reset loading state only when coordinates change (new project), not when basemap changes
@@ -458,17 +479,12 @@ const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, featu
                 direction="right" 
                 offset={[8, 0]}
                 className="feature-label"
-                style={{
-                  backgroundColor: 'transparent',
-                  border: 'none',
-                  boxShadow: 'none',
-                  padding: 0
-                }}
+                interactive={false}
               >
                 <span style={{ 
                   fontSize: `${labelFontSize}px`, 
                   color: labelColor,
-                  backgroundColor: labelBackgroundColor,
+                  backgroundColor: getLabelBackgroundColor(labelBackgroundColor),
                   padding: '2px 6px',
                   borderRadius: '3px',
                   display: 'inline-block'
@@ -514,6 +530,26 @@ const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, featu
                   weight: 2
                 }}
               >
+                {showLabels && (
+                  <Tooltip 
+                    permanent 
+                    direction="right" 
+                    offset={[8, 0]}
+                    className="feature-label"
+                    interactive={false}
+                  >
+                    <span style={{ 
+                      fontSize: `${labelFontSize}px`, 
+                      color: labelColor,
+                      backgroundColor: getLabelBackgroundColor(labelBackgroundColor),
+                      padding: '2px 6px',
+                      borderRadius: '3px',
+                      display: 'inline-block'
+                    }}>
+                      {feature.name || feature.properties?.title || 'Unnamed'}
+                    </span>
+                  </Tooltip>
+                )}
                 <Popup>
                   <div style={{ minWidth: '150px' }}>
                     <strong style={{ fontSize: '14px' }}>{feature.name || 'Unnamed'}</strong>
@@ -531,65 +567,131 @@ const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, featu
             );
           } else if (layer.geometryType === 'line' || layer.geometryType === 'linestring') {
             // Line feature - coordinates are already [lat, lng] arrays
+            // Get midpoint for label placement
+            const midIndex = Math.floor(feature.coordinates.length / 2);
+            const labelPosition = feature.coordinates[midIndex] || feature.coordinates[0];
             return (
-              <Polyline
-                key={`layer-${layer.id}-feature-${feature.id}`}
-                positions={feature.coordinates}
-                pathOptions={{
-                  color: layerColor,
-                  weight: 3,
-                  opacity: 0.8
-                }}
-              >
-                <Popup>
-                  <div style={{ minWidth: '150px' }}>
-                    <strong style={{ fontSize: '14px' }}>{feature.name || 'Unnamed'}</strong>
-                    <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-                      Layer: {layer.name}
-                    </div>
-                    <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>
-                      Points: {feature.coordinates.length}
-                    </div>
-                    {Object.entries(feature.properties || {}).map(([key, value]) => (
-                      <div key={key} style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>
-                        {key}: {value}
+              <>
+                <Polyline
+                  key={`layer-${layer.id}-feature-${feature.id}`}
+                  positions={feature.coordinates}
+                  pathOptions={{
+                    color: layerColor,
+                    weight: 3,
+                    opacity: 0.8
+                  }}
+                >
+                  <Popup>
+                    <div style={{ minWidth: '150px' }}>
+                      <strong style={{ fontSize: '14px' }}>{feature.name || 'Unnamed'}</strong>
+                      <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                        Layer: {layer.name}
                       </div>
-                    ))}
-                  </div>
-                </Popup>
-              </Polyline>
+                      <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>
+                        Points: {feature.coordinates.length}
+                      </div>
+                      {Object.entries(feature.properties || {}).map(([key, value]) => (
+                        <div key={key} style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>
+                          {key}: {value}
+                        </div>
+                      ))}
+                    </div>
+                  </Popup>
+                </Polyline>
+                {showLabels && (
+                  <CircleMarker
+                    key={`layer-${layer.id}-feature-${feature.id}-label`}
+                    center={labelPosition}
+                    radius={0}
+                    pathOptions={{ fillOpacity: 0, opacity: 0 }}
+                  >
+                    <Tooltip 
+                      permanent 
+                      direction="right" 
+                      offset={[8, 0]}
+                      className="feature-label"
+                      interactive={false}
+                    >
+                      <span style={{ 
+                        fontSize: `${labelFontSize}px`, 
+                        color: labelColor,
+                        backgroundColor: labelBackgroundColor,
+                        padding: '2px 6px',
+                        borderRadius: '3px',
+                        display: 'inline-block'
+                      }}>
+                        {feature.name || feature.properties?.title || 'Unnamed'}
+                      </span>
+                    </Tooltip>
+                  </CircleMarker>
+                )}
+              </>
             );
           } else if (layer.geometryType === 'polygon') {
             // Polygon feature - coordinates are already [lat, lng] arrays
+            // Calculate centroid for label placement (simple average of first ring)
+            const ring = feature.coordinates[0] || feature.coordinates;
+            const latSum = ring.reduce((sum, coord) => sum + coord[0], 0);
+            const lngSum = ring.reduce((sum, coord) => sum + coord[1], 0);
+            const centroid = [latSum / ring.length, lngSum / ring.length];
             return (
-              <Polygon
-                key={`layer-${layer.id}-feature-${feature.id}`}
-                positions={feature.coordinates}
-                pathOptions={{
-                  fillColor: layerColor,
-                  fillOpacity: 0.4,
-                  color: layerColor,
-                  weight: 2,
-                  opacity: 0.8
-                }}
-              >
-                <Popup>
-                  <div style={{ minWidth: '150px' }}>
-                    <strong style={{ fontSize: '14px' }}>{feature.name || 'Unnamed'}</strong>
-                    <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-                      Layer: {layer.name}
-                    </div>
-                    <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>
-                      Points: {feature.coordinates.length}
-                    </div>
-                    {Object.entries(feature.properties || {}).map(([key, value]) => (
-                      <div key={key} style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>
-                        {key}: {value}
+              <>
+                <Polygon
+                  key={`layer-${layer.id}-feature-${feature.id}`}
+                  positions={feature.coordinates}
+                  pathOptions={{
+                    fillColor: layerColor,
+                    fillOpacity: 0.4,
+                    color: layerColor,
+                    weight: 2,
+                    opacity: 0.8
+                  }}
+                >
+                  <Popup>
+                    <div style={{ minWidth: '150px' }}>
+                      <strong style={{ fontSize: '14px' }}>{feature.name || 'Unnamed'}</strong>
+                      <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                        Layer: {layer.name}
                       </div>
-                    ))}
-                  </div>
-                </Popup>
-              </Polygon>
+                      <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>
+                        Points: {ring.length}
+                      </div>
+                      {Object.entries(feature.properties || {}).map(([key, value]) => (
+                        <div key={key} style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>
+                          {key}: {value}
+                        </div>
+                      ))}
+                    </div>
+                  </Popup>
+                </Polygon>
+                {showLabels && (
+                  <CircleMarker
+                    key={`layer-${layer.id}-feature-${feature.id}-label`}
+                    center={centroid}
+                    radius={0}
+                    pathOptions={{ fillOpacity: 0, opacity: 0 }}
+                  >
+                    <Tooltip 
+                      permanent 
+                      direction="center" 
+                      offset={[0, 0]}
+                      className="feature-label"
+                      interactive={false}
+                    >
+                      <span style={{ 
+                        fontSize: `${labelFontSize}px`, 
+                        color: labelColor,
+                        backgroundColor: labelBackgroundColor,
+                        padding: '2px 6px',
+                        borderRadius: '3px',
+                        display: 'inline-block'
+                      }}>
+                        {feature.name || feature.properties?.title || 'Unnamed'}
+                      </span>
+                    </Tooltip>
+                  </CircleMarker>
+                )}
+              </>
             );
           }
           return null;
