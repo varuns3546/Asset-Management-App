@@ -670,6 +670,18 @@ export const projectSlice = createSlice({
             .addCase(updateFeatureType.fulfilled, (state, action) => {
                 state.isLoading = false
                 state.isSuccess = true
+                // Update the feature type in currentFeatureTypes array
+                if (state.currentFeatureTypes && action.payload.data) {
+                    const updatedIndex = state.currentFeatureTypes.findIndex(
+                        ft => ft.id === action.payload.data.id
+                    )
+                    if (updatedIndex !== -1) {
+                        state.currentFeatureTypes[updatedIndex] = action.payload.data
+                    } else {
+                        // If not found, add it (shouldn't happen, but just in case)
+                        state.currentFeatureTypes.push(action.payload.data)
+                    }
+                }
             })
             .addCase(updateFeatureType.rejected, (state, action) => {
                 state.isLoading = false

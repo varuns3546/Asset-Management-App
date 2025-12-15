@@ -92,6 +92,42 @@
     overflow-y: auto;
 }
 
+/* Style Layer Modal Styles - Smaller modal */
+.content:has(.style-layer-modal) {
+    max-width: 500px;
+}
+
+.content:has(.style-layer-modal) .header {
+    padding: 20px 24px;
+}
+
+.content:has(.style-layer-modal) .title {
+    font-size: 1.5rem;
+}
+
+.content:has(.style-layer-modal) .close-btn {
+    font-size: 1.75rem;
+}
+
+.content:has(.style-layer-modal) .body {
+    padding: 24px;
+}
+
+/* Symbol button styles */
+.symbol-btn {
+    border: 2px solid #ccc !important;
+}
+
+.symbol-btn:hover {
+    border-color: #007bff !important;
+    background-color: #f0f8ff !important;
+}
+
+.symbol-btn.selected {
+    border-color: #007bff !important;
+    background-color: #e7f3ff !important;
+}
+
 /* Tab Navigation Styles */
 .tab-navigation button {
     transition: all 0.2s ease;

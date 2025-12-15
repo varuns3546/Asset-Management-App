@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
-import { MapContainer, TileLayer, CircleMarker, Popup, Tooltip, useMap, Polyline, Polygon } from 'react-leaflet';
+import { MapContainer, TileLayer, CircleMarker, Popup, Tooltip, useMap, Polyline, Polygon, Marker } from 'react-leaflet';
 import L from 'leaflet';
+import { ITEM_TYPE_ICON_MAP } from '../../constants/itemTypeIcons';
 import 'leaflet/dist/leaflet.css';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import 'react-leaflet-cluster/dist/assets/MarkerCluster.css';
@@ -347,20 +348,101 @@ const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, featu
     );
   }, [features]);
 
-  // Get color for a feature based on its type
-  const getFeatureColor = (feature) => {
+  // Get color for a feature based on its type (memoized)
+  const getFeatureColor = useCallback((feature) => {
     const typeInfo = featureTypeMap[feature.item_type_id];
     return typeInfo?.color || '#3388ff';
-  };
+  }, [featureTypeMap]);
 
-  // Get feature type name
-  const getFeatureTypeName = (feature) => {
+  // Get feature type name (memoized)
+  const getFeatureTypeName = useCallback((feature) => {
     const typeInfo = featureTypeMap[feature.item_type_id];
     return typeInfo?.title || 'Unknown Type';
-  };
+  }, [featureTypeMap]);
 
-  // Convert background color to 30% opacity
-  const getLabelBackgroundColor = (bgColor) => {
+  // Get icon for a feature based on its type
+  const getFeatureIcon = useCallback((feature) => {
+    const typeInfo = featureTypeMap[feature.item_type_id];
+    return typeInfo?.icon || 'marker';
+  }, [featureTypeMap]);
+
+  // Memoized icon cache - create icons once per symbol+color combination
+  const iconCache = useMemo(() => {
+    const MapConstructor = window.Map; // Use window.Map to avoid conflict with component name
+    const cache = new MapConstructor();
+    const allIcons = Object.keys(ITEM_TYPE_ICON_MAP);
+    const commonColors = ['#dc3545', '#fd7e14', '#ffc107', '#198754', '#0dcaf0', '#0d6efd', '#6f42c1', '#3388ff'];
+    
+    // Pre-create icons for common combinations
+    allIcons.forEach(symbol => {
+      commonColors.forEach(color => {
+        const key = `${symbol}:${color}:10`;
+        const iconInfo = ITEM_TYPE_ICON_MAP[symbol] || ITEM_TYPE_ICON_MAP.marker;
+        const symbolChar = iconInfo.preview;
+        
+        cache.set(key, L.divIcon({
+          className: 'custom-marker-icon',
+          html: `<div style="
+            color: ${color};
+            font-size: 20px;
+            text-align: center;
+            line-height: 20px;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
+          ">${symbolChar}</div>`,
+          iconSize: [20, 20],
+          iconAnchor: [10, 10],
+          popupAnchor: [0, -10]
+        }));
+      });
+    });
+    
+    return cache;
+  }, []);
+
+  // Create a custom DivIcon based on symbol type and color (with caching)
+  const createCustomIcon = useCallback((symbol, color, size = 12) => {
+    const key = `${symbol}:${color}:${size}`;
+    
+    // Check cache first
+    if (iconCache.has(key)) {
+      return iconCache.get(key);
+    }
+    
+    // Create new icon if not in cache
+    const iconInfo = ITEM_TYPE_ICON_MAP[symbol] || ITEM_TYPE_ICON_MAP.marker;
+    const symbolChar = iconInfo.preview;
+    
+    const icon = L.divIcon({
+      className: 'custom-marker-icon',
+      html: `<div style="
+        color: ${color};
+        font-size: ${size * 2}px;
+        text-align: center;
+        line-height: ${size * 2}px;
+        width: ${size * 2}px;
+        height: ${size * 2}px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
+      ">${symbolChar}</div>`,
+      iconSize: [size * 2, size * 2],
+      iconAnchor: [size, size],
+      popupAnchor: [0, -size]
+    });
+    
+    // Cache it for future use
+    iconCache.set(key, icon);
+    return icon;
+  }, [iconCache]);
+
+  // Convert background color to 30% opacity (memoized)
+  const getLabelBackgroundColor = useCallback((bgColor) => {
     if (!bgColor) return 'rgba(255, 255, 255, 0.3)';
     
     // If it's already rgba, extract RGB values and set alpha to 0.3
@@ -378,7 +460,7 @@ const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, featu
     }
     // Fallback: return default
     return 'rgba(255, 255, 255, 0.3)';
-  };
+  }, []);
 
   // Reset loading state only when coordinates change (new project), not when basemap changes
   const prevCoordsRef = useRef(projectCoordinates);
@@ -458,21 +540,22 @@ const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, featu
         animate={false}
         spiderfyDistanceMultiplier={2}
       >
-        {featuresWithCoordinates.map(feature => (
-          <CircleMarker
-            key={feature.id}
-            center={[
-              parseFloat(feature.beginning_latitude),
-              parseFloat(feature.beginning_longitude)
-            ]}
-            radius={4}
-            pathOptions={{
-              fillColor: getFeatureColor(feature),
-              fillOpacity: 0.8,
-              color: '#333',
-              weight: 2
-            }}
-          >
+        {featuresWithCoordinates.map(feature => {
+          // Memoize icon and color lookups
+          const featureIcon = getFeatureIcon(feature);
+          const featureColor = getFeatureColor(feature);
+          const customIcon = createCustomIcon(featureIcon, featureColor, 10);
+          const position = [
+            parseFloat(feature.beginning_latitude),
+            parseFloat(feature.beginning_longitude)
+          ];
+          
+          return (
+            <Marker
+              key={feature.id}
+              position={position}
+              icon={customIcon}
+            >
             {showLabels && (
               <Tooltip 
                 permanent 
@@ -505,30 +588,32 @@ const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, featu
                 </div>
               </div>
             </Popup>
-          </CircleMarker>
-        ))}
+            </Marker>
+          );
+        })}
       </MarkerClusterGroup>
 
       {/* Render custom layer features */}
-      {layers.filter(layer => layer.visible).map(layer => {
-        const features = layer.features || []; // Get features from layer object
-        const layerColor = layer.style?.color || '#3388ff';
-        
-        return features.map(feature => {
+      {useMemo(() => {
+        return layers.filter(layer => layer.visible).map(layer => {
+          const features = layer.features || []; // Get features from layer object
+          const layerStyle = layer.style || {};
+          const layerColor = layerStyle.color || '#3388ff';
+          const layerOpacity = layerStyle.opacity ?? 1;
+          const layerWeight = layerStyle.weight ?? 3;
+          const layerSymbol = layerStyle.symbol || 'marker';
+          const customIcon = createCustomIcon(layerSymbol, layerColor, 10);
+          
+          return features.map(feature => {
           if (layer.geometryType === 'point') {
             // Point feature - coordinates are stored as [lat, lng]
             const [lat, lng] = feature.coordinates[0];
+            
             return (
-              <CircleMarker
+              <Marker
                 key={`layer-${layer.id}-feature-${feature.id}`}
-                center={[lat, lng]}
-                radius={6}
-                pathOptions={{
-                  fillColor: layerColor,
-                  fillOpacity: 0.8,
-                  color: '#000',
-                  weight: 2
-                }}
+                position={[lat, lng]}
+                icon={customIcon}
               >
                 {showLabels && (
                   <Tooltip 
@@ -563,7 +648,7 @@ const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, featu
                     ))}
                   </div>
                 </Popup>
-              </CircleMarker>
+              </Marker>
             );
           } else if (layer.geometryType === 'line' || layer.geometryType === 'linestring') {
             // Line feature - coordinates are already [lat, lng] arrays
@@ -577,8 +662,8 @@ const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, featu
                   positions={feature.coordinates}
                   pathOptions={{
                     color: layerColor,
-                    weight: 3,
-                    opacity: 0.8
+                    weight: layerWeight,
+                    opacity: layerOpacity
                   }}
                 >
                   <Popup>
@@ -641,10 +726,10 @@ const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, featu
                   positions={feature.coordinates}
                   pathOptions={{
                     fillColor: layerColor,
-                    fillOpacity: 0.4,
+                    fillOpacity: layerOpacity * 0.5, // Make fill slightly more transparent
                     color: layerColor,
-                    weight: 2,
-                    opacity: 0.8
+                    weight: layerWeight,
+                    opacity: layerOpacity
                   }}
                 >
                   <Popup>
@@ -696,7 +781,8 @@ const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, featu
           }
           return null;
         });
-      })}
+      });
+      }, [layers, showLabels, labelFontSize, labelColor, labelBackgroundColor, createCustomIcon, getLabelBackgroundColor])}
         </MapContainer>
       </div>
     </div>

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useMemo } from 'react'
 import '../../styles/structureTree.css'
 const TreeNode = ({ node, level = 0, onRemove, onItemClick, isItemType = false, isTopLevelItemType = false }) => {
     // Start expanded for top-level item types, collapsed for hierarchy items with children
@@ -112,8 +112,8 @@ const HierarchyTree = ({ hierarchyItems, onRemoveItem, onItemClick, itemTypes = 
     }
 
 
-    // Calculate dynamic spacing and sizing based on zoom level
-    const getDynamicStyles = () => {
+    // Calculate dynamic spacing and sizing based on zoom level (memoized)
+    const dynamicStyles = useMemo(() => {
         const scale = zoomLevel / 100
         return {
             nodeMinWidth: Math.max(80, 120 * scale),
@@ -122,9 +122,7 @@ const HierarchyTree = ({ hierarchyItems, onRemoveItem, onItemClick, itemTypes = 
             fontSize: Math.max(10, 14 * scale),
             verticalGap: Math.max(12, 20 * scale),
         }
-    }
-
-    const dynamicStyles = getDynamicStyles()
+    }, [zoomLevel])
 
     // Filter items by selected type
     const getFilteredItems = (items) => {
@@ -310,55 +308,81 @@ const HierarchyTree = ({ hierarchyItems, onRemoveItem, onItemClick, itemTypes = 
         setSelectedTypeFilter(null)
     }
 
-    const filteredItems = getFilteredItems(hierarchyItems)
-    // Use buildTree to show regular hierarchy (not grouped by item types)
-    const treeData = buildTree(filteredItems)
-    const availableTypes = getItemTypesFromHierarchy()
+    // Memoize filtered items to avoid re-filtering on every render
+    const filteredItems = useMemo(() => getFilteredItems(hierarchyItems), [hierarchyItems, selectedTypeFilter])
     
-    // Calculate and apply uniform width to all nodes
+    // Memoize tree building - expensive operation
+    const treeData = useMemo(() => buildTree(filteredItems), [filteredItems])
+    
+    // Memoize available types calculation
+    const availableTypes = useMemo(() => getItemTypesFromHierarchy(), [hierarchyItems, itemTypes])
+    
+    // Calculate and apply uniform width to all nodes (optimized with requestAnimationFrame)
     useEffect(() => {
-        // Wait for DOM to update
-        const timeoutId = setTimeout(() => {
-            const nodeContents = document.querySelectorAll('.node-content')
-            if (nodeContents.length === 0) return
-            
-            let maxWidth = 0
-            
-            // First, temporarily remove width constraints to measure natural width
-            nodeContents.forEach(node => {
-                const originalWidth = node.style.width
-                const originalMinWidth = node.style.minWidth
-                const originalMaxWidth = node.style.maxWidth
-                
-                // Remove constraints to measure natural width
-                node.style.width = 'auto'
-                node.style.minWidth = '0'
-                node.style.maxWidth = 'none'
-                
-                // Measure the scroll width (includes all content)
-                const width = node.scrollWidth
-                if (width > maxWidth) {
-                    maxWidth = width
-                }
-                
-                // Restore original styles
-                node.style.width = originalWidth
-                node.style.minWidth = originalMinWidth
-                node.style.maxWidth = originalMaxWidth
-            })
-            
-            // Apply the maximum width to all nodes (with some padding for safety)
-            if (maxWidth > 0) {
-                const uniformWidth = Math.max(maxWidth + 4, dynamicStyles.nodeMinWidth) // Add 4px padding, but respect min width
-                nodeContents.forEach(node => {
-                    node.style.width = `${uniformWidth}px`
-                    node.style.minWidth = `${uniformWidth}px`
-                    node.style.maxWidth = `${uniformWidth}px`
-                })
-            }
-        }, 100) // Small delay to ensure DOM is updated
+        if (!isTreeExpanded) return; // Skip if tree is collapsed
         
-        return () => clearTimeout(timeoutId)
+        let rafId = null;
+        const timeoutId = setTimeout(() => {
+            rafId = requestAnimationFrame(() => {
+                const nodeContents = document.querySelectorAll('.node-content')
+                if (nodeContents.length === 0) return
+                
+                let maxWidth = 0
+                
+                // Batch DOM reads first (measure phase)
+                const measurements = Array.from(nodeContents).map(node => {
+                    const originalWidth = node.style.width
+                    const originalMinWidth = node.style.minWidth
+                    const originalMaxWidth = node.style.maxWidth
+                    
+                    // Remove constraints to measure natural width
+                    node.style.width = 'auto'
+                    node.style.minWidth = '0'
+                    node.style.maxWidth = 'none'
+                    
+                    // Measure the scroll width (includes all content)
+                    const width = node.scrollWidth
+                    
+                    // Restore original styles immediately
+                    node.style.width = originalWidth
+                    node.style.minWidth = originalMinWidth
+                    node.style.maxWidth = originalMaxWidth
+                    
+                    return { node, width, originalWidth, originalMinWidth, originalMaxWidth };
+                });
+                
+                // Find max width
+                measurements.forEach(({ width }) => {
+                    if (width > maxWidth) {
+                        maxWidth = width;
+                    }
+                });
+                
+                // Batch DOM writes (apply phase)
+                if (maxWidth > 0) {
+                    const uniformWidth = Math.max(maxWidth + 4, dynamicStyles.nodeMinWidth) // Add 4px padding, but respect min width
+                    measurements.forEach(({ node, originalTransition }) => {
+                        // Temporarily disable transitions when setting width to prevent animation
+                        const transition = node.style.transition
+                        node.style.transition = 'none'
+                        node.style.width = `${uniformWidth}px`
+                        node.style.minWidth = `${uniformWidth}px`
+                        node.style.maxWidth = `${uniformWidth}px`
+                        // Force a reflow to apply the width immediately
+                        void node.offsetWidth
+                        // Re-enable transitions after width is set
+                        node.style.transition = transition || ''
+                    })
+                }
+            });
+        }, 50); // Reduced delay from 100ms to 50ms
+        
+        return () => {
+            clearTimeout(timeoutId);
+            if (rafId !== null) {
+                cancelAnimationFrame(rafId);
+            }
+        };
     }, [treeData, zoomLevel, selectedTypeFilter, isTreeExpanded, dynamicStyles.nodeMinWidth])
     
     // If no item types are loaded, show a message about creating them

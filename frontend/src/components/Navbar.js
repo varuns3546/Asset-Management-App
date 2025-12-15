@@ -62,7 +62,7 @@ const Navbar = ({ onOpenModal, onCloseModal }) => {
             />
             <Dropdown 
                 title="Structure" 
-                options={['Asset Hierarchy', 'Item Types']} 
+                options={['Asset Hierarchy', 'Asset Types']} 
                 isOpen={openDropdown === 'structure'}
                 onToggle={() => toggleDropdown('structure')}
             />
