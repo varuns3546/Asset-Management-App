@@ -429,7 +429,12 @@
     background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
     border: 1px solid #dee2e6;
     border-radius: 8px;
-    transition: all 0.2s ease;
+    /* Only transition specific properties, NOT width/min-width/max-width */
+    transition-property: background-color, border-color, box-shadow, transform;
+    transition-duration: 0.2s;
+    transition-timing-function: ease;
+    /* Explicitly exclude width properties from transitions */
+    transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
     min-width: var(--node-min-width); /* Minimum width for consistency */
     width: var(--node-min-width); /* Default width, will be overridden by JS */
     max-width: none; /* Allow JavaScript to set max-width */

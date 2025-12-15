@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { createFeatureType, updateFeatureType, getFeatureTypes } from '../../features/projects/projectSlice';
 import FormField from '../forms/FormField';
 import '../../styles/structureScreen.css'
-import { ITEM_TYPE_ICON_OPTIONS, ITEM_TYPE_COLOR_OPTIONS, DEFAULT_ITEM_TYPE_ICON } from '../../constants/itemTypeIcons';
+import { DEFAULT_ITEM_TYPE_ICON, ITEM_TYPE_COLOR_OPTIONS, getRandomUnusedStyle } from '../../constants/itemTypeIcons';
 
 const AssetTypeForm = ({ 
     assetTypes,
@@ -25,8 +25,6 @@ const AssetTypeForm = ({
     const [selectedExistingSubTypes, setSelectedExistingSubTypes] = useState([]);
     const [existingSubTypeDropdown, setExistingSubTypeDropdown] = useState({ id: 1, value: '' });
     const [hasCoordinates, setHasCoordinates] = useState(false);
-    const [selectedIcon, setSelectedIcon] = useState(DEFAULT_ITEM_TYPE_ICON);
-    const [iconColor, setIconColor] = useState(ITEM_TYPE_COLOR_OPTIONS[0].value);
     const [isEditing, setIsEditing] = useState(false);
 
     // Update form when selectedItem changes
@@ -84,8 +82,6 @@ const AssetTypeForm = ({
             }
             
             setHasCoordinates(selectedAsset.has_coordinates || false);
-            setSelectedIcon(selectedAsset.icon || DEFAULT_ITEM_TYPE_ICON);
-            setIconColor(selectedAsset.icon_color || ITEM_TYPE_COLOR_OPTIONS[0].value);
             setIsEditing(true);
         } else {
             setNewAssetType({
@@ -100,8 +96,6 @@ const AssetTypeForm = ({
             setSelectedExistingSubTypes([]);
             setExistingSubTypeDropdown({ id: 1, value: '' });
             setHasCoordinates(false);
-            setSelectedIcon(DEFAULT_ITEM_TYPE_ICON);
-            setIconColor(ITEM_TYPE_COLOR_OPTIONS[0].value);
             setIsEditing(false);
         }
     }, [selectedAsset, assetTypes]);
@@ -286,6 +280,19 @@ const AssetTypeForm = ({
             .filter(st => st.value.trim() !== '' && !st.existingId)
             .map(st => st.value.trim());
 
+        // Get random unused style for new asset types, preserve existing for edits
+        let icon, iconColor;
+        if (isEditing && selectedAsset) {
+            // Preserve existing icon and color when editing
+            icon = selectedAsset.icon || DEFAULT_ITEM_TYPE_ICON;
+            iconColor = selectedAsset.icon_color || ITEM_TYPE_COLOR_OPTIONS[0].value;
+        } else {
+            // Get random unused style for new asset types
+            const randomStyle = getRandomUnusedStyle(assetTypes || []);
+            icon = randomStyle.icon;
+            iconColor = randomStyle.icon_color;
+        }
+
         // Store the current form data before clearing
         const assetTypeData = {
             name: newAssetType.title,
@@ -294,7 +301,7 @@ const AssetTypeForm = ({
             subtype_of_id: null, // Sub-types are created separately, not set here
             attributes: attributeValues,
             has_coordinates: hasCoordinates,
-            icon: selectedIcon,
+            icon: icon,
             icon_color: iconColor
         };
 
@@ -310,10 +317,8 @@ const AssetTypeForm = ({
         setParentDropdowns([{ id: 1, value: '' }]);
         
         // Reset attributes to single empty attribute
-        setAttributes([{ id: 1, value: '' }]);
+        setAttributes([{ id: 1, value: '', type: 'text' }]);
         setHasCoordinates(false);
-        setSelectedIcon(DEFAULT_ITEM_TYPE_ICON);
-        setIconColor(ITEM_TYPE_COLOR_OPTIONS[0].value);
         
         // Store the current asset type ID for creating sub-types
         let currentAssetTypeId = null;
@@ -330,8 +335,11 @@ const AssetTypeForm = ({
                 
                 currentAssetTypeId = selectedAsset.id;
                 
-                // Refresh the feature types list to get updated attributes
+                // Refresh the feature types list to get updated data (including icon and icon_color)
                 await dispatch(getFeatureTypes(selectedProject.id));
+                
+                // Wait a moment for state to update before clearing selection
+                await new Promise(resolve => setTimeout(resolve, 100));
             } else {
                 // Create new feature type
                 result = await dispatch(createFeatureType({
@@ -434,11 +442,9 @@ const AssetTypeForm = ({
             attributes: []
         });
         setParentDropdowns([{ id: 1, value: '' }]);
-        setAttributes([{ id: 1, value: '' }]);
+        setAttributes([{ id: 1, value: '', type: 'text' }]);
         setSubTypes([{ id: 1, value: '', existingId: null }]);
         setHasCoordinates(false);
-        setSelectedIcon(DEFAULT_ITEM_TYPE_ICON);
-        setIconColor(ITEM_TYPE_COLOR_OPTIONS[0].value);
         setIsEditing(false);
         if (onAssetSelect) {
             onAssetSelect(null);
@@ -558,44 +564,6 @@ const AssetTypeForm = ({
                         className="checkbox"
                     />
                     <label className="checkbox-label">Has coordinates</label>
-                </div>
-                <FormField
-                    label="Icon:"
-                    id="icon-select"
-                    type="select"
-                    value={selectedIcon}
-                    onChange={(e) => setSelectedIcon(e.target.value)}
-                    selectOptions={ITEM_TYPE_ICON_OPTIONS.map(option => ({
-                        value: option.key,
-                        label: option.preview
-                    }))}
-                />
-
-                <div className="form-group">
-                    <label className="form-label">Icon Color:</label>
-                    <div className="icon-color-select-wrapper">
-                        <FormField
-                            label=""
-                            id="icon-color-select"
-                            type="select"
-                            value={iconColor}
-                            onChange={(e) => setIconColor(e.target.value)}
-                            selectOptions={ITEM_TYPE_COLOR_OPTIONS.map(option => ({
-                                value: option.value,
-                                label: '■'
-                            }))}
-                            className="icon-color-select"
-                            inputProps={{ 
-                                style: { color: iconColor },
-                                className: 'form-select icon-color-select'
-                            }}
-                        />
-                        <div
-                            className="icon-color-preview"
-                            style={{ backgroundColor: iconColor }}
-                            aria-hidden="true"
-                        />
-                    </div>
                 </div>
                 
                 {/* Attributes Section */}

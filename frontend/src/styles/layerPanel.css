@@ -210,6 +210,16 @@
   color: #ffffff;
 }
 
+.layer-action-btn.secondary {
+  color: #6c757d;
+  border-color: #6c757d;
+}
+
+.layer-action-btn.secondary:hover {
+  background: #6c757d;
+  color: #ffffff;
+}
+
 .layer-action-btn.danger {
   color: #dc3545;
   border-color: #dc3545;

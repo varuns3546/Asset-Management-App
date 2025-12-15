@@ -304,7 +304,7 @@ const LayerPanel = ({ layers = [], onToggleLayer, onRemoveLayer, onEditLayer, on
                     ➕ Add
                   </button>
                   <button
-                    className="layer-action-btn"
+                    className="layer-action-btn secondary"
                     onClick={() => onStyleLayer(layer.id)}
                     title="Style layer"
                   >

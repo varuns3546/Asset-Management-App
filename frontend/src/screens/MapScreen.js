@@ -6,8 +6,9 @@ import TopMapPanel from '../components/map/TopMapPanel';
 import MapNavbar from '../components/map/MapNavbar';
 import FileUploadModal from '../components/FileUploadModal';
 import AddFeatureModal from '../components/map/AddFeatureModal';
+import StyleLayerModal from '../components/map/StyleLayerModal';
 import ErrorMessage from '../components/forms/ErrorMessage';
-import { getHierarchy, getFeatureTypes } from '../features/projects/projectSlice';
+import { getHierarchy, getFeatureTypes, updateFeatureType } from '../features/projects/projectSlice';
 import * as gisLayerService from '../services/gisLayerService';
 import '../styles/map.css';
 import { useRouteMount } from '../contexts/RouteMountContext';
@@ -30,6 +31,8 @@ const MapScreen = () => {
   const [assetTypeLayerVisibility, setAssetTypeLayerVisibility] = useState({}); // Track visibility of asset type layers
   const [showAddFeatureModal, setShowAddFeatureModal] = useState(false);
   const [selectedLayerForFeature, setSelectedLayerForFeature] = useState(null);
+  const [showStyleLayerModal, setShowStyleLayerModal] = useState(false);
+  const [selectedLayerForStyle, setSelectedLayerForStyle] = useState(null);
   const [error, setError] = useState('');
   const containerRef = useRef(null);
   const { isRouteMounted } = useRouteMount();
@@ -42,87 +45,112 @@ const MapScreen = () => {
     try {
       const response = await gisLayerService.getGisLayers(selectedProject.id);
       if (response.success && response.data && isRouteMounted()) {
-        // Convert database layers to local state format
-        const loadedLayers = await Promise.all(
-          response.data.map(async (dbLayer) => {
-            if (!isRouteMounted()) return null;
-            
-            // Get features for this layer
-            const featuresResponse = await gisLayerService.getLayerFeatures(
-              selectedProject.id,
-              dbLayer.id
-            );
-            
-            if (!isRouteMounted()) return null;
-            
-            const features = featuresResponse.success 
-              ? featuresResponse.data.map(f => {
-                  let coordinates = [];
-                  
-                  try {
-                    if (f.geometry_geojson) {
-                      const geom = JSON.parse(f.geometry_geojson);
-                      
-                      // Convert GeoJSON coordinates to our format [lat, lng]
-                      if (geom.type === 'Point') {
-                        coordinates = [[geom.coordinates[1], geom.coordinates[0]]]; // [lat, lng]
-                      } else if (geom.type === 'LineString') {
-                        coordinates = geom.coordinates.map(coord => [coord[1], coord[0]]);
-                      } else if (geom.type === 'Polygon') {
-                        coordinates = geom.coordinates[0].map(coord => [coord[1], coord[0]]);
-                      }
-                    }
-                  } catch (error) {
-                    console.error('Error parsing geometry:', error);
-                  }
-                  
-                  return {
-                    id: f.id,
-                    name: f.name,
-                    coordinates: coordinates,
-                    properties: f.properties
-                  };
-                })
-                .filter(f => f.coordinates && f.coordinates.length > 0) // Filter out features with no coordinates
-              : [];
-
-            // Check if this is an asset type layer by comparing name with asset types
-            let isAssetTypeLayer = false;
-            let assetTypeId = null;
-            
-            if (currentFeatureTypes) {
-              // Check if layer name matches an asset type name
-              const matchingType = currentFeatureTypes.find(
-                type => type.title === dbLayer.name
-              );
-              if (matchingType) {
-                isAssetTypeLayer = true;
-                assetTypeId = matchingType.id;
-              } else if (dbLayer.name === 'Uncategorized Assets') {
-                isAssetTypeLayer = true;
-                assetTypeId = null;
-              }
-            }
-
-            return {
-              id: dbLayer.id,
-              name: dbLayer.name,
-              description: dbLayer.description,
-              layerType: dbLayer.layer_type, // Match LayerPanel's property name
-              geometryType: dbLayer.geometry_type,
-              coordinateSystem: dbLayer.srid ? `EPSG:${dbLayer.srid}` : 'EPSG:4326',
-              visible: assetTypeLayerVisibility[dbLayer.id] !== undefined 
-                ? assetTypeLayerVisibility[dbLayer.id] 
-                : dbLayer.visible,
-              style: dbLayer.style,
-              attributes: dbLayer.attributes,
-              features: features,
-              featureCount: features.length,
-              isAssetTypeLayer: isAssetTypeLayer,
-              assetTypeId: assetTypeId
-            };
-          })
+        // Fetch all features in parallel first (more efficient than sequential)
+        const featuresPromises = response.data.map(dbLayer =>
+          gisLayerService.getLayerFeatures(selectedProject.id, dbLayer.id)
         );
+        const featuresResponses = await Promise.all(featuresPromises);
+        
+        // Convert database layers to local state format
+        const loadedLayers = response.data.map((dbLayer, index) => {
+          if (!isRouteMounted()) return null;
+          
+          const featuresResponse = featuresResponses[index];
+          
+          if (!isRouteMounted()) return null;
+          
+          const features = featuresResponse.success 
+            ? featuresResponse.data.map(f => {
+                let coordinates = [];
+                
+                try {
+                  if (f.geometry_geojson) {
+                    const geom = JSON.parse(f.geometry_geojson);
+                    
+                    // Convert GeoJSON coordinates to our format [lat, lng]
+                    if (geom.type === 'Point') {
+                      coordinates = [[geom.coordinates[1], geom.coordinates[0]]]; // [lat, lng]
+                    } else if (geom.type === 'LineString') {
+                      coordinates = geom.coordinates.map(coord => [coord[1], coord[0]]);
+                    } else if (geom.type === 'Polygon') {
+                      coordinates = geom.coordinates[0].map(coord => [coord[1], coord[0]]);
+                    }
+                  }
+                } catch (error) {
+                  console.error('Error parsing geometry:', error);
+                }
+                
+                return {
+                  id: f.id,
+                  name: f.name,
+                  coordinates: coordinates,
+                  properties: f.properties
+                };
+              })
+              .filter(f => f.coordinates && f.coordinates.length > 0) // Filter out features with no coordinates
+            : [];
+
+          // Check if this is an asset type layer by comparing name with asset types
+          let isAssetTypeLayer = false;
+          let assetTypeId = null;
+          
+          if (currentFeatureTypes) {
+            // Check if layer name matches an asset type name
+            const matchingType = currentFeatureTypes.find(
+              type => type.title === dbLayer.name
+            );
+            if (matchingType) {
+              isAssetTypeLayer = true;
+              assetTypeId = matchingType.id;
+            } else if (dbLayer.name === 'Uncategorized Assets') {
+              isAssetTypeLayer = true;
+              assetTypeId = null;
+            }
+          }
+
+          // Parse style if it's a string (Supabase JSON fields are usually already parsed, but handle both cases)
+          let parsedStyle = dbLayer.style;
+          if (typeof dbLayer.style === 'string') {
+            try {
+              parsedStyle = JSON.parse(dbLayer.style);
+            } catch (e) {
+              console.warn('Failed to parse layer style:', e);
+              parsedStyle = {};
+            }
+          }
+
+          // For asset type layers, map icon/icon_color from asset type to style (symbol/color)
+          if (isAssetTypeLayer && assetTypeId) {
+            const assetType = currentFeatureTypes?.find(ft => ft.id === assetTypeId);
+            if (assetType) {
+              parsedStyle = {
+                ...parsedStyle,
+                symbol: assetType.icon || 'marker',
+                color: assetType.icon_color || '#3388ff',
+                opacity: parsedStyle.opacity ?? 1,
+                weight: parsedStyle.weight ?? 3
+              };
+            }
+          }
+
+          return {
+            id: dbLayer.id,
+            name: dbLayer.name,
+            description: dbLayer.description,
+            layerType: dbLayer.layer_type, // Match LayerPanel's property name
+            geometryType: dbLayer.geometry_type,
+            coordinateSystem: dbLayer.srid ? `EPSG:${dbLayer.srid}` : 'EPSG:4326',
+            visible: assetTypeLayerVisibility[dbLayer.id] !== undefined 
+              ? assetTypeLayerVisibility[dbLayer.id] 
+              : dbLayer.visible,
+            style: parsedStyle || {},
+            attributes: dbLayer.attributes,
+            features: features,
+            featureCount: features.length,
+            isAssetTypeLayer: isAssetTypeLayer,
+            assetTypeId: assetTypeId
+          };
+        });
         
         if (isRouteMounted()) {
           setLayers(loadedLayers.filter(l => l !== null));
@@ -164,20 +192,41 @@ const MapScreen = () => {
 
       // Group assets by item_type_id
       const assetsByType = {};
+      let assetsWithCoords = 0;
+      let assetsWithoutCoords = 0;
+      
       currentHierarchy.forEach(asset => {
         // Only include assets with coordinates
-        if (asset.beginning_latitude != null && 
-            asset.beginning_longitude != null &&
-            !isNaN(parseFloat(asset.beginning_latitude)) &&
-            !isNaN(parseFloat(asset.beginning_longitude))) {
+        const lat = asset.beginning_latitude;
+        const lng = asset.beginning_longitude;
+        
+        // Check if coordinates exist and are valid numbers
+        if (lat != null && lng != null) {
+          const latNum = parseFloat(lat);
+          const lngNum = parseFloat(lng);
           
-          const typeId = asset.item_type_id || 'uncategorized';
-          if (!assetsByType[typeId]) {
-            assetsByType[typeId] = [];
+          // Validate coordinates are valid numbers and within valid ranges
+          if (!isNaN(latNum) && !isNaN(lngNum) && 
+              latNum >= -90 && latNum <= 90 && 
+              lngNum >= -180 && lngNum <= 180) {
+            
+            assetsWithCoords++;
+            const typeId = asset.item_type_id || 'uncategorized';
+            if (!assetsByType[typeId]) {
+              assetsByType[typeId] = [];
+            }
+            assetsByType[typeId].push(asset);
+          } else {
+            assetsWithoutCoords++;
+            console.warn(`Asset ${asset.id} (${asset.title}) has invalid coordinates: lat=${lat}, lng=${lng}`);
           }
-          assetsByType[typeId].push(asset);
+        } else {
+          assetsWithoutCoords++;
         }
       });
+      
+      console.log(`Syncing asset layers: ${assetsWithCoords} assets with valid coordinates, ${assetsWithoutCoords} without`);
+      console.log(`Asset types to sync:`, Object.keys(assetsByType));
 
       // Get existing layers to check what already exists
       const existingLayersResponse = await gisLayerService.getGisLayers(selectedProject.id);
@@ -247,32 +296,59 @@ const MapScreen = () => {
             .filter(id => id != null)
         );
 
-        // Add features for assets that don't exist yet
-        for (const asset of assets) {
-          if (existingAssetIds.has(asset.id)) continue; // Skip if already exists
+        // Add features for assets that don't exist yet (batch processing for better performance)
+        const assetsToAdd = assets.filter(asset => {
+          if (existingAssetIds.has(asset.id)) {
+            return false; // Skip if already exists
+          }
 
           const coordinates = [
             parseFloat(asset.beginning_longitude), // [lng, lat] for backend
             parseFloat(asset.beginning_latitude)
           ];
 
-          try {
-            await gisLayerService.addFeature(
-              selectedProject.id,
-              existingLayer.id,
-              {
-                name: asset.title,
-                coordinates: [coordinates], // Point geometry
-                properties: {
-                  title: asset.title,
-                  asset_id: asset.id,
-                  item_type_id: asset.item_type_id || null
-                }
-              }
-            );
-          } catch (error) {
-            console.error(`Failed to add feature for asset ${asset.id}:`, error);
+          // Validate coordinates before adding
+          if (isNaN(coordinates[0]) || isNaN(coordinates[1])) {
+            console.error(`Asset ${asset.id} (${asset.title}) has invalid coordinates:`, coordinates);
+            return false;
           }
+          return true;
+        });
+
+        // Batch add features in parallel (limit to 10 at a time to avoid overwhelming the server)
+        const batchSize = 10;
+        let addedCount = 0;
+        for (let i = 0; i < assetsToAdd.length; i += batchSize) {
+          const batch = assetsToAdd.slice(i, i + batchSize);
+          const results = await Promise.allSettled(
+            batch.map(asset => {
+              const coordinates = [
+                parseFloat(asset.beginning_longitude),
+                parseFloat(asset.beginning_latitude)
+              ];
+              return gisLayerService.addFeature(
+                selectedProject.id,
+                existingLayer.id,
+                {
+                  name: asset.title,
+                  coordinates: [coordinates], // Point geometry
+                  properties: {
+                    title: asset.title,
+                    asset_id: asset.id,
+                    item_type_id: asset.item_type_id || null
+                  }
+                }
+              );
+            })
+          );
+          
+          addedCount += results.filter(r => r.status === 'fulfilled').length;
+        }
+        
+        const skippedCount = assets.length - assetsToAdd.length;
+        
+        if (addedCount > 0) {
+          console.log(`Added ${addedCount} features to layer "${layerName}" (${skippedCount} already existed)`);
         }
       }
 
@@ -283,7 +359,7 @@ const MapScreen = () => {
     },
     [currentHierarchy, currentFeatureTypes, selectedProject?.id, user],
     {
-      delay: 1000, // 1 second debounce
+      delay: 500, // Reduced delay to 500ms for faster sync
       shouldRun: (deps) => {
         const [hierarchy, types, projectId, user] = deps;
         return !!(projectId && hierarchy && types && user);
@@ -499,13 +575,118 @@ const MapScreen = () => {
 
   const handleStyleLayer = (layerId) => {
     const layer = allLayers.find(l => l.id === layerId);
-    if (layer?.isAssetTypeLayer) {
-      if (isRouteMounted()) {
-        setError('Cannot style asset type layers. Their style is determined by the asset type settings.');
-      }
-      return;
+    if (layer) {
+      setSelectedLayerForStyle(layer);
+      setShowStyleLayerModal(true);
     }
-    // TODO: Implement layer styling for custom layers
+  };
+
+  const handleSaveLayerStyle = async (styleData) => {
+    if (!selectedProject?.id || !selectedLayerForStyle) return;
+    setError('');
+
+    try {
+      // If it's an asset type layer, update the asset type's icon and icon_color
+      if (selectedLayerForStyle.isAssetTypeLayer && selectedLayerForStyle.assetTypeId) {
+        // Map style properties to asset type properties
+        // symbol -> icon, color -> icon_color
+        const existingAssetType = currentFeatureTypes.find(ft => ft.id === selectedLayerForStyle.assetTypeId);
+        
+        if (!existingAssetType) {
+          if (isRouteMounted()) {
+            setError('Asset type not found');
+          }
+          return;
+        }
+
+        const assetTypeUpdate = {
+          name: existingAssetType.title || '',
+          description: existingAssetType.description || '',
+          parent_ids: existingAssetType.parent_ids || [],
+          subtype_of_id: existingAssetType.subtype_of_id || null,
+          attributes: existingAssetType.attributes || [],
+          has_coordinates: existingAssetType.has_coordinates || false,
+          // Always use styleData values if provided, otherwise keep existing
+          icon: styleData.symbol !== undefined ? styleData.symbol : (existingAssetType.icon || 'marker'),
+          icon_color: styleData.color !== undefined ? styleData.color : (existingAssetType.icon_color || '#3388ff')
+        };
+
+        console.log('Updating asset type style:', {
+          assetTypeId: selectedLayerForStyle.assetTypeId,
+          styleData,
+          assetTypeUpdate
+        });
+
+        const updateResult = await dispatch(updateFeatureType({
+          projectId: selectedProject.id,
+          featureTypeId: selectedLayerForStyle.assetTypeId,
+          featureTypeData: assetTypeUpdate
+        })).unwrap();
+
+        console.log('Update result:', updateResult);
+
+        if (updateResult.success) {
+          // Update the layer style in state immediately for instant feedback
+          setLayers(prev => prev.map(l => {
+            if (l.id === selectedLayerForStyle.id && l.isAssetTypeLayer) {
+              return {
+                ...l,
+                style: {
+                  ...l.style,
+                  symbol: styleData.symbol !== undefined ? styleData.symbol : l.style.symbol,
+                  color: styleData.color !== undefined ? styleData.color : l.style.color,
+                  opacity: styleData.opacity !== undefined ? styleData.opacity : l.style.opacity,
+                  weight: styleData.weight !== undefined ? styleData.weight : l.style.weight
+                }
+              };
+            }
+            return l;
+          }));
+          
+          // Refresh feature types to get updated icon/color from database
+          await dispatch(getFeatureTypes(selectedProject.id));
+          // Wait a moment for state to update
+          await new Promise(resolve => setTimeout(resolve, 100));
+          // Reload layers to reflect the changes from database
+          await loadLayersFromDatabase();
+          setShowStyleLayerModal(false);
+          setSelectedLayerForStyle(null);
+        } else {
+          if (isRouteMounted()) {
+            setError('Failed to update asset type style');
+          }
+        }
+      } else {
+        // Regular layer - update GIS layer style
+        const response = await gisLayerService.updateGisLayer(
+          selectedProject.id,
+          selectedLayerForStyle.id,
+          { style: styleData }
+        );
+
+        if (response.success) {
+          // Update the layer in state
+          setLayers(prev => prev.map(l => 
+            l.id === selectedLayerForStyle.id 
+              ? { ...l, style: { ...l.style, ...styleData } }
+              : l
+          ));
+          // Reload layers to ensure database changes are reflected
+          await loadLayersFromDatabase();
+          setShowStyleLayerModal(false);
+          setSelectedLayerForStyle(null);
+        } else {
+          if (isRouteMounted()) {
+            setError('Failed to update layer style');
+          }
+        }
+      }
+    } catch (error) {
+      if (isRouteMounted()) {
+        setError('Failed to update layer style');
+      }
+      console.error('Error updating layer style:', error);
+    }
   };
 
   const handleAddFeatureToLayer = (layer) => {
@@ -677,6 +858,17 @@ const MapScreen = () => {
         }}
         layer={selectedLayerForFeature}
         onAddFeature={handleAddFeature}
+      />
+      
+      {/* Style Layer Modal */}
+      <StyleLayerModal
+        isOpen={showStyleLayerModal}
+        onClose={() => {
+          setShowStyleLayerModal(false);
+          setSelectedLayerForStyle(null);
+        }}
+        layer={selectedLayerForStyle}
+        onSave={handleSaveLayerStyle}
       />
         </div>
     );
