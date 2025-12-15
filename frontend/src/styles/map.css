@@ -211,6 +211,13 @@
   padding: 0 !important;
 }
 
+/* Prevent Leaflet tooltip position shifts */
+.leaflet-tooltip.feature-label {
+  transition: none !important;
+  animation: none !important;
+  pointer-events: none !important;
+}
+
 .map-screen-left-panel {
   flex: 2;
   min-width: 600px;

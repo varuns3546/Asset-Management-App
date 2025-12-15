@@ -1,5 +1,8 @@
 import axios from 'axios'
-console.log(process.env.REACT_APP_API_BASE_URL,'API URL')
+// Only log API URL in development mode
+if (process.env.NODE_ENV === 'development') {
+  console.log(process.env.REACT_APP_API_BASE_URL,'API URL')
+}
 // Create a separate axios instance for auth operations to avoid circular dependency
 const authApi = axios.create({
   baseURL: process.env.REACT_APP_API_BASE_URL + '/api/users/',
@@ -35,7 +38,6 @@ const login = async (userData) => {
     // Start token refresh timer
     scheduleTokenRefresh(response.data)
   }
-  console.log('Login response:', response.data)
   return response.data
 }
 
@@ -56,7 +58,10 @@ const refresh = async () => {
       await localStorage.setItem('user', JSON.stringify(response.data))
       // Schedule next refresh
       scheduleTokenRefresh(response.data)
-      console.log('Token refreshed successfully')
+      // Only log in development mode
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Token refreshed successfully')
+      }
     }
     return response.data
   } catch (error) {
@@ -84,7 +89,6 @@ const scheduleTokenRefresh = (userData) => {
   const refreshIn = expiresAt - now - (5 * 60 * 1000) // 5 minutes before expiry
 
   if (refreshIn > 0) {
-    console.log(`Token refresh scheduled in ${Math.round(refreshIn / 1000 / 60)} minutes`)
     refreshTimer = setTimeout(() => {
       refresh()
     }, refreshIn)

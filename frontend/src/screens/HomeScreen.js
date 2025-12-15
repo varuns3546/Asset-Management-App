@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux';
 import metricsService from '../services/metricsService';
 import StorageWarningBanner from '../components/StorageWarningBanner';
 import { useRouteMount } from '../contexts/RouteMountContext';
+import useDebouncedAsync from '../hooks/useDebouncedAsync';
 import '../styles/homeScreen.css';
 
 const HomeScreen = () => {
@@ -14,36 +15,52 @@ const HomeScreen = () => {
   const [exporting, setExporting] = useState(false);
   const { isRouteMounted } = useRouteMount();
 
-  // Load account metrics when user is available
+  // Reset dismissed warning when user changes
   useEffect(() => {
     if (user) {
-      loadMetrics();
       setDismissedWarning(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]); // loadMetrics is stable and doesn't need to be in deps
+  }, [user]);
 
-  const loadMetrics = async () => {
-    if (isRouteMounted()) {
-      setLoading(true);
-    }
-    try {
-      // Fetch account-level metrics (all projects)
-      const allProjectsData = await metricsService.getAllProjectsMetrics(user.token);
-      
-      if (allProjectsData.success && isRouteMounted()) {
-        setMetrics(allProjectsData.data);
-      }
-    } catch (error) {
+  // Load account metrics when user is available (debounced to prevent excessive calls)
+  useDebouncedAsync(
+    async () => {
+      if (!user) return;
+
       if (isRouteMounted()) {
-        console.error('Error loading metrics:', error);
+        setLoading(true);
       }
-    } finally {
-      if (isRouteMounted()) {
-        setLoading(false);
+      try {
+        // Fetch account-level metrics (all projects)
+        const allProjectsData = await metricsService.getAllProjectsMetrics(user.token);
+        
+        if (allProjectsData.success && isRouteMounted()) {
+          setMetrics(allProjectsData.data);
+        }
+      } catch (error) {
+        if (isRouteMounted()) {
+          console.error('Error loading metrics:', error);
+        }
+      } finally {
+        if (isRouteMounted()) {
+          setLoading(false);
+        }
+      }
+    },
+    [user?.token],
+    {
+      delay: 300,
+      shouldRun: (deps) => {
+        const [token] = deps;
+        return !!token;
+      },
+      onError: (error) => {
+        if (isRouteMounted()) {
+          console.error('Error loading metrics:', error);
+        }
       }
     }
-  };
+  );
 
   const handleExportData = async () => {
     if (!selectedProject) {
@@ -70,8 +87,28 @@ const HomeScreen = () => {
     }
   };
 
-  const handleRefreshMetrics = () => {
-    loadMetrics();
+  const handleRefreshMetrics = async () => {
+    if (!user) return;
+    
+    if (isRouteMounted()) {
+      setLoading(true);
+    }
+    try {
+      // Fetch account-level metrics (all projects)
+      const allProjectsData = await metricsService.getAllProjectsMetrics(user.token);
+      
+      if (allProjectsData.success && isRouteMounted()) {
+        setMetrics(allProjectsData.data);
+      }
+    } catch (error) {
+      if (isRouteMounted()) {
+        console.error('Error loading metrics:', error);
+      }
+    } finally {
+      if (isRouteMounted()) {
+        setLoading(false);
+      }
+    }
   };
 
   return (

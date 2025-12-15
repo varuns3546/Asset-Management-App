@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux';
 import { getHierarchy, deleteFeature, getFeatureTypes, reset, uploadHierarchyFile, importHierarchyData, createFeatureType } from '../features/projects/projectSlice';
 import { useRouteMount } from '../contexts/RouteMountContext';
 import useProjectData from '../hooks/useProjectData';
+import useDebouncedAsync from '../hooks/useDebouncedAsync';
 import HierarchyTree from '../components/structure/HierarchyTree';
 import HierarchyForm from '../components/structure/HierarchyForm';
 import FileUploadModal from '../components/FileUploadModal';
@@ -21,14 +22,26 @@ const HierarchyScreen = () => {
     const [successMessage, setSuccessMessage] = useState('');
     const { isRouteMounted } = useRouteMount();
 
-    useEffect(() => {
-        if (selectedProject && user) {
+    // Load hierarchy and feature types (debounced to prevent excessive calls)
+    useDebouncedAsync(
+        async () => {
+            if (!selectedProject || !user) return;
+            
             // Clear Redux state and fetch new hierarchy
             dispatch(reset());
             dispatch(getHierarchy(selectedProject.id));
             dispatch(getFeatureTypes(selectedProject.id));
+        },
+        [selectedProject?.id, user?.id],
+        {
+            delay: 300,
+            shouldRun: (deps) => {
+                const [projectId, userId] = deps;
+                return !!(projectId && userId);
+            },
+            skipInitialRun: false
         }
-    }, [selectedProject, user, dispatch])
+    )
 
     const handleRemoveItem = async (itemId) => {
         setError('');
@@ -272,14 +285,12 @@ const HierarchyScreen = () => {
                         <div className="hierarchy-right-panel">
                             {currentHierarchy && currentHierarchy.length > 0 && (
                                 <div className="hierarchy-tree-container">
-                                    <div className="hierarchy-tree-content">
-                                        <HierarchyTree 
-                                            hierarchyItems={currentHierarchy}
-                                            onRemoveItem={handleRemoveItem}
-                                            onItemClick={handleItemClick}
-                                            itemTypes={currentFeatureTypes}
-                                        />
-                                    </div>
+                                    <HierarchyTree 
+                                        hierarchyItems={currentHierarchy}
+                                        onRemoveItem={handleRemoveItem}
+                                        onItemClick={handleItemClick}
+                                        itemTypes={currentFeatureTypes}
+                                    />
                                 </div>
                             )}
                         </div>
