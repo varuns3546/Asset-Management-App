@@ -61,47 +61,64 @@ export const ITEM_TYPE_COLOR_OPTIONS = [
 ];
 
 /**
- * Get a random unused icon and color combination
- * @param {Array} existingAssetTypes - Array of existing asset types with icon and icon_color properties
- * @returns {Object} { icon: string, icon_color: string }
+ * Get a random unused style for GIS layers
+ * @param {Array} existingLayers - Array of existing layers with style properties (symbol, color)
+ * @param {Object} options - Configuration options (currently only supports 'layer' type)
+ * @param {string} options.type - 'layer' (only option now, asset types no longer have styles)
+ * @returns {Object} Style object with symbol, color, opacity, weight, fillColor, fillOpacity
  */
-export const getRandomUnusedStyle = (existingAssetTypes = []) => {
-  const allIcons = Object.keys(ITEM_TYPE_ICON_MAP);
+export const getRandomUnusedStyle = (existingLayers = [], options = {}) => {
+  const { type = 'layer' } = options;
+  const allSymbols = Object.keys(ITEM_TYPE_ICON_MAP);
   const allColors = ITEM_TYPE_COLOR_OPTIONS.map(opt => opt.value);
   
-  // Get all used combinations
+  // Get all used combinations from existing layers
   const usedCombinations = new Set();
-  existingAssetTypes.forEach(type => {
-    if (type.icon && type.icon_color) {
-      usedCombinations.add(`${type.icon}:${type.icon_color}`);
+  existingLayers.forEach(layer => {
+    if (layer.style) {
+      const symbol = layer.style.symbol || 'marker';
+      const color = layer.style.color || '#3388ff';
+      usedCombinations.add(`${symbol}:${color}`);
     }
   });
   
   // Generate all possible combinations
   const allCombinations = [];
-  allIcons.forEach(icon => {
+  allSymbols.forEach(symbol => {
     allColors.forEach(color => {
-      allCombinations.push({ icon, icon_color: color });
+      allCombinations.push({ symbol, color });
     });
   });
   
   // Filter out used combinations
   const unusedCombinations = allCombinations.filter(combo => {
-    return !usedCombinations.has(`${combo.icon}:${combo.icon_color}`);
+    return !usedCombinations.has(`${combo.symbol}:${combo.color}`);
   });
   
   // If there are unused combinations, pick a random one
+  let selectedCombo;
   if (unusedCombinations.length > 0) {
     const randomIndex = Math.floor(Math.random() * unusedCombinations.length);
-    return unusedCombinations[randomIndex];
+    selectedCombo = unusedCombinations[randomIndex];
+  } else {
+    // If all combinations are used, just pick a random one anyway
+    const randomSymbolIndex = Math.floor(Math.random() * allSymbols.length);
+    const randomColorIndex = Math.floor(Math.random() * allColors.length);
+    selectedCombo = {
+      symbol: allSymbols[randomSymbolIndex],
+      color: allColors[randomColorIndex]
+    };
   }
   
-  // If all combinations are used, just pick a random one anyway
-  const randomIconIndex = Math.floor(Math.random() * allIcons.length);
-  const randomColorIndex = Math.floor(Math.random() * allColors.length);
+  // Return full style object for layers
   return {
-    icon: allIcons[randomIconIndex],
-    icon_color: allColors[randomColorIndex]
+    symbol: selectedCombo.symbol,
+    color: selectedCombo.color,
+    opacity: 1,
+    weight: 3,
+    fillColor: selectedCombo.color,
+    fillOpacity: 0.2
   };
 };
+
 

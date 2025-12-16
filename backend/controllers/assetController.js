@@ -2,6 +2,202 @@ import asyncHandler from 'express-async-handler';
 import XLSX from 'xlsx';
 import multer from 'multer';
 
+// Helper function to generate a default style for a GIS layer
+const getDefaultLayerStyle = async (supabase, projectId) => {
+  // Default colors and symbols (matching frontend constants)
+  const colors = ['#dc3545', '#fd7e14', '#ffc107', '#198754', '#0dcaf0', '#0d6efd', '#6f42c1'];
+  const symbols = ['marker', 'circle', 'square', 'diamond', 'triangle', 'star', 'cross', 'bar', 'hexagon', 'pin'];
+  
+  // Get existing layers to avoid duplicate style combinations
+  const { data: existingLayers } = await supabase
+    .from('gis_layers')
+    .select('style')
+    .eq('project_id', projectId);
+  
+  const usedCombinations = new Set();
+  if (existingLayers) {
+    existingLayers.forEach(layer => {
+      if (layer.style) {
+        const symbol = layer.style.symbol || 'marker';
+        const color = layer.style.color || '#0d6efd';
+        usedCombinations.add(`${symbol}:${color}`);
+      }
+    });
+  }
+  
+  // Generate all possible combinations
+  const allCombinations = [];
+  symbols.forEach(symbol => {
+    colors.forEach(color => {
+      allCombinations.push({ symbol, color });
+    });
+  });
+  
+  // Filter out used combinations
+  const unusedCombinations = allCombinations.filter(combo => {
+    return !usedCombinations.has(`${combo.symbol}:${combo.color}`);
+  });
+  
+  // Pick from unused combinations, or random if all are used
+  let selectedCombo;
+  if (unusedCombinations.length > 0) {
+    const randomIndex = Math.floor(Math.random() * unusedCombinations.length);
+    selectedCombo = unusedCombinations[randomIndex];
+  } else {
+    // All combinations used, pick random anyway
+    selectedCombo = {
+      symbol: symbols[Math.floor(Math.random() * symbols.length)],
+      color: colors[Math.floor(Math.random() * colors.length)]
+    };
+  }
+  
+  return {
+    symbol: selectedCombo.symbol,
+    color: selectedCombo.color,
+    opacity: 1,
+    weight: 3,
+    fillColor: selectedCombo.color,
+    fillOpacity: 0.2
+  };
+};
+
+// Helper function to get or create a GIS layer for an asset type
+const getOrCreateGisLayer = async (supabase, projectId, userId, assetType, assetTypeId) => {
+  let layerName, layerDescription;
+  
+  if (!assetTypeId) {
+    layerName = 'Uncategorized Assets';
+    layerDescription = 'Assets without a type';
+  } else {
+    layerName = assetType?.title || 'Unknown Asset Type';
+    layerDescription = assetType?.description || `Layer for ${layerName} assets`;
+  }
+  
+  // Check if layer already exists
+  const { data: existingLayer, error: checkError } = await supabase
+    .from('gis_layers')
+    .select('id, name')
+    .eq('project_id', projectId)
+    .eq('name', layerName)
+    .maybeSingle();
+  
+  if (checkError && checkError.code !== 'PGRST116') {
+    console.error('Error checking for existing layer:', checkError);
+    return null;
+  }
+  
+  if (existingLayer) {
+    return existingLayer;
+  }
+  
+  // Create new layer
+  const style = await getDefaultLayerStyle(supabase, projectId);
+  const layerData = {
+    project_id: projectId,
+    name: layerName,
+    description: layerDescription,
+    layer_type: 'vector',
+    geometry_type: 'point',
+    attributes: [],
+    style: style,
+    visible: true,
+    created_by: userId
+  };
+  
+  const { data: newLayer, error: createError } = await supabase
+    .from('gis_layers')
+    .insert(layerData)
+    .select()
+    .single();
+  
+  if (createError) {
+    console.error('Error creating GIS layer:', createError);
+    return null;
+  }
+  
+  return newLayer;
+};
+
+// Helper function to add a GIS feature for an asset
+const addAssetToGisLayer = async (supabase, projectId, layerId, asset) => {
+  // Validate coordinates
+  const lat = asset.beginning_latitude;
+  const lng = asset.beginning_longitude;
+  
+  if (lat == null || lng == null) {
+    return null;
+  }
+  
+  const latNum = parseFloat(lat);
+  const lngNum = parseFloat(lng);
+  
+  if (isNaN(latNum) || isNaN(lngNum) || 
+      latNum < -90 || latNum > 90 || 
+      lngNum < -180 || lngNum > 180) {
+    console.warn(`Asset ${asset.id} has invalid coordinates: lat=${lat}, lng=${lng}`);
+    return null;
+  }
+  
+  // Check if feature already exists for this asset
+  const { data: existingFeature } = await supabase
+    .from('gis_features')
+    .select('id')
+    .eq('layer_id', layerId)
+    .eq('asset_id', asset.id)
+    .maybeSingle();
+  
+  if (existingFeature) {
+    // Feature already exists, skip
+    return existingFeature;
+  }
+  
+  // Create geometry WKT for point
+  const geometryWKT = `POINT(${lngNum} ${latNum})`;
+  
+  // Use RPC to insert feature
+  const { data: feature, error } = await supabase
+    .rpc('insert_gis_feature', {
+      p_layer_id: layerId,
+      p_name: asset.title || null,
+      p_geometry_wkt: geometryWKT,
+      p_properties: {
+        title: asset.title,
+        item_type_id: asset.item_type_id || null
+      }
+    });
+  
+  if (error) {
+    console.error('Error adding GIS feature:', error);
+    return null;
+  }
+  
+  // Update the feature to set asset_id column
+  if (feature && feature.id) {
+    const { error: updateError } = await supabase
+      .from('gis_features')
+      .update({ asset_id: asset.id })
+      .eq('id', feature.id);
+    
+    if (!updateError && feature.properties) {
+      // Remove asset_id from properties JSON since it's now in the column
+      const { asset_id, ...otherProperties } = feature.properties;
+      if (Object.keys(otherProperties).length > 0) {
+        await supabase
+          .from('gis_features')
+          .update({ properties: otherProperties })
+          .eq('id', feature.id);
+      } else {
+        await supabase
+          .from('gis_features')
+          .update({ properties: null })
+          .eq('id', feature.id);
+      }
+    }
+  }
+  
+  return feature;
+};
+
 const getHierarchy = asyncHandler(async (req, res) => {
   const { id: project_id } = req.params; // Fix: use 'id' from route params and rename to project_id
 
@@ -231,7 +427,7 @@ const getAssetTypes = asyncHandler(async (req, res) => {
 });
 
 const createAssetType = asyncHandler(async (req, res) => {
-  const { name, description, parent_ids, subtype_of_id, attributes, has_coordinates, icon, icon_color } = req.body;
+  const { name, description, parent_ids, subtype_of_id, attributes, has_coordinates } = req.body;
   const { id: project_id } = req.params;
 
   if (!project_id) {
@@ -282,9 +478,7 @@ const createAssetType = asyncHandler(async (req, res) => {
         project_id: project_id,
         parent_ids: parent_ids || null,
         subtype_of_id: subtype_of_id || null,
-        has_coordinates: has_coordinates || false,
-        icon: icon || null,
-        icon_color: icon_color || null
+        has_coordinates: has_coordinates || false
       })
       .select()
       .single();
@@ -591,6 +785,39 @@ const createAsset = asyncHandler(async (req, res) => {
       });
     }
 
+    // If asset has coordinates, create/update GIS layer and feature immediately
+    if (asset.beginning_latitude != null && asset.beginning_longitude != null) {
+      try {
+        // Get asset type if it exists
+        let assetType = null;
+        if (asset.item_type_id) {
+          const { data: typeData } = await req.supabase
+            .from('asset_types')
+            .select('id, title, description')
+            .eq('id', asset.item_type_id)
+            .single();
+          assetType = typeData;
+        }
+
+        // Get or create the GIS layer for this asset type
+        const layer = await getOrCreateGisLayer(
+          req.supabase,
+          project_id,
+          req.user.id,
+          assetType,
+          asset.item_type_id
+        );
+
+        if (layer) {
+          // Add the asset as a feature to the layer
+          await addAssetToGisLayer(req.supabase, project_id, layer.id, asset);
+        }
+      } catch (gisError) {
+        // Log error but don't fail the asset creation
+        console.error('Error creating GIS layer/feature for asset:', gisError);
+      }
+    }
+
     res.status(201).json({
       success: true,
       data: asset
@@ -678,7 +905,7 @@ const deleteAsset = asyncHandler(async (req, res) => {
 });
 
 const updateAssetType = asyncHandler(async (req, res) => {
-  const { name, description, parent_ids, subtype_of_id, attributes, has_coordinates, icon, icon_color } = req.body;
+  const { name, description, parent_ids, subtype_of_id, attributes, has_coordinates } = req.body;
   const { id: project_id, featureTypeId } = req.params;
 
   if (!project_id) {
@@ -736,9 +963,7 @@ const updateAssetType = asyncHandler(async (req, res) => {
         description: description || null,
         parent_ids: parent_ids || null,
         subtype_of_id: subtype_of_id || null,
-        has_coordinates: has_coordinates || false,
-        icon: icon || null,
-        icon_color: icon_color || null
+        has_coordinates: has_coordinates || false
       })
       .eq('id', featureTypeId)
       .eq('project_id', project_id)
@@ -1091,6 +1316,7 @@ const importHierarchyData = asyncHandler(async (req, res) => {
   try {
     const errors = [];
     const titleToIdMap = {};
+    const createdAssets = []; // Store created assets for GIS layer creation
     let importedCount = 0;
 
     // PASS 1: Create all items (without parent relationships)
@@ -1167,6 +1393,7 @@ const importHierarchyData = asyncHandler(async (req, res) => {
 
         // Store title-to-id mapping
         titleToIdMap[title] = createdAsset.id;
+        createdAssets.push(createdAsset); // Store for GIS layer creation
         importedCount++;
       } catch (error) {
         errors.push({ row: i + 1, error: error.message });
@@ -1197,6 +1424,77 @@ const importHierarchyData = asyncHandler(async (req, res) => {
           errors.push({ row: i + 1, error: `Failed to set parent: ${error.message}` });
         }
       }
+    }
+
+    // PASS 3: Create GIS layers and features for assets with coordinates
+    try {
+      // Group assets by item_type_id
+      const assetsByType = {};
+      for (const asset of createdAssets) {
+        // Only include assets with valid coordinates
+        const lat = asset.beginning_latitude;
+        const lng = asset.beginning_longitude;
+        
+        if (lat != null && lng != null) {
+          const latNum = parseFloat(lat);
+          const lngNum = parseFloat(lng);
+          
+          if (!isNaN(latNum) && !isNaN(lngNum) && 
+              latNum >= -90 && latNum <= 90 && 
+              lngNum >= -180 && lngNum <= 180) {
+            const typeId = asset.item_type_id || 'uncategorized';
+            if (!assetsByType[typeId]) {
+              assetsByType[typeId] = [];
+            }
+            assetsByType[typeId].push(asset);
+          }
+        }
+      }
+
+      // Get all asset types that were used
+      const assetTypeIds = Object.keys(assetsByType)
+        .filter(id => id !== 'uncategorized')
+        .map(id => id);
+      
+      const assetTypesMap = {};
+      if (assetTypeIds.length > 0) {
+        const { data: assetTypes } = await req.supabase
+          .from('asset_types')
+          .select('id, title, description')
+          .in('id', assetTypeIds);
+        
+        if (assetTypes) {
+          assetTypes.forEach(type => {
+            assetTypesMap[type.id] = type;
+          });
+        }
+      }
+
+      // Create layers and features for each type
+      for (const [typeId, assets] of Object.entries(assetsByType)) {
+        if (assets.length === 0) continue;
+
+        const assetType = typeId !== 'uncategorized' ? assetTypesMap[typeId] : null;
+        
+        // Get or create the GIS layer for this asset type
+        const layer = await getOrCreateGisLayer(
+          req.supabase,
+          project_id,
+          req.user.id,
+          assetType,
+          typeId !== 'uncategorized' ? typeId : null
+        );
+
+        if (layer) {
+          // Add all assets as features to the layer (in batch)
+          for (const asset of assets) {
+            await addAssetToGisLayer(req.supabase, project_id, layer.id, asset);
+          }
+        }
+      }
+    } catch (gisError) {
+      // Log error but don't fail the import
+      console.error('Error creating GIS layers/features during import:', gisError);
     }
 
     res.status(200).json({
