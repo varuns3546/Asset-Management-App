@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { createFeature, updateFeature } from '../../features/projects/projectSlice';
+import { createFeature, updateFeature, getHierarchy } from '../../features/projects/projectSlice';
 import FormField from '../forms/FormField';
 import ButtonGroup from '../forms/ButtonGroup';
 import ErrorMessage from '../forms/ErrorMessage';
@@ -118,6 +118,9 @@ const HierarchyForm = ({
                     featureData: itemData
                 })).unwrap();
             }
+
+            // Refresh hierarchy from server to ensure MapScreen sync picks up the new/updated asset
+            await dispatch(getHierarchy(selectedProject.id));
 
             // Clear form fields AFTER successful save (keep parent selection for efficiency)
             setNewItem(prev => ({

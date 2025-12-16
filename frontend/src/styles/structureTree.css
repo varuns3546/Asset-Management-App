@@ -440,10 +440,7 @@
     transition-duration: 0.2s;
     transition-timing-function: ease;
     
-    transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
-    min-width: var(--node-min-width); 
-    width: var(--node-min-width); 
-    max-width: none; 
+    transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease; 
     justify-content: space-between;
     position: relative;
     z-index: 2;

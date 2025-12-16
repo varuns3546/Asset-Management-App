@@ -1,24 +1,47 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 import '../../styles/structureTree.css'
-const TreeNode = ({ node, level = 0, parentCount = 0, onRemove, onAssetClick, isTopLevel = false, assetTypes = [] }) => {
+import { useContextMenuSelection } from '../../hooks/useContextMenuSelection'
+import ContextMenu from '../common/ContextMenu'
+
+const TreeNode = ({ 
+    node, 
+    level = 0, 
+    parentCount = 0, 
+    onAssetClick, 
+    isTopLevel = false, 
+    assetTypes = [],
+    isSelected = false,
+    onItemSelect,
+    onContextMenu,
+    onMouseDown,
+    itemIndex,
+    checkNodeSelected,
+    getNodeIndex
+}) => {
     // Start expanded by default for all nodes
     const [isExpanded, setIsExpanded] = React.useState(true)
     const hasSubTypes = node.subTypes && node.subTypes.length > 0
     const hasChildren = node.children && node.children.length > 0
     const hasMultipleParents = node.parent_ids && node.parent_ids.length > 1
 
-    const handleRemove = (e) => {
-        e.stopPropagation()
-        if (onRemove) {
-            onRemove(node.id)
-        }
-    }
-
     const handleAssetClick = (e) => {
         e.stopPropagation()
         e.preventDefault()
-        if (onAssetClick) {
+        // Handle selection (for multi-select support)
+        if (onItemSelect && itemIndex !== undefined) {
+            onItemSelect(e, node, itemIndex)
+        }
+        // Always update the form when clicking (unless Ctrl/Shift is held for multi-select)
+        if (onAssetClick && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
             onAssetClick(node)
+        }
+    }
+
+    const handleContextMenuClick = (e) => {
+        e.stopPropagation()
+        e.preventDefault()
+        if (onContextMenu) {
+            onContextMenu(e, node)
         }
     }
 
@@ -31,16 +54,18 @@ const TreeNode = ({ node, level = 0, parentCount = 0, onRemove, onAssetClick, is
         <div className="tree-node vertical-node">
             <div className="node-row">
                 <div 
-                    className="node-content" 
+                    className={`node-content ${isSelected ? 'selected' : ''}`}
                     onClick={handleAssetClick}
-                    onMouseDown={(e) => e.stopPropagation()}
-                    onMouseUp={(e) => e.stopPropagation()}
+                    onMouseDown={onMouseDown}
+                    onContextMenu={handleContextMenuClick}
                     style={{ 
                         userSelect: 'none',
                         cursor: 'pointer',
-                        pointerEvents: 'auto'
+                        pointerEvents: 'auto',
+                        backgroundColor: isSelected ? '#e7f1ff' : undefined,
+                        borderColor: isSelected ? '#007bff' : undefined
                     }}
-                    title="Click to edit this item type"
+                    title="Click to edit, right-click for menu"
                 >
                     {(hasSubTypes || hasChildren) && (
                         <button 
@@ -65,22 +90,6 @@ const TreeNode = ({ node, level = 0, parentCount = 0, onRemove, onAssetClick, is
                     </span>
                     <div className="node-indicators">
                         {hasMultipleParents && <span className="multiple-parents-indicator" title="Has multiple parents">🔗</span>}
-                        <button 
-                            className="node-remove-button"
-                            onClick={handleRemove}
-                            title="Remove this item type"
-                            style={{ 
-                                display: 'flex',
-                                backgroundColor: '#dc3545',
-                                color: 'white',
-                                border: 'none',
-                                width: '20px',
-                                height: '20px',
-                                borderRadius: '4px'
-                            }}
-                        >
-                            ✕
-                        </button>
                     </div>
                 </div>
                 
@@ -90,18 +99,28 @@ const TreeNode = ({ node, level = 0, parentCount = 0, onRemove, onAssetClick, is
                         className="children horizontal-children" 
                         onClick={(e) => e.stopPropagation()}
                     >
-                        {node.children.map(child => (
-                            <TreeNode 
-                                key={child.id} 
-                                node={child} 
-                                level={level + 1} 
-                                parentCount={parentCount + 1}
-                                onRemove={onRemove}
-                                onAssetClick={onAssetClick}
-                                isTopLevel={false}
-                                assetTypes={assetTypes}
-                            />
-                        ))}
+                        {node.children.map(child => {
+                            const childIsSelected = checkNodeSelected ? checkNodeSelected(child) : false
+                            const childIndex = getNodeIndex ? getNodeIndex(child) : undefined
+                            return (
+                                <TreeNode 
+                                    key={child.id} 
+                                    node={child} 
+                                    level={level + 1} 
+                                    parentCount={parentCount + 1}
+                                    onAssetClick={onAssetClick}
+                                    isTopLevel={false}
+                                    assetTypes={assetTypes}
+                                    isSelected={childIsSelected}
+                                    onItemSelect={onItemSelect}
+                                    onContextMenu={onContextMenu}
+                                    onMouseDown={onMouseDown}
+                                    itemIndex={childIndex}
+                                    checkNodeSelected={checkNodeSelected}
+                                    getNodeIndex={getNodeIndex}
+                                />
+                            )
+                        })}
                     </div>
                 )}
             </div>
@@ -112,18 +131,28 @@ const TreeNode = ({ node, level = 0, parentCount = 0, onRemove, onAssetClick, is
                     className="children vertical-children" 
                     onClick={(e) => e.stopPropagation()}
                 >
-                    {node.subTypes.map(subType => (
-                        <TreeNode 
-                            key={subType.id} 
-                            node={subType} 
-                            level={level + 1} 
-                            parentCount={parentCount + 1}
-                            onRemove={onRemove}
-                            onAssetClick={onAssetClick}
-                            isTopLevel={false}
-                            assetTypes={assetTypes}
-                        />
-                    ))}
+                    {node.subTypes.map(subType => {
+                        const subTypeIsSelected = checkNodeSelected ? checkNodeSelected(subType) : false
+                        const subTypeIndex = getNodeIndex ? getNodeIndex(subType) : undefined
+                        return (
+                            <TreeNode 
+                                key={subType.id} 
+                                node={subType} 
+                                level={level + 1} 
+                                parentCount={parentCount + 1}
+                                onAssetClick={onAssetClick}
+                                isTopLevel={false}
+                                assetTypes={assetTypes}
+                                isSelected={subTypeIsSelected}
+                                onItemSelect={onItemSelect}
+                                onContextMenu={onContextMenu}
+                                onMouseDown={onMouseDown}
+                                itemIndex={subTypeIndex}
+                                checkNodeSelected={checkNodeSelected}
+                                getNodeIndex={getNodeIndex}
+                            />
+                        )
+                    })}
                 </div>
             )}
         </div>
@@ -141,6 +170,20 @@ const AssetTypeTree = ({ assetTypes = [], onRemoveAssetType, onAssetClick }) => 
     useEffect(() => {
         setTreeKey(prev => prev + 1);
     }, [assetTypes]);
+
+    // Flatten tree structure to get a flat list of nodes for selection
+    const flattenTree = (nodes, result = []) => {
+        nodes.forEach(node => {
+            result.push(node)
+            if (node.children && node.children.length > 0) {
+                flattenTree(node.children, result)
+            }
+            if (node.subTypes && node.subTypes.length > 0) {
+                flattenTree(node.subTypes, result)
+            }
+        })
+        return result
+    }
 
 
     // Calculate dynamic spacing and sizing based on zoom level
@@ -282,6 +325,53 @@ const AssetTypeTree = ({ assetTypes = [], onRemoveAssetType, onAssetClick }) => 
         treeData = [] // Return empty tree on error
     }
 
+    // Flatten tree to get list of items for selection
+    const flatItems = useMemo(() => flattenTree(treeData), [treeData])
+
+    // Create ID to index mapping for selection
+    const itemIdToIndexMap = useMemo(() => {
+        const map = new Map()
+        flatItems.forEach((item, index) => {
+            map.set(item.id, index)
+        })
+        return map
+    }, [flatItems])
+
+    // Use the reusable hook for context menu and selection
+    const {
+        selectedItems,
+        isItemSelected,
+        contextMenu,
+        contextMenuRef,
+        handleItemClick: handleSelectionClick,
+        handleMouseDown,
+        handleContextMenu,
+        clearSelection
+    } = useContextMenuSelection(
+        flatItems,
+        // Deletion handler
+        (itemId) => {
+            if (onRemoveAssetType) {
+                onRemoveAssetType(itemId)
+            }
+        },
+        {
+            getItemId: (item) => item.id,
+            getItemName: (item) => item.title || `Item Type ${item.id}`,
+            itemType: 'asset type'
+        }
+    )
+
+    // Helper to check if a node is selected
+    const checkNodeSelected = (node) => {
+        return isItemSelected(node.id)
+    }
+
+    // Helper to get index for a node
+    const getNodeIndex = (node) => {
+        return itemIdToIndexMap.get(node.id)
+    }
+
     // Handle click on tree container to deselect
     const handleTreeContainerClick = (e) => {
         // Only deselect if clicking on empty space (not on node-content or interactive elements)
@@ -289,12 +379,14 @@ const AssetTypeTree = ({ assetTypes = [], onRemoveAssetType, onAssetClick }) => 
         const isNodeContent = clickedElement.closest('.node-content');
         const isButton = clickedElement.tagName === 'BUTTON' || clickedElement.closest('button');
         const isExpandButton = clickedElement.closest('.expand-button');
-        const isRemoveButton = clickedElement.closest('.node-remove-button');
         
         // Deselect if clicking on empty space (not on node-content or buttons)
         // This includes clicking on node-row empty space, tree-content, or tree-scroll-wrapper
-        if (!isNodeContent && !isButton && !isExpandButton && !isRemoveButton && onAssetClick) {
-            onAssetClick(null);
+        if (!isNodeContent && !isButton && !isExpandButton) {
+            clearSelection()
+            if (onAssetClick) {
+                onAssetClick(null);
+            }
         }
     };
 
@@ -348,20 +440,49 @@ const AssetTypeTree = ({ assetTypes = [], onRemoveAssetType, onAssetClick }) => 
                             cursor: 'default'
                         }}
                     >
-                        {treeData.map(rootNode => (
-                            <TreeNode 
-                                key={rootNode.id} 
-                                node={rootNode} 
-                                level={0}
-                                onRemove={onRemoveAssetType}
-                                onAssetClick={onAssetClick}
-                                isTopLevel={true}
-                                assetTypes={safeAssetTypes}
-                            />
-                        ))}
+                        {treeData.map(rootNode => {
+                            const rootIsSelected = checkNodeSelected(rootNode)
+                            const rootIndex = getNodeIndex(rootNode)
+                            return (
+                                <TreeNode 
+                                    key={rootNode.id} 
+                                    node={rootNode} 
+                                    level={0}
+                                    onAssetClick={onAssetClick}
+                                    isTopLevel={true}
+                                    assetTypes={safeAssetTypes}
+                                    isSelected={rootIsSelected}
+                                    onItemSelect={handleSelectionClick}
+                                    onContextMenu={handleContextMenu}
+                                    onMouseDown={handleMouseDown}
+                                    itemIndex={rootIndex}
+                                    checkNodeSelected={checkNodeSelected}
+                                    getNodeIndex={getNodeIndex}
+                                />
+                            )
+                        })}
                     </div>
                 </div>
             )}
+
+            {/* Context Menu */}
+            <ContextMenu
+                contextMenu={contextMenu}
+                contextMenuRef={contextMenuRef}
+                onDeleteClick={() => {
+                    const { itemsToDelete } = contextMenu;
+                    if (itemsToDelete && itemsToDelete.size > 0) {
+                        itemsToDelete.forEach(itemId => {
+                            if (onRemoveAssetType) {
+                                onRemoveAssetType(itemId);
+                            }
+                        });
+                    }
+                    // Clear selection and close menu
+                    clearSelection();
+                }}
+                itemType="asset type"
+            />
         </div>
     )
 }
