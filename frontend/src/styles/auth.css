@@ -62,12 +62,6 @@
 }
 
 /* Form Labels */
-.auth-label {
-    font-size: 15px;
-    font-weight: 500;
-    color: #333;
-    margin-bottom: 4px;
-}
 
 /* Form Inputs */
 .auth-input {
@@ -206,10 +200,6 @@
         font-size: 15px;
     }
     
-    .auth-label {
-        font-size: 15px;
-    }
-    
     .auth-input {
         padding: 13px 15px;
         font-size: 15px;
@@ -252,10 +242,6 @@
     .auth-form-row {
         flex-direction: column;
         gap: 18px;
-    }
-    
-    .auth-label {
-        font-size: 13px;
     }
     
     .auth-input {

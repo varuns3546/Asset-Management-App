@@ -478,14 +478,6 @@
   white-space: nowrap;
 }
 
-.photo-count {
-  color: #4a90e2;
-  font-weight: 500;
-  padding: 8px;
-  width: 100%;
-  text-align: center;
-}
-
 .no-photos {
   color: #999;
   font-style: italic;
@@ -635,10 +627,6 @@
   .photo-grid {
     grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
     gap: 10px;
-  }
-  
-  .photo-item {
-    padding: 8px;
   }
   
   .photo-icon {
