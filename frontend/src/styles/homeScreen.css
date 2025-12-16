@@ -59,11 +59,6 @@
   animation: slideDown 0.3s ease;
 }
 
-.official-metrics-banner {
-  background: #e7f3ff;
-  border: 1px solid #b3d9ff;
-}
-
 .info-icon {
   font-size: 1.2rem;
   font-weight: bold;
@@ -80,20 +75,6 @@
 }
 
 /* Welcome Message */
-.welcome-message {
-  text-align: center;
-  padding: 100px 20px;
-}
-
-.welcome-message h1 {
-  color: #333;
-  margin-bottom: 15px;
-}
-
-.welcome-message p {
-  color: #666;
-  font-size: 1.1rem;
-}
 
 /* Loading State */
 .loading-state {
@@ -242,26 +223,10 @@
   margin-left: 5px;
 }
 
-.buckets-badge {
-  font-size: 0.7rem;
-  background: #e7f3ff;
-  color: #007bff;
-  padding: 2px 6px;
-  border-radius: 10px;
-  margin-left: 5px;
-}
-
 .official-note {
   font-size: 0.8rem;
   color: #007bff;
   font-weight: 500;
-}
-
-.estimate-note,
-.buckets-note {
-  font-size: 0.8rem;
-  color: #999;
-  font-style: italic;
 }
 
 /* Statistics Grid */
@@ -574,18 +539,6 @@
     padding: 10px 20px;
   }
   
-  .welcome-message {
-    padding: 60px 15px;
-  }
-  
-  .welcome-message h1 {
-    font-size: 1.5rem;
-  }
-  
-  .welcome-message p {
-    font-size: 1rem;
-  }
-  
   .info-banner {
     padding: 10px 15px;
     flex-wrap: wrap;
@@ -631,18 +584,6 @@
   
   .stat-card .stat-value {
     font-size: 1.5rem;
-  }
-  
-  .welcome-message {
-    padding: 40px 12px;
-  }
-  
-  .welcome-message h1 {
-    font-size: 1.3rem;
-  }
-  
-  .welcome-message p {
-    font-size: 0.95rem;
   }
   
   .info-banner {

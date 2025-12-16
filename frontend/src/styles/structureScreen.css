@@ -54,18 +54,6 @@
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
-.hierarchy-loading {
-    color: #666;
-    font-style: italic;
-    margin: 10px 0 0 0;
-}
-
-.hierarchy-error {
-    color: #dc3545;
-    font-size: 14px;
-    margin: 10px 0 0 0;
-}
-
 .hierarchy-layout {
     display: flex;
     gap: 20px;
@@ -107,15 +95,6 @@
     margin-bottom: 20px;
 }
 
-.form-section-title {
-    font-size: 18px;
-    font-weight: 600;
-    color: #333;
-    margin-bottom: 15px;
-    padding-bottom: 8px;
-    border-bottom: 2px solid #007bff;
-}
-
 .checkbox-container {
     display: flex;
     align-items: center;
@@ -140,11 +119,6 @@
 }
 
 /* Alternative class names for compatibility */
-.form-checkbox {
-    width: 16px;
-    height: 16px;
-    cursor: pointer;
-}
 
 /* More specific selector for checkbox label */
 .checkbox-container .checkbox-label {
@@ -319,10 +293,6 @@
         padding: 8px 16px;
     }
     
-    .form-section-title {
-        font-size: 16px;
-    }
-    
     .checkbox-label {
         font-size: 14px !important;
     }
@@ -344,23 +314,6 @@
     .add-button {
         padding: 9px 14px;
         font-size: 13px;
-    }
-    
-    .item-type-icon-grid {
-        grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-        gap: 8px;
-    }
-    
-    .icon-option {
-        padding: 8px;
-    }
-    
-    .icon-option .icon-preview {
-        font-size: 1.1rem;
-    }
-    
-    .icon-option .icon-label {
-        font-size: 0.8rem;
     }
     
     .add-item-form {
@@ -404,10 +357,6 @@
         padding: 15px;
     }
     
-    .form-section-title {
-        font-size: 14px;
-    }
-    
     .form-input, .form-textarea {
         padding: 8px;
         font-size: 12px;
@@ -422,16 +371,6 @@
         padding: 8px 12px;
         font-size: 12px;
         width: 100%;
-    }
-    
-    .item-type-icon-grid {
-        grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
-        gap: 6px;
-    }
-    
-    .icon-color-preview {
-        width: 30px;
-        height: 30px;
     }
 }
 
@@ -479,45 +418,6 @@
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
-.item-type-icon-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-    gap: 10px;
-    width: 100%;
-}
-
-.icon-option {
-    border: 1px solid #dee2e6;
-    border-radius: 6px;
-    padding: 10px;
-    background: #fff;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    transition: all 0.2s ease;
-}
-
-.icon-option .icon-preview {
-    font-size: 1.3rem;
-    line-height: 1;
-}
-
-.icon-option .icon-label {
-    font-size: 0.9rem;
-    color: #333;
-}
-
-.icon-option.selected {
-    border-color: #0d6efd;
-    box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.2);
-    background: #e9f2ff;
-}
-
-.icon-option:hover {
-    border-color: #0d6efd;
-}
-
 
 .form-select {
     padding: 10px 12px;
@@ -532,28 +432,6 @@
     outline: none;
     border-color: #007bff;
     box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
-}
-
-.icon-color-select-wrapper {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.icon-color-select {
-    width: 120px;
-    font-weight: 600;
-}
-
-.icon-color-select option {
-    font-weight: 600;
-}
-
-.icon-color-preview {
-    width: 36px;
-    height: 36px;
-    border-radius: 6px;
-    border: 1px solid rgba(0, 0, 0, 0.2);
 }
 
 @media (max-width: 768px) {
@@ -576,19 +454,6 @@
 
 
 /* Parent dropdown selection styles */
-.parent-dropdowns-container {
-    margin: 15px 0;
-    padding: 0;
-    border: none;
-    background: transparent;
-}
-
-.parent-dropdowns-label {
-    font-weight: 500;
-    color: #333;
-    margin-bottom: 8px;
-    display: block;
-}
 
 .parent-dropdown-row {
     display: flex;
@@ -713,13 +578,6 @@
     display: flex;
     flex-direction: column;
     gap: 5px;
-}
-
-.coordinate-label {
-    font-size: 13px;
-    font-weight: 500;
-    color: #495057;
-    margin: 0;
 }
 
 .coordinates-inputs input {

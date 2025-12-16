@@ -331,29 +331,6 @@
   background: #f8f9fa;
 }
 
-.layer-detail-row {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 8px;
-  font-size: 13px;
-}
-
-.layer-detail-row:last-of-type {
-  margin-bottom: 12px;
-}
-
-.detail-label {
-  font-weight: 600;
-  color: #495057;
-  min-width: 80px;
-}
-
-.detail-value {
-  color: #6c757d;
-  flex: 1;
-  word-break: break-word;
-}
-
 /* Layer Action Buttons */
 .layer-action-buttons {
   display: flex;

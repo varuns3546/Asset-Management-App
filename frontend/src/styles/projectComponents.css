@@ -67,16 +67,6 @@
     background: #2563eb;
 }
 
-.btn-success {
-    border: none;
-    background: #10b981;
-    color: white;
-}
-
-.btn-success:hover {
-    background: #059669;
-}
-
 /* Create Project Modal - 80% of original size */
 .create-project-modal .form-group {
     margin-bottom: 19px;

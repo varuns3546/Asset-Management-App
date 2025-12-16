@@ -49,25 +49,7 @@
   position: relative;
 }
 
-.map-view {
-  flex: 1;
-  width: 100%;
-  min-height: 400px;
-  max-height: 80vh; /* Prevent excessive height */
-  position: relative;
-  overflow: hidden; /* Prevent scrollbars that might cause resize loops */
-}
-
 /* Map loading and error states */
-.map-loading, .map-error {
-  flex: 1;
-  width: 100%;
-  min-height: 400px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 10px;
-}
 
 
 /* Navbar Button */
@@ -107,19 +89,7 @@
   overflow: visible;
 }
 
-.esri-popup__content {
-  padding: 15px;
-}
-
 /* Map Screen Styles */
-.map-screen {
-  padding: 20px;
-  max-width: 1400px;
-  margin: 0 auto;
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
 
 .navbar-layer-option {
   padding: 10px 16px;
@@ -193,12 +163,6 @@
   min-height: 0;
 }
 
-.leaflet-container {
-  width: 100%;
-  height: 100%;
-  font-family: inherit;
-}
-
 /* Feature Label Tooltip - Remove white border */
 .feature-label {
   background: transparent !important;
@@ -207,28 +171,7 @@
   padding: 0 !important;
 }
 
-.feature-label .leaflet-tooltip-content {
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
 /* Prevent Leaflet tooltip position shifts */
-.leaflet-tooltip.feature-label {
-  transition: none !important;
-  animation: none !important;
-  pointer-events: none !important;
-}
-
-.map-screen-left-panel {
-  flex: 2;
-  min-width: 600px;
-  position: relative;
-  flex: 1;
-  min-width: 400px;
-  overflow-y: auto;
-  border-left: 2px solid #e0e0e0;
-  padding-left: 20px;
-}
 
 /* Left Panel Styles */
 .left-panel {
@@ -247,31 +190,6 @@
 }
 
 /* Ensure left panel header is always visible */
-.left-panel-header {
-  padding: 15px;
-  border-bottom: 1px solid #dee2e6;
-  background: #f8f9fa;
-  position: sticky;
-  top: 0;
-  z-index: 1;
-}
-
-.left-panel-header {
-  padding: 15px;
-  border-bottom: 1px solid #dee2e6;
-  background: #f8f9fa;
-}
-
-.left-panel-header h2 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: #212529;
-}
-
-.left-panel-content {
-  padding: 15px;
-}
 
 .left-panel.expanded {
   margin-left: 0;
@@ -297,47 +215,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.map-legend-wrapper {
-  width: 240px;
-  flex-shrink: 0;
-  margin-right: 16px;
-}
-
-.map-view-wrapper {
-  flex: 1;
-  position: relative;
-}
-
-.map-panel .map-container {
-  height: 720px;
-}
-
-.map-legend {
-  background: rgba(255, 255, 255, 0.5);
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-  padding: 10px;
-  width: 100%;
-  max-height: 100%;
-  overflow-y: auto;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  pointer-events: auto;
-}
-
-.panel-section h3 {
-  margin: 0 0 10px 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: #495057;
-}
-
-.panel-section p {
-  margin: 0;
-  font-size: 14px;
-  color: #6c757d;
-  line-height: 1.5;
 }
 
 /* Toggle Button */
@@ -665,70 +542,6 @@
 }
 
 /* RGBA Color Picker */
-.rgba-picker-container {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.color-rgba-input {
-  flex: 1;
-  padding: 8px 12px;
-  border: 1px solid #dee2e6;
-  border-radius: 4px;
-  font-size: 13px;
-  font-family: monospace;
-  color: #495057;
-}
-
-.color-rgba-input:focus {
-  outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
-}
-
-.rgba-inputs-row {
-  display: flex;
-  gap: 8px;
-  align-items: flex-end;
-}
-
-.rgba-input-group {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  flex: 1;
-}
-
-.rgba-input-group label {
-  font-size: 11px;
-  font-weight: 600;
-  color: #6c757d;
-  text-transform: uppercase;
-  margin: 0;
-}
-
-.rgba-input {
-  width: 100%;
-  padding: 6px 8px;
-  border: 1px solid #dee2e6;
-  border-radius: 4px;
-  font-size: 13px;
-  font-family: monospace;
-  color: #495057;
-  text-align: center;
-}
-
-.rgba-input:focus {
-  outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
-}
-
-.color-preview {
-  user-select: none;
-  pointer-events: none;
-}
 
 /* Vertical Resize Handle */
 .resize-handle-vertical {
@@ -774,26 +587,6 @@
     display: none;
   }
   
-  .left-panel-header {
-    padding: 12px;
-  }
-  
-  .left-panel-header h2 {
-    font-size: 16px;
-  }
-  
-  .left-panel-content {
-    padding: 12px;
-  }
-  
-  .panel-section h3 {
-    font-size: 14px;
-  }
-  
-  .map-view {
-    min-height: 300px;
-  }
-  
   /* Adjust map controls size for mobile */
   .leaflet-map-container .leaflet-control-zoom a {
     width: 36px;
@@ -803,11 +596,6 @@
   }
   
   /* Adjust popup size for mobile */
-  .leaflet-map-container .leaflet-popup-content {
-    margin: 10px;
-    max-width: 200px;
-    font-size: 14px;
-  }
   
   .map-navbar {
     --map-navbar-height: 50px;
@@ -877,10 +665,6 @@
     max-width: 350px;
   }
   
-  .leaflet-map-container .leaflet-popup-content {
-    max-width: 250px;
-  }
-  
   .map-navbar-content {
     padding: 10px 15px;
     gap: 10px;
@@ -910,10 +694,6 @@
 @media (min-width: 768px) and (max-width: 991.98px) {
   .leaflet-screen-container {
     height: 100vh;
-  }
-  
-  .leaflet-map-container .leaflet-popup-content {
-    max-width: 300px;
   }
   
   .map-navbar-content {
@@ -947,16 +727,6 @@
     height: 100vh;
   }
   
-  .leaflet-map-container .leaflet-popup-content {
-    max-width: 350px;
-  }
-  
-  .map-screen-header {
-    flex-direction: column;
-    gap: 10px;
-    text-align: center;
-  }
-  
   .map-navbar-content {
     padding: 12px 20px;
     gap: 12px;
@@ -987,9 +757,6 @@
 
 /* Ultra wide screens (1600px and up) */
 @media (min-width: 1600px) {
-  .map-screen {
-    max-width: 1600px;
-  }
   
   .map-navbar-content {
     padding: 16px 28px;

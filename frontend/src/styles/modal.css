@@ -215,83 +215,6 @@
     font-style: italic;
 }
 
-.drop-zone {
-    border: 2px dashed #cbd5e1;
-    border-radius: 8px;
-    padding: 60px 30px;
-    text-align: center;
-    background-color: #f8fafc;
-    transition: all 0.3s ease;
-    cursor: pointer;
-    min-height: 300px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.drop-zone:hover {
-    border-color: #3b82f6;
-    background-color: #eff6ff;
-}
-
-.drop-zone.has-file {
-    border-color: #10b981;
-    background-color: #f0fdf4;
-    cursor: default;
-}
-
-.drop-zone-label {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 18px;
-    cursor: pointer;
-    width: 100%;
-}
-
-.upload-icon {
-    font-size: 72px;
-}
-
-.drop-zone-text {
-    color: #6b7280;
-    font-size: 21px;
-    margin: 0;
-}
-
-.selected-file {
-    display: flex;
-    align-items: center;
-    gap: 24px;
-    background: white;
-    padding: 24px;
-    border-radius: 9px;
-    width: 100%;
-}
-
-.file-icon {
-    font-size: 54px;
-}
-
-.file-info {
-    flex: 1;
-    text-align: left;
-}
-
-.file-name {
-    margin: 0 0 6px 0;
-    font-weight: 500;
-    color: #1f2937;
-    word-break: break-word;
-    font-size: 21px;
-}
-
-.file-size {
-    margin: 0;
-    font-size: 19px;
-    color: #6b7280;
-}
-
 /* File Input Container */
 .file-input-container {
     display: flex;
@@ -604,22 +527,6 @@
 
 .cloud-file-delete:hover {
     opacity: 1;
-    background-color: #fee2e2;
-}
-
-.remove-file-btn {
-    background: none;
-    border: none;
-    font-size: 36px;
-    color: #ef4444;
-    cursor: pointer;
-    padding: 6px 12px;
-    border-radius: 6px;
-    transition: background-color 0.2s;
-    flex-shrink: 0;
-}
-
-.remove-file-btn:hover {
     background-color: #fee2e2;
 }
 
@@ -953,32 +860,6 @@
     height: 20px;
 }
 
-.sheet-type-mappings {
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-}
-
-.sheet-type-row {
-    display: grid;
-    grid-template-columns: 300px repeat(auto-fit, minmax(225px, 1fr));
-    gap: 18px;
-    align-items: center;
-    padding: 18px;
-    background-color: white;
-    border-radius: 9px;
-    border: 1px solid #e5e7eb;
-}
-
-.sheet-type-label {
-    font-size: 21px;
-    color: #374151;
-}
-
-.sheet-type-label strong {
-    color: #1f2937;
-}
-
 .checkbox-inline {
     display: flex;
     align-items: center;
@@ -1106,17 +987,7 @@
         font-size: 17px;
     }
     
-    .drop-zone {
-        padding: 50px 25px;
-        min-height: 260px;
-    }
     
-    .upload-icon {
-        font-size: 64px;
-    }
-    
-    .drop-zone-text,
-    .file-name,
     .config-field-label,
     .column-label {
         font-size: 19px;
@@ -1176,44 +1047,6 @@
     
     .supported-formats {
         font-size: 15px;
-    }
-    
-    .drop-zone {
-        padding: 45px 20px;
-        min-height: 240px;
-    }
-    
-    .drop-zone-label {
-        gap: 14px;
-    }
-    
-    .upload-icon {
-        font-size: 56px;
-    }
-    
-    .drop-zone-text {
-        font-size: 17px;
-    }
-    
-    .selected-file {
-        gap: 18px;
-        padding: 18px;
-    }
-    
-    .file-icon {
-        font-size: 42px;
-    }
-    
-    .file-name {
-        font-size: 17px;
-    }
-    
-    .file-size {
-        font-size: 15px;
-    }
-    
-    .remove-file-btn {
-        font-size: 28px;
     }
     
     .upload-error {
@@ -1358,47 +1191,6 @@
     
     .supported-formats {
         font-size: 13px;
-    }
-    
-    .drop-zone {
-        padding: 30px 15px;
-        min-height: 180px;
-    }
-    
-    .drop-zone-label {
-        gap: 10px;
-    }
-    
-    .upload-icon {
-        font-size: 42px;
-    }
-    
-    .drop-zone-text {
-        font-size: 14px;
-    }
-    
-    .selected-file {
-        gap: 12px;
-        padding: 14px;
-        flex-direction: column;
-        text-align: center;
-    }
-    
-    .file-icon {
-        font-size: 32px;
-    }
-    
-    .file-name {
-        font-size: 14px;
-    }
-    
-    .file-size {
-        font-size: 12px;
-    }
-    
-    .remove-file-btn {
-        font-size: 22px;
-        padding: 4px 8px;
     }
     
     .upload-error {
@@ -1547,16 +1339,6 @@
         height: 16px;
     }
     
-    .sheet-type-row {
-        grid-template-columns: 1fr;
-        gap: 12px;
-        padding: 14px;
-    }
-    
-    .sheet-type-label {
-        font-size: 14px;
-    }
-    
     .checkbox-inline {
         font-size: 14px;
         gap: 8px;
@@ -1629,14 +1411,5 @@
     .btn {
         padding: 8px 14px;
         font-size: 13px;
-    }
-    
-    .upload-icon {
-        font-size: 36px;
-    }
-    
-    .drop-zone {
-        padding: 20px 10px;
-        min-height: 150px;
     }
 }
