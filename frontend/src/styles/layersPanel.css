@@ -25,8 +25,33 @@
   color: #212529;
 }
 
-/* Responsive Design */
-/* Large tablets and smaller desktops */
+.undo-redo-buttons {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.undo-redo-btn {
+  padding: 4px 10px;
+  font-size: 12px;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #495057;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.undo-redo-btn:hover:not(:disabled) {
+  background: #f8f9fa;
+  border-color: #adb5bd;
+}
+
+.undo-redo-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 @media (max-width: 1199px) {
   .layer-panel-header {
     padding: 10px 14px;
@@ -53,7 +78,6 @@
   }
 }
 
-/* Tablets */
 @media (max-width: 768px) {
   .layer-panel-header {
     padding: 8px 12px;
@@ -112,7 +136,6 @@
   }
 }
 
-/* Mobile devices */
 @media (max-width: 480px) {
   .layer-panel-header {
     padding: 6px 10px;
@@ -205,7 +228,6 @@
   font-weight: 600;
 }
 
-/* Layer List */
 .layer-list {
   flex: 1;
   overflow-y: auto;
@@ -241,7 +263,6 @@
   color: #007bff;
 }
 
-/* Layer Header */
 .layer-header {
   display: flex;
   justify-content: space-between;
@@ -300,7 +321,6 @@
   color: #6c757d;
 }
 
-/* Layer Actions */
 .layer-actions {
   display: flex;
   gap: 4px;
@@ -324,14 +344,12 @@
   opacity: 0.5;
 }
 
-/* Layer Details */
 .layer-details {
   padding: 12px;
   border-top: 1px solid #e9ecef;
   background: #f8f9fa;
 }
 
-/* Layer Action Buttons */
 .layer-action-buttons {
   display: flex;
   gap: 8px;
@@ -386,7 +404,6 @@
   color: #ffffff;
 }
 
-/* Features List */
 .features-list {
   max-height: 200px;
   overflow-y: auto;
@@ -439,7 +456,6 @@
   font-style: italic;
 }
 
-/* Empty State */
 .layer-panel-empty {
   height: 100%;
   display: flex;
@@ -472,7 +488,6 @@
   color: #6c757d;
 }
 
-/* Scrollbar Styling */
 .layer-list::-webkit-scrollbar {
   width: 6px;
 }
@@ -490,7 +505,6 @@
   background: #a0aec0;
 }
 
-/* Context Menu */
 .context-menu {
   position: fixed;
   background: #ffffff;
@@ -528,7 +542,6 @@
   background: #fff5f5;
 }
 
-/* Confirmation Dialog */
 .confirm-overlay {
   position: fixed;
   top: 0;
@@ -598,4 +611,3 @@
 .confirm-btn.delete:hover {
   background: #c82333;
 }
-

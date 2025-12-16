@@ -1,4 +1,3 @@
-/* Base styles for all screen sizes */
 .leaflet-screen-container {
   height: calc(100vh - var(--main-navbar-height, 53px));
   width: 100%;
@@ -6,15 +5,14 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  --navbar-height: 60px; /* Approximate navbar height */
-  --main-navbar-height: 53px; /* Approximate main navbar height (reduced by 25%) */
-  --map-navbar-height: 60px; /* Map navbar height */
-  --top-panel-height: 10px; /* Top panel default height */
+  --navbar-height: 60px; 
+  --main-navbar-height: 53px; 
+  --map-navbar-height: 60px; 
+  --top-panel-height: 10px; 
   box-sizing: border-box;
   padding-top: var(--map-navbar-height, 60px);
 }
 
-/* Map Navbar Styles */
 .map-navbar {
   width: 100%;
   background: #e9ecef;
@@ -49,10 +47,6 @@
   position: relative;
 }
 
-/* Map loading and error states */
-
-
-/* Navbar Button */
 .navbar-btn {
   padding: 8px 20px;
   background: transparent;
@@ -69,7 +63,6 @@
   background: #dee2e6;
 }
 
-/* Navbar Layer Dropdown */
 .navbar-layer-dropdown-container {
   position: relative;
   z-index: 100;
@@ -88,8 +81,6 @@
   z-index: 10000;
   overflow: visible;
 }
-
-/* Map Screen Styles */
 
 .navbar-layer-option {
   padding: 10px 16px;
@@ -131,7 +122,6 @@
   color: #495057;
 }
 
-/* Submenu */
 .navbar-layer-submenu {
   position: absolute;
   left: 100%;
@@ -150,12 +140,11 @@
   flex: 1;
   overflow: hidden;
   margin-top: 0;
-  min-height: 0; /* Important for flex children */
+  min-height: 0; 
   position: relative;
   width: 100%;
 }
 
-/* Leaflet Map Container Styles */
 .leaflet-map-container {
   width: 100%;
   height: 100%;
@@ -163,7 +152,6 @@
   min-height: 0;
 }
 
-/* Feature Label Tooltip - Remove white border */
 .feature-label {
   background: transparent !important;
   border: none !important;
@@ -171,9 +159,6 @@
   padding: 0 !important;
 }
 
-/* Prevent Leaflet tooltip position shifts */
-
-/* Left Panel Styles */
 .left-panel {
   position: fixed;
   top: calc(var(--main-navbar-height, 53px) + var(--map-navbar-height, 60px) + var(--top-panel-height, 80px));
@@ -189,8 +174,6 @@
   padding-top: 0;
 }
 
-/* Ensure left panel header is always visible */
-
 .left-panel.expanded {
   margin-left: 0;
 }
@@ -203,7 +186,6 @@
   transition: width 0.3s ease-in-out;
 }
 
-/* Resize Handle */
 .resize-handle {
   position: absolute;
   right: 0;
@@ -217,7 +199,6 @@
   justify-content: center;
 }
 
-/* Toggle Button */
 .panel-toggle-btn {
   position: fixed;
   top: 50%;
@@ -248,7 +229,6 @@
   user-select: none;
 }
 
-/* Top Panel Styles */
 .top-panel {
   width: 100%;
   background: #ffffff;
@@ -275,7 +255,6 @@
   max-width: 100%;
 }
 
-/* Reduce padding when panel is small */
 .top-panel.panel-small .top-panel-content {
   padding: 8px 12px;
 }
@@ -298,7 +277,6 @@
   max-width: 100%;
 }
 
-/* Reduce gap when panel is small */
 .top-panel.panel-small .toolbar-actions {
   gap: 5px;
 }
@@ -320,11 +298,10 @@
   max-width: 100%;
 }
 
-/* Scale down buttons when panel is small (height < 60px) - max 30% reduction */
 .top-panel.panel-small .toolbar-btn {
-  padding: 5.6px 11.2px; /* 30% reduction: 8px * 0.7 = 5.6px, 16px * 0.7 = 11.2px */
-  font-size: 9.8px; /* 30% reduction: 14px * 0.7 = 9.8px */
-  min-height: 25.2px; /* 30% reduction: 36px * 0.7 = 25.2px */
+  padding: 5.6px 11.2px; 
+  font-size: 9.8px; 
+  min-height: 25.2px; 
 }
 
 .toolbar-btn:hover {
@@ -342,13 +319,11 @@
   border-color: #0056b3;
 }
 
-/* Label Control Container */
 .label-control-container {
   position: relative;
   display: inline-block;
 }
 
-/* Basemap Dropdown */
 .basemap-dropdown-container {
   position: relative;
 }
@@ -395,7 +370,6 @@
   border-radius: 0 0 2px 2px;
 }
 
-/* Label Modal */
 .label-modal {
   position: absolute;
   top: 100%;
@@ -541,9 +515,6 @@
   box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
 }
 
-/* RGBA Color Picker */
-
-/* Vertical Resize Handle */
 .resize-handle-vertical {
   position: absolute;
   bottom: 0;
@@ -570,33 +541,27 @@
   pointer-events: none;
 }
 
-/* Mobile devices (portrait phones, less than 576px) */
 @media (max-width: 575.98px) {
   .leaflet-screen-container {
     height: 100vh;
-    height: 100dvh; /* Dynamic viewport height for mobile browsers */
+    height: 100dvh; 
   }
-  
-  /* Narrower panel for mobile - disable resizing */
+
   .left-panel.expanded {
     max-width: 280px;
   }
-  
-  /* Hide resize handle on mobile */
+
   .resize-handle {
     display: none;
   }
-  
-  /* Adjust map controls size for mobile */
+
   .leaflet-map-container .leaflet-control-zoom a {
     width: 36px;
     height: 36px;
     line-height: 36px;
     font-size: 18px;
   }
-  
-  /* Adjust popup size for mobile */
-  
+
   .map-navbar {
     --map-navbar-height: 50px;
   }
@@ -654,13 +619,11 @@
   }
 }
 
-/* Small devices (landscape phones, 576px and up) */
 @media (min-width: 576px) and (max-width: 767.98px) {
   .leaflet-screen-container {
     height: 100vh;
   }
-  
-  /* Medium panel for small devices with limited resizing */
+
   .left-panel.expanded {
     max-width: 350px;
   }
@@ -690,7 +653,6 @@
   }
 }
 
-/* Medium devices (tablets, 768px and up) */
 @media (min-width: 768px) and (max-width: 991.98px) {
   .leaflet-screen-container {
     height: 100vh;
@@ -721,7 +683,6 @@
   }
 }
 
-/* Large devices (desktops, 992px and up) */
 @media (min-width: 992px) and (max-width: 1199.98px) {
   .leaflet-screen-container {
     height: 100vh;
@@ -742,7 +703,6 @@
   }
 }
 
-/* Extra large devices (large desktops, 1200px and up) */
 @media (min-width: 1200px) and (max-width: 1599.98px) {
   .map-navbar-content {
     padding: 14px 22px;
@@ -755,7 +715,6 @@
   }
 }
 
-/* Ultra wide screens (1600px and up) */
 @media (min-width: 1600px) {
   
   .map-navbar-content {
@@ -764,7 +723,6 @@
   }
 }
 
-/* Map Component Styles */
 .map-wrapper {
   position: relative;
   width: 100%;
@@ -783,7 +741,6 @@
   z-index: 1;
 }
 
-/* Popup Content Styles */
 .popup-content {
   min-width: 150px;
 }
@@ -811,14 +768,12 @@
   margin-top: 2px;
 }
 
-/* Feature Label Styles */
 .feature-label-span {
   padding: 2px 6px;
   border-radius: 3px;
   display: inline-block;
 }
 
-/* Custom Marker Icon Styles */
 .custom-marker-icon {
   color: inherit;
 }
@@ -830,4 +785,3 @@
   justify-content: center;
   filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
 }
-

@@ -485,6 +485,12 @@ const addFeature = asyncHandler(async (req, res) => {
 
     console.log('Generated WKT:', geometryWKT);
 
+    // Extract asset_id from properties if it exists
+    let assetId = null;
+    if (properties && properties.asset_id) {
+      assetId = properties.asset_id;
+    }
+
     // Use raw SQL to insert with PostGIS function
     const { data: feature, error } = await req.supabase
       .rpc('insert_gis_feature', {
@@ -500,6 +506,37 @@ const addFeature = asyncHandler(async (req, res) => {
         success: false,
         error: 'Failed to add feature'
       });
+    }
+
+    // Update the feature to set asset_id column if it exists in properties
+    // This creates a proper foreign key relationship instead of storing it in JSON
+    if (assetId && feature && feature.id) {
+      const { error: updateError } = await req.supabase
+        .from('gis_features')
+        .update({ asset_id: assetId })
+        .eq('id', feature.id);
+
+      if (updateError) {
+        console.warn('Warning: Could not set asset_id column on feature:', updateError);
+        // Continue anyway - asset_id is still in properties JSON as fallback
+      } else {
+        // Remove asset_id from properties JSON since it's now in the column
+        // Keep other properties intact
+        if (properties && properties.asset_id) {
+          const { asset_id, ...otherProperties } = properties;
+          if (Object.keys(otherProperties).length > 0) {
+            await req.supabase
+              .from('gis_features')
+              .update({ properties: otherProperties })
+              .eq('id', feature.id);
+          } else {
+            await req.supabase
+              .from('gis_features')
+              .update({ properties: null })
+              .eq('id', feature.id);
+          }
+        }
+      }
     }
 
     res.status(201).json({
@@ -553,9 +590,10 @@ const deleteFeature = asyncHandler(async (req, res) => {
 
   try {
     // First, fetch the feature to check if it has a connected asset
+    // Try to get asset_id column first (new approach), fallback to properties JSON (backward compatibility)
     const { data: feature, error: fetchError } = await req.supabase
       .from('gis_features')
-      .select('properties')
+      .select('asset_id, properties')
       .eq('id', featureId)
       .eq('layer_id', layerId)
       .single();
@@ -569,8 +607,11 @@ const deleteFeature = asyncHandler(async (req, res) => {
     }
 
     // Check if the feature has a connected asset
-    let assetId = null;
-    if (feature && feature.properties) {
+    // Priority: 1) asset_id column (new), 2) properties.asset_id (legacy)
+    let assetId = feature?.asset_id || null;
+    
+    // Fallback to properties JSON if asset_id column is not set (backward compatibility)
+    if (!assetId && feature && feature.properties) {
       // Handle both JSON string and object formats
       const properties = typeof feature.properties === 'string' 
         ? JSON.parse(feature.properties) 

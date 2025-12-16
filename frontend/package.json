@@ -26,8 +26,8 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "build:purge": "react-scripts build && node purgecss-runner.js",
     "purge:source": "node purgecss-source.js",
+    "remove-css-comments": "node remove-css-comments.js",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },

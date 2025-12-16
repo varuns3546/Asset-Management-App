@@ -5,12 +5,12 @@
     overflow: hidden;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     display: grid;
-    grid-template-rows: auto auto 1fr; /* Added auto for type-filter-section */
+    grid-template-rows: auto auto 1fr; 
     height: 100%;
     width: 100%;
     flex: 1;
     min-height: 0;
-    overscroll-behavior: contain; /* Prevent scroll chaining to parent */
+    overscroll-behavior: contain; 
 }
 
 .tree-controls {
@@ -20,12 +20,40 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 10px;
 }
 
 .zoom-controls {
     display: flex;
     align-items: center;
     gap: 10px;
+}
+
+.undo-redo-controls {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.undo-redo-btn {
+    padding: 4px 10px;
+    font-size: 12px;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    background: #ffffff;
+    color: #495057;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.undo-redo-btn:hover:not(:disabled) {
+    background: #f8f9fa;
+    border-color: #adb5bd;
+}
+
+.undo-redo-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .zoom-button {
@@ -83,7 +111,6 @@
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* Type Filter Styles */
 .type-filter-section {
     background: #f8f9fa;
     border-bottom: 1px solid #dee2e6;
@@ -166,18 +193,17 @@
     padding: 8px 0;
 }
 
-/* Filtered items container - shows items in the gray filter section */
 .filtered-items-container {
     margin-top: 15px;
     padding-top: 15px;
     border-top: 1px solid #dee2e6;
     max-height: 400px;
     overflow-y: auto;
-    overscroll-behavior: contain; /* Prevent scroll chaining to parent */
+    overscroll-behavior: contain; 
 }
 
 .filtered-tree-content {
-    padding: 10px 0 30px 0; /* Extra bottom padding to prevent items from being covered */
+    padding: 10px 0 30px 0; 
     position: relative;
     --node-min-width: 120px;
     --node-gap: 18px;
@@ -190,7 +216,6 @@
     min-height: max-content;
 }
 
-/* Scroll wrapper for tree content */
 .tree-scroll-wrapper {
     width: 100%;
     height: 100%;
@@ -199,40 +224,38 @@
     display: grid;
     grid-template-rows: 1fr;
     min-height: 0;
-    padding-bottom: 20px; /* Extra padding at bottom to prevent items from being cut off */
-    overscroll-behavior: contain; /* Prevent scroll chaining to parent */
+    padding-bottom: 20px; 
+    overscroll-behavior: contain; 
 }
 
-/* Add CSS custom properties support to tree-content */
 .tree-content {
-    padding: 20px 20px 40px 20px; /* Extra bottom padding to prevent items from being covered */
+    padding: 20px 20px 40px 20px; 
     position: relative;
-    /* Default values that will be overridden by JavaScript */
+    
     --node-min-width: 120px;
     --node-gap: 18px;
     --node-padding: 8px;
     --node-font-size: 14px;
     --vertical-gap: 0px;
-    /* Allow content to expand beyond normal bounds when scaled */
+    
     transform-origin: top left;
     box-sizing: border-box;
-    /* Ensure content can expand beyond container */
+    
     min-width: max-content;
     min-height: max-content;
-    /* Remove any transitions for instant zoom */
+    
     transition: none !important;
     -webkit-transition: none !important;
     -moz-transition: none !important;
     -o-transition: none !important;
-    /* Specifically disable transform transitions */
+    
     transition-property: none !important;
     -webkit-transition-property: none !important;
-    /* Ensure content takes full width and height */
+    
     width: 100%;
     height: 100%;
 }
 
-/* Force immediate zoom without any transitions */
 .tree-content * {
     transition: none !important;
     -webkit-transition: none !important;
@@ -240,19 +263,16 @@
     -o-transition: none !important;
 }
 
-/* Vertical node layout - siblings stack vertically */
 .vertical-node {
     position: relative;
-    margin-bottom: 0; /* Remove bottom margin, gap is handled by parent container */
+    margin-bottom: 0; 
 }
 
-/* Add vertical spacing between item types at root level */
 .tree-content > .vertical-node.item-type-node:not(:last-child),
 .filtered-tree-content > .vertical-node.item-type-node:not(:last-child) {
-    margin-bottom: 12px; /* Add spacing between item types */
+    margin-bottom: 12px; 
 }
 
-/* Node row contains the node content and children types (horizontal) */
 .node-row {
     display: flex;
     flex-direction: row;
@@ -261,13 +281,12 @@
     flex-wrap: nowrap;
 }
 
-/* Connecting line from parent node-content to horizontal children - only show if children exist */
 .node-row:has(.horizontal-children .vertical-node)::after {
     content: '';
     position: absolute;
-    left: calc(100% + 0px); /* Start from right edge of node-content */
+    left: calc(100% + 0px); 
     top: 50%;
-    width: 50px; /* Extend to reach the children container (30px margin + 20px padding) */
+    width: 50px; 
     height: 2px;
     background-color: #dee2e6;
     transform: translateY(-50%);
@@ -275,22 +294,20 @@
     pointer-events: none;
 }
 
-/* Vertical children (sub-types) appear below parent - stacked vertically */
 .vertical-children {
     display: flex;
     flex-direction: column;
-    margin-top: 0; /* Remove top margin */
-    margin-left: 15px; /* Slight indentation to the right */
-    padding-left: 0; /* No padding needed */
+    margin-top: 0; 
+    margin-left: 15px; 
+    padding-left: 0; 
     position: relative;
-    gap: 0; /* Remove spacing between stacked items */
+    gap: 0; 
 }
 
-/* Connecting line from parent node-row to vertical children - only show if children exist */
 .vertical-node:has(.vertical-children .vertical-node) .node-row::after {
     content: '';
     position: absolute;
-    left: 15px; /* Align with sub-types indentation */
+    left: 15px; 
     bottom: -8px;
     width: 2px;
     height: 8px;
@@ -299,47 +316,38 @@
     pointer-events: none;
 }
 
-
-
-/* Only show vertical line if there are multiple children - positioned to align with sub-types */
 .vertical-children:has(.vertical-node:nth-child(2)) {
     border-left: 2px solid #dee2e6;
-    padding-left: 0; /* No padding */
+    padding-left: 0; 
 }
 
-/* Connecting line from parent to children container - only show if children exist */
 .vertical-children:has(.vertical-node)::before {
     content: '';
     position: absolute;
-    left: 0; /* Start from parent's left edge */
+    left: 0; 
     top: -8px;
-    width: 0; /* No horizontal line needed, just vertical connection */
+    width: 0; 
     height: 8px;
     border-bottom: 2px solid #dee2e6;
-    border-bottom-left-radius: 0; /* No curve needed */
+    border-bottom-left-radius: 0; 
 }
 
-/* Only show connecting line if there are children */
 .vertical-children:empty::before {
     display: none;
 }
 
-/* Small horizontal line connecting each child to the vertical line - not needed when aligned directly */
 .vertical-children > .vertical-node::before {
-    display: none; /* No horizontal connector needed when aligned directly under parent */
+    display: none; 
 }
 
-/* First child doesn't need the small horizontal line (covered by the main connector) */
 .vertical-children > .vertical-node:first-child::before {
     display: none;
 }
 
-/* Single child doesn't need horizontal connector line */
 .vertical-children:has(.vertical-node:only-child) > .vertical-node::before {
     display: none;
 }
 
-/* Horizontal children appear to the right of parent */
 .horizontal-children {
     display: flex;
     flex-direction: row;
@@ -350,18 +358,16 @@
     gap: 18px;
 }
 
-/* Only show vertical line if there are multiple children */
 .horizontal-children:has(.vertical-node:nth-child(2)) {
     border-left: 2px solid #dee2e6;
-    margin-left: 0; /* Remove margin when showing border to align properly */
+    margin-left: 0; 
     padding-left: 20px;
 }
 
-/* Connecting line from parent to children container (horizontal) - only show if children exist */
 .horizontal-children:has(.vertical-node)::before {
     content: '';
     position: absolute;
-    left: -30px; /* Extend back to parent (30px margin + 20px padding) */
+    left: -30px; 
     top: 50%;
     width: 50px;
     height: 2px;
@@ -371,33 +377,28 @@
     pointer-events: none;
 }
 
-/* Only show connecting line if there are children */
 .horizontal-children:empty::before {
     display: none;
 }
 
-/* Vertical line connecting each child to the horizontal line */
 .horizontal-children > .vertical-node::before {
     content: '';
     position: absolute;
-    left: -50px; /* Extend back to the horizontal line from node-row::after */
+    left: -50px; 
     top: 16px;
     width: 2px;
     height: 20px;
     background-color: #dee2e6;
 }
 
-/* First child doesn't need the vertical line (covered by the main connector) */
 .horizontal-children > .vertical-node:first-child::before {
     display: none;
 }
 
-/* Single child doesn't need vertical connector line */
 .horizontal-children:has(.vertical-node:only-child) > .vertical-node::before {
     display: none;
 }
 
-/* Expand/collapse button */
 .expand-button {
     background: #007bff;
     color: white;
@@ -427,33 +428,30 @@
     transform: scale(0.95);
 }
 
-/* Update node-content to use dynamic values */
 .node-content {
     display: flex;
     align-items: center;
-    padding: var(--node-padding) calc(var(--node-padding) * 1.5); /* Dynamic padding */
+    padding: var(--node-padding) calc(var(--node-padding) * 1.5); 
     background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
     border: 1px solid #dee2e6;
     border-radius: 8px;
-    /* Only transition specific properties, NOT width/min-width/max-width */
+    
     transition-property: background-color, border-color, box-shadow, transform;
     transition-duration: 0.2s;
     transition-timing-function: ease;
-    /* Explicitly exclude width properties from transitions */
+    
     transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
-    min-width: var(--node-min-width); /* Minimum width for consistency */
-    width: var(--node-min-width); /* Default width, will be overridden by JS */
-    max-width: none; /* Allow JavaScript to set max-width */
+    min-width: var(--node-min-width); 
+    width: var(--node-min-width); 
+    max-width: none; 
     justify-content: space-between;
     position: relative;
     z-index: 2;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     gap: 8px;
-    box-sizing: border-box; /* Include padding and border in width calculation */
+    box-sizing: border-box; 
 }
 
-
-/* Hover effects for interactive nodes - only direct hover */
 .node-content.selected {
     background-color: #e7f1ff !important;
     border-color: #007bff !important;
@@ -476,15 +474,14 @@
     color: #007bff;
 }
 
-/* Update node-title to use dynamic font size */
 .node-title {
     font-weight: 500;
     color: #333;
-    font-size: var(--node-font-size); /* Dynamic font size */
+    font-size: var(--node-font-size); 
     flex: 1;
-    white-space: normal; /* Allow text to wrap if needed */
-    word-wrap: break-word; /* Break long words if necessary */
-    overflow-wrap: break-word; /* Modern property for word breaking */
+    white-space: normal; 
+    word-wrap: break-word; 
+    overflow-wrap: break-word; 
 }
 
 .node-indicators {
@@ -493,7 +490,6 @@
     gap: 6px;
     flex-shrink: 0;
 }
-
 
 .multiple-parents-indicator {
     color: #007bff;
@@ -538,10 +534,6 @@
     transform: scale(.975);
 }
 
-
-/* Responsive Design */
-
-/* Large tablets */
 @media (max-width: 1024px) {
     .hierarchy-tree {
         min-height: 70vh;
@@ -576,7 +568,6 @@
     }
 }
 
-/* Medium tablets */
 @media (max-width: 900px) {
     .hierarchy-tree {
         min-height: 65vh;
@@ -598,7 +589,6 @@
     }
 }
 
-/* Tablets */
 @media (max-width: 768px) {
     .hierarchy-tree {
         min-height: 60vh;
@@ -671,8 +661,7 @@
         height: 16px;
         font-size: 10px;
     }
-    
-    /* Type filter responsive styles */
+
     .type-filter-section {
         padding: 12px 15px;
     }
@@ -706,7 +695,6 @@
     }
 }
 
-/* Mobile */
 @media (max-width: 480px) {
     .hierarchy-tree {
         min-height: 50vh;
@@ -802,7 +790,6 @@
     }
 }
 
-/* Extra small */
 @media (max-width: 375px) {
     .hierarchy-tree {
         min-height: 45vh;

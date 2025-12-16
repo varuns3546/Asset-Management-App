@@ -780,6 +780,58 @@ const MapScreen = () => {
     }
   };
 
+  const handleRestoreLayer = async (layerData) => {
+    if (!selectedProject?.id) return;
+    setError('');
+
+    try {
+      // Restore layer using createGisLayer
+      const restoredLayer = await gisLayerService.createGisLayer(selectedProject.id, {
+        name: layerData.name,
+        layerType: layerData.layerType,
+        geometryType: layerData.geometryType,
+        url: layerData.url,
+        style: layerData.style
+      });
+      
+      // Reload layers to get the restored layer with its features
+      if (isRouteMounted()) {
+        loadLayersFromDatabase();
+      }
+    } catch (error) {
+      if (isRouteMounted()) {
+        setError('Failed to restore layer');
+      }
+    }
+  };
+
+  const handleRestoreFeature = async (featureData) => {
+    if (!selectedProject?.id || !featureData.layerId) return;
+    setError('');
+
+    try {
+      // Restore feature using addFeature
+      await gisLayerService.addFeature(
+        selectedProject.id,
+        featureData.layerId,
+        {
+          name: featureData.name,
+          coordinates: featureData.coordinates,
+          properties: featureData.properties
+        }
+      );
+      
+      // Reload layers to show the restored feature
+      if (isRouteMounted()) {
+        loadLayersFromDatabase();
+      }
+    } catch (error) {
+      if (isRouteMounted()) {
+        setError('Failed to restore feature');
+      }
+    }
+  };
+
   const handleZoomToFeature = (feature) => {
     // Don't allow zooming while map is loading
     if (isMapLoading) {
@@ -857,6 +909,8 @@ const MapScreen = () => {
           onStyleLayer={handleStyleLayer}
           onAddFeature={handleAddFeatureToLayer}
           onRemoveFeature={handleRemoveFeature}
+          onRestoreLayer={handleRestoreLayer}
+          onRestoreFeature={handleRestoreFeature}
           onZoomToFeature={handleZoomToFeature}
           onZoomToLayer={handleZoomToLayer}
         />

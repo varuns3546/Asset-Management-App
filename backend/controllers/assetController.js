@@ -39,11 +39,14 @@ const getHierarchy = asyncHandler(async (req, res) => {
 
   try {
     // Get all assets for this project
+    // Order by item_type_id first (to group by type), then order_index, then created_at
     const { data: assets, error } = await req.supabase
       .from('assets')
       .select('*')
       .eq('project_id', project_id)
-      .order('created_at');
+      .order('item_type_id', { ascending: true, nullsFirst: true })
+      .order('order_index', { ascending: true, nullsFirst: false })
+      .order('created_at', { ascending: true });
 
     if (error) {
       console.error('Error fetching assets:', error);
@@ -467,7 +470,7 @@ const deleteAssetType = asyncHandler(async (req, res) => {
 
 // Create individual asset
 const createAsset = asyncHandler(async (req, res) => {
-  const { title, item_type_id, parent_id, beginning_latitude, end_latitude, beginning_longitude, end_longitude } = req.body;
+  const { title, item_type_id, parent_id, beginning_latitude, end_latitude, beginning_longitude, end_longitude, created_at, order_index } = req.body;
   const { id: project_id } = req.params;
 
   if (!project_id) {
@@ -509,18 +512,74 @@ const createAsset = asyncHandler(async (req, res) => {
   }
 
   try {
+    // Build asset data
+    const assetData = {
+      title: title.trim(),
+      item_type_id: item_type_id || null,
+      parent_id: parent_id || null,
+      project_id: project_id,
+      beginning_latitude: beginning_latitude || null,
+      end_latitude: end_latitude || null,
+      beginning_longitude: beginning_longitude || null,
+      end_longitude: end_longitude || null
+    };
+    
+    // Set order_index if provided, otherwise set to max + 1 for this item_type_id
+    // Order_index is scoped per item_type_id to maintain ordering within each type group
+    if (order_index !== undefined && order_index !== null) {
+      // When restoring an item with a specific order_index, shift other items to make room
+      const shiftQuery = req.supabase
+        .from('assets')
+        .select('id, order_index')
+        .eq('project_id', project_id)
+        .gte('order_index', order_index);
+      
+      // Scope to the same item_type_id
+      if (item_type_id) {
+        shiftQuery.eq('item_type_id', item_type_id);
+      } else {
+        shiftQuery.is('item_type_id', null);
+      }
+      
+      const { data: itemsToShift } = await shiftQuery;
+      
+      if (itemsToShift && itemsToShift.length > 0) {
+        // Shift each item by +1 to make room for the restored item
+        for (const item of itemsToShift) {
+          await req.supabase
+            .from('assets')
+            .update({ order_index: item.order_index + 1 })
+            .eq('id', item.id);
+        }
+      }
+      
+      assetData.order_index = order_index;
+    } else {
+      // Get the max order_index for this project and item_type_id (to maintain ordering within type)
+      const query = req.supabase
+        .from('assets')
+        .select('order_index')
+        .eq('project_id', project_id);
+      
+      if (item_type_id) {
+        query.eq('item_type_id', item_type_id);
+      } else {
+        query.is('item_type_id', null);
+      }
+      
+      const { data: maxOrderData } = await query
+        .order('order_index', { ascending: false, nullsLast: true })
+        .limit(1)
+        .maybeSingle();
+      
+      assetData.order_index = maxOrderData?.order_index !== null && maxOrderData?.order_index !== undefined
+        ? maxOrderData.order_index + 1
+        : 0;
+    }
+    
     const { data: asset, error } = await req.supabase
       .from('assets')
-      .insert({
-        title: title.trim(),
-        item_type_id: item_type_id || null,
-        parent_id: parent_id || null,
-        project_id: project_id,
-        beginning_latitude: beginning_latitude || null,
-        end_latitude: end_latitude || null,
-        beginning_longitude: beginning_longitude || null,
-        end_longitude: end_longitude || null
-      })
+      .insert(assetData)
       .select()
       .single();
 
@@ -741,7 +800,7 @@ const updateAssetType = asyncHandler(async (req, res) => {
 });
 
 const updateAsset = asyncHandler(async (req, res) => {
-  const { title, item_type_id, parent_id, beginning_latitude, end_latitude, beginning_longitude, end_longitude } = req.body;
+  const { title, item_type_id, parent_id, beginning_latitude, end_latitude, beginning_longitude, end_longitude, created_at, order_index } = req.body;
   const { id: project_id, featureId } = req.params;
 
   if (!project_id) {
@@ -791,18 +850,63 @@ const updateAsset = asyncHandler(async (req, res) => {
   }
 
   try {
+    // Build update object
+    const updateData = {
+      title: title.trim(),
+      item_type_id: item_type_id || null,
+      parent_id: parent_id || null,
+      beginning_latitude: beginning_latitude || null,
+      end_latitude: end_latitude || null,
+      beginning_longitude: beginning_longitude || null,
+      end_longitude: end_longitude || null
+    };
+
+    // Allow updating created_at if provided (for undo/redo functionality)
+    // Supabase should allow this if the column doesn't have a trigger preventing it
+    if (created_at) {
+      updateData.created_at = created_at;
+    }
+    
+    // Allow updating order_index if provided (for undo/redo functionality)
+    // When restoring an item, we need to shift other items to make room
+    if (order_index !== undefined && order_index !== null) {
+      // First, shift all items with order_index >= the new order_index by +1
+      // This makes room for the restored item at its original position
+      const shiftQuery = req.supabase
+        .from('assets')
+        .select('id, order_index')
+        .eq('project_id', project_id)
+        .gte('order_index', order_index);
+      
+      // Scope to the same item_type_id
+      if (item_type_id) {
+        shiftQuery.eq('item_type_id', item_type_id);
+      } else {
+        shiftQuery.is('item_type_id', null);
+      }
+      
+      const { data: itemsToShift } = await shiftQuery;
+      
+      if (itemsToShift && itemsToShift.length > 0) {
+        // Shift each item by +1
+        for (const item of itemsToShift) {
+          // Skip the item we're updating (if it's in the list)
+          if (item.id !== featureId) {
+            await req.supabase
+              .from('assets')
+              .update({ order_index: item.order_index + 1 })
+              .eq('id', item.id);
+          }
+        }
+      }
+      
+      updateData.order_index = order_index;
+    }
+
     // Update the hierarchy feature
     const { data: hierarchyFeature, error: updateError } = await req.supabase
       .from('assets')
-      .update({
-        title: title.trim(),
-        item_type_id: item_type_id || null,
-        parent_id: parent_id || null,
-        beginning_latitude: beginning_latitude || null,
-        end_latitude: end_latitude || null,
-        beginning_longitude: beginning_longitude || null,
-        end_longitude: end_longitude || null
-      })
+      .update(updateData)
       .eq('id', featureId)
       .eq('project_id', project_id)
       .select()
@@ -818,7 +922,7 @@ const updateAsset = asyncHandler(async (req, res) => {
 
     res.status(200).json({
       success: true,
-      data: asset
+      data: hierarchyFeature
     });
 
   } catch (error) {

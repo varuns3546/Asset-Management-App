@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react'
 import '../../styles/structureTree.css'
 import { useContextMenuSelection } from '../../hooks/useContextMenuSelection'
 import ContextMenu from '../common/ContextMenu'
-import DeleteConfirmDialog from '../common/DeleteConfirmDialog'
+import { useUndoRedo } from '../../hooks/useUndoRedo'
 import { useDispatch } from 'react-redux'
 import { setSelectedAssetIds } from '../../features/projects/projectSlice'
 
@@ -111,7 +111,7 @@ const TreeNode = ({
     )
 }
 
-const HierarchyTree = ({ hierarchyItems, onRemoveItem, onItemClick, itemTypes = [] }) => {
+const HierarchyTree = ({ hierarchyItems, onRemoveItem, onItemClick, itemTypes = [], onRestoreItem }) => {
     const dispatch = useDispatch()
     const [isTreeExpanded, setIsTreeExpanded] = useState(true)
     const [zoomLevel, setZoomLevel] = useState(100)
@@ -283,7 +283,18 @@ const HierarchyTree = ({ hierarchyItems, onRemoveItem, onItemClick, itemTypes = 
         })
         
         // Build parent-child relationships for ALL hierarchy items
-        items.forEach(item => {
+        // Process items in order_index order to maintain correct ordering
+        const sortedItems = [...items].sort((a, b) => {
+            // Sort by order_index (nulls last), then by created_at
+            if (a.order_index !== null && b.order_index !== null) {
+                return a.order_index - b.order_index
+            }
+            if (a.order_index === null && b.order_index !== null) return 1
+            if (a.order_index !== null && b.order_index === null) return -1
+            return new Date(a.created_at) - new Date(b.created_at)
+        })
+        
+        sortedItems.forEach(item => {
             const itemNode = itemMap.get(item.id)
             if (item.parent_id && itemMap.has(item.parent_id)) {
                 // This item has a parent - add it as a child of the parent
@@ -298,6 +309,27 @@ const HierarchyTree = ({ hierarchyItems, onRemoveItem, onItemClick, itemTypes = 
                 }
             }
         })
+        
+        // Sort all children arrays by order_index to ensure correct display order
+        const sortChildren = (node) => {
+            if (node.children && node.children.length > 0) {
+                node.children.sort((a, b) => {
+                    // Sort by order_index (nulls last), then by created_at
+                    if (a.order_index !== null && b.order_index !== null) {
+                        return a.order_index - b.order_index
+                    }
+                    if (a.order_index === null && b.order_index !== null) return 1
+                    if (a.order_index !== null && b.order_index === null) return -1
+                    return new Date(a.created_at) - new Date(b.created_at)
+                })
+                // Recursively sort children of children
+                node.children.forEach(child => sortChildren(child))
+            }
+        }
+        
+        // Sort children of all item type nodes
+        itemTypeMap.forEach(typeNode => sortChildren(typeNode))
+        sortChildren(uncategorizedNode)
         
         // Add uncategorized node to roots if it has children
         if (uncategorizedNode.children.length > 0) {
@@ -356,23 +388,56 @@ const HierarchyTree = ({ hierarchyItems, onRemoveItem, onItemClick, itemTypes = 
         return map
     }, [flatItems])
 
-    // Use the reusable hook for context menu and selection
+    // Undo/Redo for deletions
+    const { performDelete, undo, redo, canUndo, canRedo } = useUndoRedo(
+        // onDelete - perform actual deletion
+        (item) => {
+            if (onRemoveItem) {
+                onRemoveItem(item.id || item);
+            }
+        },
+        // onRestore - restore deleted item
+        (item) => {
+            if (onRestoreItem) {
+                onRestoreItem(item);
+            }
+        }
+    );
+
+    // Use the reusable hook for context menu and selection (modified for immediate deletion)
     const {
         selectedItems,
         isItemSelected,
         contextMenu,
-        deleteConfirm,
         contextMenuRef,
         handleItemClick: handleSelectionClick,
         handleMouseDown,
         handleContextMenu,
-        handleDeleteClick,
-        confirmDelete,
-        clearSelection,
-        setDeleteConfirm
+        clearSelection
     } = useContextMenuSelection(
         flatItems,
-        onRemoveItem,
+        // Immediate deletion handler
+        (itemId) => {
+            const item = flatItems.find(i => i.id === itemId);
+            if (item) {
+                // Store the original index and order_index for proper restoration
+                const originalIndex = flatItems.findIndex(i => i.id === itemId);
+                // Store the full original hierarchy (with all item data) for accurate restoration
+                const originalHierarchy = hierarchyItems.map(h => ({
+                    id: h.id,
+                    item_type_id: h.item_type_id,
+                    order_index: h.order_index
+                }));
+                performDelete([{
+                    ...item,
+                    type: 'hierarchy item',
+                    _originalIndex: originalIndex,
+                    _originalCreatedAt: item.created_at,
+                    _originalOrderIndex: item.order_index,
+                    _originalHierarchy: originalHierarchy // Store full hierarchy data, not just IDs
+                }]);
+            }
+        },
         {
             getItemId: (item) => item.id,
             getItemName: (item) => item.title || `Item ${item.id}`,
@@ -385,6 +450,21 @@ const HierarchyTree = ({ hierarchyItems, onRemoveItem, onItemClick, itemTypes = 
         const selectedIds = Array.from(selectedItems)
         dispatch(setSelectedAssetIds(selectedIds))
     }, [selectedItems, dispatch])
+
+    // Keyboard shortcuts for undo/redo
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === 'z') {
+                e.preventDefault();
+                if (canUndo) undo();
+            } else if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'z') {
+                e.preventDefault();
+                if (canRedo) redo();
+            }
+        };
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [canUndo, canRedo, undo, redo])
 
     // Helper to check if a node is selected
     const checkNodeSelected = (node) => {
@@ -534,6 +614,24 @@ const HierarchyTree = ({ hierarchyItems, onRemoveItem, onItemClick, itemTypes = 
                         +
                     </button>
                 </div>
+                <div className="undo-redo-controls">
+                    <button 
+                        className="undo-redo-btn" 
+                        onClick={undo}
+                        disabled={!canUndo}
+                        title="Undo (Ctrl+Z)"
+                    >
+                        ↶ Undo
+                    </button>
+                    <button 
+                        className="undo-redo-btn" 
+                        onClick={redo}
+                        disabled={!canRedo}
+                        title="Redo (Ctrl+Shift+Z)"
+                    >
+                        ↷ Redo
+                    </button>
+                </div>
                 <button 
                     className="tree-toggle-button"
                     onClick={() => setIsTreeExpanded(!isTreeExpanded)}
@@ -635,16 +733,20 @@ const HierarchyTree = ({ hierarchyItems, onRemoveItem, onItemClick, itemTypes = 
             <ContextMenu
                 contextMenu={contextMenu}
                 contextMenuRef={contextMenuRef}
-                onDeleteClick={handleDeleteClick}
-                itemType="hierarchy item"
-            />
-
-            {/* Delete Confirmation Dialog */}
-            <DeleteConfirmDialog
-                deleteConfirm={deleteConfirm}
-                onConfirm={confirmDelete}
-                onCancel={() => setDeleteConfirm(null)}
-                getItemName={(item) => item.title || `Item ${item.id}`}
+                onDeleteClick={() => {
+                    const { itemsToDelete } = contextMenu;
+                    if (itemsToDelete && itemsToDelete.size > 0) {
+                        const itemsToDeleteArray = Array.from(itemsToDelete).map(id => {
+                            const item = flatItems.find(i => i.id === id);
+                            return item ? { ...item, type: 'hierarchy item' } : null;
+                        }).filter(Boolean);
+                        if (itemsToDeleteArray.length > 0) {
+                            performDelete(itemsToDeleteArray);
+                        }
+                    }
+                    // Clear selection and close menu
+                    clearSelection();
+                }}
                 itemType="hierarchy item"
             />
         </div>

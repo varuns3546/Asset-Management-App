@@ -1,4 +1,3 @@
-/* Navbar Container */
 .container {
     display: flex;
     flex-direction: row;
@@ -24,7 +23,6 @@
     display: inline-block;
 }
 
-/* Dropdown Toggle Button */
 .button {
     background: transparent;
     border: 1px solid transparent;
@@ -58,7 +56,6 @@
     box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
 }
 
-/* Dropdown Options Container */
 .options {
     position: absolute;
     top: 100%;
@@ -75,7 +72,6 @@
     margin-top: 4px;
 }
 
-/* Dropdown Option Buttons */
 .options button {
     background: white;
     border: 1px solid #dee2e6;
@@ -103,9 +99,6 @@
     border-bottom: none;
 }
 
-/* Responsive Design for Smaller Screens */
-
-/* Large tablets and smaller desktops */
 @media (max-width: 1199px) {
     .container {
         padding: 10px 22px;
@@ -131,7 +124,6 @@
     }
 }
 
-/* Tablets */
 @media (max-width: 768px) {
     .container {
         padding: 9px 18px;
@@ -157,7 +149,6 @@
     }
 }
 
-/* Mobile devices */
 @media (max-width: 480px) {
     .container {
         padding: 8px 14px;
@@ -184,7 +175,6 @@
     }
 }
 
-/* Extra small devices */
 @media (max-width: 375px) {
     .container {
         padding: 6px 10px;

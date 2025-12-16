@@ -67,7 +67,6 @@
     background: #2563eb;
 }
 
-/* Create Project Modal - 80% of original size */
 .create-project-modal .form-group {
     margin-bottom: 19px;
 }
@@ -116,7 +115,6 @@
     font-weight: 500;
 }
 
-/* Open Project Modal - 80% of original size */
 .open-project-modal .form-group {
     margin-bottom: 19px;
 }
@@ -163,7 +161,6 @@
     font-weight: 500;
 }
 
-/* Responsive Design - Tablets and smaller desktops */
 @media (max-width: 1199px) {
     .form-label {
         font-size: 15px;
@@ -182,7 +179,6 @@
     }
 }
 
-/* Responsive Design - Tablets */
 @media (max-width: 768px) {
     .form-group {
         margin-bottom: 16px;
@@ -210,7 +206,6 @@
     }
 }
 
-/* Responsive Design - Mobile */
 @media (max-width: 480px) {
     .form-group {
         margin-bottom: 13px;
