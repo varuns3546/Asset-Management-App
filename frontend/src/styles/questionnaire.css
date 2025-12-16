@@ -524,6 +524,30 @@
 }
 
 /* Responsive Design */
+/* Large tablets and smaller desktops */
+@media (max-width: 1199px) {
+  .questionnaire-screen {
+    padding: 18px;
+  }
+  
+  .questionnaire-header {
+    padding: 18px;
+  }
+  
+  .questionnaire-header h1 {
+    font-size: 1.7rem;
+  }
+  
+  .questionnaire-form {
+    padding: 24px;
+  }
+  
+  .asset-info h2 {
+    font-size: 1.4rem;
+  }
+}
+
+/* Tablets */
 @media (max-width: 768px) {
   .questionnaire-screen {
     padding: 10px;
@@ -547,6 +571,83 @@
 
   .question-item label {
     font-size: 1rem;
+  }
+  
+  .form-actions {
+    margin-top: 25px;
+    padding-top: 18px;
+  }
+  
+  .submit-button {
+    padding: 11px 26px;
+    font-size: 0.95rem;
+  }
+}
+
+/* Mobile devices */
+@media (max-width: 480px) {
+  .questionnaire-screen {
+    padding: 8px;
+  }
+  
+  .questionnaire-header {
+    padding: 12px;
+  }
+  
+  .questionnaire-header h1 {
+    font-size: 1.3rem;
+  }
+  
+  .questionnaire-form {
+    padding: 16px;
+  }
+  
+  .asset-info h2 {
+    font-size: 1.2rem;
+  }
+  
+  .question-item {
+    margin-bottom: 18px;
+  }
+  
+  .question-item label {
+    font-size: 0.95rem;
+  }
+  
+  .form-input,
+  .form-select,
+  .form-textarea {
+    padding: 9px 11px;
+    font-size: 14px;
+  }
+  
+  .form-actions {
+    margin-top: 20px;
+    padding-top: 15px;
+  }
+  
+  .submit-button {
+    width: 100%;
+    padding: 10px 24px;
+    font-size: 0.9rem;
+  }
+  
+  .photo-grid {
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 10px;
+  }
+  
+  .photo-item {
+    padding: 8px;
+  }
+  
+  .photo-icon {
+    font-size: 32px;
+  }
+  
+  .photo-name {
+    font-size: 0.7rem;
+    max-width: 80px;
   }
 }
 

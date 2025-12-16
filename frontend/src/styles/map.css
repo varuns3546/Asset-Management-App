@@ -37,6 +37,7 @@
   gap: 15px;
   overflow: visible;
   position: relative;
+  flex-wrap: wrap;
 }
 
 .map-navbar-center {
@@ -774,19 +775,19 @@
   }
   
   .left-panel-header {
-    padding: 15px;
+    padding: 12px;
   }
   
   .left-panel-header h2 {
-    font-size: 18px;
+    font-size: 16px;
   }
   
   .left-panel-content {
-    padding: 15px;
+    padding: 12px;
   }
   
   .panel-section h3 {
-    font-size: 15px;
+    font-size: 14px;
   }
   
   .map-view {
@@ -807,6 +808,62 @@
     max-width: 200px;
     font-size: 14px;
   }
+  
+  .map-navbar {
+    --map-navbar-height: 50px;
+  }
+  
+  .map-navbar-content {
+    padding: 8px 12px;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  
+  .navbar-btn {
+    padding: 6px 12px;
+    font-size: 11px;
+  }
+  
+  .top-panel-content {
+    padding: 8px 12px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .top-panel-content h2 {
+    font-size: 16px;
+  }
+  
+  .toolbar-actions {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  
+  .toolbar-btn {
+    padding: 6px 12px;
+    font-size: 11px;
+    flex: 1 1 auto;
+    min-width: calc(50% - 3px);
+  }
+  
+  .popup-content {
+    min-width: 120px;
+  }
+  
+  .popup-title {
+    font-size: 13px;
+  }
+  
+  .popup-subtitle {
+    font-size: 11px;
+  }
+  
+  .popup-detail,
+  .popup-property {
+    font-size: 10px;
+  }
 }
 
 /* Small devices (landscape phones, 576px and up) */
@@ -817,11 +874,35 @@
   
   /* Medium panel for small devices with limited resizing */
   .left-panel.expanded {
-    max-width: 400px;
+    max-width: 350px;
   }
   
   .leaflet-map-container .leaflet-popup-content {
     max-width: 250px;
+  }
+  
+  .map-navbar-content {
+    padding: 10px 15px;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  
+  .navbar-btn {
+    padding: 6px 14px;
+    font-size: 12px;
+  }
+  
+  .top-panel-content {
+    padding: 10px 14px;
+  }
+  
+  .toolbar-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+  
+  .map-navbar-center {
+    flex-wrap: wrap;
   }
 }
 
@@ -833,6 +914,30 @@
   
   .leaflet-map-container .leaflet-popup-content {
     max-width: 300px;
+  }
+  
+  .map-navbar-content {
+    padding: 12px 18px;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  
+  .navbar-btn {
+    padding: 7px 16px;
+    font-size: 13px;
+  }
+  
+  .left-panel.expanded {
+    max-width: 380px;
+  }
+  
+  .top-panel-content {
+    padding: 12px 16px;
+  }
+  
+  .toolbar-btn {
+    padding: 7px 14px;
+    font-size: 13px;
   }
 }
 
@@ -851,5 +956,111 @@
     gap: 10px;
     text-align: center;
   }
+  
+  .map-navbar-content {
+    padding: 12px 20px;
+    gap: 12px;
+  }
+  
+  .navbar-btn {
+    padding: 7px 18px;
+    font-size: 13px;
+  }
+  
+  .left-panel.expanded {
+    max-width: 450px;
+  }
+}
+
+/* Extra large devices (large desktops, 1200px and up) */
+@media (min-width: 1200px) and (max-width: 1599.98px) {
+  .map-navbar-content {
+    padding: 14px 22px;
+    gap: 14px;
+  }
+  
+  .navbar-btn {
+    padding: 8px 19px;
+    font-size: 13.5px;
+  }
+}
+
+/* Ultra wide screens (1600px and up) */
+@media (min-width: 1600px) {
+  .map-screen {
+    max-width: 1600px;
+  }
+  
+  .map-navbar-content {
+    padding: 16px 28px;
+    gap: 16px;
+  }
+}
+
+/* Map Component Styles */
+.map-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+.map-spinner-overlay {
+  z-index: 9999;
+}
+
+.map-container-wrapper {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+/* Popup Content Styles */
+.popup-content {
+  min-width: 150px;
+}
+
+.popup-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.popup-subtitle {
+  font-size: 12px;
+  color: #666;
+  margin-top: 4px;
+}
+
+.popup-detail {
+  font-size: 11px;
+  color: #888;
+  margin-top: 2px;
+}
+
+.popup-property {
+  font-size: 11px;
+  color: #888;
+  margin-top: 2px;
+}
+
+/* Feature Label Styles */
+.feature-label-span {
+  padding: 2px 6px;
+  border-radius: 3px;
+  display: inline-block;
+}
+
+/* Custom Marker Icon Styles */
+.custom-marker-icon {
+  color: inherit;
+}
+
+.custom-marker-icon-inner {
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
 }
 

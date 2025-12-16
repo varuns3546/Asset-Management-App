@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import LayerPanel from './LayerPanel';
+import LayersPanel from './LayersPanel.js';
+import '../../styles/layersPanel.css';
 
-const MapPanel = ({ isExpanded, setIsExpanded, panelWidth, setPanelWidth, layers, onToggleLayer, onRemoveLayer, onEditLayer, onStyleLayer, onAddFeature, onRemoveFeature }) => {
+const MapPanel = ({ isExpanded, setIsExpanded, panelWidth, setPanelWidth, layers, onToggleLayer, onRemoveLayer, onEditLayer, onStyleLayer, onAddFeature, onRemoveFeature, onZoomToFeature, onZoomToLayer }) => {
   const [isResizing, setIsResizing] = useState(false);
 
   const minWidth = 250;
@@ -52,7 +53,7 @@ const MapPanel = ({ isExpanded, setIsExpanded, panelWidth, setPanelWidth, layers
         className={`left-panel ${isExpanded ? 'expanded' : 'collapsed'}`}
         style={{ width: isExpanded ? `${panelWidth}px` : '320px' }}
       >
-        <LayerPanel
+        <LayersPanel
           layers={layers}
           onToggleLayer={onToggleLayer}
           onRemoveLayer={onRemoveLayer}
@@ -60,6 +61,8 @@ const MapPanel = ({ isExpanded, setIsExpanded, panelWidth, setPanelWidth, layers
           onStyleLayer={onStyleLayer}
           onAddFeature={onAddFeature}
           onRemoveFeature={onRemoveFeature}
+          onZoomToFeature={onZoomToFeature}
+          onZoomToLayer={onZoomToLayer}
         />
 
         {isExpanded && (

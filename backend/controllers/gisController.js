@@ -552,6 +552,53 @@ const deleteFeature = asyncHandler(async (req, res) => {
   }
 
   try {
+    // First, fetch the feature to check if it has a connected asset
+    const { data: feature, error: fetchError } = await req.supabase
+      .from('gis_features')
+      .select('properties')
+      .eq('id', featureId)
+      .eq('layer_id', layerId)
+      .single();
+
+    if (fetchError) {
+      console.error('Error fetching feature:', fetchError);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to fetch feature'
+      });
+    }
+
+    // Check if the feature has a connected asset
+    let assetId = null;
+    if (feature && feature.properties) {
+      // Handle both JSON string and object formats
+      const properties = typeof feature.properties === 'string' 
+        ? JSON.parse(feature.properties) 
+        : feature.properties;
+      
+      if (properties && properties.asset_id) {
+        assetId = properties.asset_id;
+      }
+    }
+
+    // Delete the connected asset if it exists
+    if (assetId) {
+      const { error: assetDeleteError } = await req.supabase
+        .from('assets')
+        .delete()
+        .eq('id', assetId)
+        .eq('project_id', projectId);
+
+      if (assetDeleteError) {
+        console.error('Error deleting connected asset:', assetDeleteError);
+        // Continue with feature deletion even if asset deletion fails
+        // (asset might have been deleted already or doesn't exist)
+      } else {
+        console.log(`Deleted connected asset ${assetId} for feature ${featureId}`);
+      }
+    }
+
+    // Delete the GIS feature
     const { error } = await req.supabase
       .from('gis_features')
       .delete()
@@ -568,7 +615,9 @@ const deleteFeature = asyncHandler(async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Feature deleted successfully'
+      message: assetId 
+        ? 'Feature and connected asset deleted successfully' 
+        : 'Feature deleted successfully'
     });
 
   } catch (error) {

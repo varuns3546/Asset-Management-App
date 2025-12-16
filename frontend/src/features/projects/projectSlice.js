@@ -8,6 +8,8 @@ const initialState = {
     currentHierarchy: null,
     // Feature types for the current project
     currentFeatureTypes: [],
+    // Selected asset IDs for highlighting on map (stored as array for Redux)
+    selectedAssetIds: [],
     isError: false,
     isSuccess: false,
     isLoading: false,
@@ -419,6 +421,7 @@ export const projectSlice = createSlice({
             state.isSuccess = false
             state.isError = false
             state.message = ''
+            state.selectedAssetIds = []
         },
         setSelectedProject: (state, action) => {
             state.selectedProject = action.payload
@@ -428,6 +431,15 @@ export const projectSlice = createSlice({
         },
         setCurrentHierarchy: (state, action) => {
             state.currentHierarchy = action.payload 
+        },
+        setSelectedAssetIds: (state, action) => {
+            // Convert Set to array if needed, or accept array directly
+            state.selectedAssetIds = Array.isArray(action.payload) 
+                ? action.payload 
+                : Array.from(action.payload || [])
+        },
+        clearSelectedAssetIds: (state) => {
+            state.selectedAssetIds = []
         }
     },
     extraReducers: (builder) => {
@@ -747,5 +759,5 @@ export const projectSlice = createSlice({
     }
 })
 
-export const { reset, setSelectedProject, clearSelectedProject, setCurrentHierarchy } = projectSlice.actions
+export const { reset, setSelectedProject, clearSelectedProject, setCurrentHierarchy, setSelectedAssetIds, clearSelectedAssetIds } = projectSlice.actions
 export default projectSlice.reducer

@@ -52,3 +52,38 @@
 
 /* Spinner styles for loading states */
 
+/* Responsive Design */
+@media (max-width: 768px) {
+  .spinner-container {
+    padding: 20px 24px;
+    gap: 12px;
+  }
+  
+  .spinner {
+    width: 36px;
+    height: 36px;
+    border-width: 3px;
+  }
+  
+  .spinner-text {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .spinner-container {
+    padding: 16px 20px;
+    gap: 10px;
+  }
+  
+  .spinner {
+    width: 32px;
+    height: 32px;
+    border-width: 3px;
+  }
+  
+  .spinner-text {
+    font-size: 12px;
+  }
+}
+

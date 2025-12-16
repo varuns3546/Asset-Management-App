@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import Map from '../components/map/Map';
 import LeftMapPanel from '../components/map/LeftMapPanel';
@@ -34,8 +34,16 @@ const MapScreen = () => {
   const [showStyleLayerModal, setShowStyleLayerModal] = useState(false);
   const [selectedLayerForStyle, setSelectedLayerForStyle] = useState(null);
   const [error, setError] = useState('');
+  const [zoomToFeature, setZoomToFeature] = useState(null);
+  const [zoomToLayer, setZoomToLayer] = useState(null);
+  const [isMapLoading, setIsMapLoading] = useState(true);
   const containerRef = useRef(null);
   const { isRouteMounted } = useRouteMount();
+  
+  // Memoize the callback to prevent unnecessary re-renders
+  const handleMapLoadingChange = useCallback((loading) => {
+    setIsMapLoading(loading);
+  }, []);
 
 
   // Load layers from database (needs to be accessible in sync function)
@@ -137,7 +145,7 @@ const MapScreen = () => {
             id: dbLayer.id,
             name: dbLayer.name,
             description: dbLayer.description,
-            layerType: dbLayer.layer_type, // Match LayerPanel's property name
+            layerType: dbLayer.layer_type, // Match LayersPanel's property name
             geometryType: dbLayer.geometry_type,
             coordinateSystem: dbLayer.srid ? `EPSG:${dbLayer.srid}` : 'EPSG:4326',
             visible: assetTypeLayerVisibility[dbLayer.id] !== undefined 
@@ -470,7 +478,7 @@ const MapScreen = () => {
           id: response.data.id, // Use database ID
           name: layerData.name,
           description: layerData.description,
-          layerType: layerData.layerType, // Match LayerPanel's property name
+          layerType: layerData.layerType, // Match LayersPanel's property name
           geometryType: layerData.geometryType,
           coordinateSystem: layerData.coordinateSystem,
           visible: true,
@@ -772,6 +780,42 @@ const MapScreen = () => {
     }
   };
 
+  const handleZoomToFeature = (feature) => {
+    // Don't allow zooming while map is loading
+    if (isMapLoading) {
+      return;
+    }
+    if (feature && feature.coordinates && feature.coordinates.length > 0) {
+      // Reset both zoom states first
+      setZoomToLayer(null);
+      setZoomToFeature(null);
+      // Use a small delay to ensure state updates properly, then set the new zoom target
+      setTimeout(() => {
+        setZoomToFeature({ ...feature, _zoomKey: Date.now() });
+        // Reset after zoom completes (Leaflet animation is ~500ms)
+        setTimeout(() => setZoomToFeature(null), 600);
+      }, 10);
+    }
+  };
+
+  const handleZoomToLayer = (layer) => {
+    // Don't allow zooming while map is loading
+    if (isMapLoading) {
+      return;
+    }
+    if (layer && layer.features && layer.features.length > 0) {
+      // Reset both zoom states first
+      setZoomToFeature(null);
+      setZoomToLayer(null);
+      // Use a small delay to ensure state updates properly, then set the new zoom target
+      setTimeout(() => {
+        setZoomToLayer({ ...layer, _zoomKey: Date.now() });
+        // Reset after zoom completes (Leaflet animation is ~500ms)
+        setTimeout(() => setZoomToLayer(null), 600);
+      }, 10);
+    }
+  };
+
   // Extract coordinates from selected project
   // Leaflet expects [latitude, longitude] format
   const projectCoordinates = selectedProject && selectedProject.latitude != null && selectedProject.longitude != null
@@ -813,6 +857,8 @@ const MapScreen = () => {
           onStyleLayer={handleStyleLayer}
           onAddFeature={handleAddFeatureToLayer}
           onRemoveFeature={handleRemoveFeature}
+          onZoomToFeature={handleZoomToFeature}
+          onZoomToLayer={handleZoomToLayer}
         />
         <div style={{ 
           width: '100%', 
@@ -835,6 +881,9 @@ const MapScreen = () => {
             labelColor={labelColor}
             labelBackgroundColor={labelBackgroundColor}
             layers={allLayers}
+            zoomToFeature={zoomToFeature}
+            zoomToLayer={zoomToLayer}
+            onMapLoadingChange={handleMapLoadingChange}
                                     />
                                 </div>
                             </div>

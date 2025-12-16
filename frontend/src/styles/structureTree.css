@@ -183,7 +183,7 @@
     --node-gap: 18px;
     --node-padding: 8px;
     --node-font-size: 14px;
-    --vertical-gap: 20px;
+    --vertical-gap: 0px;
     transform-origin: top left;
     box-sizing: border-box;
     min-width: max-content;
@@ -212,7 +212,7 @@
     --node-gap: 18px;
     --node-padding: 8px;
     --node-font-size: 14px;
-    --vertical-gap: 20px;
+    --vertical-gap: 0px;
     /* Allow content to expand beyond normal bounds when scaled */
     transform-origin: top left;
     box-sizing: border-box;
@@ -246,6 +246,12 @@
     margin-bottom: 0; /* Remove bottom margin, gap is handled by parent container */
 }
 
+/* Add vertical spacing between item types at root level */
+.tree-content > .vertical-node.item-type-node:not(:last-child),
+.filtered-tree-content > .vertical-node.item-type-node:not(:last-child) {
+    margin-bottom: 12px; /* Add spacing between item types */
+}
+
 /* Node row contains the node content and children types (horizontal) */
 .node-row {
     display: flex;
@@ -273,11 +279,11 @@
 .vertical-children {
     display: flex;
     flex-direction: column;
-    margin-top: 8px;
+    margin-top: 0; /* Remove top margin */
     margin-left: 15px; /* Slight indentation to the right */
     padding-left: 0; /* No padding needed */
     position: relative;
-    gap: 8px; /* Add spacing between stacked sub-types */
+    gap: 0; /* Remove spacing between stacked items */
 }
 
 /* Connecting line from parent node-row to vertical children - only show if children exist */
@@ -448,6 +454,16 @@
 
 
 /* Hover effects for interactive nodes - only direct hover */
+.node-content.selected {
+    background-color: #e7f1ff !important;
+    border-color: #007bff !important;
+}
+
+.node-content.selected .node-title {
+    color: #007bff;
+    font-weight: 600;
+}
+
 .node-content:hover {
     background: #e9ecef;
     border-color: #007bff;
@@ -544,6 +560,41 @@
     .tree-toggle-button {
         padding: 7px 11px;
         font-size: 13px;
+    }
+    
+    .tree-content,
+    .filtered-tree-content {
+        padding: 18px;
+    }
+    
+    .node-content {
+        padding: 7px 11px;
+    }
+    
+    .node-title {
+        font-size: 13.5px;
+    }
+}
+
+/* Medium tablets */
+@media (max-width: 900px) {
+    .hierarchy-tree {
+        min-height: 65vh;
+        height: 65vh;
+    }
+    
+    .tree-controls {
+        padding: 12px 16px;
+    }
+    
+    .zoom-button {
+        padding: 5px 10px;
+        font-size: 14px;
+    }
+    
+    .tree-toggle-button {
+        padding: 6px 10px;
+        font-size: 12px;
     }
 }
 

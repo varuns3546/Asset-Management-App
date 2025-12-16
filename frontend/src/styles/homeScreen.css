@@ -515,6 +515,28 @@
 }
 
 /* Responsive Design */
+/* Large tablets and smaller desktops */
+@media (max-width: 1199px) {
+  .home-screen {
+    padding: 25px;
+    max-width: 1200px;
+  }
+  
+  .home-header h1 {
+    font-size: 1.8rem;
+  }
+  
+  .project-name {
+    font-size: 1rem;
+  }
+  
+  .refresh-btn {
+    padding: 9px 18px;
+    font-size: 0.9rem;
+  }
+}
+
+/* Tablets */
 @media (max-width: 768px) {
   .home-screen {
     padding: 20px;
@@ -524,19 +546,124 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 15px;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
   }
 
   .home-header h1 {
     font-size: 1.5rem;
+  }
+  
+  .project-name {
+    font-size: 0.95rem;
   }
 
   .metrics-grid,
   .stats-grid,
   .actions-grid {
     grid-template-columns: 1fr;
+    gap: 15px;
   }
 
   .stat-card {
     padding: 20px;
+  }
+  
+  .refresh-btn {
+    width: 100%;
+    padding: 10px 20px;
+  }
+  
+  .welcome-message {
+    padding: 60px 15px;
+  }
+  
+  .welcome-message h1 {
+    font-size: 1.5rem;
+  }
+  
+  .welcome-message p {
+    font-size: 1rem;
+  }
+  
+  .info-banner {
+    padding: 10px 15px;
+    flex-wrap: wrap;
+  }
+  
+  .info-text {
+    font-size: 0.9rem;
+  }
+}
+
+/* Mobile devices */
+@media (max-width: 480px) {
+  .home-screen {
+    padding: 15px;
+  }
+  
+  .home-header {
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    gap: 12px;
+  }
+  
+  .home-header h1 {
+    font-size: 1.3rem;
+  }
+  
+  .project-name {
+    font-size: 0.9rem;
+  }
+  
+  .refresh-btn {
+    padding: 8px 16px;
+    font-size: 0.85rem;
+  }
+  
+  .stat-card {
+    padding: 15px;
+  }
+  
+  .stat-card h3 {
+    font-size: 0.9rem;
+  }
+  
+  .stat-card .stat-value {
+    font-size: 1.5rem;
+  }
+  
+  .welcome-message {
+    padding: 40px 12px;
+  }
+  
+  .welcome-message h1 {
+    font-size: 1.3rem;
+  }
+  
+  .welcome-message p {
+    font-size: 0.95rem;
+  }
+  
+  .info-banner {
+    padding: 8px 12px;
+    gap: 8px;
+  }
+  
+  .info-icon {
+    font-size: 1rem;
+  }
+  
+  .info-text {
+    font-size: 0.85rem;
+  }
+  
+  .account-total-section {
+    padding: 20px;
+    margin-top: 20px;
+  }
+  
+  .account-total-section h2 {
+    font-size: 1.2rem;
   }
 }

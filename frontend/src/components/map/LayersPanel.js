@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import '../../styles/layerPanel.css';
+import '../../styles/layersPanel.css';
 
-const LayerPanel = ({ layers = [], onToggleLayer, onRemoveLayer, onEditLayer, onStyleLayer, onAddFeature, onRemoveFeature }) => {
+const LayersPanel = ({ layers = [], onToggleLayer, onRemoveLayer, onEditLayer, onStyleLayer, onAddFeature, onRemoveFeature, onZoomToFeature, onZoomToLayer }) => {
   const [expandedLayers, setExpandedLayers] = useState({});
   const [contextMenu, setContextMenu] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
@@ -28,6 +28,21 @@ const LayerPanel = ({ layers = [], onToggleLayer, onRemoveLayer, onEditLayer, on
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Prevent text selection on mousedown
+  const handleLayerMouseDown = (e) => {
+    if (e.shiftKey || e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+    }
+  };
+
+  // Handle layer double-click to zoom
+  const handleLayerDoubleClick = (e, layer) => {
+    e.stopPropagation();
+    if (onZoomToLayer && layer) {
+      onZoomToLayer(layer);
+    }
+  };
 
   // Handle layer click with Ctrl/Shift
   const handleLayerClick = (e, layer, index) => {
@@ -61,6 +76,21 @@ const LayerPanel = ({ layers = [], onToggleLayer, onRemoveLayer, onEditLayer, on
     }
     // Clear feature selection when selecting layers
     setSelectedFeatures({});
+  };
+
+  // Prevent text selection on mousedown for features
+  const handleFeatureMouseDown = (e) => {
+    if (e.shiftKey || e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+    }
+  };
+
+  // Handle feature double-click to zoom
+  const handleFeatureDoubleClick = (e, feature) => {
+    e.stopPropagation();
+    if (onZoomToFeature && feature) {
+      onZoomToFeature(feature);
+    }
   };
 
   // Handle feature click with Ctrl/Shift
@@ -229,6 +259,8 @@ const LayerPanel = ({ layers = [], onToggleLayer, onRemoveLayer, onEditLayer, on
             key={layer.id} 
             className={`layer-item ${!layer.visible ? 'layer-hidden' : ''} ${isLayerSelected(layer.id) ? 'selected' : ''}`}
             onClick={(e) => handleLayerClick(e, layer, layerIndex)}
+            onDoubleClick={(e) => handleLayerDoubleClick(e, layer)}
+            onMouseDown={handleLayerMouseDown}
             onContextMenu={(e) => handleContextMenu(e, 'layer', layer)}
           >
             <div className="layer-header">
@@ -278,6 +310,8 @@ const LayerPanel = ({ layers = [], onToggleLayer, onRemoveLayer, onEditLayer, on
                         key={feature.id} 
                         className={`feature-item ${isFeatureSelected(layer.id, feature.id) ? 'selected' : ''}`}
                         onClick={(e) => handleFeatureClick(e, feature, layer, featureIndex)}
+                        onDoubleClick={(e) => handleFeatureDoubleClick(e, feature)}
+                        onMouseDown={handleFeatureMouseDown}
                         onContextMenu={(e) => {
                           e.stopPropagation();
                           handleContextMenu(e, 'feature', feature, layer);
@@ -378,5 +412,5 @@ const LayerPanel = ({ layers = [], onToggleLayer, onRemoveLayer, onEditLayer, on
   );
 };
 
-export default LayerPanel;
+export default LayersPanel;
 
