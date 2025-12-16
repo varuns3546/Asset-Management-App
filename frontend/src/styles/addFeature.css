@@ -3,7 +3,6 @@
   margin: 0 auto;
 }
 
-/* Form Sections */
 .form-section {
   margin-bottom: 24px;
   padding-bottom: 20px;
@@ -31,7 +30,6 @@
   font-style: italic;
 }
 
-/* Coordinates Container */
 .coordinates-container {
   display: flex;
   flex-direction: column;
@@ -117,7 +115,6 @@
   border-style: solid;
 }
 
-/* Coordinate Examples */
 .coordinate-examples {
   padding: 12px;
   background: #f8f9fa;
@@ -141,7 +138,6 @@
   margin-right: 8px;
 }
 
-/* Attributes Grid */
 .attributes-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -159,7 +155,6 @@
   text-transform: uppercase;
 }
 
-/* Form Groups */
 .form-group {
   margin-bottom: 16px;
 }
@@ -190,7 +185,6 @@
   box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
 }
 
-/* Error Message */
 .error-message {
   padding: 12px 16px;
   background: #f8d7da;
@@ -201,7 +195,6 @@
   margin-bottom: 20px;
 }
 
-/* Modal Actions */
 .modal-actions {
   display: flex;
   justify-content: flex-end;
@@ -240,8 +233,6 @@
   background: #5a6268;
 }
 
-/* Responsive */
-/* Large tablets and smaller desktops */
 @media (max-width: 1199px) {
   .add-feature-modal {
     max-width: 600px;
@@ -257,7 +248,6 @@
   }
 }
 
-/* Tablets */
 @media (max-width: 768px) {
   .add-feature-modal {
     max-width: 95%;
@@ -319,7 +309,6 @@
   }
 }
 
-/* Mobile devices */
 @media (max-width: 480px) {
   .add-feature-modal {
     max-width: 100%;
@@ -410,4 +399,3 @@
     font-size: 12px;
   }
 }
-

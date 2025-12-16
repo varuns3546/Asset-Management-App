@@ -1,6 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { getHierarchy, deleteFeature, getFeatureTypes, reset, uploadHierarchyFile, importHierarchyData, createFeatureType } from '../features/projects/projectSlice';
+import { 
+    reset,
+    getHierarchy, 
+    deleteFeature, 
+    createFeature, 
+    updateFeature, 
+    getFeatureTypes, 
+    uploadHierarchyFile, 
+    importHierarchyData, 
+    createFeatureType, 
+    setCurrentHierarchy 
+} from '../features/projects/projectSlice';
 import { useRouteMount } from '../contexts/RouteMountContext';
 import useProjectData from '../hooks/useProjectData';
 import useDebouncedAsync from '../hooks/useDebouncedAsync';
@@ -58,6 +69,49 @@ const HierarchyScreen = () => {
         } catch (error) {
             if (isRouteMounted()) {
                 setError('Failed to delete hierarchy item. Please try again.');
+            }
+        }
+    };
+
+    const handleRestoreItem = async (itemData) => {
+        if (!selectedProject?.id) return;
+        setError('');
+        
+        try {
+            // Convert parent_ids array to parent_id (first element or null)
+            const parentId = itemData.parent_ids && itemData.parent_ids.length > 0 
+                ? itemData.parent_ids[0] 
+                : (itemData.parent_id || null);
+            
+            // Step 1: Create the item with its original order_index to restore it at the correct position
+            const result = await dispatch(createFeature({
+                projectId: selectedProject.id,
+                featureData: {
+                    title: itemData.title,
+                    description: itemData.description || '',
+                    item_type_id: itemData.item_type_id || null,
+                    parent_id: parentId,
+                    beginning_latitude: itemData.beginning_latitude,
+                    beginning_longitude: itemData.beginning_longitude,
+                    attributes: itemData.attributes || {},
+                    order_index: itemData._originalOrderIndex !== undefined ? itemData._originalOrderIndex : null
+                }
+            })).unwrap();
+            
+            if (!result?.data?.id) {
+                throw new Error('Failed to create restored item');
+            }
+            
+            // Step 2: Reload hierarchy to reflect the restored item at its correct position
+            // The backend's createAsset function already handles shifting items to make room
+            // for the restored item at its original order_index position
+            if (isRouteMounted()) {
+                await dispatch(getHierarchy(selectedProject.id));
+            }
+        } catch (error) {
+            console.error('Error restoring item:', error);
+            if (isRouteMounted()) {
+                setError('Failed to restore hierarchy item. Please try again.');
             }
         }
     };
@@ -289,6 +343,7 @@ const HierarchyScreen = () => {
                                         hierarchyItems={currentHierarchy}
                                         onRemoveItem={handleRemoveItem}
                                         onItemClick={handleItemClick}
+                                        onRestoreItem={handleRestoreItem}
                                         itemTypes={currentFeatureTypes}
                                     />
                                 </div>

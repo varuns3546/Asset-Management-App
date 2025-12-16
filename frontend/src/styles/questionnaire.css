@@ -515,8 +515,6 @@
   cursor: not-allowed;
 }
 
-/* Responsive Design */
-/* Large tablets and smaller desktops */
 @media (max-width: 1199px) {
   .questionnaire-screen {
     padding: 18px;
@@ -539,7 +537,6 @@
   }
 }
 
-/* Tablets */
 @media (max-width: 768px) {
   .questionnaire-screen {
     padding: 10px;
@@ -576,7 +573,6 @@
   }
 }
 
-/* Mobile devices */
 @media (max-width: 480px) {
   .questionnaire-screen {
     padding: 8px;
@@ -638,4 +634,3 @@
     max-width: 80px;
   }
 }
-

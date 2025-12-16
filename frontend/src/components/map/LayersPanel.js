@@ -1,15 +1,35 @@
 import React, { useState, useEffect, useRef } from 'react';
 import '../../styles/layersPanel.css';
+import { useUndoRedo } from '../../hooks/useUndoRedo';
 
-const LayersPanel = ({ layers = [], onToggleLayer, onRemoveLayer, onEditLayer, onStyleLayer, onAddFeature, onRemoveFeature, onZoomToFeature, onZoomToLayer }) => {
+const LayersPanel = ({ layers = [], onToggleLayer, onRemoveLayer, onEditLayer, onStyleLayer, onAddFeature, onRemoveFeature, onZoomToFeature, onZoomToLayer, onRestoreLayer, onRestoreFeature }) => {
   const [expandedLayers, setExpandedLayers] = useState({});
   const [contextMenu, setContextMenu] = useState(null);
-  const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [selectedLayers, setSelectedLayers] = useState(new Set());
   const [selectedFeatures, setSelectedFeatures] = useState({}); // { layerId: Set of featureIds }
   const [lastClickedLayer, setLastClickedLayer] = useState(null);
   const [lastClickedFeature, setLastClickedFeature] = useState(null); // { layerId, featureId }
   const contextMenuRef = useRef(null);
+
+  // Undo/Redo for deletions
+  const { performDelete, undo, redo, canUndo, canRedo } = useUndoRedo(
+    // onDelete - perform actual deletion
+    (item) => {
+      if (item.type === 'layer') {
+        onRemoveLayer(item.id);
+      } else if (item.type === 'feature') {
+        onRemoveFeature(item.layerId, item.id);
+      }
+    },
+    // onRestore - restore deleted item
+    (item) => {
+      if (item.type === 'layer' && onRestoreLayer) {
+        onRestoreLayer(item);
+      } else if (item.type === 'feature' && onRestoreFeature) {
+        onRestoreFeature(item);
+      }
+    }
+  );
 
   const toggleExpand = (layerId) => {
     setExpandedLayers(prev => ({
@@ -28,6 +48,21 @@ const LayersPanel = ({ layers = [], onToggleLayer, onRemoveLayer, onEditLayer, o
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Keyboard shortcuts for undo/redo
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === 'z') {
+        e.preventDefault();
+        if (canUndo) undo();
+      } else if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'z') {
+        e.preventDefault();
+        if (canRedo) redo();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [canUndo, canRedo, undo, redo]);
 
   // Prevent text selection on mousedown
   const handleLayerMouseDown = (e) => {
@@ -185,33 +220,54 @@ const LayersPanel = ({ layers = [], onToggleLayer, onRemoveLayer, onEditLayer, o
   };
 
   const handleDeleteClick = () => {
-    setDeleteConfirm(contextMenu);
-    setContextMenu(null);
-  };
-
-  const confirmDelete = () => {
-    const { layersToDelete, featuresToDelete } = deleteConfirm;
+    const { layersToDelete, featuresToDelete } = contextMenu;
     
-    // Delete layers
+    // Collect all items to delete with their full data
+    const itemsToDelete = [];
+    
+    // Add layers to delete
     if (layersToDelete && layersToDelete.size > 0) {
       layersToDelete.forEach(layerId => {
-        onRemoveLayer(layerId);
+        const layer = layers.find(l => l.id === layerId);
+        if (layer) {
+          itemsToDelete.push({
+            ...layer,
+            type: 'layer',
+            id: layerId
+          });
+        }
       });
     }
     
-    // Delete features
+    // Add features to delete
     if (onRemoveFeature && featuresToDelete) {
       Object.entries(featuresToDelete).forEach(([layerId, featureIds]) => {
-        featureIds.forEach(featureId => {
-          onRemoveFeature(layerId, featureId);
-        });
+        const layer = layers.find(l => l.id === layerId);
+        if (layer && layer.features) {
+          featureIds.forEach(featureId => {
+            const feature = layer.features.find(f => f.id === featureId);
+            if (feature) {
+              itemsToDelete.push({
+                ...feature,
+                type: 'feature',
+                id: featureId,
+                layerId: layerId
+              });
+            }
+          });
+        }
       });
     }
     
-    // Clear selections
+    // Perform deletion (stores in history for undo)
+    if (itemsToDelete.length > 0) {
+      performDelete(itemsToDelete);
+    }
+    
+    // Clear selections and close context menu
     setSelectedLayers(new Set());
     setSelectedFeatures({});
-    setDeleteConfirm(null);
+    setContextMenu(null);
   };
 
   const getLayerIcon = (layer) => {
@@ -251,6 +307,24 @@ const LayersPanel = ({ layers = [], onToggleLayer, onRemoveLayer, onEditLayer, o
       <div className="layer-panel-header" onClick={(e) => e.stopPropagation()}>
         <h3>Layers</h3>
         <span className="layer-count">{layers.length}</span>
+        <div className="undo-redo-buttons">
+          <button 
+            className="undo-redo-btn" 
+            onClick={(e) => { e.stopPropagation(); undo(); }}
+            disabled={!canUndo}
+            title="Undo (Ctrl+Z)"
+          >
+            ↶ Undo
+          </button>
+          <button 
+            className="undo-redo-btn" 
+            onClick={(e) => { e.stopPropagation(); redo(); }}
+            disabled={!canRedo}
+            title="Redo (Ctrl+Shift+Z)"
+          >
+            ↷ Redo
+          </button>
+        </div>
       </div>
 
       <div className="layer-list">
@@ -377,37 +451,6 @@ const LayersPanel = ({ layers = [], onToggleLayer, onRemoveLayer, onEditLayer, o
         </div>
       )}
 
-      {/* Delete Confirmation Dialog */}
-      {deleteConfirm && (
-        <div className="confirm-overlay">
-          <div className="confirm-dialog">
-            <h4>Confirm Delete</h4>
-            <p>
-              {(() => {
-                const layerCount = deleteConfirm.layersToDelete?.size || 0;
-                const featureCount = Object.values(deleteConfirm.featuresToDelete || {}).reduce((sum, set) => sum + set.size, 0);
-                const total = layerCount + featureCount;
-                
-                if (total > 1) {
-                  const parts = [];
-                  if (layerCount > 0) parts.push(`${layerCount} layer${layerCount > 1 ? 's' : ''}`);
-                  if (featureCount > 0) parts.push(`${featureCount} feature${featureCount > 1 ? 's' : ''}`);
-                  return `Are you sure you want to delete ${parts.join(' and ')}?`;
-                }
-                return <>Are you sure you want to delete {deleteConfirm.type === 'layer' ? 'layer' : 'feature'} <strong>"{deleteConfirm.item.name}"</strong>?</>;
-              })()}
-            </p>
-            <div className="confirm-actions">
-              <button className="confirm-btn cancel" onClick={() => setDeleteConfirm(null)}>
-                Cancel
-              </button>
-              <button className="confirm-btn delete" onClick={confirmDelete}>
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

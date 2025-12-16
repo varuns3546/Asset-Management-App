@@ -35,7 +35,6 @@
   100% { transform: rotate(360deg); }
 }
 
-/* Map-specific spinner overlay */
 .map-spinner-overlay {
   position: absolute;
   top: 0;
@@ -50,9 +49,6 @@
   pointer-events: none;
 }
 
-/* Spinner styles for loading states */
-
-/* Responsive Design */
 @media (max-width: 768px) {
   .spinner-container {
     padding: 20px 24px;
@@ -86,4 +82,3 @@
     font-size: 12px;
   }
 }
-

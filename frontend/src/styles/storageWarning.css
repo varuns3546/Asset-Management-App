@@ -148,8 +148,6 @@
   color: #333;
 }
 
-/* Responsive Design */
-/* Tablets */
 @media (max-width: 768px) {
   .storage-warning-banner {
     padding: 16px;
@@ -195,7 +193,6 @@
   }
 }
 
-/* Mobile devices */
 @media (max-width: 480px) {
   .storage-warning-banner {
     padding: 12px;
@@ -254,4 +251,3 @@
     font-size: 20px;
   }
 }
-

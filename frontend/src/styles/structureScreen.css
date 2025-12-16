@@ -8,7 +8,7 @@
 .hierarchy-container {
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 40px); /* Subtract top and bottom padding */
+    height: calc(100vh - 40px); 
     width: 100%;
     box-sizing: border-box;
 }
@@ -64,22 +64,21 @@
 }
 
 .hierarchy-left-panel {
-    flex: 0 0 auto; /* Don't grow or shrink, use content width */
+    flex: 0 0 auto; 
     min-width: 400px;
     max-width: 500px;
     overflow-y: auto;
 }
 
 .hierarchy-right-panel {
-    flex: 1 1 auto; /* Grow to fill remaining space */
+    flex: 1 1 auto; 
     min-width: 400px;
     overflow-y: auto;
     border-left: 2px solid #e0e0e0;
     padding-left: 20px;
-    width: 100%; /* Ensure it takes available width */
+    width: 100%; 
 }
 
-/* Edit Container */
 .hierarchy-edit-container {
     background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
     border-radius: 8px;
@@ -87,9 +86,6 @@
     border: 1px solid #dee2e6;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
-
-
-
 
 .form-group {
     margin-bottom: 20px;
@@ -118,9 +114,6 @@
     margin-top: 5px;
 }
 
-/* Alternative class names for compatibility */
-
-/* More specific selector for checkbox label */
 .checkbox-container .checkbox-label {
     font-size: 18px !important;
     color: #333 !important;
@@ -151,11 +144,6 @@
     box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
 }
 
-
-
-
-
-/* Tree Panel */
 .hierarchy-tree-container {
     height: 100%;
     width: 100%;
@@ -187,10 +175,6 @@
     font-size: 0.95rem;
 }
 
-
-/* Responsive Design */
-
-/* Large tablets and smaller desktops */
 @media (max-width: 1199px) {
     .hierarchy-screen {
         padding: 18px;
@@ -224,7 +208,6 @@
     }
 }
 
-/* Tablets */
 @media (max-width: 1024px) {
     .hierarchy-screen {
         padding: 15px;
@@ -270,7 +253,6 @@
     }
 }
 
-/* Mobile */
 @media (max-width: 768px) {
     .hierarchy-screen {
         padding: 12px;
@@ -338,7 +320,6 @@
     }
 }
 
-/* Extra small devices */
 @media (max-width: 480px) {
     .hierarchy-screen {
         padding: 10px;
@@ -374,7 +355,6 @@
     }
 }
 
-/* Add Item Form Styles */
 .add-item-form {
     display: flex;
     flex-direction: column; 
@@ -418,7 +398,6 @@
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
-
 .form-select {
     padding: 10px 12px;
     border: 1px solid #dee2e6;
@@ -438,8 +417,7 @@
     .hierarchy-screen {
         padding: 10px;
     }
-    
-    
+
     .add-item-form {
         flex-direction: column;
         align-items: flex-start;
@@ -450,10 +428,6 @@
         min-width: auto;
     }
 }
-
-
-
-/* Parent dropdown selection styles */
 
 .parent-dropdown-row {
     display: flex;
@@ -559,7 +533,6 @@
     transform: none;
 }
 
-/* Coordinates section styles */
 .coordinates-section {
     margin: 15px 0;
     padding: 15px;
