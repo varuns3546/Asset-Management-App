@@ -18,7 +18,9 @@ const TreeNode = ({
     onMouseDown,
     itemIndex,
     checkNodeSelected,
-    getNodeIndex
+    getNodeIndex,
+    fixedAssetWidth,
+    fixedTypeWidth
 }) => {
     // Start expanded for top-level item types, collapsed for hierarchy items with children
     const [isExpanded, setIsExpanded] = React.useState(isTopLevelItemType)
@@ -30,10 +32,15 @@ const TreeNode = ({
     const handleItemClick = (e) => {
         e.stopPropagation()
         e.preventDefault()
-        if (onItemClick && !isItemType && itemIndex !== undefined) {
-            onItemSelect(e, node, itemIndex)
-        } else if (onItemClick && !isItemType) {
-            onItemClick(node)
+        if (!isItemType) {
+            // Always call onItemClick to populate the form when clicking an asset
+            if (onItemClick) {
+                onItemClick(node)
+            }
+            // Also handle selection for multi-select support
+            if (onItemSelect && itemIndex !== undefined) {
+                onItemSelect(e, node, itemIndex)
+            }
         }
     }
 
@@ -65,7 +72,10 @@ const TreeNode = ({
                         pointerEvents: 'auto',
                         backgroundColor: isSelected && !isItemType ? '#e7f1ff' : (isItemType ? '#e7f3ff' : undefined),
                         borderColor: (isSelected && !isItemType) ? '#007bff' : (isItemType ? '#007bff' : undefined),
-                        fontWeight: isItemType ? '600' : undefined
+                        fontWeight: isItemType ? '600' : undefined,
+                        width: isItemType ? `${fixedTypeWidth}px` : `${fixedAssetWidth}px`,
+                        minWidth: isItemType ? `${fixedTypeWidth}px` : `${fixedAssetWidth}px`,
+                        maxWidth: isItemType ? `${fixedTypeWidth}px` : `${fixedAssetWidth}px`
                     }}
                     title={isItemType ? `Item Type: ${node.title}` : "Click to edit, right-click for menu"}
                 >
@@ -101,6 +111,8 @@ const TreeNode = ({
                                     itemIndex={childIndex}
                                     checkNodeSelected={checkNodeSelected}
                                     getNodeIndex={getNodeIndex}
+                                    fixedAssetWidth={fixedAssetWidth}
+                                    fixedTypeWidth={fixedTypeWidth}
                                 />
                             )
                         })}
@@ -498,6 +510,8 @@ const HierarchyTree = ({ hierarchyItems, onRemoveItem, onItemClick, itemTypes = 
                 itemIndex={nodeIndex}
                 checkNodeSelected={checkNodeSelected}
                 getNodeIndex={getNodeIndex}
+                fixedAssetWidth={fixedAssetWidth}
+                fixedTypeWidth={fixedTypeWidth}
             />
         )
     }
@@ -505,87 +519,9 @@ const HierarchyTree = ({ hierarchyItems, onRemoveItem, onItemClick, itemTypes = 
     // Memoize available types calculation
     const availableTypes = useMemo(() => getItemTypesFromHierarchy(), [hierarchyItems, itemTypes])
     
-    // Calculate and apply uniform width to all nodes (optimized with requestAnimationFrame)
-    // Assets and types will have the same width, based on the maximum asset width
-    useEffect(() => {
-        if (!isTreeExpanded) return; // Skip if tree is collapsed
-        
-        let rafId = null;
-        const timeoutId = setTimeout(() => {
-            rafId = requestAnimationFrame(() => {
-                const nodeContents = document.querySelectorAll('.node-content')
-                if (nodeContents.length === 0) return
-                
-                let maxAssetWidth = 0
-                let maxTypeWidth = 0
-                
-                // Batch DOM reads first (measure phase)
-                const measurements = Array.from(nodeContents).map(node => {
-                    // Check if this is an item type node using data attribute
-                    const isItemTypeNode = node.getAttribute('data-is-item-type') === 'true'
-                    
-                    const originalWidth = node.style.width
-                    const originalMinWidth = node.style.minWidth
-                    const originalMaxWidth = node.style.maxWidth
-                    
-                    // Remove constraints to measure natural width
-                    node.style.width = 'auto'
-                    node.style.minWidth = '0'
-                    node.style.maxWidth = 'none'
-                    
-                    // Measure the scroll width (includes all content)
-                    const width = node.scrollWidth
-                    
-                    // Restore original styles immediately
-                    node.style.width = originalWidth
-                    node.style.minWidth = originalMinWidth
-                    node.style.maxWidth = originalMaxWidth
-                    
-                    return { node, width, isItemTypeNode, originalWidth, originalMinWidth, originalMaxWidth };
-                });
-                
-                // Find max width for assets and types separately
-                measurements.forEach(({ width, isItemTypeNode }) => {
-                    if (isItemTypeNode) {
-                        if (width > maxTypeWidth) {
-                            maxTypeWidth = width;
-                        }
-                    } else {
-                        if (width > maxAssetWidth) {
-                            maxAssetWidth = width;
-                        }
-                    }
-                });
-                
-                // Use the maximum asset width for both assets and types
-                // This increases asset width and decreases type width to match
-                // Increase width by 40% (multiply by 1.4)
-                const baseWidth = Math.max(maxAssetWidth + 4, dynamicStyles.nodeMinWidth) // Add 4px padding, but respect min width
-                const uniformWidth = baseWidth * 1.4 // Increase by 40%
-                
-                // Batch DOM writes (apply phase) - apply same width to all nodes
-                measurements.forEach(({ node }) => {
-                    // Temporarily disable transitions when setting width to prevent animation
-                    const transition = node.style.transition
-                    node.style.transition = 'none'
-                    node.style.width = `${uniformWidth}px`
-                    node.style.minWidth = `${uniformWidth}px`
-                    node.style.maxWidth = `${uniformWidth}px`
-                    // Force a reflow to apply the width immediately
-                    void node.offsetWidth
-                    // Re-enable transitions after width is set
-                    node.style.transition = transition || ''
-                })
-            });
-        }, 50); // Reduced delay from 100ms to 50ms
-        
-        return () => {
-            clearTimeout(timeoutId);
-            if (rafId !== null) {
-                cancelAnimationFrame(rafId);
-            }
-        };
-    }, [treeDataWithTypes, zoomLevel, selectedTypeFilter, isTreeExpanded, dynamicStyles.nodeMinWidth])
+    // Calculate fixed widths based on zoom level
+    const fixedAssetWidth = useMemo(() => dynamicStyles.nodeMinWidth * 2, [dynamicStyles.nodeMinWidth])
+    const fixedTypeWidth = useMemo(() => dynamicStyles.nodeMinWidth * 1.5, [dynamicStyles.nodeMinWidth])
     
     // If no item types are loaded, show a message about creating them
     if (itemTypes?.length === 0) {
