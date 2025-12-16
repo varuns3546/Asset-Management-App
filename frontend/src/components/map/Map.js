@@ -516,9 +516,7 @@ const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, featu
     const map = {};
     featureTypes.forEach(type => {
       map[type.id] = {
-        title: type.title,
-        color: type.icon_color || '#3388ff',
-        icon: type.icon
+        title: type.title
       };
     });
     return map;
@@ -534,11 +532,17 @@ const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, featu
     );
   }, [features]);
 
-  // Get color for a feature based on its type (memoized)
+  // Get color for a feature based on its layer style (memoized)
   const getFeatureColor = useCallback((feature) => {
-    const typeInfo = featureTypeMap[feature.item_type_id];
-    return typeInfo?.color || '#3388ff';
-  }, [featureTypeMap]);
+    // Find the asset type layer for this feature's type
+    const assetTypeLayer = layers.find(l => 
+      l.isAssetTypeLayer && l.assetTypeId === feature.item_type_id
+    );
+    if (assetTypeLayer?.style?.color) {
+      return assetTypeLayer.style.color;
+    }
+    return '#3388ff'; // Default color
+  }, [layers]);
 
   // Get feature type name (memoized)
   const getFeatureTypeName = useCallback((feature) => {
@@ -546,11 +550,17 @@ const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, featu
     return typeInfo?.title || 'Unknown Type';
   }, [featureTypeMap]);
 
-  // Get icon for a feature based on its type
+  // Get icon for a feature based on its layer style
   const getFeatureIcon = useCallback((feature) => {
-    const typeInfo = featureTypeMap[feature.item_type_id];
-    return typeInfo?.icon || 'marker';
-  }, [featureTypeMap]);
+    // Find the asset type layer for this feature's type
+    const assetTypeLayer = layers.find(l => 
+      l.isAssetTypeLayer && l.assetTypeId === feature.item_type_id
+    );
+    if (assetTypeLayer?.style?.symbol) {
+      return assetTypeLayer.style.symbol;
+    }
+    return 'marker'; // Default icon
+  }, [layers]);
 
   // Memoized icon cache - create icons once per symbol+color combination
   const iconCache = useMemo(() => {

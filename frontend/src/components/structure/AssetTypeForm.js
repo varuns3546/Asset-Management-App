@@ -3,7 +3,6 @@ import { useDispatch, useSelector } from 'react-redux';
 import { createFeatureType, updateFeatureType, getFeatureTypes } from '../../features/projects/projectSlice';
 import FormField from '../forms/FormField';
 import '../../styles/structureScreen.css'
-import { DEFAULT_ITEM_TYPE_ICON, ITEM_TYPE_COLOR_OPTIONS, getRandomUnusedStyle } from '../../constants/itemTypeIcons';
 
 const AssetTypeForm = ({ 
     assetTypes,
@@ -280,19 +279,6 @@ const AssetTypeForm = ({
             .filter(st => st.value.trim() !== '' && !st.existingId)
             .map(st => st.value.trim());
 
-        // Get random unused style for new asset types, preserve existing for edits
-        let icon, iconColor;
-        if (isEditing && selectedAsset) {
-            // Preserve existing icon and color when editing
-            icon = selectedAsset.icon || DEFAULT_ITEM_TYPE_ICON;
-            iconColor = selectedAsset.icon_color || ITEM_TYPE_COLOR_OPTIONS[0].value;
-        } else {
-            // Get random unused style for new asset types
-            const randomStyle = getRandomUnusedStyle(assetTypes || []);
-            icon = randomStyle.icon;
-            iconColor = randomStyle.icon_color;
-        }
-
         // Store the current form data before clearing
         const assetTypeData = {
             name: newAssetType.title,
@@ -300,9 +286,7 @@ const AssetTypeForm = ({
             parent_ids: selectedParentIds,
             subtype_of_id: null, // Sub-types are created separately, not set here
             attributes: attributeValues,
-            has_coordinates: hasCoordinates,
-            icon: icon,
-            icon_color: iconColor
+            has_coordinates: hasCoordinates
         };
 
         // Clear form fields IMMEDIATELY for better UX
@@ -335,7 +319,7 @@ const AssetTypeForm = ({
                 
                 currentAssetTypeId = selectedAsset.id;
                 
-                // Refresh the feature types list to get updated data (including icon and icon_color)
+                // Refresh the feature types list to get updated data
                 await dispatch(getFeatureTypes(selectedProject.id));
                 
                 // Wait a moment for state to update before clearing selection
@@ -368,9 +352,7 @@ const AssetTypeForm = ({
                                     parent_ids: existingType.parent_ids || [],
                                     subtype_of_id: currentAssetTypeId, // Set as sub-type
                                     attributes: existingType.attributes || [],
-                                    has_coordinates: existingType.has_coordinates || false,
-                                    icon: existingType.icon || DEFAULT_ITEM_TYPE_ICON,
-                                    icon_color: existingType.icon_color || ITEM_TYPE_COLOR_OPTIONS[0].value
+                                    has_coordinates: existingType.has_coordinates || false
                                 }
                             })).unwrap();
                         }
@@ -392,9 +374,7 @@ const AssetTypeForm = ({
                                 parent_ids: [],
                                 subtype_of_id: currentAssetTypeId, // Set as sub-type of the newly created type
                                 attributes: [],
-                                has_coordinates: false,
-                                icon: DEFAULT_ITEM_TYPE_ICON,
-                                icon_color: ITEM_TYPE_COLOR_OPTIONS[0].value
+                                has_coordinates: false
                             }
                         })).unwrap();
                     } catch (error) {

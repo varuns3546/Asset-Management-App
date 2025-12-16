@@ -25,22 +25,22 @@ const FileUploadModal = ({ isOpen, onClose, onFileSelect, projectId }) => {
 
     // Function to load cloud files (extracted for reuse)
     const loadCloudFiles = async () => {
-        if (!projectId) return;
-        
-        setLoadingCloudFiles(true);
-        setError('');
-        
-        try {
-            const response = await fileService.listFiles(projectId);
-            if (response.success) {
-                setCloudFiles(response.data || []);
+            if (!projectId) return;
+            
+            setLoadingCloudFiles(true);
+            setError('');
+            
+            try {
+                const response = await fileService.listFiles(projectId);
+                if (response.success) {
+                    setCloudFiles(response.data || []);
+                }
+            } catch (err) {
+                console.error('Error loading cloud files:', err);
+                setError('Failed to load cloud files');
+            } finally {
+                setLoadingCloudFiles(false);
             }
-        } catch (err) {
-            console.error('Error loading cloud files:', err);
-            setError('Failed to load cloud files');
-        } finally {
-            setLoadingCloudFiles(false);
-        }
     };
 
     // Load cloud files when switching to cloud tab (debounced to prevent excessive calls)

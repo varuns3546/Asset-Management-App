@@ -10,6 +10,7 @@ import StyleLayerModal from '../components/map/StyleLayerModal';
 import ErrorMessage from '../components/forms/ErrorMessage';
 import { getHierarchy, getFeatureTypes, updateFeatureType } from '../features/projects/projectSlice';
 import * as gisLayerService from '../services/gisLayerService';
+import { getRandomUnusedStyle } from '../constants/itemTypeIcons';
 import '../styles/map.css';
 import { useRouteMount } from '../contexts/RouteMountContext';
 import useProjectData from '../hooks/useProjectData';
@@ -127,19 +128,7 @@ const MapScreen = () => {
             }
           }
 
-          // For asset type layers, map icon/icon_color from asset type to style (symbol/color)
-          if (isAssetTypeLayer && assetTypeId) {
-            const assetType = currentFeatureTypes?.find(ft => ft.id === assetTypeId);
-            if (assetType) {
-              parsedStyle = {
-                ...parsedStyle,
-                symbol: assetType.icon || 'marker',
-                color: assetType.icon_color || '#3388ff',
-                opacity: parsedStyle.opacity ?? 1,
-                weight: parsedStyle.weight ?? 3
-              };
-            }
-          }
+          // Asset type layers use the style from the layer itself (no mapping from asset type)
 
           return {
             id: dbLayer.id,
@@ -171,13 +160,31 @@ const MapScreen = () => {
     }
   };
 
+  // Track if sync is in progress to avoid race conditions
+  const syncInProgressRef = useRef(false);
+
   // Load hierarchy and feature types when project is selected (debounced to prevent excessive calls)
   useDebouncedAsync(
     async () => {
       if (!selectedProject?.id || !user) return;
       
-      dispatch(getHierarchy(selectedProject.id));
-      dispatch(getFeatureTypes(selectedProject.id));
+      // Load hierarchy and feature types first
+      await Promise.all([
+        dispatch(getHierarchy(selectedProject.id)),
+        dispatch(getFeatureTypes(selectedProject.id))
+      ]);
+      
+      // Wait a bit for Redux state to update, then wait for sync to complete
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Wait for sync to complete if it's running
+      let waitCount = 0;
+      while (syncInProgressRef.current && waitCount < 20) {
+        await new Promise(resolve => setTimeout(resolve, 200));
+        waitCount++;
+      }
+      
+      // Now load layers
       await loadLayersFromDatabase();
     },
     [selectedProject?.id, user?.id],
@@ -191,12 +198,96 @@ const MapScreen = () => {
     }
   );
 
+  // Track previous feature types count to detect new asset types
+  const prevFeatureTypesCountRef = useRef(0);
+  const prevFeatureTypesIdsRef = useRef(new Set());
+  const prevHierarchyCountRef = useRef(0);
+  const prevHierarchyIdsRef = useRef(new Set());
+
+  // Reload layers when feature types change (new asset type created)
+  useEffect(() => {
+    if (!selectedProject?.id || !currentFeatureTypes) return;
+    
+    const currentCount = currentFeatureTypes.length;
+    const currentIds = new Set(currentFeatureTypes.map(t => t.id));
+    const prevIds = prevFeatureTypesIdsRef.current;
+    
+    // Check if a new asset type was added
+    const hasNewAssetType = currentCount > prevFeatureTypesCountRef.current || 
+      Array.from(currentIds).some(id => !prevIds.has(id));
+    
+    if (hasNewAssetType && isRouteMounted()) {
+      console.log('New asset type detected, reloading layers...');
+      // Longer delay to ensure database is fully updated and sync hook can process
+      const timer = setTimeout(() => {
+        if (isRouteMounted()) {
+          loadLayersFromDatabase();
+        }
+      }, 1500); // Increased delay to allow database operations to complete
+      
+      // Update refs
+      prevFeatureTypesCountRef.current = currentCount;
+      prevFeatureTypesIdsRef.current = currentIds;
+      
+      return () => clearTimeout(timer);
+    }
+    
+    // Update refs
+    prevFeatureTypesCountRef.current = currentCount;
+    prevFeatureTypesIdsRef.current = currentIds;
+  }, [currentFeatureTypes, selectedProject?.id]);
+
+  // Track hierarchy changes (sync hook will handle reloading)
+  useEffect(() => {
+    if (!selectedProject?.id || !currentHierarchy) return;
+    
+    const currentCount = currentHierarchy.length;
+    const currentIds = new Set(currentHierarchy.map(a => a.id));
+    const prevIds = prevHierarchyIdsRef.current;
+    
+    // Check if new assets were added
+    const newAssetIds = Array.from(currentIds).filter(id => !prevIds.has(id));
+    const hasNewAssets = currentCount > prevHierarchyCountRef.current || newAssetIds.length > 0;
+    
+    if (hasNewAssets && isRouteMounted()) {
+      // Check if any of the new assets have valid coordinates
+      const newAssets = currentHierarchy.filter(a => newAssetIds.includes(a.id));
+      const hasAssetsWithCoords = newAssets.some(asset => {
+        const lat = asset.beginning_latitude;
+        const lng = asset.beginning_longitude;
+        
+        if (lat == null || lng == null) return false;
+        
+        const latNum = parseFloat(lat);
+        const lngNum = parseFloat(lng);
+        
+        // Validate coordinates are valid numbers and within valid ranges
+        return !isNaN(latNum) && !isNaN(lngNum) && 
+               latNum >= -90 && latNum <= 90 && 
+               lngNum >= -180 && lngNum <= 180;
+      });
+      
+      if (hasAssetsWithCoords) {
+        console.log('New assets with coordinates detected, sync hook will handle layer reload');
+      } else {
+        console.log('New assets detected but none have coordinates, skipping');
+      }
+    }
+    
+    // Update refs
+    prevHierarchyCountRef.current = currentCount;
+    prevHierarchyIdsRef.current = currentIds;
+  }, [currentHierarchy, selectedProject?.id]);
+
   // Sync asset type layers to database (with debouncing and duplicate prevention)
   useDebouncedAsync(
     async () => {
       if (!selectedProject?.id || !currentHierarchy || !currentFeatureTypes || !user) {
         return;
       }
+
+      // Mark sync as in progress
+      syncInProgressRef.current = true;
 
       // Group assets by item_type_id
       const assetsByType = {};
@@ -255,13 +346,15 @@ const MapScreen = () => {
           if (!assetType) continue;
           layerName = assetType.title;
           layerDescription = assetType.description || `Layer for ${assetType.title} assets`;
-          layerColor = assetType.icon_color || '#3388ff';
         }
 
         // Check if layer already exists (by name)
         let existingLayer = existingLayers.find(l => l.name === layerName);
         
         if (!existingLayer) {
+          // Get random unused style for the new layer
+          const randomStyle = getRandomUnusedStyle(existingLayers, { type: 'layer' });
+          
           // Create new layer
           const layerData = {
             name: layerName,
@@ -269,13 +362,7 @@ const MapScreen = () => {
             layerType: 'vector',
             geometryType: 'point',
             attributes: [],
-            style: {
-              color: layerColor,
-              weight: 3,
-              opacity: 1,
-              fillColor: layerColor,
-              fillOpacity: 0.2
-            }
+            style: randomStyle
           };
 
           const createResponse = await gisLayerService.createGisLayer(
@@ -360,14 +447,92 @@ const MapScreen = () => {
         }
       }
 
-      // Reload layers after syncing
+      // Reload layers after syncing with retry logic to ensure database consistency
       if (isRouteMounted()) {
-        loadLayersFromDatabase();
+        const reloadWithRetry = async (retries = 5, delay = 600) => {
+          let lastError = null;
+          
+          for (let i = 0; i < retries; i++) {
+            if (i > 0) {
+              // Wait before retry (except first attempt)
+              await new Promise(resolve => setTimeout(resolve, delay));
+            }
+            
+            if (!isRouteMounted()) {
+              syncInProgressRef.current = false;
+              return;
+            }
+            
+            try {
+              // Force reload layers
+              await loadLayersFromDatabase();
+              
+              // Small additional delay to let state update
+              await new Promise(resolve => setTimeout(resolve, 200));
+              
+              // Verify that the layers and features we just created are actually loaded
+              const response = await gisLayerService.getGisLayers(selectedProject.id);
+              if (response.success && response.data) {
+                // Check if we have layers for all asset types that should have layers
+                const layerNames = response.data.map(l => l.name);
+                const expectedLayers = Object.keys(assetsByType).map(typeId => {
+                  if (typeId === 'uncategorized') return 'Uncategorized Assets';
+                  const assetType = currentFeatureTypes.find(type => type.id === typeId);
+                  return assetType ? assetType.title : null;
+                }).filter(Boolean);
+                
+                const allLayersPresent = expectedLayers.every(name => layerNames.includes(name));
+                
+                if (allLayersPresent) {
+                  // Verify features are loaded by checking at least one layer has features
+                  let hasFeatures = false;
+                  for (const layerName of expectedLayers) {
+                    const layer = response.data.find(l => l.name === layerName);
+                    if (layer) {
+                      const featuresResp = await gisLayerService.getLayerFeatures(selectedProject.id, layer.id);
+                      if (featuresResp.success && featuresResp.data && featuresResp.data.length > 0) {
+                        hasFeatures = true;
+                        break;
+                      }
+                    }
+                  }
+                  
+                  if (hasFeatures || i === retries - 1) {
+                    // Features are loaded or this is the last retry
+                    console.log(`Layers reloaded successfully (attempt ${i + 1})`);
+                    syncInProgressRef.current = false;
+                    return;
+                  } else {
+                    console.log(`Retry ${i + 1}/${retries}: Layers present but waiting for features...`);
+                  }
+                } else {
+                  console.log(`Retry ${i + 1}/${retries}: Waiting for layers to be available...`);
+                }
+              }
+            } catch (error) {
+              lastError = error;
+              console.error(`Error reloading layers (attempt ${i + 1}):`, error);
+            }
+          }
+          
+          // Final attempt even if all retries failed
+          if (lastError && isRouteMounted()) {
+            console.log('Final reload attempt after all retries...');
+            await loadLayersFromDatabase();
+          }
+          
+          // Mark sync as complete
+          syncInProgressRef.current = false;
+        };
+        
+        reloadWithRetry();
+      } else {
+        syncInProgressRef.current = false;
       }
     },
     [currentHierarchy, currentFeatureTypes, selectedProject?.id, user],
     {
-      delay: 500, // Reduced delay to 500ms for faster sync
+      delay: 800, // Increased delay to ensure database operations complete
       shouldRun: (deps) => {
         const [hierarchy, types, projectId, user] = deps;
         return !!(projectId && hierarchy && types && user);
@@ -454,6 +619,9 @@ const MapScreen = () => {
     }
 
     try {
+      // Get random unused style for the new layer
+      const randomStyle = getRandomUnusedStyle(layers, { type: 'layer' });
+      
       // Save to Supabase
       const response = await gisLayerService.createGisLayer(
         selectedProject.id,
@@ -463,13 +631,7 @@ const MapScreen = () => {
           layerType: layerData.layerType, // Fixed: was layerData.type
           geometryType: layerData.geometryType,
           attributes: layerData.attributes,
-          style: layerData.style || {
-            color: '#3388ff',
-            weight: 3,
-            opacity: 1,
-            fillColor: '#3388ff',
-            fillOpacity: 0.2
-          }
+          style: layerData.style || randomStyle
         }
       );
 
@@ -546,15 +708,6 @@ const MapScreen = () => {
   };
 
   const handleRemoveLayer = async (layerId) => {
-    // Don't allow deleting asset type layers (they're auto-generated)
-    const layer = allLayers.find(l => l.id === layerId);
-    if (layer?.isAssetTypeLayer) {
-      if (isRouteMounted()) {
-        setError('Cannot delete asset type layers. They are automatically generated from your asset types.');
-      }
-      return;
-    }
-    
     if (!selectedProject?.id) return;
     setError('');
 
@@ -614,9 +767,7 @@ const MapScreen = () => {
           subtype_of_id: existingAssetType.subtype_of_id || null,
           attributes: existingAssetType.attributes || [],
           has_coordinates: existingAssetType.has_coordinates || false,
-          // Always use styleData values if provided, otherwise keep existing
-          icon: styleData.symbol !== undefined ? styleData.symbol : (existingAssetType.icon || 'marker'),
-          icon_color: styleData.color !== undefined ? styleData.color : (existingAssetType.icon_color || '#3388ff')
+          // Note: icon and icon_color are no longer stored on asset types
         };
 
         console.log('Updating asset type style:', {

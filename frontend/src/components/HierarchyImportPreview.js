@@ -592,32 +592,26 @@ const HierarchyImportPreview = ({
                                         </div>
                                         
                                         <div className="type-config-row">
-                                            <label className="config-field-label">Action:</label>
+                                            <label className="config-field-label">Select Type:</label>
                                             <select
                                                 className="mapping-select"
-                                                value={config.action}
-                                                onChange={(e) => handleItemTypeMapChange(typeName, e.target.value, null)}
+                                                value={config.action === 'create_new' ? 'create_new' : (config.itemTypeId || '')}
+                                                onChange={(e) => {
+                                                    const value = e.target.value;
+                                                    if (value === 'create_new') {
+                                                        handleItemTypeMapChange(typeName, 'create_new', null);
+                                                    } else if (value) {
+                                                        handleItemTypeMapChange(typeName, 'use_existing', value);
+                                                    }
+                                                }}
                                             >
-                                                <option value="use_existing">Use Existing Type</option>
+                                                <option value="" disabled>Select Type</option>
                                                 <option value="create_new">Create New Type</option>
+                                                {itemTypes.map(it => (
+                                                    <option key={it.id} value={it.id}>{it.title}</option>
+                                                ))}
                                             </select>
                                         </div>
-                                        
-                                        {config.action === 'use_existing' && (
-                                            <div className="type-config-row">
-                                                <label className="config-field-label">Select Type:</label>
-                                                <select
-                                                    className="mapping-select"
-                                                    value={config.itemTypeId || ''}
-                                                    onChange={(e) => handleItemTypeMapChange(typeName, 'use_existing', e.target.value)}
-                                                >
-                                                    <option value="">Select existing type...</option>
-                                                    {itemTypes.map(it => (
-                                                        <option key={it.id} value={it.id}>{it.title}</option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                        )}
                                         
                                         {config.action === 'create_new' && (
                                             <>
@@ -680,32 +674,26 @@ const HierarchyImportPreview = ({
                                             </div>
                                             
                                             <div className="type-config-row">
-                                                <label className="config-field-label">Action:</label>
+                                                <label className="config-field-label">Select Type:</label>
                                                 <select
                                                     className="mapping-select"
-                                                    value={config.action}
-                                                    onChange={(e) => handleSheetDefaultTypeActionChange(sheetName, e.target.value)}
+                                                    value={config.action === 'create_new' ? 'create_new' : (config.itemTypeId || '')}
+                                                    onChange={(e) => {
+                                                        const value = e.target.value;
+                                                        if (value === 'create_new') {
+                                                            handleSheetDefaultTypeActionChange(sheetName, 'create_new');
+                                                        } else if (value) {
+                                                            handleSheetDefaultExistingTypeChange(sheetName, value);
+                                                        }
+                                                    }}
                                                 >
-                                                    <option value="use_existing">Use Existing Type</option>
+                                                    <option value="" disabled>Select Type</option>
                                                     <option value="create_new">Create New Type</option>
+                                                    {itemTypes.map(it => (
+                                                        <option key={it.id} value={it.id}>{it.title}</option>
+                                                    ))}
                                                 </select>
                                             </div>
-
-                                            {config.action === 'use_existing' && (
-                                                <div className="type-config-row">
-                                                    <label className="config-field-label">Select Type:</label>
-                                                    <select
-                                                        className="mapping-select"
-                                                        value={config.itemTypeId}
-                                                        onChange={(e) => handleSheetDefaultExistingTypeChange(sheetName, e.target.value)}
-                                                    >
-                                                        <option value="">Select existing type...</option>
-                                                        {itemTypes.map(it => (
-                                                            <option key={it.id} value={it.id}>{it.title}</option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-                                            )}
 
                                             {config.action === 'create_new' && (
                                                 <>
