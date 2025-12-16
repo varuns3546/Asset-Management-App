@@ -241,7 +241,37 @@
 }
 
 /* Responsive */
+/* Large tablets and smaller desktops */
+@media (max-width: 1199px) {
+  .add-feature-modal {
+    max-width: 600px;
+  }
+  
+  .form-section {
+    margin-bottom: 20px;
+    padding-bottom: 18px;
+  }
+  
+  .section-header h3 {
+    font-size: 15px;
+  }
+}
+
+/* Tablets */
 @media (max-width: 768px) {
+  .add-feature-modal {
+    max-width: 95%;
+  }
+  
+  .form-section {
+    margin-bottom: 18px;
+    padding-bottom: 16px;
+  }
+  
+  .section-header h3 {
+    font-size: 14px;
+  }
+  
   .coordinate-row {
     grid-template-columns: 1fr 1fr;
     gap: 8px;
@@ -260,6 +290,124 @@
 
   .attributes-grid {
     grid-template-columns: 1fr;
+  }
+  
+  .form-group {
+    margin-bottom: 14px;
+  }
+  
+  .form-group label {
+    font-size: 13px;
+  }
+  
+  .form-input,
+  .form-select {
+    padding: 9px 11px;
+    font-size: 13px;
+  }
+  
+  .modal-actions {
+    margin-top: 20px;
+    padding-top: 18px;
+    gap: 10px;
+  }
+  
+  .btn-primary,
+  .btn-secondary {
+    padding: 9px 20px;
+    font-size: 13px;
+  }
+}
+
+/* Mobile devices */
+@media (max-width: 480px) {
+  .add-feature-modal {
+    max-width: 100%;
+  }
+  
+  .form-section {
+    margin-bottom: 16px;
+    padding-bottom: 14px;
+  }
+  
+  .section-header h3 {
+    font-size: 13px;
+  }
+  
+  .geometry-help {
+    font-size: 12px;
+  }
+  
+  .coordinate-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  
+  .coord-number {
+    width: 22px;
+    height: 22px;
+    font-size: 11px;
+  }
+  
+  .coord-input {
+    padding: 7px 10px;
+    font-size: 13px;
+  }
+  
+  .remove-coord-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 18px;
+  }
+  
+  .add-coord-btn {
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+  
+  .coordinate-examples {
+    padding: 10px;
+    font-size: 12px;
+  }
+  
+  .attributes-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .form-group {
+    margin-bottom: 12px;
+  }
+  
+  .form-group label {
+    font-size: 12px;
+    margin-bottom: 5px;
+  }
+  
+  .form-input,
+  .form-select {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+  
+  .error-message {
+    padding: 10px 14px;
+    font-size: 12px;
+    margin-bottom: 16px;
+  }
+  
+  .modal-actions {
+    margin-top: 18px;
+    padding-top: 16px;
+    gap: 8px;
+    flex-direction: column;
+  }
+  
+  .btn-primary,
+  .btn-secondary {
+    width: 100%;
+    padding: 8px 18px;
+    font-size: 12px;
   }
 }
 

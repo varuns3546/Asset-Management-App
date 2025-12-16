@@ -148,3 +148,110 @@
   color: #333;
 }
 
+/* Responsive Design */
+/* Tablets */
+@media (max-width: 768px) {
+  .storage-warning-banner {
+    padding: 16px;
+    gap: 12px;
+  }
+  
+  .warning-icon {
+    font-size: 1.75rem;
+  }
+  
+  .warning-title {
+    font-size: 1.1rem;
+  }
+  
+  .warning-details {
+    gap: 15px;
+    flex-direction: column;
+  }
+  
+  .warning-metric {
+    font-size: 0.9rem;
+  }
+  
+  .warning-message {
+    font-size: 0.9rem;
+  }
+  
+  .warning-actions {
+    gap: 8px;
+    margin-top: 12px;
+  }
+  
+  .export-btn,
+  .manage-btn {
+    padding: 9px 18px;
+    font-size: 0.9rem;
+  }
+  
+  .close-warning {
+    width: 28px;
+    height: 28px;
+    font-size: 22px;
+  }
+}
+
+/* Mobile devices */
+@media (max-width: 480px) {
+  .storage-warning-banner {
+    padding: 12px;
+    gap: 10px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .warning-icon {
+    font-size: 1.5rem;
+  }
+  
+  .warning-title {
+    font-size: 1rem;
+    margin-bottom: 8px;
+  }
+  
+  .warning-details {
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  
+  .warning-metric {
+    font-size: 0.85rem;
+  }
+  
+  .warning-badge {
+    font-size: 0.7rem;
+    padding: 2px 5px;
+  }
+  
+  .warning-message {
+    font-size: 0.85rem;
+    margin: 8px 0;
+  }
+  
+  .warning-actions {
+    width: 100%;
+    gap: 6px;
+    margin-top: 10px;
+    flex-direction: column;
+  }
+  
+  .export-btn,
+  .manage-btn {
+    width: 100%;
+    padding: 8px 16px;
+    font-size: 0.85rem;
+  }
+  
+  .close-warning {
+    top: 8px;
+    right: 8px;
+    width: 26px;
+    height: 26px;
+    font-size: 20px;
+  }
+}
+

@@ -1,13 +1,16 @@
 .hierarchy-screen {
     padding: 20px;
-    max-width: 1400px;
-    margin: 0 auto;
+    width: 100%;
+    height: 100vh;
+    box-sizing: border-box;
 }
 
 .hierarchy-container {
     display: flex;
     flex-direction: column;
-    height: 100vh;
+    height: calc(100vh - 40px); /* Subtract top and bottom padding */
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .hierarchy-header {
@@ -68,21 +71,24 @@
     gap: 20px;
     flex: 1;
     min-height: 0;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .hierarchy-left-panel {
-    flex: 1;
+    flex: 0 0 auto; /* Don't grow or shrink, use content width */
     min-width: 400px;
     max-width: 500px;
     overflow-y: auto;
 }
 
 .hierarchy-right-panel {
-    flex: 1;
+    flex: 1 1 auto; /* Grow to fill remaining space */
     min-width: 400px;
     overflow-y: auto;
     border-left: 2px solid #e0e0e0;
     padding-left: 20px;
+    width: 100%; /* Ensure it takes available width */
 }
 
 /* Edit Container */
@@ -216,6 +222,10 @@
         padding: 18px;
     }
     
+    .hierarchy-container {
+        height: calc(100vh - 36px);
+    }
+    
     .hierarchy-title {
         font-size: 1.6rem;
     }
@@ -228,25 +238,46 @@
     .hierarchy-right-panel {
         min-width: 350px;
     }
+    
+    .hierarchy-header {
+        margin-bottom: 18px;
+        padding-bottom: 12px;
+    }
+    
+    .upload-button {
+        padding: 9px 18px;
+        font-size: 13px;
+    }
 }
 
 /* Tablets */
 @media (max-width: 1024px) {
+    .hierarchy-screen {
+        padding: 15px;
+    }
+    
+    .hierarchy-container {
+        height: calc(100vh - 30px);
+    }
+    
     .hierarchy-layout {
         flex-direction: column;
+        gap: 15px;
     }
     
     .hierarchy-left-panel,
     .hierarchy-right-panel {
         min-width: unset;
         max-width: unset;
+        width: 100%;
     }
     
     .hierarchy-right-panel {
         border-left: none;
         border-top: 2px solid #e0e0e0;
         padding-left: 0;
-        padding-top: 20px;
+        padding-top: 15px;
+        min-height: 400px;
     }
     
     .hierarchy-title {
@@ -256,6 +287,12 @@
     .upload-button {
         font-size: 13px;
         padding: 9px 18px;
+    }
+    
+    .hierarchy-header {
+        margin-bottom: 15px;
+        padding-bottom: 12px;
+        gap: 15px;
     }
 }
 

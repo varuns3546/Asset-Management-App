@@ -2,12 +2,14 @@ import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { MapContainer, TileLayer, CircleMarker, Popup, Tooltip, useMap, Polyline, Polygon, Marker } from 'react-leaflet';
 import L from 'leaflet';
 import { ITEM_TYPE_ICON_MAP } from '../../constants/itemTypeIcons';
+import { useSelector } from 'react-redux';
 import 'leaflet/dist/leaflet.css';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import 'react-leaflet-cluster/dist/assets/MarkerCluster.css';
 import 'react-leaflet-cluster/dist/assets/MarkerCluster.Default.css';
 import Spinner from '../Spinner';
 import '../../styles/spinner.css';
+import '../../styles/map.css';
 // Fix for default marker icons in Leaflet with webpack
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
@@ -152,6 +154,176 @@ const MapCenterHandler = ({ center, zoom, shouldUpdate }) => {
       isMounted = false;
     };
   }, [center, shouldUpdate, map]);
+
+  return null;
+};
+
+// Component to handle map interaction settings
+const MapInteractionHandler = ({ isMapLoading }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!map) return;
+
+    // Update map interaction settings
+    if (isMapLoading) {
+      map.dragging.disable();
+      map.touchZoom.disable();
+      map.doubleClickZoom.disable();
+      map.scrollWheelZoom.disable();
+      map.boxZoom.disable();
+      map.keyboard.disable();
+    } else {
+      map.dragging.enable();
+      map.touchZoom.enable();
+      map.doubleClickZoom.enable();
+      map.scrollWheelZoom.enable();
+      map.boxZoom.enable();
+      map.keyboard.enable();
+    }
+  }, [map, isMapLoading]);
+
+  // Separate effect to ensure zoom control exists
+  useEffect(() => {
+    if (!map) return;
+    
+    // Check if zoom control exists by looking for it in the DOM
+    const container = map.getContainer();
+    if (container) {
+      const zoomControlElement = container.querySelector('.leaflet-control-zoom');
+      if (!zoomControlElement) {
+        // Zoom control doesn't exist, add it
+        const zoomControl = L.control.zoom({
+          position: 'topleft'
+        });
+        map.addControl(zoomControl);
+      }
+    }
+  }, [map, isMapLoading]); // Re-check when loading state changes
+
+  return null;
+};
+
+// Component to handle zoom to feature
+const ZoomToFeatureHandler = ({ feature, shouldZoom }) => {
+  const map = useMap();
+  const previousFeatureRef = useRef(null);
+
+  useEffect(() => {
+    if (!shouldZoom || !feature || !feature.coordinates || feature.coordinates.length === 0) return;
+
+    // Check if this is a new zoom request using the zoom key
+    const zoomKey = feature._zoomKey || feature.id;
+    if (previousFeatureRef.current === zoomKey) return;
+    previousFeatureRef.current = zoomKey;
+
+    try {
+      if (!map) return;
+
+      // Collect all coordinates from the feature
+      const bounds = [];
+      
+      if (feature.coordinates && feature.coordinates.length > 0) {
+        // Check if first coordinate is a simple [lat, lng] pair (Point)
+        const firstCoord = feature.coordinates[0];
+        if (Array.isArray(firstCoord) && firstCoord.length === 2 && 
+            typeof firstCoord[0] === 'number' && typeof firstCoord[1] === 'number') {
+          // Point feature - single coordinate
+          const [lat, lng] = firstCoord;
+          if (!isNaN(lat) && !isNaN(lng)) {
+            bounds.push([lat, lng]);
+          }
+        } else {
+          // LineString or Polygon - multiple coordinates
+          feature.coordinates.forEach(coord => {
+            if (Array.isArray(coord) && coord.length >= 2) {
+              const [lat, lng] = coord;
+              if (typeof lat === 'number' && typeof lng === 'number' && !isNaN(lat) && !isNaN(lng)) {
+                bounds.push([lat, lng]);
+              }
+            }
+          });
+        }
+      }
+
+      if (bounds.length > 0) {
+        if (bounds.length === 1) {
+          // Single point - use setView with zoom
+          map.setView(bounds[0], 16, { animate: true });
+        } else {
+          // Multiple points - use fitBounds
+          const latLngBounds = L.latLngBounds(bounds);
+          map.fitBounds(latLngBounds, { 
+            padding: [50, 50],
+            maxZoom: 16,
+            animate: true 
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error zooming to feature:', error);
+    }
+  }, [feature, shouldZoom, map]);
+
+  return null;
+};
+
+// Component to handle zoom to layer (fit bounds of all features)
+const ZoomToLayerHandler = ({ layer, shouldZoom }) => {
+  const map = useMap();
+  const previousLayerRef = useRef(null);
+
+  useEffect(() => {
+    if (!shouldZoom || !layer || !layer.features || layer.features.length === 0) return;
+
+    // Check if this is a new zoom request using the zoom key
+    const zoomKey = layer._zoomKey || layer.id;
+    if (previousLayerRef.current === zoomKey) return;
+    previousLayerRef.current = zoomKey;
+
+    try {
+      if (!map || !map.fitBounds) return;
+
+      // Collect all valid coordinates from layer features
+      const bounds = [];
+      layer.features.forEach(feature => {
+        if (feature.coordinates && feature.coordinates.length > 0) {
+          const firstCoord = feature.coordinates[0];
+          // Check if first coordinate is a simple [lat, lng] pair (Point)
+          if (Array.isArray(firstCoord) && firstCoord.length === 2 && 
+              typeof firstCoord[0] === 'number' && typeof firstCoord[1] === 'number') {
+            // Point feature - single coordinate
+            const [lat, lng] = firstCoord;
+            if (!isNaN(lat) && !isNaN(lng)) {
+              bounds.push([lat, lng]);
+            }
+          } else {
+            // LineString or Polygon - multiple coordinates
+            feature.coordinates.forEach(coord => {
+              if (Array.isArray(coord) && coord.length >= 2) {
+                const [lat, lng] = coord;
+                if (typeof lat === 'number' && typeof lng === 'number' && !isNaN(lat) && !isNaN(lng)) {
+                  bounds.push([lat, lng]);
+                }
+              }
+            });
+          }
+        }
+      });
+
+      if (bounds.length > 0) {
+        // Create a Leaflet bounds object
+        const latLngBounds = L.latLngBounds(bounds);
+        map.fitBounds(latLngBounds, { 
+          padding: [50, 50],
+          maxZoom: 16,
+          animate: true 
+        });
+      }
+    } catch (error) {
+      console.error('Error zooming to layer:', error);
+    }
+  }, [layer, shouldZoom, map]);
 
   return null;
 };
@@ -309,9 +481,22 @@ const MapReadyTracker = ({ targetCenter, onMapReady }) => {
   return null;
 };
 
-const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, features = [], featureTypes = [], showLabels = true, labelFontSize = 12, labelColor = '#000000', labelBackgroundColor = 'rgba(255, 255, 255, 0.6)', layers = [], layerFeatures = {} }) => {
+const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, features = [], featureTypes = [], showLabels = true, labelFontSize = 12, labelColor = '#000000', labelBackgroundColor = 'rgba(255, 255, 255, 0.6)', layers = [], layerFeatures = {}, zoomToFeature = null, zoomToLayer = null, onMapLoadingChange }) => {
   const [isMapLoading, setIsMapLoading] = useState(true);
+  const [isMapReady, setIsMapReady] = useState(false);
   const mapReadyCalledRef = useRef(false);
+  const markersReadyRef = useRef(false);
+  
+  // Get selected asset IDs from Redux
+  const selectedAssetIds = useSelector((state) => state.projects.selectedAssetIds || []);
+  const selectedAssetIdsSet = useMemo(() => new Set(selectedAssetIds), [selectedAssetIds]);
+  
+  // Notify parent of initial loading state
+  useEffect(() => {
+    if (onMapLoadingChange) {
+      onMapLoadingChange(true);
+    }
+  }, [onMapLoadingChange]); // Include callback in dependencies
   
   // Use project coordinates if available, otherwise default to New York City
   const defaultPosition = [40.7128, -74.0060];
@@ -321,7 +506,8 @@ const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, featu
   const handleMapReady = useCallback(() => {
     if (!mapReadyCalledRef.current) {
       mapReadyCalledRef.current = true;
-      setIsMapLoading(false);
+      setIsMapReady(true);
+      // Don't hide spinner yet - wait for markers to load
     }
   }, []);
 
@@ -382,17 +568,12 @@ const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, featu
         
         cache.set(key, L.divIcon({
           className: 'custom-marker-icon',
-          html: `<div style="
+          html: `<div class="custom-marker-icon-inner" style="
             color: ${color};
             font-size: 20px;
-            text-align: center;
-            line-height: 20px;
             width: 20px;
             height: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
+            line-height: 20px;
           ">${symbolChar}</div>`,
           iconSize: [20, 20],
           iconAnchor: [10, 10],
@@ -419,17 +600,12 @@ const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, featu
     
     const icon = L.divIcon({
       className: 'custom-marker-icon',
-      html: `<div style="
+      html: `<div class="custom-marker-icon-inner" style="
         color: ${color};
         font-size: ${size * 2}px;
-        text-align: center;
-        line-height: ${size * 2}px;
         width: ${size * 2}px;
         height: ${size * 2}px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
+        line-height: ${size * 2}px;
       ">${symbolChar}</div>`,
       iconSize: [size * 2, size * 2],
       iconAnchor: [size, size],
@@ -440,6 +616,75 @@ const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, featu
     iconCache.set(key, icon);
     return icon;
   }, [iconCache]);
+
+  // Wait for map to be ready AND markers to be loaded before hiding spinner
+  // This effect runs when map becomes ready OR when features/featureTypes load
+  const spinnerTimerRef = useRef(null);
+  
+  useEffect(() => {
+    // If markers are already ready, ensure loading is false
+    if (markersReadyRef.current && isMapLoading) {
+      setIsMapLoading(false);
+      if (onMapLoadingChange) {
+        onMapLoadingChange(false);
+      }
+      return;
+    }
+    
+    if (!isMapReady || markersReadyRef.current) {
+      // Clear any existing timer if spinner is already hidden
+      if (spinnerTimerRef.current) {
+        clearTimeout(spinnerTimerRef.current);
+        spinnerTimerRef.current = null;
+      }
+      return;
+    }
+    
+    // Clear any existing timer before starting a new one
+    if (spinnerTimerRef.current) {
+      clearTimeout(spinnerTimerRef.current);
+    }
+    
+    // Check if we have features
+    const hasFeatures = featuresWithCoordinates.length > 0 || 
+                       layers.some(layer => layer.features && layer.features.length > 0);
+    const hasFeatureTypes = featureTypes.length > 0;
+    
+    // If we have features but no featureTypes yet, wait for featureTypes to load
+    if (hasFeatures && !hasFeatureTypes) {
+      // Don't hide spinner yet - wait for featureTypes
+      return;
+    }
+    
+    // Now we can proceed with hiding the spinner
+    // Wait time depends on whether we have features
+    // Need longer wait to ensure icons are created, markers rendered, and styles applied
+    // MarkerClusterGroup uses chunkedLoading with chunkDelay of 200ms, so markers load in chunks
+    // We need to wait for: icon creation + marker rendering + style application
+    const waitTime = hasFeatures 
+      ? 2000 // Wait (2 seconds) to ensure all markers are rendered with styles applied
+      : 400; // No features, hide sooner
+    
+    spinnerTimerRef.current = setTimeout(() => {
+      // Only hide spinner if we haven't already
+      if (!markersReadyRef.current) {
+        markersReadyRef.current = true;
+        setIsMapLoading(false);
+        // Notify parent component of loading state change
+        if (onMapLoadingChange) {
+          onMapLoadingChange(false);
+        }
+      }
+      spinnerTimerRef.current = null;
+    }, waitTime);
+    
+    return () => {
+      if (spinnerTimerRef.current) {
+        clearTimeout(spinnerTimerRef.current);
+        spinnerTimerRef.current = null;
+      }
+    };
+  }, [isMapReady, featuresWithCoordinates.length, featureTypes.length, layers.length, onMapLoadingChange]); // Watch for features/featureTypes to load
 
   // Convert background color to 30% opacity (memoized)
   const getLabelBackgroundColor = useCallback((bgColor) => {
@@ -474,38 +719,67 @@ const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, featu
     
     if (coordsChanged) {
       mapReadyCalledRef.current = false;
+      markersReadyRef.current = false;
+      setIsMapReady(false);
       setIsMapLoading(true);
+      // Notify parent component of loading state change
+      if (onMapLoadingChange) {
+        onMapLoadingChange(true);
+      }
       prevCoordsRef.current = projectCoordinates;
     }
   }, [projectCoordinates]);
+  
+  // Track when features/layers are first loaded to prevent unnecessary spinner resets
+  const initialFeaturesLoadedRef = useRef(false);
+  
+  useEffect(() => {
+    // Mark when we first have features loaded (after map is ready)
+    if (isMapReady && !initialFeaturesLoadedRef.current) {
+      const hasFeatures = featuresWithCoordinates.length > 0 || 
+                         layers.some(layer => layer.features && layer.features.length > 0);
+      if (hasFeatures) {
+        initialFeaturesLoadedRef.current = true;
+      }
+    }
+    
+    // Reset when project changes
+    if (!isMapReady) {
+      initialFeaturesLoadedRef.current = false;
+    }
+  }, [isMapReady, featuresWithCoordinates.length, layers.length]);
+
+  // Prevent spinner from reappearing once it's been hidden (unless it's a new project)
+  // Only reset when project coordinates change (new project loaded)
+  useEffect(() => {
+    // When project coordinates change, we already reset in the previous useEffect
+    // This effect just ensures we don't reset unnecessarily
+  }, [projectCoordinates]);
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%', zIndex: 1 }}>
+    <div className="map-wrapper">
       {isMapLoading && (
-        <div className="map-spinner-overlay" style={{ zIndex: 9999 }}>
+        <div className="map-spinner-overlay">
           <Spinner />
         </div>
       )}
-      <div style={{ 
-        width: '100%', 
-        height: '100%',
-        position: 'relative',
-        zIndex: 1
-      }}>
+      <div className="map-container-wrapper">
         <MapContainer 
           center={position} 
           zoom={13} 
           maxZoom={18}
           className="leaflet-map-container"
-          style={{ 
-            width: '100%', 
-            height: '100%'
-          }}
           key={projectCoordinates ? `${projectCoordinates[0]}-${projectCoordinates[1]}` : 'default'}
           scrollWheelZoom={true}
+          dragging={true}
+          touchZoom={true}
+          doubleClickZoom={true}
+          boxZoom={true}
+          keyboard={true}
           zoomControl={true}
           preferCanvas={true}
         >
+        <MapInteractionHandler isMapLoading={isMapLoading} />
         <MapResizeHandler panelWidth={panelWidth} />
         <MapReadyTracker 
           targetCenter={projectCoordinates || position} 
@@ -515,6 +789,18 @@ const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, featu
           center={projectCoordinates || position} 
           shouldUpdate={!!projectCoordinates}
         />
+        {zoomToFeature && (
+          <ZoomToFeatureHandler 
+            feature={zoomToFeature} 
+            shouldZoom={!!zoomToFeature}
+          />
+        )}
+        {zoomToLayer && (
+          <ZoomToLayerHandler 
+            layer={zoomToLayer} 
+            shouldZoom={!!zoomToLayer}
+          />
+        )}
       <TileLayer
         key={selectedBasemap}
         attribution={basemap.attribution}
@@ -544,7 +830,18 @@ const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, featu
           // Memoize icon and color lookups
           const featureIcon = getFeatureIcon(feature);
           const featureColor = getFeatureColor(feature);
-          const customIcon = createCustomIcon(featureIcon, featureColor, 10);
+          
+          // Check if this feature's asset is selected
+          // Features from assets have id = asset_id, or may have asset_id in properties
+          const assetId = feature.properties?.asset_id || feature.asset_id || feature.id;
+          const isSelected = assetId && selectedAssetIdsSet.has(assetId);
+          const highlightColor = isSelected ? '#ffeb3b' : featureColor; // Yellow highlight for selected
+          
+          const customIcon = createCustomIcon(
+            featureIcon, 
+            highlightColor, 
+            isSelected ? 12 : 10 // Slightly larger when selected
+          );
           const position = [
             parseFloat(feature.beginning_latitude),
             parseFloat(feature.beginning_longitude)
@@ -564,25 +861,25 @@ const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, featu
                 className="feature-label"
                 interactive={false}
               >
-                <span style={{ 
-                  fontSize: `${labelFontSize}px`, 
-                  color: labelColor,
-                  backgroundColor: getLabelBackgroundColor(labelBackgroundColor),
-                  padding: '2px 6px',
-                  borderRadius: '3px',
-                  display: 'inline-block'
-                }}>
+                <span 
+                  className="feature-label-span"
+                  style={{ 
+                    fontSize: `${labelFontSize}px`, 
+                    color: labelColor,
+                    backgroundColor: getLabelBackgroundColor(labelBackgroundColor)
+                  }}
+                >
                   {feature.title}
                 </span>
               </Tooltip>
             )}
             <Popup>
-              <div style={{ minWidth: '150px' }}>
-                <strong style={{ fontSize: '14px' }}>{feature.title}</strong>
-                <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+              <div className="popup-content">
+                <strong className="popup-title">{feature.title}</strong>
+                <div className="popup-subtitle">
                   Type: {getFeatureTypeName(feature)}
                 </div>
-                <div style={{ fontSize: '11px', color: '#888', marginTop: '4px' }}>
+                <div className="popup-detail">
                   Lat: {parseFloat(feature.beginning_latitude).toFixed(6)}<br />
                   Lng: {parseFloat(feature.beginning_longitude).toFixed(6)}
                 </div>
@@ -605,15 +902,25 @@ const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, featu
           const customIcon = createCustomIcon(layerSymbol, layerColor, 10);
           
           return features.map(feature => {
+          // Check if this feature's asset is selected
+          const assetId = feature.properties?.asset_id;
+          const isSelected = assetId && selectedAssetIdsSet.has(assetId);
+          const highlightColor = isSelected ? '#ffeb3b' : layerColor; // Yellow highlight for selected
+          
           if (layer.geometryType === 'point') {
             // Point feature - coordinates are stored as [lat, lng]
             const [lat, lng] = feature.coordinates[0];
+            
+            // Create highlighted icon if selected
+            const iconToUse = isSelected 
+              ? createCustomIcon(layerSymbol, highlightColor, 12) // Slightly larger when selected
+              : customIcon;
             
             return (
               <Marker
                 key={`layer-${layer.id}-feature-${feature.id}`}
                 position={[lat, lng]}
-                icon={customIcon}
+                icon={iconToUse}
               >
                 {showLabels && (
                   <Tooltip 
@@ -623,26 +930,26 @@ const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, featu
                     className="feature-label"
                     interactive={false}
                   >
-                    <span style={{ 
-                      fontSize: `${labelFontSize}px`, 
-                      color: labelColor,
-                      backgroundColor: getLabelBackgroundColor(labelBackgroundColor),
-                      padding: '2px 6px',
-                      borderRadius: '3px',
-                      display: 'inline-block'
-                    }}>
+                    <span 
+                      className="feature-label-span"
+                      style={{ 
+                        fontSize: `${labelFontSize}px`, 
+                        color: labelColor,
+                        backgroundColor: getLabelBackgroundColor(labelBackgroundColor)
+                      }}
+                    >
                       {feature.name || feature.properties?.title || 'Unnamed'}
                     </span>
                   </Tooltip>
                 )}
                 <Popup>
-                  <div style={{ minWidth: '150px' }}>
-                    <strong style={{ fontSize: '14px' }}>{feature.name || 'Unnamed'}</strong>
-                    <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                  <div className="popup-content">
+                    <strong className="popup-title">{feature.name || 'Unnamed'}</strong>
+                    <div className="popup-subtitle">
                       Layer: {layer.name}
                     </div>
                     {Object.entries(feature.properties || {}).map(([key, value]) => (
-                      <div key={key} style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>
+                      <div key={key} className="popup-property">
                         {key}: {value}
                       </div>
                     ))}
@@ -661,22 +968,22 @@ const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, featu
                   key={`layer-${layer.id}-feature-${feature.id}`}
                   positions={feature.coordinates}
                   pathOptions={{
-                    color: layerColor,
-                    weight: layerWeight,
+                    color: isSelected ? highlightColor : layerColor,
+                    weight: isSelected ? layerWeight + 2 : layerWeight, // Thicker when selected
                     opacity: layerOpacity
                   }}
                 >
                   <Popup>
-                    <div style={{ minWidth: '150px' }}>
-                      <strong style={{ fontSize: '14px' }}>{feature.name || 'Unnamed'}</strong>
-                      <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                    <div className="popup-content">
+                      <strong className="popup-title">{feature.name || 'Unnamed'}</strong>
+                      <div className="popup-subtitle">
                         Layer: {layer.name}
                       </div>
-                      <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>
+                      <div className="popup-detail">
                         Points: {feature.coordinates.length}
                       </div>
                       {Object.entries(feature.properties || {}).map(([key, value]) => (
-                        <div key={key} style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>
+                        <div key={key} className="popup-property">
                           {key}: {value}
                         </div>
                       ))}
@@ -697,14 +1004,14 @@ const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, featu
                       className="feature-label"
                       interactive={false}
                     >
-                      <span style={{ 
-                        fontSize: `${labelFontSize}px`, 
-                        color: labelColor,
-                        backgroundColor: labelBackgroundColor,
-                        padding: '2px 6px',
-                        borderRadius: '3px',
-                        display: 'inline-block'
-                      }}>
+                      <span 
+                        className="feature-label-span"
+                        style={{ 
+                          fontSize: `${labelFontSize}px`, 
+                          color: labelColor,
+                          backgroundColor: labelBackgroundColor
+                        }}
+                      >
                         {feature.name || feature.properties?.title || 'Unnamed'}
                       </span>
                     </Tooltip>
@@ -725,24 +1032,24 @@ const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, featu
                   key={`layer-${layer.id}-feature-${feature.id}`}
                   positions={feature.coordinates}
                   pathOptions={{
-                    fillColor: layerColor,
-                    fillOpacity: layerOpacity * 0.5, // Make fill slightly more transparent
-                    color: layerColor,
-                    weight: layerWeight,
+                    fillColor: isSelected ? highlightColor : layerColor,
+                    fillOpacity: isSelected ? 0.7 : (layerOpacity * 0.5), // More opaque when selected
+                    color: isSelected ? highlightColor : layerColor,
+                    weight: isSelected ? layerWeight + 2 : layerWeight, // Thicker border when selected
                     opacity: layerOpacity
                   }}
                 >
                   <Popup>
-                    <div style={{ minWidth: '150px' }}>
-                      <strong style={{ fontSize: '14px' }}>{feature.name || 'Unnamed'}</strong>
-                      <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                    <div className="popup-content">
+                      <strong className="popup-title">{feature.name || 'Unnamed'}</strong>
+                      <div className="popup-subtitle">
                         Layer: {layer.name}
                       </div>
-                      <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>
+                      <div className="popup-detail">
                         Points: {ring.length}
                       </div>
                       {Object.entries(feature.properties || {}).map(([key, value]) => (
-                        <div key={key} style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>
+                        <div key={key} className="popup-property">
                           {key}: {value}
                         </div>
                       ))}
@@ -763,14 +1070,14 @@ const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, featu
                       className="feature-label"
                       interactive={false}
                     >
-                      <span style={{ 
-                        fontSize: `${labelFontSize}px`, 
-                        color: labelColor,
-                        backgroundColor: labelBackgroundColor,
-                        padding: '2px 6px',
-                        borderRadius: '3px',
-                        display: 'inline-block'
-                      }}>
+                      <span 
+                        className="feature-label-span"
+                        style={{ 
+                          fontSize: `${labelFontSize}px`, 
+                          color: labelColor,
+                          backgroundColor: labelBackgroundColor
+                        }}
+                      >
                         {feature.name || feature.properties?.title || 'Unnamed'}
                       </span>
                     </Tooltip>
@@ -782,7 +1089,7 @@ const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, featu
           return null;
         });
       });
-      }, [layers, showLabels, labelFontSize, labelColor, labelBackgroundColor, createCustomIcon, getLabelBackgroundColor])}
+      }, [layers, showLabels, labelFontSize, labelColor, labelBackgroundColor, createCustomIcon, getLabelBackgroundColor, selectedAssetIdsSet])}
         </MapContainer>
       </div>
     </div>

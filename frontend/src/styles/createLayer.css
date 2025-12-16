@@ -278,22 +278,227 @@
 }
 
 /* Responsive Design */
+/* Large tablets and smaller desktops */
+@media (max-width: 1199px) {
+  .create-layer-modal {
+    max-width: 650px;
+  }
+  
+  .form-section {
+    margin-bottom: 20px;
+    padding-bottom: 18px;
+  }
+  
+  .form-section h3 {
+    font-size: 15px;
+  }
+  
+  .layer-type-card {
+    padding: 18px;
+  }
+  
+  .layer-type-icon {
+    font-size: 30px;
+  }
+  
+  .layer-type-label {
+    font-size: 14px;
+  }
+  
+  .layer-type-desc {
+    font-size: 12px;
+  }
+}
+
+/* Tablets */
 @media (max-width: 768px) {
+  .create-layer-modal {
+    max-width: 95%;
+  }
+  
+  .form-section {
+    margin-bottom: 18px;
+    padding-bottom: 16px;
+  }
+  
+  .form-section h3 {
+    font-size: 14px;
+  }
+  
   .layer-type-options {
     grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .layer-type-card {
+    padding: 16px;
+  }
+  
+  .layer-type-icon {
+    font-size: 28px;
+  }
+  
+  .layer-type-label {
+    font-size: 13px;
+  }
+  
+  .layer-type-desc {
+    font-size: 11px;
   }
 
   .geometry-type-options {
     flex-direction: column;
+    gap: 10px;
+  }
+  
+  .geometry-btn {
+    padding: 10px 18px;
+    font-size: 13px;
   }
 
   .attribute-row {
     grid-template-columns: 1fr;
+    gap: 8px;
   }
 
   .remove-attr-btn,
   .primary-key-badge {
     justify-self: start;
+  }
+  
+  .form-group {
+    margin-bottom: 14px;
+  }
+  
+  .form-group label {
+    font-size: 13px;
+  }
+  
+  .form-input,
+  .form-textarea,
+  .form-select {
+    padding: 9px 11px;
+    font-size: 13px;
+  }
+  
+  .modal-actions {
+    margin-top: 20px;
+    padding-top: 18px;
+    gap: 10px;
+  }
+  
+  .btn-primary,
+  .btn-secondary {
+    padding: 9px 20px;
+    font-size: 13px;
+  }
+}
+
+/* Mobile devices */
+@media (max-width: 480px) {
+  .create-layer-modal {
+    max-width: 100%;
+  }
+  
+  .form-section {
+    margin-bottom: 16px;
+    padding-bottom: 14px;
+  }
+  
+  .form-section h3 {
+    font-size: 13px;
+    margin-bottom: 12px;
+  }
+  
+  .layer-type-options {
+    gap: 10px;
+  }
+  
+  .layer-type-card {
+    padding: 14px;
+  }
+  
+  .layer-type-icon {
+    font-size: 24px;
+  }
+  
+  .layer-type-label {
+    font-size: 12px;
+  }
+  
+  .layer-type-desc {
+    font-size: 10px;
+  }
+  
+  .geometry-type-options {
+    gap: 8px;
+  }
+  
+  .geometry-btn {
+    padding: 9px 16px;
+    font-size: 12px;
+  }
+  
+  .attribute-row {
+    gap: 6px;
+  }
+  
+  .attr-name-input,
+  .attr-type-select {
+    padding: 7px 10px;
+    font-size: 12px;
+  }
+  
+  .remove-attr-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 18px;
+  }
+  
+  .primary-key-badge {
+    padding: 3px 8px;
+    font-size: 11px;
+  }
+  
+  .add-attr-btn {
+    padding: 8px 14px;
+    font-size: 12px;
+  }
+  
+  .form-group {
+    margin-bottom: 12px;
+  }
+  
+  .form-group label {
+    font-size: 12px;
+    margin-bottom: 5px;
+  }
+  
+  .form-input,
+  .form-textarea,
+  .form-select {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+  
+  .error-message {
+    padding: 10px 14px;
+    font-size: 12px;
+    margin-bottom: 16px;
+  }
+  
+  .modal-actions {
+    margin-top: 18px;
+    padding-top: 16px;
+    gap: 8px;
+    flex-direction: column;
+  }
+  
+  .btn-primary,
+  .btn-secondary {
+    width: 100%;
+    padding: 8px 18px;
+    font-size: 12px;
   }
 }
 

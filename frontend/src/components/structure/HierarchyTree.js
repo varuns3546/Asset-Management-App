@@ -1,6 +1,25 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react'
 import '../../styles/structureTree.css'
-const TreeNode = ({ node, level = 0, onRemove, onItemClick, isItemType = false, isTopLevelItemType = false }) => {
+import { useContextMenuSelection } from '../../hooks/useContextMenuSelection'
+import ContextMenu from '../common/ContextMenu'
+import DeleteConfirmDialog from '../common/DeleteConfirmDialog'
+import { useDispatch } from 'react-redux'
+import { setSelectedAssetIds } from '../../features/projects/projectSlice'
+
+const TreeNode = ({ 
+    node, 
+    level = 0, 
+    onItemClick, 
+    isItemType = false, 
+    isTopLevelItemType = false,
+    isSelected = false,
+    onItemSelect,
+    onContextMenu,
+    onMouseDown,
+    itemIndex,
+    checkNodeSelected,
+    getNodeIndex
+}) => {
     // Start expanded for top-level item types, collapsed for hierarchy items with children
     const [isExpanded, setIsExpanded] = React.useState(isTopLevelItemType)
     const hasChildren = node.children && node.children.length > 0
@@ -8,18 +27,21 @@ const TreeNode = ({ node, level = 0, onRemove, onItemClick, isItemType = false, 
     // Show expand button for any node with children
     const showExpandButton = hasChildren
 
-    const handleRemove = (e) => {
-        e.stopPropagation()
-        if (onRemove && !isItemType) {
-            onRemove(node.id)
-        }
-    }
-
     const handleItemClick = (e) => {
         e.stopPropagation()
         e.preventDefault()
-        if (onItemClick && !isItemType) {
+        if (onItemClick && !isItemType && itemIndex !== undefined) {
+            onItemSelect(e, node, itemIndex)
+        } else if (onItemClick && !isItemType) {
             onItemClick(node)
+        }
+    }
+
+    const handleContextMenuClick = (e) => {
+        e.stopPropagation()
+        e.preventDefault()
+        if (onContextMenu && !isItemType) {
+            onContextMenu(e, node)
         }
     }
 
@@ -29,22 +51,23 @@ const TreeNode = ({ node, level = 0, onRemove, onItemClick, isItemType = false, 
     }
 
     return (
-        <div className="tree-node vertical-node">
+        <div className={`tree-node vertical-node ${isItemType ? 'item-type-node' : ''}`}>
             <div className="node-row">
                 <div 
-                    className="node-content" 
+                    className={`node-content ${isSelected && !isItemType ? 'selected' : ''}`}
+                    data-is-item-type={isItemType ? 'true' : 'false'}
                     onClick={isItemType ? undefined : handleItemClick}
-                    onMouseDown={(e) => e.stopPropagation()}
-                    onMouseUp={(e) => e.stopPropagation()}
+                    onMouseDown={onMouseDown}
+                    onContextMenu={handleContextMenuClick}
                     style={{ 
                         userSelect: 'none',
                         cursor: isItemType ? 'default' : 'pointer',
                         pointerEvents: 'auto',
-                        backgroundColor: isItemType ? '#e7f3ff' : undefined,
-                        borderColor: isItemType ? '#007bff' : undefined,
+                        backgroundColor: isSelected && !isItemType ? '#e7f1ff' : (isItemType ? '#e7f3ff' : undefined),
+                        borderColor: (isSelected && !isItemType) ? '#007bff' : (isItemType ? '#007bff' : undefined),
                         fontWeight: isItemType ? '600' : undefined
                     }}
-                    title={isItemType ? `Item Type: ${node.title}` : "Click to edit this item"}
+                    title={isItemType ? `Item Type: ${node.title}` : "Click to edit, right-click for menu"}
                 >
                     {showExpandButton && (
                         <button 
@@ -56,41 +79,31 @@ const TreeNode = ({ node, level = 0, onRemove, onItemClick, isItemType = false, 
                         </button>
                     )}
                     <span className="node-title">{node.title}</span>
-                    <div className="node-indicators">
-                        {!isItemType && (
-                            <button 
-                                className="node-remove-button"
-                                onClick={handleRemove}
-                                title="Remove this hierarchy item"
-                                style={{ 
-                                    display: 'flex',
-                                    backgroundColor: '#dc3545',
-                                    color: 'white',
-                                    border: 'none',
-                                    width: '20px',
-                                    height: '20px',
-                                    borderRadius: '4px'
-                                }}
-                            >
-                                ✕
-                            </button>
-                        )}
-                    </div>
                 </div>
                 
                 {hasChildren && isExpanded && (
                     <div className="children vertical-children">
-                        {node.children.map(child => (
-                            <TreeNode 
-                                key={child.id} 
-                                node={child} 
-                                level={level + 1}
-                                onRemove={onRemove}
-                                onItemClick={onItemClick}
-                                isItemType={child.isItemType}
-                                isTopLevelItemType={false}
-                            />
-                        ))}
+                        {node.children.map((child) => {
+                            const childIsSelected = checkNodeSelected ? checkNodeSelected(child) : false
+                            const childIndex = getNodeIndex ? getNodeIndex(child) : undefined
+                            return (
+                                <TreeNode 
+                                    key={child.id} 
+                                    node={child} 
+                                    level={level + 1}
+                                    onItemClick={onItemClick}
+                                    isItemType={child.isItemType}
+                                    isTopLevelItemType={false}
+                                    isSelected={childIsSelected}
+                                    onItemSelect={onItemSelect}
+                                    onContextMenu={onContextMenu}
+                                    onMouseDown={onMouseDown}
+                                    itemIndex={childIndex}
+                                    checkNodeSelected={checkNodeSelected}
+                                    getNodeIndex={getNodeIndex}
+                                />
+                            )
+                        })}
                     </div>
                 )}
             </div>
@@ -99,12 +112,26 @@ const TreeNode = ({ node, level = 0, onRemove, onItemClick, isItemType = false, 
 }
 
 const HierarchyTree = ({ hierarchyItems, onRemoveItem, onItemClick, itemTypes = [] }) => {
+    const dispatch = useDispatch()
     const [isTreeExpanded, setIsTreeExpanded] = useState(true)
     const [zoomLevel, setZoomLevel] = useState(100)
     const [selectedTypeFilter, setSelectedTypeFilter] = useState(null)
     const treeContentRef = useRef(null)
     const scrollWrapperRef = useRef(null)
     const filteredContainerRef = useRef(null)
+
+    // Flatten tree structure to get a flat list of non-itemType nodes for selection
+    const flattenTree = (nodes, result = []) => {
+        nodes.forEach(node => {
+            if (!node.isItemType) {
+                result.push(node)
+            }
+            if (node.children && node.children.length > 0) {
+                flattenTree(node.children, result)
+            }
+        })
+        return result
+    }
 
     // Prevent scroll from propagating to parent
     const handleScroll = (e) => {
@@ -120,7 +147,7 @@ const HierarchyTree = ({ hierarchyItems, onRemoveItem, onItemClick, itemTypes = 
             nodeGap: Math.max(10, 18 * scale), // Increased from 15 to 18 for more spacing
             nodePadding: Math.max(4, 8 * scale),
             fontSize: Math.max(10, 14 * scale),
-            verticalGap: Math.max(12, 20 * scale),
+            verticalGap: 0, // No vertical spacing between assets
         }
     }, [zoomLevel])
 
@@ -314,10 +341,92 @@ const HierarchyTree = ({ hierarchyItems, onRemoveItem, onItemClick, itemTypes = 
     // Memoize tree building - expensive operation
     const treeData = useMemo(() => buildTree(filteredItems), [filteredItems])
     
+    // Build tree with item types for display
+    const treeDataWithTypes = useMemo(() => buildTreeWithItemTypes(filteredItems), [filteredItems, itemTypes])
+    
+    // Flatten tree to get list of items (excluding item types) for selection
+    const flatItems = useMemo(() => flattenTree(treeDataWithTypes), [treeDataWithTypes])
+    
+    // Create ID to index mapping for selection
+    const itemIdToIndexMap = useMemo(() => {
+        const map = new Map()
+        flatItems.forEach((item, index) => {
+            map.set(item.id, index)
+        })
+        return map
+    }, [flatItems])
+
+    // Use the reusable hook for context menu and selection
+    const {
+        selectedItems,
+        isItemSelected,
+        contextMenu,
+        deleteConfirm,
+        contextMenuRef,
+        handleItemClick: handleSelectionClick,
+        handleMouseDown,
+        handleContextMenu,
+        handleDeleteClick,
+        confirmDelete,
+        clearSelection,
+        setDeleteConfirm
+    } = useContextMenuSelection(
+        flatItems,
+        onRemoveItem,
+        {
+            getItemId: (item) => item.id,
+            getItemName: (item) => item.title || `Item ${item.id}`,
+            itemType: 'hierarchy item'
+        }
+    )
+
+    // Update Redux with selected asset IDs whenever selection changes
+    useEffect(() => {
+        const selectedIds = Array.from(selectedItems)
+        dispatch(setSelectedAssetIds(selectedIds))
+    }, [selectedItems, dispatch])
+
+    // Helper to check if a node is selected
+    const checkNodeSelected = (node) => {
+        if (node.isItemType) return false
+        return isItemSelected(node.id)
+    }
+
+    // Helper to get index for a node
+    const getNodeIndex = (node) => {
+        if (node.isItemType) return undefined
+        return itemIdToIndexMap.get(node.id)
+    }
+
+    // Render tree node recursively with selection support
+    const renderTreeNode = (node, level = 0) => {
+        const isSelected = checkNodeSelected(node)
+        const nodeIndex = getNodeIndex(node)
+        
+        return (
+            <TreeNode
+                key={node.id}
+                node={node}
+                level={level}
+                onItemClick={onItemClick}
+                isItemType={node.isItemType}
+                isTopLevelItemType={node.isItemType && level === 0}
+                isSelected={isSelected}
+                onItemSelect={handleSelectionClick}
+                onContextMenu={handleContextMenu}
+                onMouseDown={handleMouseDown}
+                itemIndex={nodeIndex}
+                checkNodeSelected={checkNodeSelected}
+                getNodeIndex={getNodeIndex}
+            />
+        )
+    }
+    
     // Memoize available types calculation
     const availableTypes = useMemo(() => getItemTypesFromHierarchy(), [hierarchyItems, itemTypes])
     
     // Calculate and apply uniform width to all nodes (optimized with requestAnimationFrame)
+    // Assets and types will have the same width, based on the maximum asset width
     useEffect(() => {
         if (!isTreeExpanded) return; // Skip if tree is collapsed
         
@@ -327,10 +436,14 @@ const HierarchyTree = ({ hierarchyItems, onRemoveItem, onItemClick, itemTypes = 
                 const nodeContents = document.querySelectorAll('.node-content')
                 if (nodeContents.length === 0) return
                 
-                let maxWidth = 0
+                let maxAssetWidth = 0
+                let maxTypeWidth = 0
                 
                 // Batch DOM reads first (measure phase)
                 const measurements = Array.from(nodeContents).map(node => {
+                    // Check if this is an item type node using data attribute
+                    const isItemTypeNode = node.getAttribute('data-is-item-type') === 'true'
+                    
                     const originalWidth = node.style.width
                     const originalMinWidth = node.style.minWidth
                     const originalMaxWidth = node.style.maxWidth
@@ -348,32 +461,41 @@ const HierarchyTree = ({ hierarchyItems, onRemoveItem, onItemClick, itemTypes = 
                     node.style.minWidth = originalMinWidth
                     node.style.maxWidth = originalMaxWidth
                     
-                    return { node, width, originalWidth, originalMinWidth, originalMaxWidth };
+                    return { node, width, isItemTypeNode, originalWidth, originalMinWidth, originalMaxWidth };
                 });
                 
-                // Find max width
-                measurements.forEach(({ width }) => {
-                    if (width > maxWidth) {
-                        maxWidth = width;
+                // Find max width for assets and types separately
+                measurements.forEach(({ width, isItemTypeNode }) => {
+                    if (isItemTypeNode) {
+                        if (width > maxTypeWidth) {
+                            maxTypeWidth = width;
+                        }
+                    } else {
+                        if (width > maxAssetWidth) {
+                            maxAssetWidth = width;
+                        }
                     }
                 });
                 
-                // Batch DOM writes (apply phase)
-                if (maxWidth > 0) {
-                    const uniformWidth = Math.max(maxWidth + 4, dynamicStyles.nodeMinWidth) // Add 4px padding, but respect min width
-                    measurements.forEach(({ node, originalTransition }) => {
-                        // Temporarily disable transitions when setting width to prevent animation
-                        const transition = node.style.transition
-                        node.style.transition = 'none'
-                        node.style.width = `${uniformWidth}px`
-                        node.style.minWidth = `${uniformWidth}px`
-                        node.style.maxWidth = `${uniformWidth}px`
-                        // Force a reflow to apply the width immediately
-                        void node.offsetWidth
-                        // Re-enable transitions after width is set
-                        node.style.transition = transition || ''
-                    })
-                }
+                // Use the maximum asset width for both assets and types
+                // This increases asset width and decreases type width to match
+                // Increase width by 40% (multiply by 1.4)
+                const baseWidth = Math.max(maxAssetWidth + 4, dynamicStyles.nodeMinWidth) // Add 4px padding, but respect min width
+                const uniformWidth = baseWidth * 1.4 // Increase by 40%
+                
+                // Batch DOM writes (apply phase) - apply same width to all nodes
+                measurements.forEach(({ node }) => {
+                    // Temporarily disable transitions when setting width to prevent animation
+                    const transition = node.style.transition
+                    node.style.transition = 'none'
+                    node.style.width = `${uniformWidth}px`
+                    node.style.minWidth = `${uniformWidth}px`
+                    node.style.maxWidth = `${uniformWidth}px`
+                    // Force a reflow to apply the width immediately
+                    void node.offsetWidth
+                    // Re-enable transitions after width is set
+                    node.style.transition = transition || ''
+                })
             });
         }, 50); // Reduced delay from 100ms to 50ms
         
@@ -383,7 +505,7 @@ const HierarchyTree = ({ hierarchyItems, onRemoveItem, onItemClick, itemTypes = 
                 cancelAnimationFrame(rafId);
             }
         };
-    }, [treeData, zoomLevel, selectedTypeFilter, isTreeExpanded, dynamicStyles.nodeMinWidth])
+    }, [treeDataWithTypes, zoomLevel, selectedTypeFilter, isTreeExpanded, dynamicStyles.nodeMinWidth])
     
     // If no item types are loaded, show a message about creating them
     if (itemTypes?.length === 0) {
@@ -476,16 +598,7 @@ const HierarchyTree = ({ hierarchyItems, onRemoveItem, onItemClick, itemTypes = 
                                 '--vertical-gap': `${dynamicStyles.verticalGap}px`,
                             }}
                         >
-                            {treeData.map(rootNode => (
-                                <TreeNode 
-                                    key={rootNode.id} 
-                                    node={rootNode}
-                                    onRemove={onRemoveItem}
-                                    onItemClick={onItemClick}
-                                    isItemType={rootNode.isItemType}
-                                    isTopLevelItemType={rootNode.isItemType}
-                                />
-                            ))}
+                            {treeDataWithTypes.map(rootNode => renderTreeNode(rootNode, 0))}
                         </div>
                     </div>
                 )}
@@ -497,6 +610,7 @@ const HierarchyTree = ({ hierarchyItems, onRemoveItem, onItemClick, itemTypes = 
                     ref={scrollWrapperRef}
                     onWheel={handleScroll}
                     onScroll={handleScroll}
+                    onClick={clearSelection}
                 >
                     <div 
                         ref={treeContentRef}
@@ -512,19 +626,27 @@ const HierarchyTree = ({ hierarchyItems, onRemoveItem, onItemClick, itemTypes = 
                             height: `${100 / (zoomLevel / 100)}%`,
                         }}
                     >
-                        {treeData.map(rootNode => (
-                            <TreeNode 
-                                key={rootNode.id} 
-                                node={rootNode}
-                                onRemove={onRemoveItem}
-                                onItemClick={onItemClick}
-                                isItemType={rootNode.isItemType}
-                                isTopLevelItemType={rootNode.isItemType}
-                            />
-                        ))}
+                        {treeDataWithTypes.map(rootNode => renderTreeNode(rootNode, 0))}
                     </div>
                 </div>
             )}
+
+            {/* Context Menu */}
+            <ContextMenu
+                contextMenu={contextMenu}
+                contextMenuRef={contextMenuRef}
+                onDeleteClick={handleDeleteClick}
+                itemType="hierarchy item"
+            />
+
+            {/* Delete Confirmation Dialog */}
+            <DeleteConfirmDialog
+                deleteConfirm={deleteConfirm}
+                onConfirm={confirmDelete}
+                onCancel={() => setDeleteConfirm(null)}
+                getItemName={(item) => item.title || `Item ${item.id}`}
+                itemType="hierarchy item"
+            />
         </div>
     )
 }
