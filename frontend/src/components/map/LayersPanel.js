@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import '../../styles/layersPanel.css';
 import { useUndoRedo } from '../../hooks/useUndoRedo';
+import { ITEM_TYPE_ICON_MAP } from '../../constants/itemTypeIcons';
 
 const LayersPanel = ({ layers = [], onToggleLayer, onRemoveLayer, onEditLayer, onStyleLayer, onAddFeature, onRemoveFeature, onZoomToFeature, onZoomToLayer, onRestoreLayer, onRestoreFeature }) => {
   const [expandedLayers, setExpandedLayers] = useState({});
@@ -273,6 +274,15 @@ const LayersPanel = ({ layers = [], onToggleLayer, onRemoveLayer, onEditLayer, o
   const getLayerIcon = (layer) => {
     if (layer.layerType === 'raster') return '🗺️';
     
+    // For point layers, use the layer's marker icon if available
+    if (layer.geometryType === 'point' && layer.style?.symbol) {
+      const iconInfo = ITEM_TYPE_ICON_MAP[layer.style.symbol];
+      if (iconInfo && iconInfo.preview) {
+        return iconInfo.preview;
+      }
+    }
+    
+    // Fallback to default icons
     switch (layer.geometryType) {
       case 'point': return '📍';
       case 'line': return '📏';
@@ -349,7 +359,12 @@ const LayersPanel = ({ layers = [], onToggleLayer, onRemoveLayer, onEditLayer, o
                 >
                   {expandedLayers[layer.id] ? '▼' : '▶'}
                 </button>
-                <span className="layer-icon">{getLayerIcon(layer)}</span>
+                <span 
+                  className="layer-icon" 
+                  style={layer.geometryType === 'point' && layer.style?.color ? { color: layer.style.color } : {}}
+                >
+                  {getLayerIcon(layer)}
+                </span>
                 <div className="layer-info">
                   <span className="layer-name">{layer.name}</span>
                   <span className="layer-type">
