@@ -19,9 +19,15 @@
     "react-scripts": "5.0.1",
     "uuid": "^13.0.0"
   },
+  "devDependencies": {
+    "@fullhuman/postcss-purgecss": "^6.0.0",
+    "purgecss": "^6.0.0"
+  },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "build:purge": "react-scripts build && node purgecss-runner.js",
+    "purge:source": "node purgecss-source.js",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
