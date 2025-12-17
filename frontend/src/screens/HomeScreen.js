@@ -116,14 +116,16 @@ const HomeScreen = () => {
       <div className="home-header">
         <div>
           <h1>Account Dashboard</h1>
-          <p className="project-name">All Projects Overview</p>
+          <p className="header-subtitle">Overview of your account usage and storage metrics</p>
         </div>
         <button 
           onClick={handleRefreshMetrics}
           className="refresh-btn"
           disabled={loading}
+          title="Refresh metrics"
         >
-          🔄 {loading ? 'Loading...' : 'Refresh'}
+          <span className="refresh-icon">🔄</span>
+          {loading ? 'Loading...' : 'Refresh'}
         </button>
       </div>
 
@@ -147,12 +149,9 @@ const HomeScreen = () => {
           {/* All Projects Summary */}
           {metrics.allProjects && (
             <div className="metrics-section all-projects-section">
-              <h2>All Projects Summary</h2>
-              <div className="summary-banner">
-                <span className="summary-icon">📊</span>
-                <span className="summary-text">
-                  Showing combined metrics across <strong>{metrics.allProjects.projectCount} project(s)</strong>
-                </span>
+              <div className="section-header">
+                <h2>Account Usage</h2>
+                <span className="project-count-badge">{metrics.allProjects.projectCount} {metrics.allProjects.projectCount === 1 ? 'Project' : 'Projects'}</span>
               </div>
               <div className="metrics-grid">
                 <div className="metric-card">
@@ -220,19 +219,19 @@ const HomeScreen = () => {
                   </div>
                 </div>
 
-                <div className="stat-card">
-                  <div className="stat-icon">📁</div>
+                <div className="stat-card storage-card">
+                  <div className="stat-icon">📷</div>
                   <div className="stat-content">
-                    <div className="stat-value">{metrics.allProjects.counts.files}</div>
-                    <div className="stat-label">Total Files</div>
+                    <div className="stat-value">{metrics.allProjects.storage.photoSizeFormatted || '0 MB'}</div>
+                    <div className="stat-label">Photos Storage</div>
                   </div>
                 </div>
 
-                <div className="stat-card">
-                  <div className="stat-icon">🏷️</div>
+                <div className="stat-card storage-card">
+                  <div className="stat-icon">📁</div>
                   <div className="stat-content">
-                    <div className="stat-value">{metrics.allProjects.counts.assetTypes}</div>
-                    <div className="stat-label">Total Asset Types</div>
+                    <div className="stat-value">{metrics.allProjects.storage.otherFilesSizeFormatted || '0 MB'}</div>
+                    <div className="stat-label">Other Files Storage</div>
                   </div>
                 </div>
               </div>
@@ -291,6 +290,7 @@ const HomeScreen = () => {
                 onClick={handleExportData}
                 className="action-card export-action"
                 disabled={exporting}
+                title={exporting ? 'Exporting data...' : 'Export project data as JSON'}
               >
                 <div className="action-icon">📥</div>
                 <div className="action-content">
@@ -300,7 +300,7 @@ const HomeScreen = () => {
               </button>
 
               <div className="action-card info-action">
-                <div className="action-icon">💡</div>
+                <div className="action-icon">ℹ️</div>
                 <div className="action-content">
                   <h3>Free Tier Limits</h3>
                   <p>500 MB Database • 1 GB Storage</p>
