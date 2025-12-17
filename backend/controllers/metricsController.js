@@ -128,7 +128,7 @@ const getAllProjectsMetrics = asyncHandler(async (req, res) => {
       .select('*', { count: 'exact', head: true });
 
     // Get actual file count and size from ALL storage buckets (not just database records)
-    const { fileCount: actualFileCount, totalSize: actualStorageSize, bucketBreakdown = {} } = await getAllStorageFilesCount();
+    const { fileCount: actualFileCount, totalSize: actualStorageSize, photoSize: actualPhotoSize = 0, otherFilesSize: actualOtherFilesSize = 0, bucketBreakdown = {} } = await getAllStorageFilesCount();
 
     // Get total file sizes from database (for fallback comparison)
     const { data: allProjectFiles } = await supabaseAdmin
@@ -220,6 +220,10 @@ const getAllProjectsMetrics = asyncHandler(async (req, res) => {
           storage: {
             size: totalStorageSize,
             sizeFormatted: formatBytesAsMB(totalStorageSize),
+            photoSize: actualPhotoSize,
+            photoSizeFormatted: formatBytesAsMB(actualPhotoSize),
+            otherFilesSize: actualOtherFilesSize,
+            otherFilesSizeFormatted: formatBytesAsMB(actualOtherFilesSize),
             limit: FREE_TIER_STORAGE_LIMIT,
             limitFormatted: formatBytesAsMB(FREE_TIER_STORAGE_LIMIT),
             percentage: Math.round(storagePercentage * 100) / 100,
@@ -307,46 +311,55 @@ async function getOfficialSupabaseMetrics() {
 
 /**
  * Get total file count and size from ALL storage buckets (account-wide)
+ * Separates photos from other files
  */
 async function getAllStorageFilesCount() {
   let totalFileCount = 0;
   let totalSize = 0;
+  let photoSize = 0;
+  let otherFilesSize = 0;
   
   // List all buckets and count files
   try {
     const { data: buckets, error: bucketsError } = await supabaseAdmin.storage.listBuckets();
     
     if (bucketsError || !buckets) {
-      return { fileCount: 0, totalSize: 0 };
+      return { fileCount: 0, totalSize: 0, photoSize: 0, otherFilesSize: 0 };
     }
     
     // Count files in each bucket and track per-bucket counts
     const bucketBreakdown = {};
     for (const bucket of buckets) {
       try {
-        const fileCount = await countFilesInBucket(bucket.name);
+        const fileCount = await countFilesInBucketWithBreakdown(bucket.name);
         totalFileCount += fileCount.count;
         totalSize += fileCount.size;
+        photoSize += fileCount.photoSize || 0;
+        otherFilesSize += fileCount.otherFilesSize || 0;
         bucketBreakdown[bucket.name] = {
           count: fileCount.count,
           size: fileCount.size,
-          sizeFormatted: formatBytes(fileCount.size)
+          sizeFormatted: formatBytes(fileCount.size),
+          photoSize: fileCount.photoSize || 0,
+          otherFilesSize: fileCount.otherFilesSize || 0
         };
       } catch (bucketError) {
         bucketBreakdown[bucket.name] = {
           count: 0,
           size: 0,
           sizeFormatted: '0 Bytes',
+          photoSize: 0,
+          otherFilesSize: 0,
           error: bucketError.message
         };
       }
     }
     
-    return { fileCount: totalFileCount, totalSize, bucketBreakdown };
+    return { fileCount: totalFileCount, totalSize, photoSize, otherFilesSize, bucketBreakdown };
     
   } catch (error) {
     console.error('Error in getAllStorageFilesCount:', error);
-    return { fileCount: 0, totalSize: 0 };
+    return { fileCount: 0, totalSize: 0, photoSize: 0, otherFilesSize: 0 };
   }
 }
 
@@ -429,6 +442,108 @@ async function countFilesInBucket(bucketName, limit = 1000) {
     return { count: totalCount, size: totalSize };
   } catch (error) {
     return { count: 0, size: 0 };
+  }
+}
+
+/**
+ * Count all files in a bucket with breakdown by photos vs other files
+ * Photos are in paths containing '/photos/', other files are in paths containing '/files/'
+ */
+async function countFilesInBucketWithBreakdown(bucketName, limit = 1000) {
+  let totalCount = 0;
+  let totalSize = 0;
+  let photoSize = 0;
+  let otherFilesSize = 0;
+  const foldersToProcess = ['']; // Start with root
+  const processedPaths = new Set();
+  
+  try {
+    while (foldersToProcess.length > 0) {
+      const currentPath = foldersToProcess.shift();
+      
+      // Avoid processing the same path twice
+      if (processedPaths.has(currentPath)) {
+        continue;
+      }
+      processedPaths.add(currentPath);
+      
+      let offset = 0;
+      let hasMore = true;
+      
+      // Paginate through all items in current path
+      while (hasMore) {
+        const { data: items, error } = await supabaseAdmin.storage
+          .from(bucketName)
+          .list(currentPath, {
+            limit,
+            offset,
+            sortBy: { column: 'name', order: 'asc' }
+          });
+        
+        if (error) {
+          break;
+        }
+        
+        if (!items || items.length === 0) {
+          hasMore = false;
+          break;
+        }
+        
+        for (const item of items) {
+          // Determine if it's a file or folder
+          const hasId = item.id !== null && item.id !== undefined && item.id !== '';
+          const hasMetadata = item.metadata !== null && item.metadata !== undefined;
+          
+          if (hasId && hasMetadata) {
+            // It's a file
+            totalCount++;
+            const fileSize = item.metadata?.size || 0;
+            totalSize += fileSize;
+            
+            // Check if it's a photo or other file based on path
+            const fullPath = currentPath ? `${currentPath}/${item.name}` : item.name;
+            if (fullPath.includes('/photos/')) {
+              photoSize += fileSize;
+            } else if (fullPath.includes('/files/')) {
+              otherFilesSize += fileSize;
+            } else {
+              // Files not in photos or files folders - count as other files
+              otherFilesSize += fileSize;
+            }
+          } else if (item.name && !hasId) {
+            // It's a folder - add to queue for processing
+            const folderPath = currentPath ? `${currentPath}/${item.name}` : item.name;
+            if (!processedPaths.has(folderPath)) {
+              foldersToProcess.push(folderPath);
+            }
+          } else if (item.metadata?.size !== undefined) {
+            // Item has metadata with size, treat as file
+            totalCount++;
+            const fileSize = item.metadata.size;
+            totalSize += fileSize;
+            
+            // Check if it's a photo or other file based on path
+            const fullPath = currentPath ? `${currentPath}/${item.name}` : item.name;
+            if (fullPath.includes('/photos/')) {
+              photoSize += fileSize;
+            } else {
+              otherFilesSize += fileSize;
+            }
+          }
+        }
+        
+        // Check if more items to fetch
+        if (items.length < limit) {
+          hasMore = false;
+        } else {
+          offset += limit;
+        }
+      }
+    }
+    
+    return { count: totalCount, size: totalSize, photoSize, otherFilesSize };
+  } catch (error) {
+    return { count: 0, size: 0, photoSize: 0, otherFilesSize: 0 };
   }
 }
 
@@ -673,8 +788,11 @@ const formatBytes = (bytes) => {
 
 // Format always as MB for consistency
 const formatBytesAsMB = (bytes) => {
+  if (!bytes || bytes === 0) {
+    return '0.00 MB';
+  }
   const mb = bytes / (1024 * 1024);
-  return mb.toFixed(2) + ' MB';
+  return Number(mb.toFixed(2)).toFixed(2) + ' MB';
 };
 
 export { getProjectMetrics, getAllProjectsMetrics };

@@ -19,6 +19,18 @@
   font-size: 2rem;
 }
 
+.header-subtitle {
+  margin: 8px 0 0 0;
+  color: #6c757d;
+  font-size: 0.95rem;
+  font-weight: 400;
+}
+
+.refresh-icon {
+  margin-right: 6px;
+  display: inline-block;
+}
+
 .project-name {
   margin: 5px 0 0 0;
   color: #666;
@@ -114,6 +126,27 @@
   margin: 0 0 20px 0;
   color: #333;
   font-size: 1.4rem;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.section-header h2 {
+  margin: 0;
+}
+
+.project-count-badge {
+  padding: 6px 14px;
+  background: #007bff;
+  color: white;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .metrics-grid {
@@ -244,6 +277,11 @@
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
   border-color: #007bff;
+}
+
+.stat-card.storage-card {
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border-left: 3px solid #007bff;
 }
 
 .stat-icon {
