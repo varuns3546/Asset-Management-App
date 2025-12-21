@@ -51,10 +51,12 @@
 .btn-secondary {
     border: 1px solid #d1d5db;
     background: white;
+    color: #374151;
 }
 
 .btn-secondary:hover {
     background-color: #f9fafb;
+    color: #111827;
 }
 
 .btn-primary {

@@ -56,6 +56,42 @@ const OpenProjectModal = ({ onClose }) => {
         setSelectedProjectId('')
     }
 
+    // Function to add indices to duplicate project names
+    const getDisplayNameWithIndex = (project, allProjects) => {
+        const projectName = project.title || project.name || `Project ${project.id || project._id}`
+        
+        // Find all projects with the same name (case-insensitive)
+        const sameNameProjects = allProjects.filter(p => {
+            const pName = (p.title || p.name || '').toLowerCase()
+            return pName === projectName.toLowerCase()
+        })
+        
+        // If there's only one project with this name, return it as-is
+        if (sameNameProjects.length <= 1) {
+            return projectName
+        }
+        
+        // Sort by creation date or ID to ensure consistent ordering
+        sameNameProjects.sort((a, b) => {
+            if (a.created_at && b.created_at) {
+                return new Date(a.created_at) - new Date(b.created_at)
+            }
+            return (a.id || a._id || '').localeCompare(b.id || b._id || '')
+        })
+        
+        // Find the index of this project in the sorted list
+        const index = sameNameProjects.findIndex(p => 
+            (p.id || p._id) === (project.id || project._id)
+        )
+        
+        // First project (index 0) gets no suffix, others get (1), (2), etc.
+        if (index === 0) {
+            return projectName
+        } else {
+            return `${projectName}(${index})`
+        }
+    }
+
     // Enhanced filtering with multiple search criteria
     const filteredProjects = projects.filter(project => {
         if (!searchTerm) return true
@@ -205,12 +241,15 @@ const OpenProjectModal = ({ onClose }) => {
                 >
                     <option value="">Select a project...</option>
                     {sortedProjects.length > 0 ? (
-                        sortedProjects.map((project) => (
-                            <option key={project.id || project._id} value={project.id || project._id}>
-                                {project.title || project.name || `Project ${project.id || project._id}`}
-                                {project.description && ` - ${project.description.substring(0, 50)}${project.description.length > 50 ? '...' : ''}`}
-                            </option>
-                        ))
+                        sortedProjects.map((project) => {
+                            const displayName = getDisplayNameWithIndex(project, projects)
+                            return (
+                                <option key={project.id || project._id} value={project.id || project._id}>
+                                    {displayName}
+                                    {project.description && ` - ${project.description.substring(0, 50)}${project.description.length > 50 ? '...' : ''}`}
+                                </option>
+                            )
+                        })
                     ) : (
                         <option value="" disabled>
                             {!user ? 'Please log in first' : 
@@ -237,7 +276,7 @@ const OpenProjectModal = ({ onClose }) => {
                                 const selected = projects.find(p => p.id === selectedProjectId)
                                 return selected ? (
                                     <>
-                                        <div><strong>Title:</strong> {selected.title || selected.name}</div>
+                                        <div><strong>Title:</strong> {getDisplayNameWithIndex(selected, projects)}</div>
                                         {selected.description && (
                                             <div><strong>Description:</strong> {selected.description}</div>
                                         )}

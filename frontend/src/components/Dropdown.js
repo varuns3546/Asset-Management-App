@@ -4,10 +4,20 @@ import OpenProjectModal from './OpenProjectModal'
 import CreateProjectModal from './CreateProjectModal'
 import '../styles/navbar.css'
 
-const Dropdown = ({title, options, isOpen, onToggle, onOpenModal, onCloseModal}) => {
+const Dropdown = ({title, options, isOpen, onToggle, onOpenModal, onCloseModal, onOptionClick, className}) => {
     const navigate = useNavigate()
     
     const handleOptionClick = (option) => {
+        // If custom handler provided, call it first
+        if (onOptionClick) {
+            const handled = onOptionClick(option)
+            // If handler returns true, it handled the action and we should close dropdown
+            if (handled) {
+                onToggle()
+                return
+            }
+        }
+        
         // Handle modal options only for Projects dropdown
         if (onOpenModal && (option === 'Open Project' || option === 'Create Project')) {
             console.log('Opening modal for:', option) // Debug log
@@ -24,6 +34,7 @@ const Dropdown = ({title, options, isOpen, onToggle, onOpenModal, onCloseModal})
                 'Map': '/map',
                 'Leaflet': '/leaflet',
                 'Questionnaire': '/questionnaire',
+                'Usage': '/usage',
             }
             
             if (routeMap[option]) {
@@ -34,7 +45,7 @@ const Dropdown = ({title, options, isOpen, onToggle, onOpenModal, onCloseModal})
     }
     
     return (
-        <div className="dropdown-container">
+        <div className={`dropdown-container ${className || ''}`}>
             <button className="button" onClick={onToggle}>{title}</button>
             {isOpen && (
                 <div className="options">
