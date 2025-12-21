@@ -1,113 +1,77 @@
 import React, { useState, useEffect } from 'react';
-import { useSelector } from 'react-redux';
-import metricsService from '../services/metricsService';
-import StorageWarningBanner from '../components/StorageWarningBanner';
-import { useRouteMount } from '../contexts/RouteMountContext';
-import useDebouncedAsync from '../hooks/useDebouncedAsync';
+import { useSelector, useDispatch } from 'react-redux';
+import { updateProject } from '../features/projects/projectSlice';
+import FormField from '../components/forms/FormField';
+import ButtonGroup from '../components/forms/ButtonGroup';
+import ErrorMessage from '../components/forms/ErrorMessage';
 import '../styles/homeScreen.css';
 
 const HomeScreen = () => {
   const { selectedProject } = useSelector((state) => state.projects);
   const { user } = useSelector((state) => state.auth);
-  const [metrics, setMetrics] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [dismissedWarning, setDismissedWarning] = useState(false);
-  const [exporting, setExporting] = useState(false);
-  const { isRouteMounted } = useRouteMount();
+  const dispatch = useDispatch();
+  
+  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState({
+    title: '',
+    description: ''
+  });
+  const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
 
-  // Reset dismissed warning when user changes
+  // Initialize form data when project changes
   useEffect(() => {
-    if (user) {
-      setDismissedWarning(false);
+    if (selectedProject) {
+      setFormData({
+        title: selectedProject.title || selectedProject.name || '',
+        description: selectedProject.description || ''
+      });
     }
-  }, [user]);
+  }, [selectedProject]);
 
-  // Load account metrics when user is available (debounced to prevent excessive calls)
-  useDebouncedAsync(
-    async () => {
-      if (!user) return;
+  const handleEdit = () => {
+    setIsEditing(true);
+    setError('');
+  };
 
-      if (isRouteMounted()) {
-        setLoading(true);
-      }
-      try {
-        // Fetch account-level metrics (all projects)
-        const allProjectsData = await metricsService.getAllProjectsMetrics(user.token);
-        
-        if (allProjectsData.success && isRouteMounted()) {
-          setMetrics(allProjectsData.data);
-        }
-      } catch (error) {
-        if (isRouteMounted()) {
-          console.error('Error loading metrics:', error);
-        }
-      } finally {
-        if (isRouteMounted()) {
-          setLoading(false);
-        }
-      }
-    },
-    [user?.token],
-    {
-      delay: 300,
-      shouldRun: (deps) => {
-        const [token] = deps;
-        return !!token;
-      },
-      onError: (error) => {
-        if (isRouteMounted()) {
-          console.error('Error loading metrics:', error);
-        }
-      }
-    }
-  );
-
-  const handleExportData = async () => {
-    if (!selectedProject) {
-      alert('Please select a project to export data.');
-      return;
-    }
-    if (isRouteMounted()) {
-      setExporting(true);
-    }
-    try {
-      await metricsService.exportProjectData(selectedProject.id, user.token);
-      if (isRouteMounted()) {
-        alert('Project data exported successfully!');
-      }
-    } catch (error) {
-      if (isRouteMounted()) {
-        console.error('Error exporting data:', error);
-        alert('Failed to export project data. Please try again.');
-      }
-    } finally {
-      if (isRouteMounted()) {
-        setExporting(false);
-      }
+  const handleCancel = () => {
+    setIsEditing(false);
+    setError('');
+    // Reset form data to original project values
+    if (selectedProject) {
+      setFormData({
+        title: selectedProject.title || selectedProject.name || '',
+        description: selectedProject.description || ''
+      });
     }
   };
 
-  const handleRefreshMetrics = async () => {
-    if (!user) return;
+  const handleSave = async () => {
+    if (!selectedProject) return;
+
+    setError('');
     
-    if (isRouteMounted()) {
-      setLoading(true);
+    // Validate title
+    if (!formData.title || formData.title.trim() === '') {
+      setError('Project title is required');
+      return;
     }
+
+    setSaving(true);
     try {
-      // Fetch account-level metrics (all projects)
-      const allProjectsData = await metricsService.getAllProjectsMetrics(user.token);
+      await dispatch(updateProject({
+        projectId: selectedProject.id,
+        projectData: {
+          title: formData.title.trim(),
+          description: formData.description.trim() || ''
+        }
+      })).unwrap();
       
-      if (allProjectsData.success && isRouteMounted()) {
-        setMetrics(allProjectsData.data);
-      }
-    } catch (error) {
-      if (isRouteMounted()) {
-        console.error('Error loading metrics:', error);
-      }
+      setIsEditing(false);
+    } catch (err) {
+      setError(err || 'Failed to update project');
     } finally {
-      if (isRouteMounted()) {
-        setLoading(false);
-      }
+      setSaving(false);
     }
   };
 
@@ -115,213 +79,115 @@ const HomeScreen = () => {
     <div className="home-screen">
       <div className="home-header">
         <div>
-          <h1>Account Dashboard</h1>
-          <p className="header-subtitle">Overview of your account usage and storage metrics</p>
+          <h1>Welcome</h1>
+          <p className="header-subtitle">Your project dashboard</p>
         </div>
-        <button 
-          onClick={handleRefreshMetrics}
-          className="refresh-btn"
-          disabled={loading}
-          title="Refresh metrics"
-        >
-          <span className="refresh-icon">🔄</span>
-          {loading ? 'Loading...' : 'Refresh'}
-        </button>
       </div>
 
-      {/* Storage Warning Banner */}
-      {metrics && metrics.allProjects && !dismissedWarning && (
-        <StorageWarningBanner 
-          metrics={metrics.allProjects}
-          onExport={handleExportData}
-          onDismiss={() => setDismissedWarning(true)}
-        />
-      )}
+      <div className="metrics-container">
+        <div className="metrics-section">
+          <h2>Project Information</h2>
+          {selectedProject ? (
+            <div style={{ padding: '20px', background: '#f8f9fa', borderRadius: '8px', marginTop: '20px' }}>
+              {isEditing ? (
+                <div>
+                  <FormField
+                    label="Project Title:"
+                    id="project-title-edit"
+                    type="text"
+                    placeholder="Enter project title..."
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    required
+                    disabled={saving}
+                  />
+                  
+                  <FormField
+                    label="Description:"
+                    id="project-description-edit"
+                    type="textarea"
+                    placeholder="Enter project description..."
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    rows={4}
+                    disabled={saving}
+                  />
 
-      {/* Metrics Overview */}
-      {loading ? (
-        <div className="loading-state">
-          <div className="spinner"></div>
-          <p>Loading account metrics...</p>
+                  <ErrorMessage message={error} />
+                  
+                  <ButtonGroup
+                    buttons={[
+                      {
+                        label: 'Cancel',
+                        variant: 'secondary',
+                        onClick: handleCancel,
+                        disabled: saving
+                      },
+                      {
+                        label: saving ? 'Saving...' : 'Save',
+                        variant: 'primary',
+                        onClick: handleSave,
+                        disabled: saving
+                      }
+                    ]}
+                  />
+                </div>
+              ) : (
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px' }}>
+                    <div style={{ flex: 1 }}>
+                      <h3 style={{ marginTop: 0, marginBottom: '8px' }}>
+                        {selectedProject.title || selectedProject.name}
+                      </h3>
+                      {selectedProject.description && (
+                        <p style={{ color: '#666', marginTop: '8px', whiteSpace: 'pre-wrap' }}>
+                          {selectedProject.description}
+                        </p>
+                      )}
+                      {!selectedProject.description && (
+                        <p style={{ color: '#999', fontStyle: 'italic', marginTop: '8px' }}>
+                          No description
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      onClick={handleEdit}
+                      className="btn btn-secondary"
+                      style={{ marginLeft: '15px' }}
+                    >
+                      Edit
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div style={{ padding: '20px', background: '#f8f9fa', borderRadius: '8px', marginTop: '20px' }}>
+              <h3 style={{ marginTop: 0 }}>No Project Selected</h3>
+              <p>Please select or create a project to get started.</p>
+              <p>Use the <strong>Project</strong> menu in the navigation bar to:</p>
+              <ul style={{ marginTop: '15px', paddingLeft: '20px' }}>
+                <li>Open an existing project</li>
+                <li>Create a new project</li>
+              </ul>
+            </div>
+          )}
         </div>
-      ) : metrics ? (
-        <div className="metrics-container">
-          {/* All Projects Summary */}
-          {metrics.allProjects && (
-            <div className="metrics-section all-projects-section">
-              <div className="section-header">
-                <h2>Account Usage</h2>
-                <span className="project-count-badge">{metrics.allProjects.projectCount} {metrics.allProjects.projectCount === 1 ? 'Project' : 'Projects'}</span>
-              </div>
-              <div className="metrics-grid">
-                <div className="metric-card">
-                  <div className="metric-header">
-                    <h3>
-                      Total Database 
-                      {metrics.allProjects.database.isEstimate && <span className="estimate-badge" title="Estimated size">~</span>}
-                    </h3>
-                    <span className={`status-badge ${metrics.allProjects.database.warning ? 'warning' : 'healthy'}`}>
-                      {metrics.allProjects.database.warning ? '⚠️ Warning' : '✓ Healthy'}
-                    </span>
-                  </div>
-                  <div className="metric-value">
-                    {metrics.allProjects.database.sizeWithOverheadFormatted || metrics.allProjects.database.sizeFormatted}
-                    <span className="metric-limit"> / {metrics.allProjects.database.limitFormatted}</span>
-                  </div>
-                  <div className="progress-bar">
-                    <div 
-                      className={`progress-fill ${metrics.allProjects.database.percentage > 90 ? 'critical' : metrics.allProjects.database.percentage > 80 ? 'warning' : ''}`}
-                      style={{ width: `${Math.min(metrics.allProjects.database.percentage, 100)}%` }}
-                    />
-                  </div>
-                  <p className="metric-percentage">
-                    {metrics.allProjects.database.percentage.toFixed(1)}% used (includes overhead)
-                  </p>
-                </div>
 
-                <div className="metric-card">
-                  <div className="metric-header">
-                    <h3>Total File Storage</h3>
-                    <span className={`status-badge ${metrics.allProjects.storage.warning ? 'warning' : 'healthy'}`}>
-                      {metrics.allProjects.storage.warning ? '⚠️ Warning' : '✓ Healthy'}
-                    </span>
-                  </div>
-                  <div className="metric-value">
-                    {metrics.allProjects.storage.sizeFormatted}
-                    <span className="metric-limit"> / {metrics.allProjects.storage.limitFormatted}</span>
-                  </div>
-                  <div className="progress-bar">
-                    <div 
-                      className={`progress-fill ${metrics.allProjects.storage.percentage > 90 ? 'critical' : metrics.allProjects.storage.percentage > 80 ? 'warning' : ''}`}
-                      style={{ width: `${Math.min(metrics.allProjects.storage.percentage, 100)}%` }}
-                    />
-                  </div>
-                  <p className="metric-percentage">
-                    {metrics.allProjects.storage.percentage.toFixed(1)}% used
-                    {metrics.allProjects.storage.dataSource && (
-                      <span className="data-source-badge" title={`Data source: ${metrics.allProjects.storage.dataSource === 'official_api' ? 'Official Supabase API (matches dashboard)' : metrics.allProjects.storage.dataSource === 'bucket_enumeration' ? 'Calculated from storage buckets (may differ from dashboard)' : 'Calculated from database records'}`}>
-                        {metrics.allProjects.storage.dataSource === 'official_api' ? ' ✓ Official' : ' ~ Calculated'}
-                      </span>
-                    )}
-                  </p>
-                </div>
-              </div>
-
-              <div className="stats-grid">
-                <div className="stat-card">
-                  <div className="stat-icon">📍</div>
-                  <div className="stat-content">
-                    <div className="stat-value">{metrics.allProjects.counts.assets}</div>
-                    <div className="stat-label">Total Assets</div>
-                  </div>
-                </div>
-
-                <div className="stat-card">
-                  <div className="stat-icon">📋</div>
-                  <div className="stat-content">
-                    <div className="stat-value">{metrics.allProjects.counts.responses}</div>
-                    <div className="stat-label">Total Responses</div>
-                  </div>
-                </div>
-
-                <div className="stat-card storage-card">
-                  <div className="stat-icon">📷</div>
-                  <div className="stat-content">
-                    <div className="stat-value">{metrics.allProjects.storage.photoSizeFormatted || '0 MB'}</div>
-                    <div className="stat-label">Photos Storage</div>
-                  </div>
-                </div>
-
-                <div className="stat-card storage-card">
-                  <div className="stat-icon">📁</div>
-                  <div className="stat-content">
-                    <div className="stat-value">{metrics.allProjects.storage.otherFilesSizeFormatted || '0 MB'}</div>
-                    <div className="stat-label">Other Files Storage</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Supabase Account Total (Official Metrics) */}
-          {metrics.accountTotal && (
-            <div className="metrics-section account-total-section">
-              <h2>Supabase Account Total</h2>
-              <div className="info-banner official-account-banner">
-                <span className="info-icon">🔒</span>
-                <span className="info-text">
-                  <strong>Official Supabase metrics</strong> - Includes ALL data in your Supabase project (may include system tables and non-app data)
-                </span>
-              </div>
-              <div className="metrics-grid">
-                <div className="metric-card account-metric">
-                  <div className="metric-header">
-                    <h3>
-                      Account Database
-                      <span className="official-badge" title="Official Supabase metrics">✓</span>
-                    </h3>
-                  </div>
-                  <div className="metric-value">
-                    {metrics.accountTotal.database.sizeFormatted}
-                  </div>
-                  <p className="metric-note">
-                    <span className="official-note">Official measurement from Supabase</span>
-                  </p>
-                </div>
-
-                <div className="metric-card account-metric">
-                  <div className="metric-header">
-                    <h3>
-                      Account Storage
-                      <span className="official-badge" title="Official Supabase metrics">✓</span>
-                    </h3>
-                  </div>
-                  <div className="metric-value">
-                    {metrics.accountTotal.storage.sizeFormatted}
-                  </div>
-                  <p className="metric-note">
-                    <span className="official-note">Official measurement from Supabase</span>
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Actions */}
-          <div className="metrics-section">
-            <h2>Data Management</h2>
-            <div className="actions-grid">
-              <button 
-                onClick={handleExportData}
-                className="action-card export-action"
-                disabled={exporting}
-                title={exporting ? 'Exporting data...' : 'Export project data as JSON'}
-              >
-                <div className="action-icon">📥</div>
-                <div className="action-content">
-                  <h3>{exporting ? 'Exporting...' : 'Export Project Data'}</h3>
-                  <p>Download all project data as JSON</p>
-                </div>
-              </button>
-
-              <div className="action-card info-action">
-                <div className="action-icon">ℹ️</div>
-                <div className="action-content">
-                  <h3>Free Tier Limits</h3>
-                  <p>500 MB Database • 1 GB Storage</p>
-                </div>
-              </div>
-            </div>
+        <div className="metrics-section">
+          <h2>Getting Started</h2>
+          <div style={{ padding: '20px', background: '#f8f9fa', borderRadius: '8px', marginTop: '20px' }}>
+            <p>Use the navigation menu to access different features:</p>
+            <ul style={{ marginTop: '15px', paddingLeft: '20px' }}>
+              <li><strong>Project</strong> - Create, open, or manage projects</li>
+              <li><strong>Structure</strong> - Set up asset hierarchies and types</li>
+              <li><strong>Enter Data</strong> - Add questionnaire responses and geodata</li>
+              <li><strong>Map</strong> - View and edit your geographic data</li>
+              <li><strong>Usage</strong> - View account usage and storage metrics</li>
+            </ul>
           </div>
         </div>
-      ) : (
-        <div className="no-metrics">
-          <p>Unable to load project metrics.</p>
-          <button onClick={handleRefreshMetrics} className="retry-btn">
-            Try Again
-          </button>
-        </div>
-      )}
+      </div>
     </div>
   );
 };

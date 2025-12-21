@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useDispatch } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { logout } from '../features/auth/authSlice'
 import '../styles/navbar.css'
@@ -10,6 +10,7 @@ const Navbar = ({ onOpenModal, onCloseModal }) => {
     const navbarRef = useRef(null)
     const dispatch = useDispatch()
     const navigate = useNavigate()
+    const { user } = useSelector((state) => state.auth)
     const toggleDropdown = (dropdownName) => {
         setOpenDropdown(openDropdown === dropdownName ? null : dropdownName)
     }
@@ -33,19 +34,30 @@ const Navbar = ({ onOpenModal, onCloseModal }) => {
         }
     }, [openDropdown])
     
-    const handleLogout = () => {
-        dispatch(logout())
-        navigate('/')
-    }
-
-    const handleHomeClick = () => {
-        navigate('/home')
+    const handleNavigate = (path) => {
+        navigate(path)
         setOpenDropdown(null)
     }
 
+    const handleLogout = () => {
+        dispatch(logout())
+        navigate('/')
+        setOpenDropdown(null)
+    }
+
+    const handleUserOptionClick = (option) => {
+        if (option === 'Usage') {
+            handleNavigate('/usage')
+        } else if (option === 'Logout') {
+            handleLogout()
+        }
+    }
+
+    const userFirstName = user?.firstName || user?.first_name || 'User'
+
     return (
         <div className="container" ref={navbarRef}>
-            <button className="button" onClick={handleHomeClick}>Home</button>
+            <button className="button" onClick={() => handleNavigate('/home')}>Home</button>
             <Dropdown 
                 title="Project" 
                 options={['Save Project', 'Open Project', 'Create Project', 'Upload File']} 
@@ -79,7 +91,17 @@ const Navbar = ({ onOpenModal, onCloseModal }) => {
                 onToggle={() => toggleDropdown('generate')}
             />
             <button className="button">Share</button>
-            <button className="button" onClick={handleLogout}>Logout</button>
+            <Dropdown
+                title={userFirstName}
+                options={['Usage', 'Logout']}
+                isOpen={openDropdown === 'user'}
+                onToggle={() => toggleDropdown('user')}
+                className="user-dropdown-container"
+                onOptionClick={(option) => {
+                    handleUserOptionClick(option)
+                    return true // Indicate we handled it
+                }}
+            />
         </div>
     )
 }
