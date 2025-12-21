@@ -198,6 +198,11 @@ const HomeScreen = () => {
                   </div>
                   <p className="metric-percentage">
                     {metrics.allProjects.storage.percentage.toFixed(1)}% used
+                    {metrics.allProjects.storage.dataSource && (
+                      <span className="data-source-badge" title={`Data source: ${metrics.allProjects.storage.dataSource === 'official_api' ? 'Official Supabase API (matches dashboard)' : metrics.allProjects.storage.dataSource === 'bucket_enumeration' ? 'Calculated from storage buckets (may differ from dashboard)' : 'Calculated from database records'}`}>
+                        {metrics.allProjects.storage.dataSource === 'official_api' ? ' ✓ Official' : ' ~ Calculated'}
+                      </span>
+                    )}
                   </p>
                 </div>
               </div>

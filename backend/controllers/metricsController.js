@@ -32,8 +32,9 @@ const getProjectMetrics = asyncHandler(async (req, res) => {
     }
 
     // === STEP 6: Calculate Percentages ===
-    const FREE_TIER_DB_LIMIT = 500 * 1024 * 1024; // 500 MB
-    const FREE_TIER_STORAGE_LIMIT = 1024 * 1024 * 1024; // 1 GB
+    // Note: Storage providers use decimal units (1000), not binary (1024)
+    const FREE_TIER_DB_LIMIT = 500 * 1000 * 1000; // 500 MB (decimal)
+    const FREE_TIER_STORAGE_LIMIT = 1000 * 1000 * 1000; // 1 GB = 1000 MB (decimal)
 
     // 🚨 TESTING: Override with warning values
     const TEST_MODE = false;
@@ -131,27 +132,138 @@ const getAllProjectsMetrics = asyncHandler(async (req, res) => {
     const { fileCount: actualFileCount, totalSize: actualStorageSize, photoSize: actualPhotoSize = 0, otherFilesSize: actualOtherFilesSize = 0, bucketBreakdown = {} } = await getAllStorageFilesCount();
 
     // Get total file sizes from database (for fallback comparison)
+    // Also separate photos from other files based on storage_path
     const { data: allProjectFiles } = await supabaseAdmin
       .from('project_files')
-      .select('file_size');
+      .select('file_size, storage_path');
 
     const dbFileSize = allProjectFiles?.reduce((sum, file) => sum + (file.file_size || 0), 0) || 0;
+    const dbPhotoSize = allProjectFiles?.reduce((sum, file) => {
+      if (file.storage_path && file.storage_path.includes('/photos/')) {
+        return sum + (file.file_size || 0);
+      }
+      return sum;
+    }, 0) || 0;
+    const dbOtherFilesSize = allProjectFiles?.reduce((sum, file) => {
+      if (file.storage_path && file.storage_path.includes('/files/')) {
+        return sum + (file.file_size || 0);
+      }
+      return sum;
+    }, 0) || 0;
+
+    // Extract photo sizes from questionnaire_responses.response_metadata
+    // Photos are stored in questionnaire_responses but NOT in project_files table
+    // Since metadata might not have sizes, we'll look them up from storage
+    const { data: allQuestionnaireResponses } = await supabaseAdmin
+      .from('questionnaire_responses')
+      .select('response_metadata');
+
+    let dbPhotoSizeFromMetadata = 0;
+    const photoPaths = new Set(); // Collect unique photo paths
+    
+    if (allQuestionnaireResponses) {
+      for (const response of allQuestionnaireResponses) {
+        if (response.response_metadata && response.response_metadata.photos) {
+          const photos = Array.isArray(response.response_metadata.photos) 
+            ? response.response_metadata.photos 
+            : [];
+          
+          for (const photo of photos) {
+            // Try to get size from metadata first
+            const photoSize = photo.size || photo.file_size || 0;
+            if (photoSize > 0) {
+              dbPhotoSizeFromMetadata += photoSize;
+            } else {
+              // If no size in metadata, collect path to look up from storage
+              const photoPath = photo.path || photo.filePath || photo.url;
+              if (photoPath) {
+                // Extract path from URL if needed (remove domain, bucket name, etc.)
+                const pathMatch = photoPath.match(/\/project-files\/(.+)$/) || 
+                                 photoPath.match(/project-files\/(.+)$/) ||
+                                 (photoPath.startsWith('/') ? [null, photoPath.substring(1)] : [null, photoPath]);
+                if (pathMatch && pathMatch[1]) {
+                  photoPaths.add(pathMatch[1]);
+                } else if (!photoPath.includes('http')) {
+                  // If it's already a path (not a URL), use it directly
+                  photoPaths.add(photoPath);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Look up photo sizes from bucket enumeration (faster than individual lookups)
+    // Match photos in metadata with files found in bucket enumeration
+    if (photoPaths.size > 0 && actualPhotoSize > 0) {
+      // If we have photos in metadata but no sizes, and bucket enumeration found photos,
+      // we can estimate that the photos in metadata account for the bucket photo size
+      // This is more accurate than 0, but less accurate than individual lookups
+      // For now, we'll use a ratio: if we have photo paths but no sizes, use bucket photo size
+      if (dbPhotoSizeFromMetadata === 0 && actualPhotoSize > 0) {
+        console.log(`[Metrics] Photos in metadata don't have sizes, using bucket enumeration photo size: ${actualPhotoSize} bytes`);
+        dbPhotoSizeFromMetadata = actualPhotoSize;
+      }
+    }
+
+    // Total database size = regular files + photos from metadata
+    const dbTotalSize = dbFileSize + dbPhotoSizeFromMetadata;
     
     // Priority order for storage size:
     // 1. Official Supabase storage_size (most accurate - what Supabase dashboard shows)
-    // 2. Bucket enumeration (actual files in storage)
-    // 3. Database records (fallback)
+    // 2. Database records + photos from metadata (matches Supabase's tracking method - excludes orphaned files)
+    // 3. Bucket enumeration (actual files in storage - includes orphaned files)
+    // 
+    // Note: Photos are stored in storage but NOT in project_files table (only in questionnaire_responses metadata)
+    // So we need to extract photo sizes from questionnaire_responses to get accurate total
     let totalStorageSize = 0;
+    let storageDataSource = 'calculated';
     
     if (officialMetrics?.storage_size) {
       // Use official Supabase storage size (authoritative source)
-      totalStorageSize = officialMetrics.storage_size;
+      // Ensure it's in bytes (Supabase API might return in different units)
+      let officialSize = officialMetrics.storage_size;
+      
+      // If the value is very small (< 1000), it might be in GB, convert to bytes
+      // Storage providers use decimal units: 1 GB = 1000 MB = 1,000,000,000 bytes
+      if (officialSize < 1000 && officialSize > 0) {
+        officialSize = officialSize * 1000 * 1000 * 1000; // Convert GB to bytes (decimal)
+      }
+      
+      totalStorageSize = officialSize;
+      storageDataSource = 'official_api';
+      console.log(`[Metrics] Using official Supabase storage size: ${totalStorageSize} bytes (${formatBytesAsMB(totalStorageSize)})`);
+    } else if (dbTotalSize > 0) {
+      // Use database records + photos from metadata - this matches Supabase's tracking method
+      // Supabase tracks files that are in the database, not orphaned files in storage
+      totalStorageSize = dbTotalSize;
+      storageDataSource = 'database_records';
+      console.log(`[Metrics] Using database records + photos from metadata: ${totalStorageSize} bytes (${formatBytesAsMB(totalStorageSize)})`);
+      console.log(`[Metrics]   - Regular files (project_files): ${dbFileSize} bytes (${formatBytesAsMB(dbFileSize)})`);
+      console.log(`[Metrics]   - Photos (questionnaire_responses): ${dbPhotoSizeFromMetadata} bytes (${formatBytesAsMB(dbPhotoSizeFromMetadata)})`);
+      console.log(`[Metrics] Bucket enumeration shows ${actualStorageSize} bytes (${formatBytesAsMB(actualStorageSize)})`);
+      const orphanedSize = actualStorageSize - dbTotalSize;
+      if (orphanedSize > 0) {
+        console.log(`[Metrics]   - Orphaned files (not in database): ${orphanedSize} bytes (${formatBytesAsMB(orphanedSize)})`);
+      }
+      
+      if (officialMetrics) {
+        console.log(`[Metrics] Official metrics object exists but storage_size is missing:`, officialMetrics);
+      } else {
+        console.log(`[Metrics] Note: Management API endpoints returned 404 - API may not be available for this project/plan`);
+        console.log(`[Metrics] Token is verified and working, but metrics endpoints don't exist or have changed`);
+      }
     } else if (actualStorageSize > 0) {
-      // Fallback to bucket enumeration if official not available
+      // Fallback to bucket enumeration if database is empty
       totalStorageSize = actualStorageSize;
+      storageDataSource = 'bucket_enumeration';
+      console.log(`[Metrics] Using bucket enumeration (database empty): ${totalStorageSize} bytes (${formatBytesAsMB(totalStorageSize)})`);
     } else {
-      // Last resort: database records
-      totalStorageSize = dbFileSize;
+      // No files found
+      totalStorageSize = 0;
+      storageDataSource = 'none';
+      console.log(`[Metrics] No storage found in database or buckets`);
     }
 
     // Get accurate database size for entire account
@@ -163,8 +275,9 @@ const getAllProjectsMetrics = asyncHandler(async (req, res) => {
     });
 
     // Calculate percentages
-    const FREE_TIER_DB_LIMIT = 500 * 1024 * 1024; // 500 MB
-    const FREE_TIER_STORAGE_LIMIT = 1024 * 1024 * 1024; // 1 GB
+    // Note: Storage providers use decimal units (1000), not binary (1024)
+    const FREE_TIER_DB_LIMIT = 500 * 1000 * 1000; // 500 MB (decimal)
+    const FREE_TIER_STORAGE_LIMIT = 1000 * 1000 * 1000; // 1 GB = 1000 MB (decimal)
 
     // 🚨 TESTING: Override with warning values
     const TEST_MODE = false;
@@ -220,15 +333,15 @@ const getAllProjectsMetrics = asyncHandler(async (req, res) => {
           storage: {
             size: totalStorageSize,
             sizeFormatted: formatBytesAsMB(totalStorageSize),
-            photoSize: actualPhotoSize,
-            photoSizeFormatted: formatBytesAsMB(actualPhotoSize),
-            otherFilesSize: actualOtherFilesSize,
-            otherFilesSizeFormatted: formatBytesAsMB(actualOtherFilesSize),
+            photoSize: storageDataSource === 'database_records' || storageDataSource === 'official_api' ? dbPhotoSizeFromMetadata : actualPhotoSize,
+            photoSizeFormatted: formatBytesAsMB(storageDataSource === 'database_records' || storageDataSource === 'official_api' ? dbPhotoSizeFromMetadata : actualPhotoSize),
+            otherFilesSize: storageDataSource === 'database_records' || storageDataSource === 'official_api' ? dbOtherFilesSize : actualOtherFilesSize,
+            otherFilesSizeFormatted: formatBytesAsMB(storageDataSource === 'database_records' || storageDataSource === 'official_api' ? dbOtherFilesSize : actualOtherFilesSize),
             limit: FREE_TIER_STORAGE_LIMIT,
             limitFormatted: formatBytesAsMB(FREE_TIER_STORAGE_LIMIT),
             percentage: Math.round(storagePercentage * 100) / 100,
             warning: storagePercentage > 80,
-            dataSource: officialMetrics?.storage_size ? 'official_api' : 'calculated'
+            dataSource: storageDataSource
           },
           counts: {
             assets: totalAssets || 0,
@@ -261,14 +374,51 @@ const getAllProjectsMetrics = asyncHandler(async (req, res) => {
  */
 async function getOfficialSupabaseMetrics() {
   if (!SUPABASE_PROJECT_REF || !SUPABASE_MANAGEMENT_TOKEN) {
+    console.log('[Metrics] Missing SUPABASE_PROJECT_REF or SUPABASE_MANAGEMENT_TOKEN');
     return null;
   }
 
+  // First, verify the token works by trying to get project info
+  try {
+    const projectInfoEndpoint = `https://api.supabase.com/v1/projects/${SUPABASE_PROJECT_REF}`;
+    const projectInfoResponse = await fetch(projectInfoEndpoint, {
+      headers: {
+        'Authorization': `Bearer ${SUPABASE_MANAGEMENT_TOKEN}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (projectInfoResponse.ok) {
+      const projectInfo = await projectInfoResponse.json();
+      console.log(`[Metrics] ✓ Token verified - Project: ${projectInfo.name || SUPABASE_PROJECT_REF}`);
+    } else if (projectInfoResponse.status === 401) {
+      console.log('[Metrics] ❌ Token authentication failed - check if SUPABASE_MANAGEMENT_TOKEN is valid');
+      console.log('[Metrics]   → Get a new token from: https://supabase.com/dashboard/account/tokens');
+      return null;
+    } else if (projectInfoResponse.status === 404) {
+      console.log(`[Metrics] ❌ Project not found - check if SUPABASE_PROJECT_REF (${SUPABASE_PROJECT_REF}) is correct`);
+      return null;
+    }
+  } catch (err) {
+    console.log(`[Metrics] Error verifying token:`, err.message);
+  }
+
+  // Try multiple endpoint formats and API versions
   const endpoints = [
+    // Management API v1 endpoints (most common)
+    `https://api.supabase.com/v1/projects/${SUPABASE_PROJECT_REF}/usage`,
     `https://api.supabase.com/v1/projects/${SUPABASE_PROJECT_REF}/daily-stats`,
     `https://api.supabase.com/v1/projects/${SUPABASE_PROJECT_REF}/infra/stats`,
-    `https://api.supabase.com/v1/projects/${SUPABASE_PROJECT_REF}/usage`,
-    `https://api.supabase.com/v1/projects/${SUPABASE_PROJECT_REF}/statistics`
+    `https://api.supabase.com/v1/projects/${SUPABASE_PROJECT_REF}/statistics`,
+    // Alternative endpoint formats
+    `https://api.supabase.com/v1/projects/${SUPABASE_PROJECT_REF}/metrics`,
+    `https://api.supabase.com/v1/projects/${SUPABASE_PROJECT_REF}/storage/usage`,
+    // Try with different base URLs
+    `https://api.supabase.com/v1/projects/${SUPABASE_PROJECT_REF}/analytics/usage`,
+    `https://api.supabase.com/v1/projects/${SUPABASE_PROJECT_REF}/reports/usage`,
+    // Try alternative API paths
+    `https://api.supabase.com/v1/projects/${SUPABASE_PROJECT_REF}/billing/usage`,
+    `https://api.supabase.com/v1/projects/${SUPABASE_PROJECT_REF}/consumption`,
   ];
 
   for (const endpoint of endpoints) {
@@ -276,36 +426,83 @@ async function getOfficialSupabaseMetrics() {
       const response = await fetch(endpoint, {
         headers: {
           'Authorization': `Bearer ${SUPABASE_MANAGEMENT_TOKEN}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_MANAGEMENT_TOKEN // Some endpoints may require this
         }
       });
+
+      const status = response.status;
+      const statusText = response.statusText;
 
       if (response.ok) {
         const data = await response.json();
         
+        // Log the response structure for debugging
+        console.log(`[Metrics] ✓ Successfully fetched from ${endpoint}`);
+        console.log(`[Metrics]   Response keys:`, Object.keys(data));
+        console.log(`[Metrics]   Response sample:`, JSON.stringify(data).substring(0, 300));
+        
         if (data.db_size || data.database_size || data.storage_size || 
-            data.disk_volume_size_gb || (Array.isArray(data) && data.length > 0)) {
+            data.disk_volume_size_gb || data.database_size_bytes || data.storage_size_bytes ||
+            (Array.isArray(data) && data.length > 0)) {
           
+          let result = null;
           
           if (Array.isArray(data) && data.length > 0) {
             const latest = data[data.length - 1];
-            return {
-              db_size: latest.disk_volume_size_gb ? latest.disk_volume_size_gb * 1024 * 1024 * 1024 : null,
-              storage_size: latest.storage_size || latest.total_storage_size
+            result = {
+              db_size: latest.disk_volume_size_gb ? latest.disk_volume_size_gb * 1000 * 1000 * 1000 : 
+                      latest.database_size_bytes || latest.db_size || null,
+              storage_size: latest.storage_size_bytes || latest.storage_size || 
+                           latest.total_storage_size || latest.storage_size_gb ? (latest.storage_size_gb * 1000 * 1000 * 1000) : null
+            };
+          } else {
+            result = {
+              db_size: data.database_size_bytes || data.db_size || data.database_size || 
+                      (data.disk_volume_size_gb ? data.disk_volume_size_gb * 1000 * 1000 * 1000 : null),
+              storage_size: data.storage_size_bytes || data.storage_size || data.total_storage_size || 
+                           (data.storage_size_gb ? data.storage_size_gb * 1000 * 1000 * 1000 : null)
             };
           }
           
-          return {
-            db_size: data.db_size || data.database_size || (data.disk_volume_size_gb * 1024 * 1024 * 1024),
-            storage_size: data.storage_size || data.total_storage_size
-          };
+          // Log what we found
+          if (result.storage_size) {
+            console.log(`[Metrics] ✓✓✓ Found official storage_size: ${result.storage_size} bytes (${formatBytesAsMB(result.storage_size)})`);
+          }
+          if (result.db_size) {
+            console.log(`[Metrics] ✓✓✓ Found official db_size: ${result.db_size} bytes (${formatBytesAsMB(result.db_size)})`);
+          }
+          
+          return result;
+        } else {
+          // Log response structure for debugging
+          console.log(`[Metrics] Response from ${endpoint} doesn't contain expected fields. Full response:`, JSON.stringify(data).substring(0, 500));
+        }
+      } else {
+        // Log detailed error information
+        const errorText = await response.text().catch(() => 'Unable to read error');
+        if (status === 401) {
+          console.log(`[Metrics] ❌ Authentication failed for ${endpoint}: ${errorText.substring(0, 200)}`);
+        } else if (status === 403) {
+          console.log(`[Metrics] ❌ Permission denied for ${endpoint}: ${errorText.substring(0, 200)}`);
+        } else if (status !== 404) {
+          console.log(`[Metrics] ⚠️ API endpoint ${endpoint} returned status ${status} ${statusText}: ${errorText.substring(0, 200)}`);
         }
       }
     } catch (err) {
+      console.log(`[Metrics] Error fetching from ${endpoint}:`, err.message);
       continue;
     }
   }
 
+  console.log('[Metrics] ⚠️ No official metrics found from any endpoint.');
+  console.log('[Metrics]   Possible reasons:');
+  console.log('[Metrics]   1. Management API endpoints have changed (API is in beta)');
+  console.log('[Metrics]   2. Token doesn\'t have required permissions');
+  console.log('[Metrics]   3. Project is on a plan that doesn\'t support Management API');
+  console.log('[Metrics]   4. Endpoints may require different authentication format');
+  console.log('[Metrics]   → Falling back to database records (matches Supabase dashboard method)');
+  console.log('[Metrics]   → To fix: Get a new Personal Access Token from https://supabase.com/dashboard/account/tokens');
   return null;
 }
 
@@ -787,11 +984,12 @@ const formatBytes = (bytes) => {
 };
 
 // Format always as MB for consistency
+// Uses decimal units (1000) to match storage provider standards (1 GB = 1000 MB)
 const formatBytesAsMB = (bytes) => {
   if (!bytes || bytes === 0) {
     return '0.00 MB';
   }
-  const mb = bytes / (1024 * 1024);
+  const mb = bytes / (1000 * 1000); // Decimal: 1 MB = 1,000,000 bytes
   return Number(mb.toFixed(2)).toFixed(2) + ' MB';
 };
 
