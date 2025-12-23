@@ -537,8 +537,10 @@ export const projectSlice = createSlice({
             .addCase(deleteProject.fulfilled, (state, action) => {
                 state.isLoading = false
                 state.isSuccess = true
-                state.projects = state.projects.filter(project => project.id !== action.payload.id)
-                if (state.selectedProject && state.selectedProject.id === action.payload.id) {
+                // Backend returns just the id string, so handle both cases
+                const deletedId = typeof action.payload === 'string' ? action.payload : action.payload.id
+                state.projects = state.projects.filter(project => project.id !== deletedId && project._id !== deletedId)
+                if (state.selectedProject && (state.selectedProject.id === deletedId || state.selectedProject._id === deletedId)) {
                     state.selectedProject = null
                 }
             })

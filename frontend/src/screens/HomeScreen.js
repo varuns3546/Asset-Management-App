@@ -185,6 +185,22 @@ const HomeScreen = () => {
               <li><strong>Map</strong> - View and edit your geographic data</li>
               <li><strong>Usage</strong> - View account usage and storage metrics</li>
             </ul>
+            <div style={{ marginTop: '20px', textAlign: 'center' }}>
+              <a
+                href="https://github.com/varuns3546/GIS-Vulnerability-Assesment-Tool"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-primary"
+                style={{
+                  display: 'inline-block',
+                  textDecoration: 'none',
+                  padding: '10px 20px',
+                  fontSize: '16px'
+                }}
+              >
+                📚 Read the Docs
+              </a>
+            </div>
           </div>
         </div>
       </div>

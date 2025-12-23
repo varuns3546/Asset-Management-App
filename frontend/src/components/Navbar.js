@@ -59,8 +59,8 @@ const Navbar = ({ onOpenModal, onCloseModal }) => {
         <div className="container" ref={navbarRef}>
             <button className="button" onClick={() => handleNavigate('/home')}>Home</button>
             <Dropdown 
-                title="Project" 
-                options={['Save Project', 'Open Project', 'Create Project', 'Upload File']} 
+                title="Projects" 
+                options={['Save Project', 'My Projects', 'Create Project', 'Upload File']} 
                 isOpen={openDropdown === 'projects'}
                 onToggle={() => toggleDropdown('projects')}
                 onOpenModal={onOpenModal}
