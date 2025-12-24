@@ -583,6 +583,80 @@
   }
 }
 
+/* Project Information Section Styles */
+.project-info-card {
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin-top: 20px;
+}
+
+.project-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 15px;
+}
+
+.project-content {
+  flex: 1;
+}
+
+.project-title {
+  margin-top: 0;
+  margin-bottom: 8px;
+}
+
+.project-description {
+  color: #666;
+  margin-top: 8px;
+  white-space: pre-wrap;
+}
+
+.project-description-empty {
+  color: #999;
+  font-style: italic;
+  margin-top: 8px;
+}
+
+.project-edit-button {
+  margin-left: 15px;
+}
+
+/* Location Display */
+.location-values {
+  font-size: 14px;
+  color: #666;
+  margin-top: 8px;
+}
+
+/* Coordinates Input Grid */
+.coordinates-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  margin-top: 15px;
+}
+
+/* List Styles */
+.info-list {
+  margin-top: 15px;
+  padding-left: 20px;
+}
+
+/* Docs Button Container */
+.docs-button-container {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.docs-link {
+  display: inline-block;
+  text-decoration: none;
+  padding: 10px 20px;
+  font-size: 16px;
+}
+
 @media (max-width: 480px) {
   .home-screen {
     padding: 15px;
@@ -639,5 +713,9 @@
   
   .account-total-section h2 {
     font-size: 1.2rem;
+  }
+
+  .coordinates-grid {
+    grid-template-columns: 1fr;
   }
 }

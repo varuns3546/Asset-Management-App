@@ -5,6 +5,7 @@ import bodyParser from 'body-parser'
 
 import userRoutes from './routes/userRoutes.js'
 import projectRoutes from './routes/projectRoutes.js'
+import pullRequestRoutes from './routes/pullRequestRoutes.js'
 import leafletShapesRoutes from './routes/leafletShapesRoutes.js'
 import gisRoutes from './routes/gisRoutes.js'
 import fileRoutes from './routes/fileRoutes.js'
@@ -19,6 +20,7 @@ app.use(bodyParser.urlencoded({ extended: true })); // Parse URL-encoded forms
 
 app.use('/api/users', userRoutes);
 app.use('/api/projects', projectRoutes);
+app.use('/api/pull-requests', pullRequestRoutes);
 app.use('/api/leaflet-shapes', leafletShapesRoutes);
 app.use('/api/gis', gisRoutes);
 app.use('/api/files', fileRoutes);
