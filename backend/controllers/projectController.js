@@ -54,10 +54,10 @@ const getProjects = asyncHandler(async (req, res) => {
 const getSharedProjects = asyncHandler(async (req, res) => {
   const userId = req.user.id;
 
-  // First, get project_ids from project_users where role is NOT 'owner'
+  // Get project_ids from project_users where role is NOT 'owner'
   const { data: projectUsersData, error: projectUsersError } = await req.supabase
     .from('project_users')
-    .select('project_id')
+    .select('project_id, role')
     .eq('user_id', userId)
     .neq('role', 'owner');
 
@@ -68,35 +68,53 @@ const getSharedProjects = asyncHandler(async (req, res) => {
     });
   }
 
+  // Extract unique project IDs
+  const sharedProjectIds = [...new Set((projectUsersData || [])
+    .filter(pu => pu.project_id)
+    .map(pu => pu.project_id))];
+
   // If no shared projects, return empty array
-  if (!projectUsersData || projectUsersData.length === 0) {
+  if (sharedProjectIds.length === 0) {
     return res.status(200).json([]);
   }
 
-  // Extract unique project IDs
-  const projectIds = [...new Set(projectUsersData.map(pu => pu.project_id).filter(id => id))];
-
-  // Now get the actual projects
-  const { data: projects, error: projectsError } = await req.supabase
+  // Query projects directly using supabaseAdmin to bypass RLS
+  // This is necessary because RLS might block access to projects even through the join
+  const { data: sharedProjects, error: projectsError } = await supabaseAdmin
     .from('projects')
     .select('*')
-    .in('id', projectIds);
+    .in('id', sharedProjectIds);
 
   if (projectsError) {
+    console.error('[getSharedProjects] Error fetching projects:', projectsError);
     return res.status(400).json({
       success: false,
       error: projectsError.message
     });
   }
 
-  // Filter out nulls and sort by created_at
-  const sortedProjects = (projects || [])
-    .filter(project => project !== null && project !== undefined)
-    .sort((a, b) => {
-      const dateA = a.created_at ? new Date(a.created_at) : new Date(0);
-      const dateB = b.created_at ? new Date(b.created_at) : new Date(0);
-      return dateB - dateA; // Most recent first
-    });
+  // Also exclude projects where user is the owner (via projects.owner_id)
+  // Get all projects the user owns
+  const { data: ownedProjects, error: ownedError } = await req.supabase
+    .from('projects')
+    .select('id')
+    .eq('owner_id', userId);
+
+  if (ownedError) {
+    console.error('[getSharedProjects] Error fetching owned projects:', ownedError);
+  }
+
+  const ownedProjectIds = new Set((ownedProjects || []).map(p => p.id));
+
+  // Filter out owned projects from shared projects
+  const finalProjects = (sharedProjects || []).filter(project => !ownedProjectIds.has(project.id));
+
+  // Sort by created_at
+  const sortedProjects = finalProjects.sort((a, b) => {
+    const dateA = a.created_at ? new Date(a.created_at) : new Date(0);
+    const dateB = b.created_at ? new Date(b.created_at) : new Date(0);
+    return dateB - dateA; // Most recent first
+  });
 
   res.status(200).json(sortedProjects);
 });
