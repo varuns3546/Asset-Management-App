@@ -31,12 +31,6 @@
   display: inline-block;
 }
 
-.project-name {
-  margin: 5px 0 0 0;
-  color: #666;
-  font-size: 1.1rem;
-}
-
 .refresh-btn {
   padding: 10px 20px;
   background: #007bff;
@@ -446,27 +440,6 @@
   margin-bottom: 15px;
 }
 
-.summary-banner {
-  padding: 10px 16px;
-  margin-bottom: 20px;
-  border-radius: 6px;
-  background: #e7f3ff;
-  border: 1px solid #b3d9ff;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.summary-icon {
-  font-size: 1.2rem;
-  color: #007bff;
-}
-
-.summary-text {
-  color: #004085;
-  font-size: 0.95rem;
-}
-
 .account-total-section {
   border: 1px solid #b3d9ff;
   background: #f8f9fa;
@@ -526,10 +499,6 @@
     font-size: 1.8rem;
   }
   
-  .project-name {
-    font-size: 1rem;
-  }
-  
   .refresh-btn {
     padding: 9px 18px;
     font-size: 0.9rem;
@@ -551,10 +520,6 @@
 
   .home-header h1 {
     font-size: 1.5rem;
-  }
-  
-  .project-name {
-    font-size: 0.95rem;
   }
 
   .metrics-grid,
@@ -670,10 +635,6 @@
   
   .home-header h1 {
     font-size: 1.3rem;
-  }
-  
-  .project-name {
-    font-size: 0.9rem;
   }
   
   .refresh-btn {

@@ -39,8 +39,12 @@ cssFiles.forEach(cssFile => {
     const relativeHtmlPath = `public/index.html`;
     const relativeOutputPath = `temp-purge-output.css`;
     
-    // Run purgecss with relative paths
-    const command = `npx purgecss --css "${relativeCssPath}" --content "${relativeSrcPattern}" "${relativeHtmlPath}" --output "${relativeOutputPath}" --safelist "leaflet-*" "marker-*" "react-*" "map-*" "spinner*" "selected" "active" "hidden" "visible" "expanded" "collapsed" "layer-hidden"`;
+    // Run purgecss with relative paths (use local version if available, otherwise npx with --yes)
+    const purgecssPath = path.join(__dirname, 'node_modules', '.bin', 'purgecss');
+    const useLocal = fs.existsSync(purgecssPath);
+    const command = useLocal 
+      ? `"${purgecssPath}" --css "${relativeCssPath}" --content "${relativeSrcPattern}" "${relativeHtmlPath}" --output "${relativeOutputPath}" --safelist "leaflet-*" "marker-*" "react-*" "map-*" "spinner*" "selected" "active" "hidden" "visible" "expanded" "collapsed" "layer-hidden"`
+      : `npx --yes purgecss --css "${relativeCssPath}" --content "${relativeSrcPattern}" "${relativeHtmlPath}" --output "${relativeOutputPath}" --safelist "leaflet-*" "marker-*" "react-*" "map-*" "spinner*" "selected" "active" "hidden" "visible" "expanded" "collapsed" "layer-hidden"`;
     
     execSync(command, { 
       stdio: 'inherit',

@@ -501,36 +501,6 @@
     border: 1px solid #007bff;
 }
 
-.node-remove-button {
-    background: #dc3545;
-    color: white;
-    border: 1px solid #dc3545;
-    border-radius: 50%;
-    width: 20px;
-    height: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: bold;
-    transition: all 0.2s ease;
-    opacity: 0.8;
-    margin-left: 4px;
-    flex-shrink: 0;
-}
-
-.node-remove-button:hover {
-    background: #c82333;
-    border-color: #bd2130;
-    opacity: 1;
-    transform: scale(1.025);
-}
-
-.node-remove-button:active {
-    transform: scale(.975);
-}
-
 @media (max-width: 1024px) {
     .hierarchy-tree {
         min-height: 70vh;
@@ -647,12 +617,6 @@
         min-width: auto;
     }
     
-    .node-remove-button {
-        width: 18px;
-        height: 18px;
-        font-size: 12px;
-    }
-    
     .multiple-parents-indicator {
         width: 16px;
         height: 16px;
@@ -750,12 +714,6 @@
         height: 16px;
         font-size: 11px;
         margin-right: 4px;
-    }
-    
-    .node-remove-button {
-        width: 16px;
-        height: 16px;
-        font-size: 11px;
     }
     
     .multiple-parents-indicator {
