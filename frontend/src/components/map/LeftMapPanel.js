@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import LayersPanel from './LayersPanel.js';
 import '../../styles/layersPanel.css';
 
-const MapPanel = ({ isExpanded, setIsExpanded, panelWidth, setPanelWidth, layers, onToggleLayer, onRemoveLayer, onEditLayer, onStyleLayer, onAddFeature, onRemoveFeature, onZoomToFeature, onZoomToLayer }) => {
+const MapPanel = ({ isExpanded, setIsExpanded, panelWidth, setPanelWidth, layers, isLoadingLayers, onToggleLayer, onRemoveLayer, onEditLayer, onStyleLayer, onAddFeature, onRemoveFeature, onZoomToFeature, onZoomToLayer }) => {
   const [isResizing, setIsResizing] = useState(false);
 
   const minWidth = 250;
@@ -55,6 +55,7 @@ const MapPanel = ({ isExpanded, setIsExpanded, panelWidth, setPanelWidth, layers
       >
         <LayersPanel
           layers={layers}
+          isLoadingLayers={isLoadingLayers}
           onToggleLayer={onToggleLayer}
           onRemoveLayer={onRemoveLayer}
           onEditLayer={onEditLayer}
