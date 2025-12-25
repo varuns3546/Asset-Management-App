@@ -270,6 +270,56 @@ const setSelectedProject = asyncHandler(async (req, res) => {
     res.status(200).json(null);
 });
 
+// Search users by email (for sharing projects)
+// Uses auth.users directly
+const searchUsersByEmail = asyncHandler(async (req, res) => {
+  const { email } = req.query;
+
+  if (!email || email.trim() === '') {
+    return res.status(400).json({
+      success: false,
+      error: 'Email is required'
+    });
+  }
+
+  try {
+    // Get all users from auth.users via admin API
+    const { data: { users }, error: usersError } = await supabaseAdmin.auth.admin.listUsers();
+
+    if (usersError) {
+      return res.status(400).json({
+        success: false,
+        error: usersError.message
+      });
+    }
+
+    // Filter users by email (case-insensitive partial match)
+    const emailLower = email.toLowerCase().trim();
+    const matchingUsers = users
+      .filter(user => {
+        const userEmail = user.email?.toLowerCase() || '';
+        return userEmail.includes(emailLower);
+      })
+      .map(user => ({
+        id: user.id,
+        email: user.email,
+        firstName: user.user_metadata?.firstName || '',
+        lastName: user.user_metadata?.lastName || ''
+      }))
+      .slice(0, 10); // Limit to 10 results
+
+    res.status(200).json({
+      success: true,
+      data: matchingUsers
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 const extractTokenFromHeader = (req) => {
     const authHeader = req.headers.authorization || req.headers.Authorization;
     
@@ -287,4 +337,4 @@ const extractTokenFromHeader = (req) => {
     return authHeader;
 };
 
-export default {registerUser, loginUser, getUser, getSelectedProject, setSelectedProject, refreshToken}
+export default {registerUser, loginUser, getUser, getSelectedProject, setSelectedProject, refreshToken, searchUsersByEmail}

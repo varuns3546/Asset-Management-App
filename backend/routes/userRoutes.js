@@ -7,7 +7,8 @@ const {
   getUser,
   getSelectedProject,
   setSelectedProject,
-  refreshToken
+  refreshToken,
+  searchUsersByEmail
 } = userController;
 const { authenticateUser } = supabaseClient;
 const router = express.Router();
@@ -18,6 +19,7 @@ router.post('/refresh', refreshToken)
 router.get('/me', authenticateUser, getUser)
 router.get('/selected-project', authenticateUser, getSelectedProject)
 router.put('/selected-project', authenticateUser, setSelectedProject)
+router.get('/search', authenticateUser, searchUsersByEmail)
 
 
 export default router;

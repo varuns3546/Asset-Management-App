@@ -56,6 +56,11 @@ const getProjects = async (token) => {
     return response.data;
 }
 
+const getSharedProjects = async (token) => {
+    const response = await projectApi.get('/shared');
+    return response.data;
+}
+
 const getProject = async (projectId, token) => {
     const response = await projectApi.get(`/${projectId}`);
     return response.data;
@@ -207,8 +212,24 @@ const setUserSelectedProject = async (projectId) => {
     return response.data;
 }
 
+const cloneProject = async (projectId, cloneData, token) => {
+    const response = await projectApi.post(`/${projectId}/clone`, cloneData);
+    return response.data;
+}
+
+const getMasterProjects = async (token) => {
+    const response = await projectApi.get('/masters');
+    return response.data;
+}
+
+const setProjectAsMaster = async (projectId, master, token) => {
+    const response = await projectApi.patch(`/${projectId}/master`, { master });
+    return response.data;
+}
+
 const projectService = {
     getProjects,
+    getSharedProjects,
     getProject,
     createProject,
     updateProject,
@@ -229,7 +250,10 @@ const projectService = {
     addUserToProject,
     removeUserFromProject,
     getUserSelectedProject,
-    setUserSelectedProject
+    setUserSelectedProject,
+    cloneProject,
+    getMasterProjects,
+    setProjectAsMaster
 }
 
 export default projectService;
