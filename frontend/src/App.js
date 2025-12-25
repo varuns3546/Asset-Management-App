@@ -90,7 +90,7 @@ function AppContent() {
   return (
     <RouteMountProvider>
       {showNavbar && <Navbar onOpenModal={openModal} onCloseModal={closeModal} />}
-      <div style={{ paddingTop: showNavbar ? '53px' : '0' }}>
+      <div style={{ paddingTop: showNavbar ? '53px' : '0', backgroundColor: '#f5f5f5', minHeight: '100vh' }}>
         <Routes>
           <Route path="/" element={<LoginScreen />} />
           <Route path="/register" element={<RegisterScreen />} />

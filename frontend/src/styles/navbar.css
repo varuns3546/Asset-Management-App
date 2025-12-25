@@ -35,7 +35,8 @@
     display: inline-block;
     vertical-align: middle;
     line-height: 1;
-    transform: translateY(-1px);
+    padding-left: 3px;
+    transform: translateY(-1px) scaleX(1.5);
 }
 
 .button {
