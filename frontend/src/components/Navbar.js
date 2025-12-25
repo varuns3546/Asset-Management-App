@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { logout } from '../features/auth/authSlice'
 import '../styles/navbar.css'
 import Dropdown from './Dropdown'
+import ShareProjectModal from './ShareProjectModal'
 
 const Navbar = ({ onOpenModal, onCloseModal }) => {
     const [openDropdown, setOpenDropdown] = useState(null)
@@ -59,13 +60,14 @@ const Navbar = ({ onOpenModal, onCloseModal }) => {
         <div className="container" ref={navbarRef}>
             <button className="button" onClick={() => handleNavigate('/home')}>Home</button>
             <Dropdown 
-                title="Project" 
-                options={['Save Project', 'Open Project', 'Create Project', 'Upload File']} 
+                title="Projects" 
+                options={['Save Project', 'My Projects', 'Shared with me', 'Create Project', 'Upload File']} 
                 isOpen={openDropdown === 'projects'}
                 onToggle={() => toggleDropdown('projects')}
                 onOpenModal={onOpenModal}
                 onCloseModal={onCloseModal}
             />
+            <button className="button" onClick={() => handleNavigate('/pull-requests')}>Pull Requests</button>
             <Dropdown 
                 title="View" 
                 options={['Data', 'Map', 'Charts and Graphs', 'Reports']} 
@@ -90,7 +92,9 @@ const Navbar = ({ onOpenModal, onCloseModal }) => {
                 isOpen={openDropdown === 'generate'}
                 onToggle={() => toggleDropdown('generate')}
             />
-            <button className="button">Share</button>
+            <button className="button" onClick={() => onOpenModal(<ShareProjectModal onClose={onCloseModal} />, 'Share Project')}>
+                Share
+            </button>
             <Dropdown
                 title={userFirstName}
                 options={['Usage', 'Logout']}

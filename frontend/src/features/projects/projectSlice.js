@@ -3,6 +3,7 @@ import projectService from './projectService'
 
 const initialState = {
     projects: [],
+    masterProjects: [],
     selectedProject: null,
     // Single hierarchy object instead of array
     currentHierarchy: null,
@@ -10,6 +11,8 @@ const initialState = {
     currentFeatureTypes: [],
     // Selected asset IDs for highlighting on map (stored as array for Redux)
     selectedAssetIds: [],
+    // Project users for sharing functionality
+    projectUsers: [],
     isError: false,
     isSuccess: false,
     isLoading: false,
@@ -58,6 +61,24 @@ export const getProjects = createAsyncThunk(
         try {
             const token = thunkAPI.getState().auth.user.token
             return await projectService.getProjects(token)
+        } catch (error) {
+            const message =
+                (error.response && 
+                    error.response.data &&
+                    error.response.data.message) ||
+                error.message ||
+                error.toString()
+            return thunkAPI.rejectWithValue(message)
+        }
+    }
+)
+
+export const getSharedProjects = createAsyncThunk(
+    'projects/getShared',
+    async (_, thunkAPI) => {
+        try {
+            const token = thunkAPI.getState().auth.user.token
+            return await projectService.getSharedProjects(token)
         } catch (error) {
             const message =
                 (error.response && 
@@ -412,6 +433,63 @@ export const setSelectedProjectAsync = createAsyncThunk(
     }
 )
 
+// Clone a master project
+export const cloneProject = createAsyncThunk(
+    'projects/clone',
+    async ({ projectId, cloneData }, thunkAPI) => {
+        try {
+            const token = thunkAPI.getState().auth.user.token
+            return await projectService.cloneProject(projectId, cloneData, token)
+        } catch (error) {
+            const message =
+                (error.response && 
+                    error.response.data &&
+                    error.response.data.error) ||
+                error.message ||
+                error.toString()
+            return thunkAPI.rejectWithValue(message)
+        }
+    }
+)
+
+// Get master projects
+export const getMasterProjects = createAsyncThunk(
+    'projects/getMasterProjects',
+    async (_, thunkAPI) => {
+        try {
+            const token = thunkAPI.getState().auth.user.token
+            return await projectService.getMasterProjects(token)
+        } catch (error) {
+            const message =
+                (error.response && 
+                    error.response.data &&
+                    error.response.data.error) ||
+                error.message ||
+                error.toString()
+            return thunkAPI.rejectWithValue(message)
+        }
+    }
+)
+
+// Set project as master
+export const setProjectAsMaster = createAsyncThunk(
+    'projects/setAsMaster',
+    async ({ projectId, master }, thunkAPI) => {
+        try {
+            const token = thunkAPI.getState().auth.user.token
+            return await projectService.setProjectAsMaster(projectId, master, token)
+        } catch (error) {
+            const message =
+                (error.response && 
+                    error.response.data &&
+                    error.response.data.error) ||
+                error.message ||
+                error.toString()
+            return thunkAPI.rejectWithValue(message)
+        }
+    }
+)
+
 export const projectSlice = createSlice({
     name: 'projects',
     initialState,
@@ -500,6 +578,19 @@ export const projectSlice = createSlice({
                 state.isError = true
                 state.message = action.payload
             })
+            .addCase(getSharedProjects.pending, (state) => {
+                state.isLoading = true
+            })
+            .addCase(getSharedProjects.fulfilled, (state, action) => {
+                state.isLoading = false
+                state.isSuccess = true
+                state.projects = action.payload
+            })
+            .addCase(getSharedProjects.rejected, (state, action) => {
+                state.isLoading = false
+                state.isError = true
+                state.message = action.payload
+            })
             .addCase(getProject.pending, (state) => {
                 state.isLoading = true
             })
@@ -537,8 +628,10 @@ export const projectSlice = createSlice({
             .addCase(deleteProject.fulfilled, (state, action) => {
                 state.isLoading = false
                 state.isSuccess = true
-                state.projects = state.projects.filter(project => project.id !== action.payload.id)
-                if (state.selectedProject && state.selectedProject.id === action.payload.id) {
+                // Backend returns just the id string, so handle both cases
+                const deletedId = typeof action.payload === 'string' ? action.payload : action.payload.id
+                state.projects = state.projects.filter(project => project.id !== deletedId && project._id !== deletedId)
+                if (state.selectedProject && (state.selectedProject.id === deletedId || state.selectedProject._id === deletedId)) {
                     state.selectedProject = null
                 }
             })
@@ -734,7 +827,14 @@ export const projectSlice = createSlice({
             .addCase(addUserToProject.fulfilled, (state, action) => {
                 state.isLoading = false
                 state.isSuccess = true
-                state.projectUsers.push(action.payload.data)
+                // Ensure projectUsers is an array before pushing
+                if (!Array.isArray(state.projectUsers)) {
+                    state.projectUsers = []
+                }
+                // Backend returns data directly, not wrapped in data property
+                if (action.payload) {
+                    state.projectUsers.push(action.payload)
+                }
             })
             .addCase(addUserToProject.rejected, (state, action) => {
                 state.isLoading = false
@@ -747,11 +847,59 @@ export const projectSlice = createSlice({
             .addCase(removeUserFromProject.fulfilled, (state, action) => {
                 state.isLoading = false
                 state.isSuccess = true
-                state.projectUsers = state.projectUsers.filter(
-                    user => user.id !== action.payload.id
-                )
+                // Ensure projectUsers is an array before filtering
+                if (!Array.isArray(state.projectUsers)) {
+                    state.projectUsers = []
+                }
+                // Note: Backend returns { message: 'User removed from project' }
+                // The actual removal is handled by reloading project users in the component
             })
             .addCase(removeUserFromProject.rejected, (state, action) => {
+                state.isLoading = false
+                state.isError = true
+                state.message = action.payload
+            })
+            .addCase(cloneProject.pending, (state) => {
+                state.isLoading = true
+            })
+            .addCase(cloneProject.fulfilled, (state, action) => {
+                state.isLoading = false
+                state.isSuccess = true
+                state.projects.push(action.payload)
+            })
+            .addCase(cloneProject.rejected, (state, action) => {
+                state.isLoading = false
+                state.isError = true
+                state.message = action.payload
+            })
+            .addCase(getMasterProjects.pending, (state) => {
+                state.isLoading = true
+            })
+            .addCase(getMasterProjects.fulfilled, (state, action) => {
+                state.isLoading = false
+                state.isSuccess = true
+                // Store master projects separately or merge with projects
+                state.masterProjects = action.payload
+            })
+            .addCase(getMasterProjects.rejected, (state, action) => {
+                state.isLoading = false
+                state.isError = true
+                state.message = action.payload
+            })
+            .addCase(setProjectAsMaster.pending, (state) => {
+                state.isLoading = true
+            })
+            .addCase(setProjectAsMaster.fulfilled, (state, action) => {
+                state.isLoading = false
+                state.isSuccess = true
+                state.projects = state.projects.map(project => 
+                    project.id === action.payload.id ? action.payload : project
+                )
+                if (state.selectedProject && state.selectedProject.id === action.payload.id) {
+                    state.selectedProject = action.payload
+                }
+            })
+            .addCase(setProjectAsMaster.rejected, (state, action) => {
                 state.isLoading = false
                 state.isError = true
                 state.message = action.payload

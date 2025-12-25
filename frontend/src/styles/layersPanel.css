@@ -488,6 +488,14 @@
   color: #6c757d;
 }
 
+.layer-panel-loading {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
 .layer-list::-webkit-scrollbar {
   width: 6px;
 }

@@ -21,7 +21,7 @@
   },
   "devDependencies": {
     "@fullhuman/postcss-purgecss": "^6.0.0",
-    "purgecss": "^6.0.0"
+    "purgecss": "^7.0.2"
   },
   "scripts": {
     "start": "react-scripts start",

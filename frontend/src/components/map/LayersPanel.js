@@ -2,8 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import '../../styles/layersPanel.css';
 import { useUndoRedo } from '../../hooks/useUndoRedo';
 import { ITEM_TYPE_ICON_MAP } from '../../constants/itemTypeIcons';
+import Spinner from '../Spinner';
 
-const LayersPanel = ({ layers = [], onToggleLayer, onRemoveLayer, onEditLayer, onStyleLayer, onAddFeature, onRemoveFeature, onZoomToFeature, onZoomToLayer, onRestoreLayer, onRestoreFeature }) => {
+const LayersPanel = ({ layers = [], isLoadingLayers = false, onToggleLayer, onRemoveLayer, onEditLayer, onStyleLayer, onAddFeature, onRemoveFeature, onZoomToFeature, onZoomToLayer, onRestoreLayer, onRestoreFeature }) => {
   const [expandedLayers, setExpandedLayers] = useState({});
   const [contextMenu, setContextMenu] = useState(null);
   const [selectedLayers, setSelectedLayers] = useState(new Set());
@@ -299,6 +300,19 @@ const LayersPanel = ({ layers = [], onToggleLayer, onRemoveLayer, onEditLayer, o
     };
     return labels[type] || type;
   };
+
+  if (isLoadingLayers) {
+    return (
+      <div className="layer-panel">
+        <div className="layer-panel-header" onClick={(e) => e.stopPropagation()}>
+          <h3>Layers</h3>
+        </div>
+        <div className="layer-panel-loading">
+          <Spinner />
+        </div>
+      </div>
+    );
+  }
 
   if (layers.length === 0) {
     return (

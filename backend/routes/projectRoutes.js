@@ -7,13 +7,17 @@ import supabaseClient from '../config/supabaseClient.js';
 
 const {
   getProjects,
+  getSharedProjects,
   getProject,
   createProject,
   deleteProject,
   updateProject,
   getProjectUsers,
   addUserToProject,
-  removeUserFromProject
+  removeUserFromProject,
+  cloneProject,
+  getMasterProjects,
+  setProjectAsMaster
 } = projectController;
 
 const {
@@ -35,8 +39,16 @@ const router = express.Router();
 router.use(authenticateUser);
 
 router.get('/', getProjects);
-router.get('/:id', getProject);
+router.get('/shared', getSharedProjects);
 router.post('/', createProject);
+
+// Version control routes - must come BEFORE /:id routes to avoid route conflicts
+router.get('/masters', getMasterProjects);
+
+// Metrics and export routes - must come BEFORE /:id routes to avoid route conflicts
+router.get('/all-projects/metrics', getAllProjectsMetrics);
+
+router.get('/:id', getProject);
 router.delete('/:id', deleteProject);
 router.put('/:id', updateProject);
 
@@ -65,9 +77,11 @@ router.put('/:id/hierarchy/feature-types/:featureTypeId', updateAssetType);
 router.delete('/:id/hierarchy/feature-types/:featureTypeId', deleteAssetType);
 
 // Metrics and export routes
-// Note: all-projects route must come BEFORE /:id/metrics to avoid route conflicts
-router.get('/all-projects/metrics', getAllProjectsMetrics);
 router.get('/:id/metrics', getProjectMetrics);
 router.get('/:id/export', exportProjectData);
+
+// Version control routes
+router.post('/:id/clone', cloneProject);
+router.patch('/:id/master', setProjectAsMaster);
 
 export default router;

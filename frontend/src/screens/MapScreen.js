@@ -38,6 +38,7 @@ const MapScreen = () => {
   const [zoomToFeature, setZoomToFeature] = useState(null);
   const [zoomToLayer, setZoomToLayer] = useState(null);
   const [isMapLoading, setIsMapLoading] = useState(true);
+  const [isLoadingLayers, setIsLoadingLayers] = useState(false);
   const containerRef = useRef(null);
   const { isRouteMounted } = useRouteMount();
   
@@ -48,8 +49,18 @@ const MapScreen = () => {
 
 
   // Load layers from database (needs to be accessible in sync function)
-  const loadLayersFromDatabase = async () => {
+  const loadLayersFromDatabase = async (showLoading = true) => {
     if (!selectedProject?.id) return;
+    
+    // Prevent multiple simultaneous loads when showing spinner
+    if (showLoading && isLoadingLayersRef.current) {
+      return;
+    }
+    
+    if (showLoading) {
+      isLoadingLayersRef.current = true;
+      setIsLoadingLayers(true);
+    }
     
     try {
       const response = await gisLayerService.getGisLayers(selectedProject.id);
@@ -157,11 +168,18 @@ const MapScreen = () => {
       if (isRouteMounted()) {
         console.error('Error loading layers:', error);
       }
+    } finally {
+      if (showLoading) {
+        isLoadingLayersRef.current = false;
+        setIsLoadingLayers(false);
+      }
     }
   };
 
   // Track if sync is in progress to avoid race conditions
   const syncInProgressRef = useRef(false);
+  // Track if layers are currently loading to prevent flickering
+  const isLoadingLayersRef = useRef(false);
 
   // Load hierarchy and feature types when project is selected (debounced to prevent excessive calls)
   useDebouncedAsync(
@@ -221,7 +239,7 @@ const MapScreen = () => {
       // Longer delay to ensure database is fully updated and sync hook can process
       const timer = setTimeout(() => {
         if (isRouteMounted()) {
-          loadLayersFromDatabase();
+          loadLayersFromDatabase(false); // Don't show spinner on reload
         }
       }, 1500); // Increased delay to allow database operations to complete
       
@@ -464,8 +482,8 @@ const MapScreen = () => {
             }
             
             try {
-              // Force reload layers
-              await loadLayersFromDatabase();
+              // Force reload layers (don't show spinner on reload)
+              await loadLayersFromDatabase(false);
               
               // Small additional delay to let state update
               await new Promise(resolve => setTimeout(resolve, 200));
@@ -518,7 +536,7 @@ const MapScreen = () => {
           // Final attempt even if all retries failed
           if (lastError && isRouteMounted()) {
             console.log('Final reload attempt after all retries...');
-            await loadLayersFromDatabase();
+            await loadLayersFromDatabase(false); // Don't show spinner on reload
           }
           
           // Mark sync as complete
@@ -806,8 +824,8 @@ const MapScreen = () => {
           await dispatch(getFeatureTypes(selectedProject.id));
           // Wait a moment for state to update
           await new Promise(resolve => setTimeout(resolve, 100));
-          // Reload layers to reflect the changes from database
-          await loadLayersFromDatabase();
+          // Reload layers to reflect the changes from database (don't show spinner on reload)
+          await loadLayersFromDatabase(false);
           setShowStyleLayerModal(false);
           setSelectedLayerForStyle(null);
         } else {
@@ -830,8 +848,8 @@ const MapScreen = () => {
               ? { ...l, style: { ...l.style, ...styleData } }
               : l
           ));
-          // Reload layers to ensure database changes are reflected
-          await loadLayersFromDatabase();
+          // Reload layers to ensure database changes are reflected (don't show spinner on reload)
+          await loadLayersFromDatabase(false);
           setShowStyleLayerModal(false);
           setSelectedLayerForStyle(null);
         } else {
@@ -947,7 +965,7 @@ const MapScreen = () => {
       
       // Reload layers to get the restored layer with its features
       if (isRouteMounted()) {
-        loadLayersFromDatabase();
+        loadLayersFromDatabase(false); // Don't show spinner on reload
       }
     } catch (error) {
       if (isRouteMounted()) {
@@ -974,7 +992,7 @@ const MapScreen = () => {
       
       // Reload layers to show the restored feature
       if (isRouteMounted()) {
-        loadLayersFromDatabase();
+        loadLayersFromDatabase(false); // Don't show spinner on reload
       }
     } catch (error) {
       if (isRouteMounted()) {
@@ -1054,6 +1072,7 @@ const MapScreen = () => {
           panelWidth={panelWidth}
           setPanelWidth={setPanelWidth}
           layers={allLayers}
+          isLoadingLayers={isLoadingLayers}
           onToggleLayer={handleToggleLayer}
           onRemoveLayer={handleRemoveLayer}
           onEditLayer={handleEditLayer}
