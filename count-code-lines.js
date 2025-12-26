@@ -123,10 +123,12 @@ function countLines(filePath, fileType) {
     
     // Split into lines and count
     const lines = cleanedContent.split('\n');
+    const originalLines = content.split('\n');
     let codeLines = 0;
     let emptyLines = 0;
     let commentLines = 0;
     
+    // Count code and empty lines from cleaned content
     lines.forEach(line => {
       const trimmed = line.trim();
       if (trimmed === '') {
@@ -136,12 +138,48 @@ function countLines(filePath, fileType) {
       }
     });
     
-    // Count original comment lines (approximate)
-    const originalLines = content.split('\n');
-    originalLines.forEach(line => {
+    // Count comment lines more accurately from original content
+    let inMultiLineComment = false;
+    originalLines.forEach((line) => {
       const trimmed = line.trim();
-      if (trimmed.startsWith('//') || trimmed.startsWith('/*') || trimmed.startsWith('*') || trimmed.startsWith('#')) {
-        commentLines++;
+      
+      // Check for multi-line comments
+      if (fileType === 'js' || fileType === 'css') {
+        // Check if we're already in a multi-line comment
+        if (inMultiLineComment) {
+          commentLines++;
+          // Check if this line ends the comment
+          if (trimmed.includes('*/')) {
+            inMultiLineComment = false;
+          }
+        } else {
+          // Check for single-line comment
+          if (trimmed.startsWith('//')) {
+            commentLines++;
+          }
+          // Check for multi-line comment start
+          else if (trimmed.includes('/*')) {
+            commentLines++;
+            // If comment doesn't end on same line, mark as in multi-line comment
+            if (!trimmed.includes('*/')) {
+              inMultiLineComment = true;
+            }
+          }
+          // Check for lines that are just continuation of multi-line comment (starts with *)
+          else if (trimmed.startsWith('*') && trimmed.length > 1 && !trimmed.startsWith('*/')) {
+            // This might be part of a multi-line comment, but we can't be sure without context
+            // Skip for now to avoid false positives
+          }
+        }
+      } else if (fileType === 'env') {
+        if (trimmed.startsWith('#')) {
+          commentLines++;
+        }
+      } else if (fileType === 'json') {
+        // JSON doesn't officially support comments, but count // comments if present
+        if (trimmed.startsWith('//')) {
+          commentLines++;
+        }
       }
     });
     
@@ -153,7 +191,7 @@ function countLines(filePath, fileType) {
 }
 
 // Find all files recursively
-function findFiles(dir, extensions, excludeDirs = ['node_modules', 'build', '.git', 'dist']) {
+function findFiles(dir, extensions, excludeDirs = ['node_modules', 'build', '.git', 'dist', '.next', 'coverage', '.cache']) {
   const files = [];
   
   // Check if directory exists
@@ -172,7 +210,12 @@ function findFiles(dir, extensions, excludeDirs = ['node_modules', 'build', '.gi
           const stat = fs.statSync(fullPath);
           
           if (stat.isDirectory()) {
-            if (!excludeDirs.includes(item)) {
+            // Check if directory should be excluded (case-insensitive)
+            const shouldExclude = excludeDirs.some(exclude => 
+              item.toLowerCase() === exclude.toLowerCase() || 
+              item.startsWith('.') && item !== '.env'
+            );
+            if (!shouldExclude) {
               walk(fullPath);
             }
           } else {
@@ -183,11 +226,15 @@ function findFiles(dir, extensions, excludeDirs = ['node_modules', 'build', '.gi
           }
         } catch (error) {
           // Skip files/directories that can't be accessed
-          console.warn(`Skipping ${path.join(currentDir, item)}: ${error.message}`);
+          if (VERBOSE) {
+            console.warn(`Skipping ${path.join(currentDir, item)}: ${error.message}`);
+          }
         }
       });
     } catch (error) {
-      console.error(`Error reading directory ${currentDir}:`, error.message);
+      if (VERBOSE) {
+        console.error(`Error reading directory ${currentDir}:`, error.message);
+      }
     }
   }
   
@@ -198,6 +245,9 @@ function findFiles(dir, extensions, excludeDirs = ['node_modules', 'build', '.gi
 // Process files
 console.log('Counting lines of code (excluding comments)...\n');
 console.log(`Working directory: ${__dirname}\n`);
+
+// Optional: Add verbose mode
+const VERBOSE = process.argv.includes('--verbose') || process.argv.includes('-v');
 
 // Check if directories exist
 if (!fs.existsSync(frontendDir)) {
@@ -212,8 +262,12 @@ if (!fs.existsSync(backendDir)) {
 
 // CSS files
 const cssFiles = findFiles(frontendDir, ['.css']);
+if (VERBOSE) console.log(`Found ${cssFiles.length} CSS files`);
 cssFiles.forEach(file => {
   const counts = countLines(file, 'css');
+  if (VERBOSE && counts.totalLines > 0) {
+    console.log(`  ${path.relative(__dirname, file)}: ${counts.codeLines} code, ${counts.emptyLines} empty, ${counts.commentLines} comments`);
+  }
   stats.css.files++;
   stats.css.lines += counts.codeLines;
   stats.css.comments += counts.commentLines;
@@ -222,8 +276,12 @@ cssFiles.forEach(file => {
 
 // JS/JSX files
 const jsFiles = findFiles(frontendDir, ['.js', '.jsx']);
+if (VERBOSE) console.log(`\nFound ${jsFiles.length} frontend JS/JSX files`);
 jsFiles.forEach(file => {
   const counts = countLines(file, 'js');
+  if (VERBOSE && counts.totalLines > 100) {
+    console.log(`  ${path.relative(__dirname, file)}: ${counts.codeLines} code, ${counts.emptyLines} empty, ${counts.commentLines} comments (${counts.totalLines} total)`);
+  }
   stats.js.files++;
   stats.js.lines += counts.codeLines;
   stats.js.comments += counts.commentLines;
@@ -232,8 +290,12 @@ jsFiles.forEach(file => {
 
 // Backend JS files
 const backendJsFiles = findFiles(backendDir, ['.js']);
+if (VERBOSE) console.log(`\nFound ${backendJsFiles.length} backend JS files`);
 backendJsFiles.forEach(file => {
   const counts = countLines(file, 'js');
+  if (VERBOSE && counts.totalLines > 100) {
+    console.log(`  ${path.relative(__dirname, file)}: ${counts.codeLines} code, ${counts.emptyLines} empty, ${counts.commentLines} comments (${counts.totalLines} total)`);
+  }
   stats.js.files++;
   stats.js.lines += counts.codeLines;
   stats.js.comments += counts.commentLines;
@@ -330,5 +392,7 @@ console.log('=== TOTALS ===');
 console.log(`Total Code Lines (excluding comments): ${totalLines.toLocaleString()}`);
 console.log(`Total Comment Lines: ${totalComments.toLocaleString()}`);
 console.log(`Total Empty Lines: ${totalEmpty.toLocaleString()}`);
-console.log(`Total Files: ${stats.css.files + stats.js.files + stats.json.files + stats.env.files}`);
+const totalFiles = stats.css.files + stats.js.files + stats.json.files + stats.env.files;
+console.log(`Total Files: ${totalFiles}`);
+console.log(`\nNote: Run with --verbose flag to see per-file breakdown`);
 
