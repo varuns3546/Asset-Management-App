@@ -5,9 +5,10 @@ import { getHierarchy } from '../features/projects/projectSlice';
 import { useRouteMount } from '../contexts/RouteMountContext';
 import useClickOutside from '../hooks/useClickOutside';
 import useDebouncedAsync from '../hooks/useDebouncedAsync';
+import ImportResponsesModal from '../components/ImportResponsesModal';
 import '../styles/questionnaire.css';
 
-const QuestionnaireScreen = () => {
+const EnterDataScreen = () => {
   const dispatch = useDispatch();
   const { selectedProject, currentHierarchy } = useSelector((state) => state.projects);
   const { user } = useSelector((state) => state.auth);
@@ -23,6 +24,7 @@ const QuestionnaireScreen = () => {
   const [collapsedSections, setCollapsedSections] = useState({});
   const [assetSearchText, setAssetSearchText] = useState('');
   const [showAssetDropdown, setShowAssetDropdown] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const { isRouteMounted } = useRouteMount();
   const dropdownRef = useClickOutside(() => {
     if (showAssetDropdown) {
@@ -452,18 +454,47 @@ const QuestionnaireScreen = () => {
       <div className="questionnaire-screen">
         <div className="no-project-message">
           <h2>No Project Selected</h2>
-          <p>Please select a project from the home screen to use the questionnaire.</p>
+          <p>Please select a project from the home screen to enter data.</p>
         </div>
       </div>
     );
   }
 
+  const handleImportSuccess = () => {
+    // Refresh data after successful import
+    if (selectedAsset?.id) {
+      handleAssetSelect(selectedAsset.id);
+    }
+  };
+
   return (
     <div className="questionnaire-screen">
       <div className="questionnaire-header">
-        <h1>Questionnaire</h1>
-        <p>Select an asset and answer questions based on its attributes</p>
+        <div className="header-text">
+          <h1>Enter Data</h1>
+          <p>Select an asset and enter attribute values</p>
+        </div>
+        <button 
+          className="import-btn"
+          onClick={() => setShowImportModal(true)}
+          title="Import attribute values from spreadsheet"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="17 8 12 3 7 8" />
+            <line x1="12" y1="3" x2="12" y2="15" />
+          </svg>
+          Import Values
+        </button>
       </div>
+
+      <ImportResponsesModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        projectId={selectedProject?.id}
+        token={user?.token}
+        onImportSuccess={handleImportSuccess}
+      />
 
       <div className="questionnaire-content">
         {/* Filter and Asset Selection */}
@@ -546,7 +577,7 @@ const QuestionnaireScreen = () => {
         {loading && (
           <div className="loading">
             <div className="loading-spinner"></div>
-            <p>Loading questionnaire...</p>
+            <p>Loading...</p>
           </div>
         )}
 
@@ -562,7 +593,7 @@ const QuestionnaireScreen = () => {
             {questionnaireData.attributes.length === 0 ? (
               <div className="no-attributes">
                 <p>This asset type has no attributes defined.</p>
-                <p>Please add attributes in the <strong>Structure → Item Types</strong> section.</p>
+                <p>Please add attributes in the <strong>Structure → Asset Types</strong> section.</p>
               </div>
             ) : (
               <div className="questions-container">
@@ -765,5 +796,5 @@ const QuestionnaireScreen = () => {
   );
 };
 
-export default QuestionnaireScreen;
+export default EnterDataScreen;
 

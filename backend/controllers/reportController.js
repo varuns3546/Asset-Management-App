@@ -75,7 +75,7 @@ const generateReport = asyncHandler(async (req, res) => {
         .eq('project_id', projectId);
 
       const { count: totalResponses } = await supabaseAdmin
-        .from('questionnaire_responses')
+        .from('attribute_values')
         .select('*', { count: 'exact', head: true })
         .eq('project_id', projectId);
 
@@ -158,7 +158,7 @@ const generateReport = asyncHandler(async (req, res) => {
     // Questionnaire Responses
     if (sections.includes('questionnaire')) {
       const { data: responses } = await supabaseAdmin
-        .from('questionnaire_responses')
+        .from('attribute_values')
         .select('asset_id, attribute_id, response_value, created_at')
         .eq('project_id', projectId);
 

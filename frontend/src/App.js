@@ -16,7 +16,7 @@ import VisualizationScreen from "./screens/VisualizationScreen";
 import HierarchyScreen from "./screens/HierarchyScreen";
 import AssetTypeScreen from "./screens/AssetTypeScreen";
 import MapScreen from "./screens/MapScreen";
-import QuestionnaireScreen from "./screens/QuestionnaireScreen";
+import EnterDataScreen from "./screens/EnterDataScreen";
 import Navbar from "./components/Navbar";
 import Modal from "./components/Modal";
 
@@ -101,7 +101,7 @@ function AppContent() {
           <Route path="/hierarchies" element={<HierarchyScreen />} />
           <Route path="/asset-types" element={<AssetTypeScreen />} />
           <Route path="/map" element={<MapScreen />} />
-          <Route path="/questionnaire" element={<QuestionnaireScreen />} />
+          <Route path="/enter-data" element={<EnterDataScreen />} />
         </Routes>
       </div>
       

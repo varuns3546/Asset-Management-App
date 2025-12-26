@@ -39,7 +39,6 @@ const Dropdown = ({title, options, isOpen, onToggle, onOpenModal, onCloseModal, 
                 'Asset Types': '/asset-types',
                 'Map': '/map',
                 'Leaflet': '/leaflet',
-                'Questionnaire': '/questionnaire',
                 'Usage': '/usage',
                 'Visualize Data': '/visualize',
             }

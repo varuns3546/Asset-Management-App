@@ -200,8 +200,8 @@ const GenerateReportModal = ({ onClose }) => {
                                     checked={sections.questionnaire}
                                     onChange={() => handleSectionChange('questionnaire')}
                                 />
-                                <span>Questionnaire Responses</span>
-                                <p className="section-description">All questionnaire responses grouped by asset</p>
+                                <span>Attribute Values</span>
+                                <p className="section-description">All attribute values grouped by asset</p>
                             </label>
                             <label className="section-option">
                                 <input

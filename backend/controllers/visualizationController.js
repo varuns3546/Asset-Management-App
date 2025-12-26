@@ -5,49 +5,36 @@ const { supabaseAdmin } = supabaseClient;
 
 if (!supabaseAdmin) {
   console.error('ERROR: supabaseAdmin is not available. Check SUPABASE_SERVICE_ROLE_KEY in environment variables.');
-} else {
-  console.log('[visualizationController] supabaseAdmin initialized successfully');
 }
 
-// @desc    Get questionnaire response statistics
+// @desc    Get attribute value statistics
 // @route   GET /api/visualization/:projectId/questionnaire-stats
 // @access  Private
-const getQuestionnaireStats = asyncHandler(async (req, res) => {
+const getAttributeValueStats = asyncHandler(async (req, res) => {
   const { projectId } = req.params;
-  
-  console.log('[getQuestionnaireStats] Starting for projectId:', projectId);
 
   try {
     if (!supabaseAdmin) {
-      console.error('[getQuestionnaireStats] supabaseAdmin is not available');
       throw new Error('supabaseAdmin is not available');
     }
 
-    console.log('[getQuestionnaireStats] Verifying project access');
     // Verify project access
-    console.log('[getQuestionnaireStats] Checking project_users table');
-    const { data: projectUser, error: projectUserError } = await req.supabase
+    const { data: projectUser } = await req.supabase
       .from('project_users')
       .select('id')
       .eq('project_id', projectId)
       .eq('user_id', req.user.id)
       .single();
 
-    console.log('[getQuestionnaireStats] projectUser result:', { projectUser, error: projectUserError });
-
     if (!projectUser) {
-      console.log('[getQuestionnaireStats] Not in project_users, checking projects table');
-      const { data: project, error: projectError } = await req.supabase
+      const { data: project } = await req.supabase
         .from('projects')
         .select('id')
         .eq('id', projectId)
         .eq('owner_id', req.user.id)
         .single();
 
-      console.log('[getQuestionnaireStats] project result:', { project, error: projectError });
-
       if (!project) {
-        console.log('[getQuestionnaireStats] Access denied - user not in project_users or owner');
         return res.status(403).json({
           success: false,
           error: 'Access denied'
@@ -55,22 +42,14 @@ const getQuestionnaireStats = asyncHandler(async (req, res) => {
       }
     }
 
-    console.log('[getQuestionnaireStats] Access verified, fetching assets');
-
     // Get all assets for the project
-    console.log('[getQuestionnaireStats] Querying assets table');
     const { data: assets, error: assetsError } = await supabaseAdmin
       .from('assets')
       .select('id, item_type_id')
       .eq('project_id', projectId);
 
-    console.log('[getQuestionnaireStats] Assets query result:', { 
-      assetCount: assets?.length || 0, 
-      error: assetsError?.message || null 
-    });
-
     if (assetsError) {
-      console.error('[getQuestionnaireStats] Error fetching assets:', assetsError);
+      console.error('Error fetching assets:', assetsError);
       return res.status(500).json({
         success: false,
         error: 'Failed to fetch assets',
@@ -79,21 +58,14 @@ const getQuestionnaireStats = asyncHandler(async (req, res) => {
     }
 
     const totalAssets = assets?.length || 0;
-    console.log('[getQuestionnaireStats] Total assets:', totalAssets);
 
-    // Get all questionnaire responses
-    console.log('[getQuestionnaireStats] Querying questionnaire_responses table');
+    // Get all attribute values
     const { data: responses, error: responsesError } = await supabaseAdmin
-      .from('questionnaire_responses')
+      .from('attribute_values')
       .select('asset_id, attribute_id, response_value, response_metadata, created_at')
       .eq('project_id', projectId);
 
-    console.log('[getQuestionnaireStats] Responses query result:', { 
-      responseCount: responses?.length || 0, 
-      error: responsesError?.message || responsesError?.code || null 
-    });
-
-    if (responsesError && responsesError.code !== '42P01') { // 42P01 = table doesn't exist
+    if (responsesError && responsesError.code !== '42P01') {
       return res.status(500).json({
         success: false,
         error: 'Failed to fetch responses'
@@ -255,9 +227,7 @@ const getQuestionnaireStats = asyncHandler(async (req, res) => {
     });
 
   } catch (error) {
-    console.error('[getQuestionnaireStats] Error caught:', error);
-    console.error('[getQuestionnaireStats] Error stack:', error.stack);
-    console.error('[getQuestionnaireStats] Error message:', error.message);
+    console.error('Error in getAttributeValueStats:', error.message);
     res.status(500).json({
       success: false,
       error: 'Failed to get questionnaire statistics',
@@ -271,40 +241,29 @@ const getQuestionnaireStats = asyncHandler(async (req, res) => {
 // @access  Private
 const getAssetStats = asyncHandler(async (req, res) => {
   const { projectId } = req.params;
-  
-  console.log('[getAssetStats] Starting for projectId:', projectId);
 
   try {
     if (!supabaseAdmin) {
-      console.error('[getAssetStats] supabaseAdmin is not available');
       throw new Error('supabaseAdmin is not available');
     }
 
-    console.log('[getAssetStats] Verifying project access');
     // Verify project access
-    console.log('[getAssetStats] Checking project_users table');
-    const { data: projectUser, error: projectUserError } = await req.supabase
+    const { data: projectUser } = await req.supabase
       .from('project_users')
       .select('id')
       .eq('project_id', projectId)
       .eq('user_id', req.user.id)
       .single();
 
-    console.log('[getAssetStats] projectUser result:', { projectUser, error: projectUserError });
-
     if (!projectUser) {
-      console.log('[getAssetStats] Not in project_users, checking projects table');
-      const { data: project, error: projectError } = await req.supabase
+      const { data: project } = await req.supabase
         .from('projects')
         .select('id')
         .eq('id', projectId)
         .eq('owner_id', req.user.id)
         .single();
 
-      console.log('[getAssetStats] project result:', { project, error: projectError });
-
       if (!project) {
-        console.log('[getAssetStats] Access denied - user not in project_users or owner');
         return res.status(403).json({
           success: false,
           error: 'Access denied'
@@ -312,22 +271,14 @@ const getAssetStats = asyncHandler(async (req, res) => {
       }
     }
 
-    console.log('[getAssetStats] Access verified, fetching assets');
-
     // Get all assets
-    console.log('[getAssetStats] Querying assets table');
     const { data: assets, error: assetsError } = await supabaseAdmin
       .from('assets')
       .select('id, item_type_id, beginning_latitude, beginning_longitude, end_latitude, end_longitude, parent_id')
       .eq('project_id', projectId);
 
-    console.log('[getAssetStats] Assets query result:', { 
-      assetCount: assets?.length || 0, 
-      error: assetsError?.message || null 
-    });
-
     if (assetsError) {
-      console.error('[getAssetStats] Error fetching assets:', assetsError);
+      console.error('Error fetching assets:', assetsError);
       return res.status(500).json({
         success: false,
         error: 'Failed to fetch assets',
@@ -420,14 +371,12 @@ const getAssetStats = asyncHandler(async (req, res) => {
               depth++;
               currentAsset = parent;
             } else {
-              break; // Parent not found, stop
+              break;
             }
           }
           
           depthDistribution[depth] = (depthDistribution[depth] || 0) + 1;
         } catch (err) {
-          console.error('Error calculating depth for asset:', asset.id, err);
-          // Default to depth 0 if calculation fails
           depthDistribution[0] = (depthDistribution[0] || 0) + 1;
         }
       });
@@ -452,9 +401,7 @@ const getAssetStats = asyncHandler(async (req, res) => {
     });
 
   } catch (error) {
-    console.error('[getAssetStats] Error caught:', error);
-    console.error('[getAssetStats] Error stack:', error.stack);
-    console.error('[getAssetStats] Error message:', error.message);
+    console.error('Error in getAssetStats:', error.message);
     res.status(500).json({
       success: false,
       error: 'Failed to get asset statistics',
@@ -468,40 +415,29 @@ const getAssetStats = asyncHandler(async (req, res) => {
 // @access  Private
 const getProjectStats = asyncHandler(async (req, res) => {
   const { projectId } = req.params;
-  
-  console.log('[getProjectStats] Starting for projectId:', projectId);
 
   try {
     if (!supabaseAdmin) {
-      console.error('[getProjectStats] supabaseAdmin is not available');
       throw new Error('supabaseAdmin is not available');
     }
 
-    console.log('[getProjectStats] Verifying project access');
     // Verify project access
-    console.log('[getProjectStats] Checking project_users table');
-    const { data: projectUser, error: projectUserError } = await req.supabase
+    const { data: projectUser } = await req.supabase
       .from('project_users')
       .select('id')
       .eq('project_id', projectId)
       .eq('user_id', req.user.id)
       .single();
 
-    console.log('[getProjectStats] projectUser result:', { projectUser, error: projectUserError });
-
     if (!projectUser) {
-      console.log('[getProjectStats] Not in project_users, checking projects table');
-      const { data: project, error: projectError } = await req.supabase
+      const { data: project } = await req.supabase
         .from('projects')
         .select('id')
         .eq('id', projectId)
         .eq('owner_id', req.user.id)
         .single();
 
-      console.log('[getProjectStats] project result:', { project, error: projectError });
-
       if (!project) {
-        console.log('[getProjectStats] Access denied - user not in project_users or owner');
         return res.status(403).json({
           success: false,
           error: 'Access denied'
@@ -509,36 +445,26 @@ const getProjectStats = asyncHandler(async (req, res) => {
       }
     }
 
-    console.log('[getProjectStats] Access verified, fetching counts');
-
     // Get counts
-    console.log('[getProjectStats] Counting assets');
-    const { count: totalAssets, error: assetsCountError } = await supabaseAdmin
+    const { count: totalAssets } = await supabaseAdmin
       .from('assets')
       .select('*', { count: 'exact', head: true })
       .eq('project_id', projectId);
-    console.log('[getProjectStats] Assets count:', totalAssets, 'Error:', assetsCountError?.message || null);
 
-    console.log('[getProjectStats] Counting responses');
-    const { count: totalResponses, error: responsesCountError } = await supabaseAdmin
-      .from('questionnaire_responses')
+    const { count: totalResponses } = await supabaseAdmin
+      .from('attribute_values')
       .select('*', { count: 'exact', head: true })
       .eq('project_id', projectId);
-    console.log('[getProjectStats] Responses count:', totalResponses, 'Error:', responsesCountError?.message || responsesCountError?.code || null);
 
-    console.log('[getProjectStats] Counting files');
-    const { count: totalFiles, error: filesCountError } = await supabaseAdmin
+    const { count: totalFiles } = await supabaseAdmin
       .from('project_files')
       .select('*', { count: 'exact', head: true })
       .eq('project_id', projectId);
-    console.log('[getProjectStats] Files count:', totalFiles, 'Error:', filesCountError?.message || null);
 
-    console.log('[getProjectStats] Counting asset types');
-    const { count: totalAssetTypes, error: assetTypesCountError } = await supabaseAdmin
+    const { count: totalAssetTypes } = await supabaseAdmin
       .from('asset_types')
       .select('*', { count: 'exact', head: true })
       .eq('project_id', projectId);
-    console.log('[getProjectStats] Asset types count:', totalAssetTypes, 'Error:', assetTypesCountError?.message || null);
 
     // Get asset types breakdown
     const { data: assetTypes } = await supabaseAdmin
@@ -561,14 +487,12 @@ const getProjectStats = asyncHandler(async (req, res) => {
           assetTypes: totalAssetTypes || 0
         },
         assetTypes: assetTypes || [],
-        completionRate: Math.min(completionRate, 100) // Cap at 100%
+        completionRate: Math.min(completionRate, 100)
       }
     });
 
   } catch (error) {
-    console.error('[getProjectStats] Error caught:', error);
-    console.error('[getProjectStats] Error stack:', error.stack);
-    console.error('[getProjectStats] Error message:', error.message);
+    console.error('Error in getProjectStats:', error.message);
     res.status(500).json({
       success: false,
       error: 'Failed to get project statistics',
@@ -577,5 +501,4 @@ const getProjectStats = asyncHandler(async (req, res) => {
   }
 });
 
-export { getQuestionnaireStats, getAssetStats, getProjectStats };
-
+export { getAttributeValueStats, getAssetStats, getProjectStats };

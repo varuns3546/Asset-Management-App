@@ -85,12 +85,7 @@ const Navbar = ({ onOpenModal, onCloseModal }) => {
                 isOpen={openDropdown === 'structure'}
                 onToggle={() => toggleDropdown('structure')}
             />
-            <Dropdown
-                title="Enter Data"
-                options={['Questionnaire', 'Geodata', 'Upload']}
-                isOpen={openDropdown === 'enterData'}
-                onToggle={() => toggleDropdown('enterData')}
-            />
+            <button className="button" onClick={() => handleNavigate('/enter-data')}>Enter Data</button>
             <Dropdown
                 title="Generate"
                 options={['Visualize Data', 'Reports']}

@@ -69,13 +69,7 @@ const createGisLayer = asyncHandler(async (req, res) => {
   const { projectId } = req.params;
   const { name, description, layerType, geometryType, attributes, style } = req.body;
 
-  console.log('Create GIS Layer Request:');
-  console.log('- Project ID:', projectId);
-  console.log('- Body:', req.body);
-  console.log('- User:', req.user?.id);
-
   if (!projectId || !name || !layerType) {
-    console.log('Validation failed:', { projectId, name, layerType });
     return res.status(400).json({
       success: false,
       error: 'Project ID, name, and layer type are required'
@@ -124,7 +118,6 @@ const createGisLayer = asyncHandler(async (req, res) => {
     }
 
     if (existingLayer) {
-      console.log('Duplicate layer name found:', existingLayer);
       return res.status(400).json({
         success: false,
         error: `A layer named "${name.trim()}" already exists in this project`
@@ -143,7 +136,6 @@ const createGisLayer = asyncHandler(async (req, res) => {
       created_by: req.user.id
     };
 
-    console.log('Inserting layer data:', JSON.stringify(layerData, null, 2));
 
     const { data: layer, error } = await req.supabase
       .from('gis_layers')
@@ -163,7 +155,6 @@ const createGisLayer = asyncHandler(async (req, res) => {
       });
     }
 
-    console.log('Layer created successfully:', layer);
 
     res.status(201).json({
       success: true,
@@ -445,13 +436,6 @@ const addFeature = asyncHandler(async (req, res) => {
       });
     }
 
-    console.log('Adding feature to layer:', {
-      layerId,
-      geometryType: layer.geometry_type,
-      coordinatesCount: coordinates.length,
-      coordinates: coordinates
-    });
-
     // Normalize geometry type (line -> linestring)
     const geometryType = layer.geometry_type === 'line' ? 'linestring' : layer.geometry_type;
 
@@ -483,7 +467,6 @@ const addFeature = asyncHandler(async (req, res) => {
       });
     }
 
-    console.log('Generated WKT:', geometryWKT);
 
     // Extract asset_id from properties if it exists
     let assetId = null;
@@ -634,8 +617,6 @@ const deleteFeature = asyncHandler(async (req, res) => {
         console.error('Error deleting connected asset:', assetDeleteError);
         // Continue with feature deletion even if asset deletion fails
         // (asset might have been deleted already or doesn't exist)
-      } else {
-        console.log(`Deleted connected asset ${assetId} for feature ${featureId}`);
       }
     }
 

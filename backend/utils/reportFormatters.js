@@ -82,9 +82,9 @@ export const formatPDFReport = async (data, sections) => {
         doc.moveDown();
       }
 
-      // Questionnaire Responses
+      // Attribute Values
       if (sections.includes('questionnaire') && data.responses && data.responses.length > 0) {
-        doc.fontSize(16).text('Questionnaire Responses', { underline: true });
+        doc.fontSize(16).text('Attribute Values', { underline: true });
         doc.moveDown();
         doc.fontSize(12);
         
@@ -196,9 +196,9 @@ export const formatExcelReport = async (data, sections) => {
     });
   }
 
-  // Questionnaire Responses Sheet
+  // Attribute Values Sheet
   if (sections.includes('questionnaire') && data.responses && data.responses.length > 0) {
-    const responsesSheet = workbook.addWorksheet('Questionnaire Responses');
+    const responsesSheet = workbook.addWorksheet('Attribute Values');
     responsesSheet.columns = [
       { header: 'Asset', key: 'asset', width: 30 },
       { header: 'Attribute', key: 'attribute', width: 30 },
@@ -278,9 +278,9 @@ export const formatCSVReport = (data, sections) => {
     csvLines.push('');
   }
 
-  // Questionnaire Responses
+  // Attribute Values
   if (sections.includes('questionnaire') && data.responses && data.responses.length > 0) {
-    csvLines.push('=== QUESTIONNAIRE RESPONSES ===');
+    csvLines.push('=== ATTRIBUTE VALUES ===');
     csvLines.push('Asset,Attribute,Value,Date');
     data.responses.forEach(response => {
       const asset = (response.assetTitle || 'Unknown').replace(/"/g, '""');
