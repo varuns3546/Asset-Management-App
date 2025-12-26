@@ -86,14 +86,7 @@ const Navbar = ({ onOpenModal, onCloseModal }) => {
                 onToggle={() => toggleDropdown('structure')}
             />
             <button className="button" onClick={() => handleNavigate('/enter-data')}>Enter Data</button>
-            <Dropdown
-                title="Generate"
-                options={['Visualize Data', 'Reports']}
-                isOpen={openDropdown === 'generate'}
-                onToggle={() => toggleDropdown('generate')}
-                onOpenModal={onOpenModal}
-                onCloseModal={onCloseModal}
-            />
+            <button className="button" onClick={() => handleNavigate('/reports')}>Reports</button>
             <button 
                 className="button" 
                 onClick={() => onOpenModal(<ShareProjectModal onClose={onCloseModal} />, 'Share Project')}

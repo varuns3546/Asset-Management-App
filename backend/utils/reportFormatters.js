@@ -1,5 +1,6 @@
 import { createRequire } from 'module';
 import ExcelJS from 'exceljs';
+import { generateBarChart, generatePieChart, generateLineChart } from './chartGenerator.js';
 
 const require = createRequire(import.meta.url);
 const PDFDocument = require('pdfkit');
@@ -11,6 +12,93 @@ const PDFDocument = require('pdfkit');
  * @returns {Buffer} PDF buffer
  */
 export const formatPDFReport = async (data, sections) => {
+  // Generate all chart images first (before creating PDF)
+  const charts = {};
+  
+  if (sections.includes('visualization') && data.visualization) {
+    console.log('Starting chart generation...');
+    console.log('Visualization data structure:', {
+      hasQuestionnaire: !!data.visualization.questionnaire,
+      hasAssets: !!data.visualization.assets
+    });
+    
+    try {
+      // Generate questionnaire charts
+      if (data.visualization.questionnaire) {
+        const qStats = data.visualization.questionnaire;
+        console.log('Questionnaire stats:', {
+          hasByAssetType: !!(qStats.byAssetType && qStats.byAssetType.length > 0),
+          hasByAttribute: !!(qStats.byAttribute && qStats.byAttribute.length > 0),
+          hasTimeline: !!(qStats.timeline && qStats.timeline.length > 0)
+        });
+        
+        if (qStats.byAssetType && qStats.byAssetType.length > 0) {
+          const chartData = qStats.byAssetType.map(type => ({
+            label: type.typeName || 'Untyped',
+            value: type.totalAssets > 0 
+              ? parseFloat(((type.assetsWithResponses / type.totalAssets) * 100).toFixed(2))
+              : 0
+          }));
+          console.log('Generating completionByType chart with data:', chartData);
+          charts.completionByType = await generateBarChart(chartData, 'Completion Rate by Asset Type (%)', 'label', 'value');
+          console.log('completionByType chart generated:', !!charts.completionByType);
+        }
+        
+        if (qStats.byAttribute && qStats.byAttribute.length > 0) {
+          const chartData = qStats.byAttribute.slice(0, 10).map(attr => ({
+            label: (attr.attributeTitle || 'Unknown').length > 30 
+              ? (attr.attributeTitle || 'Unknown').substring(0, 30) + '...'
+              : (attr.attributeTitle || 'Unknown'),
+            value: attr.responseCount || 0
+          }));
+          console.log('Generating topAttributes chart with data:', chartData);
+          charts.topAttributes = await generateBarChart(chartData, 'Top 10 Attributes by Response Count', 'label', 'value');
+          console.log('topAttributes chart generated:', !!charts.topAttributes);
+        }
+        
+        if (qStats.timeline && qStats.timeline.length > 0) {
+          console.log('Generating timeline chart with data:', qStats.timeline.slice(0, 5));
+          charts.timeline = await generateLineChart(qStats.timeline, 'Response Completion Timeline', 'date', 'count');
+          console.log('timeline chart generated:', !!charts.timeline);
+        }
+      }
+      
+      // Generate asset charts
+      if (data.visualization.assets) {
+        const aStats = data.visualization.assets;
+        console.log('Asset stats:', {
+          hasByType: !!(aStats.byType && aStats.byType.length > 0),
+          hasSummary: !!aStats.summary
+        });
+        
+        if (aStats.byType && aStats.byType.length > 0) {
+          const chartData = aStats.byType.map(type => ({
+            label: type.typeName || 'Untyped',
+            value: type.count || 0
+          }));
+          console.log('Generating assetsByType chart with data:', chartData);
+          charts.assetsByType = await generatePieChart(chartData, 'Assets by Type', 'label', 'value');
+          console.log('assetsByType chart generated:', !!charts.assetsByType);
+        }
+        
+        if (aStats.summary) {
+          const chartData = [
+            { label: 'With Coordinates', value: aStats.summary.assetsWithCoordinates || 0 },
+            { label: 'Without Coordinates', value: aStats.summary.assetsWithoutCoordinates || 0 }
+          ];
+          console.log('Generating coordinates chart with data:', chartData);
+          charts.coordinates = await generatePieChart(chartData, 'Assets with Geographic Data', 'label', 'value');
+          console.log('coordinates chart generated:', !!charts.coordinates);
+        }
+      }
+      
+      console.log('All charts generated. Chart keys:', Object.keys(charts));
+    } catch (error) {
+      console.error('Error generating charts:', error);
+      console.error('Error stack:', error.stack);
+    }
+  }
+
   return new Promise((resolve, reject) => {
     try {
       const doc = new PDFDocument({ margin: 50 });
@@ -137,6 +225,157 @@ export const formatPDFReport = async (data, sections) => {
           }
           doc.moveDown();
         });
+        doc.moveDown();
+      }
+
+      // Data Visualization
+      if (sections.includes('visualization')) {
+        console.log('PDF Formatter - Visualization section requested');
+        console.log('PDF Formatter - data.visualization exists:', !!data.visualization);
+        console.log('PDF Formatter - Available charts:', Object.keys(charts));
+        
+        if (data.visualization) {
+          // Add page break before visualization section if needed
+          const currentY = doc.y;
+          const pageHeight = doc.page.height;
+          if (currentY > pageHeight - 600) {
+            doc.addPage();
+          }
+          
+          doc.fontSize(16).text('Data Visualization', { underline: true });
+          doc.moveDown(1);
+
+          // Questionnaire Statistics
+          if (data.visualization.questionnaire) {
+            const qStats = data.visualization.questionnaire;
+            doc.fontSize(14).text('Questionnaire Statistics', { underline: true });
+            doc.moveDown(0.5);
+            doc.fontSize(12);
+            
+            if (qStats.summary) {
+              doc.text(`Total Assets: ${qStats.summary.totalAssets || 0}`);
+              doc.text(`Assets with Responses: ${qStats.summary.assetsWithResponses || 0}`);
+              doc.text(`Completion Rate: ${qStats.summary.completionRate || 0}%`);
+              doc.text(`Total Responses: ${qStats.summary.totalResponses || 0}`);
+              doc.moveDown(1);
+            }
+
+            // Completion by Asset Type Chart
+            if (charts.completionByType) {
+              console.log('Adding completionByType chart to PDF');
+              try {
+                doc.addPage();
+                doc.moveDown(2);
+                doc.image(charts.completionByType, {
+                  fit: [500, 300],
+                  align: 'center'
+                });
+                doc.moveDown(1);
+              } catch (error) {
+                console.error('Error adding completionByType chart to PDF:', error);
+              }
+            } else {
+              console.log('completionByType chart not available');
+            }
+
+            // Top Attributes Chart
+            if (charts.topAttributes) {
+              console.log('Adding topAttributes chart to PDF');
+              try {
+                doc.addPage();
+                doc.moveDown(2);
+                doc.image(charts.topAttributes, {
+                  fit: [500, 300],
+                  align: 'center'
+                });
+                doc.moveDown(1);
+              } catch (error) {
+                console.error('Error adding topAttributes chart to PDF:', error);
+              }
+            } else {
+              console.log('topAttributes chart not available');
+            }
+
+            // Timeline Chart
+            if (charts.timeline) {
+              console.log('Adding timeline chart to PDF');
+              try {
+                doc.addPage();
+                doc.moveDown(2);
+                doc.image(charts.timeline, {
+                  fit: [500, 300],
+                  align: 'center'
+                });
+                doc.moveDown(1);
+              } catch (error) {
+                console.error('Error adding timeline chart to PDF:', error);
+              }
+            } else {
+              console.log('timeline chart not available');
+            }
+          }
+
+          // Asset Statistics
+          if (data.visualization.assets) {
+            const aStats = data.visualization.assets;
+            
+            // Start Asset Statistics section on a new page
+            doc.addPage();
+            
+            doc.fontSize(14).text('Asset Statistics', { underline: true });
+            doc.moveDown(0.5);
+            doc.fontSize(12);
+            
+            if (aStats && aStats.summary) {
+              doc.text(`Total Assets: ${aStats.summary.totalAssets || 0}`);
+              doc.text(`Assets with Coordinates: ${aStats.summary.assetsWithCoordinates || 0}`);
+              doc.text(`Assets without Coordinates: ${aStats.summary.assetsWithoutCoordinates || 0}`);
+              doc.moveDown(2);
+            }
+
+            // Assets by Type Pie Chart
+            if (charts.assetsByType) {
+              console.log('Adding assetsByType chart to PDF');
+              try {
+                doc.addPage();
+                doc.moveDown(2);
+                doc.image(charts.assetsByType, {
+                  fit: [500, 300],
+                  align: 'center'
+                });
+                doc.moveDown(1);
+              } catch (error) {
+                console.error('Error adding assetsByType chart to PDF:', error);
+              }
+            } else {
+              console.log('assetsByType chart not available');
+            }
+
+            // Assets with/without Coordinates Pie Chart
+            if (charts.coordinates) {
+              console.log('Adding coordinates chart to PDF');
+              try {
+                doc.addPage();
+                doc.moveDown(2);
+                doc.image(charts.coordinates, {
+                  fit: [500, 300],
+                  align: 'center'
+                });
+                doc.moveDown(1);
+              } catch (error) {
+                console.error('Error adding coordinates chart to PDF:', error);
+              }
+            } else {
+              console.log('coordinates chart not available');
+            }
+          }
+        } else {
+          console.log('PDF Formatter - data.visualization is null or undefined');
+          doc.fontSize(14).text('Data Visualization', { underline: true });
+          doc.moveDown();
+          doc.fontSize(12).text('Visualization data is not available.', { indent: 20 });
+          doc.moveDown();
+        }
       }
 
       doc.end();
@@ -236,6 +475,80 @@ export const formatExcelReport = async (data, sections) => {
     });
   }
 
+  // Data Visualization Sheet
+  if (sections.includes('visualization') && data.visualization) {
+    // Questionnaire Statistics Sheet
+    if (data.visualization.questionnaire) {
+      const qStats = data.visualization.questionnaire;
+      const vizSheet = workbook.addWorksheet('Visualization - Questionnaire');
+      
+      if (qStats.summary) {
+        vizSheet.addRow(['Questionnaire Summary']);
+        vizSheet.addRow(['Property', 'Value']);
+        vizSheet.addRow(['Total Assets', qStats.summary.totalAssets || 0]);
+        vizSheet.addRow(['Assets with Responses', qStats.summary.assetsWithResponses || 0]);
+        vizSheet.addRow(['Completion Rate', `${qStats.summary.completionRate || 0}%`]);
+        vizSheet.addRow(['Total Responses', qStats.summary.totalResponses || 0]);
+        vizSheet.addRow([]);
+      }
+
+      if (qStats.byAssetType && qStats.byAssetType.length > 0) {
+        vizSheet.addRow(['Completion by Asset Type']);
+        vizSheet.addRow(['Asset Type', 'Assets with Responses', 'Total Assets', 'Completion Rate (%)']);
+        qStats.byAssetType.forEach(type => {
+          const rate = type.totalAssets > 0 
+            ? parseFloat(((type.assetsWithResponses / type.totalAssets) * 100).toFixed(2))
+            : 0;
+          vizSheet.addRow([
+            type.typeName || 'Untyped',
+            type.assetsWithResponses || 0,
+            type.totalAssets || 0,
+            rate
+          ]);
+        });
+        vizSheet.addRow([]);
+      }
+
+      if (qStats.byAttribute && qStats.byAttribute.length > 0) {
+        vizSheet.addRow(['Top Attributes by Response Count']);
+        vizSheet.addRow(['Rank', 'Attribute', 'Response Count']);
+        qStats.byAttribute.slice(0, 20).forEach((attr, index) => {
+          vizSheet.addRow([
+            index + 1,
+            attr.attributeTitle || 'Unknown',
+            attr.responseCount || 0
+          ]);
+        });
+      }
+    }
+
+    // Asset Statistics Sheet
+    if (data.visualization.assets) {
+      const aStats = data.visualization.assets;
+      const assetVizSheet = workbook.addWorksheet('Visualization - Assets');
+      
+      if (aStats.summary) {
+        assetVizSheet.addRow(['Asset Statistics Summary']);
+        assetVizSheet.addRow(['Property', 'Value']);
+        assetVizSheet.addRow(['Total Assets', aStats.summary.totalAssets || 0]);
+        assetVizSheet.addRow(['Assets with Coordinates', aStats.summary.assetsWithCoordinates || 0]);
+        assetVizSheet.addRow(['Assets without Coordinates', aStats.summary.assetsWithoutCoordinates || 0]);
+        assetVizSheet.addRow([]);
+      }
+
+      if (aStats.byType && aStats.byType.length > 0) {
+        assetVizSheet.addRow(['Assets by Type']);
+        assetVizSheet.addRow(['Asset Type', 'Count']);
+        aStats.byType.forEach(type => {
+          assetVizSheet.addRow([
+            type.typeName || 'Untyped',
+            type.count || 0
+          ]);
+        });
+      }
+    }
+  }
+
   const buffer = await workbook.xlsx.writeBuffer();
   return Buffer.from(buffer);
 };
@@ -302,6 +615,70 @@ export const formatCSVReport = (data, sections) => {
       const attributes = type.attributes ? type.attributes.map(a => a.title).join('; ').replace(/"/g, '""') : '';
       csvLines.push(`"${title}","${description}",${type.assetCount || 0},"${attributes}"`);
     });
+    csvLines.push('');
+  }
+
+  // Data Visualization
+  if (sections.includes('visualization') && data.visualization) {
+    csvLines.push('=== DATA VISUALIZATION ===');
+    
+    // Questionnaire Statistics
+    if (data.visualization.questionnaire) {
+      const qStats = data.visualization.questionnaire;
+      csvLines.push('--- Questionnaire Statistics ---');
+      
+      if (qStats.summary) {
+        csvLines.push('Property,Value');
+        csvLines.push(`Total Assets,${qStats.summary.totalAssets || 0}`);
+        csvLines.push(`Assets with Responses,${qStats.summary.assetsWithResponses || 0}`);
+        csvLines.push(`Completion Rate,${qStats.summary.completionRate || 0}%`);
+        csvLines.push(`Total Responses,${qStats.summary.totalResponses || 0}`);
+        csvLines.push('');
+      }
+
+      if (qStats.byAssetType && qStats.byAssetType.length > 0) {
+        csvLines.push('Asset Type,Assets with Responses,Total Assets,Completion Rate (%)');
+        qStats.byAssetType.forEach(type => {
+          const rate = type.totalAssets > 0 
+            ? parseFloat(((type.assetsWithResponses / type.totalAssets) * 100).toFixed(2))
+            : 0;
+          const typeName = (type.typeName || 'Untyped').replace(/"/g, '""');
+          csvLines.push(`"${typeName}",${type.assetsWithResponses || 0},${type.totalAssets || 0},${rate}`);
+        });
+        csvLines.push('');
+      }
+
+      if (qStats.byAttribute && qStats.byAttribute.length > 0) {
+        csvLines.push('Rank,Attribute,Response Count');
+        qStats.byAttribute.slice(0, 20).forEach((attr, index) => {
+          const attrTitle = (attr.attributeTitle || 'Unknown').replace(/"/g, '""');
+          csvLines.push(`${index + 1},"${attrTitle}",${attr.responseCount || 0}`);
+        });
+        csvLines.push('');
+      }
+    }
+
+    // Asset Statistics
+    if (data.visualization.assets) {
+      const aStats = data.visualization.assets;
+      csvLines.push('--- Asset Statistics ---');
+      
+      if (aStats.summary) {
+        csvLines.push('Property,Value');
+        csvLines.push(`Total Assets,${aStats.summary.totalAssets || 0}`);
+        csvLines.push(`Assets with Coordinates,${aStats.summary.assetsWithCoordinates || 0}`);
+        csvLines.push(`Assets without Coordinates,${aStats.summary.assetsWithoutCoordinates || 0}`);
+        csvLines.push('');
+      }
+
+      if (aStats.byType && aStats.byType.length > 0) {
+        csvLines.push('Asset Type,Count');
+        aStats.byType.forEach(type => {
+          const typeName = (type.typeName || 'Untyped').replace(/"/g, '""');
+          csvLines.push(`"${typeName}",${type.count || 0}`);
+        });
+      }
+    }
   }
 
   return csvLines.join('\n');

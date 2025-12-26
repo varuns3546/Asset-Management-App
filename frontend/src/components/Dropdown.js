@@ -3,7 +3,6 @@ import React from 'react'
 import CreateProjectModal from './CreateProjectModal'
 import MyProjectsModal from './MyProjectsModal'
 import SharedProjectsModal from './SharedProjectsModal'
-import GenerateReportModal from './GenerateReportModal'
 import '../styles/navbar.css'
 
 const Dropdown = ({title, options, isOpen, onToggle, onOpenModal, onCloseModal, onOptionClick, className}) => {
@@ -21,7 +20,7 @@ const Dropdown = ({title, options, isOpen, onToggle, onOpenModal, onCloseModal, 
         }
         
         // Handle modal options
-        if (onOpenModal && (option === 'Create Project' || option === 'My Projects' || option === 'Shared with Me' || option === 'Reports')) {
+        if (onOpenModal && (option === 'Create Project' || option === 'My Projects' || option === 'Shared with Me')) {
             console.log('Opening modal for:', option) // Debug log
             if (option === 'Create Project') {
                 onOpenModal(<CreateProjectModal onClose={onCloseModal} />, 'Create Project')
@@ -29,8 +28,6 @@ const Dropdown = ({title, options, isOpen, onToggle, onOpenModal, onCloseModal, 
                 onOpenModal(<MyProjectsModal onClose={onCloseModal} />, 'My Projects')
             } else if (option === 'Shared with Me') {
                 onOpenModal(<SharedProjectsModal onClose={onCloseModal} />, 'Shared with Me')
-            } else if (option === 'Reports') {
-                onOpenModal(<GenerateReportModal onClose={onCloseModal} />, 'Generate Report')
             }
         } else {
             // Map other options to routes
@@ -40,7 +37,6 @@ const Dropdown = ({title, options, isOpen, onToggle, onOpenModal, onCloseModal, 
                 'Map': '/map',
                 'Leaflet': '/leaflet',
                 'Usage': '/usage',
-                'Visualize Data': '/visualize',
             }
             
             if (routeMap[option]) {
