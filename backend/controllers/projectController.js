@@ -537,7 +537,6 @@ const cloneProject = asyncHandler(async (req, res) => {
     });
   }
 
-  console.log('[CLONE] Cloned project created:', clonedProject.id);
 
   // Add owner to project_users
   const { error: userError } = await req.supabase
@@ -999,43 +998,37 @@ const cloneProject = asyncHandler(async (req, res) => {
       }
     }
 
-    // Clone questionnaire responses
-    const { data: questionnaireResponses, error: questionnaireError } = await req.supabase
-      .from('questionnaire_responses')
+    // Clone attribute values
+    const { data: attributeValues, error: attributeValuesError } = await req.supabase
+      .from('attribute_values')
       .select('*')
       .eq('project_id', id);
 
-    if (questionnaireError) {
-      console.error('[CLONE] Error fetching questionnaire responses:', questionnaireError);
+    if (attributeValuesError) {
+      console.error('[CLONE] Error fetching attribute values:', attributeValuesError);
     }
 
-    if (questionnaireResponses && questionnaireResponses.length > 0) {
-      const clonedResponses = questionnaireResponses.map(response => ({
-        asset_id: response.asset_id ? assetMap[response.asset_id] || null : null, // Map to cloned asset ID, or null if mapping not found
-        response_data: response.response_data,
-        response_metadata: response.response_metadata,
+    if (attributeValues && attributeValues.length > 0) {
+      const clonedAttributeValues = attributeValues.map(attrValue => ({
+        asset_id: attrValue.asset_id ? assetMap[attrValue.asset_id] || null : null, // Map to cloned asset ID, or null if mapping not found
+        response_data: attrValue.response_data,
+        response_metadata: attrValue.response_metadata,
         submitted_by: req.user.id, // Set to current user
         project_id: clonedProject.id,
         created_at: undefined,
         updated_at: undefined
       }));
-      const { error: responsesError } = await req.supabase.from('questionnaire_responses').insert(clonedResponses);
-      if (responsesError) {
-        console.error('[CLONE] Error cloning questionnaire responses:', responsesError);
+      const { error: attributeValuesInsertError } = await req.supabase.from('attribute_values').insert(clonedAttributeValues);
+      if (attributeValuesInsertError) {
+        console.error('[CLONE] Error cloning attribute values:', attributeValuesInsertError);
       }
     }
 
     // Note: maps and photos tables exist but are not used in the application
-    // - Photos are stored in Supabase Storage with metadata in questionnaire_responses.response_metadata
+    // - Photos are stored in Supabase Storage with metadata in attribute_values.response_metadata
     // - Maps functionality appears to be unused/legacy
     // These tables are intentionally not cloned
 
-    console.log(`[CLONE] ========================================`);
-    console.log(`[CLONE] Completed cloning data for project ${clonedProject.id}`);
-    console.log(`[CLONE] Summary:`);
-    console.log(`[CLONE]   - Asset Types: ${Object.keys(assetTypeMap).length}`);
-    console.log(`[CLONE]   - Assets: ${Object.keys(assetMap).length}`);
-    console.log(`[CLONE] ========================================`);
   } catch (error) {
     console.error('[CLONE] ========================================');
     console.error('[CLONE] ERROR cloning project data:', error);

@@ -46,7 +46,7 @@ const exportProjectData = asyncHandler(async (req, res) => {
 
     // Get questionnaire responses
     const { data: responses } = await req.supabase
-      .from('questionnaire_responses')
+      .from('attribute_values')
       .select('*')
       .eq('project_id', projectId);
 

@@ -492,7 +492,6 @@ const createAssetType = asyncHandler(async (req, res) => {
     }
 
     // Create attributes if they exist
-    console.log('Attributes received:', attributes);
     if (attributes && attributes.length > 0) {
       const attributesToInsert = attributes.map(attribute => ({
         item_type_id: assetType.id,
@@ -500,7 +499,6 @@ const createAssetType = asyncHandler(async (req, res) => {
         type: typeof attribute === 'string' ? 'text' : (attribute.type || 'text')
       }));
 
-      console.log('Attributes to insert:', attributesToInsert);
 
       // Test if attributes table exists by trying to select from it first
       const { data: testData, error: testError } = await req.supabase
@@ -511,8 +509,6 @@ const createAssetType = asyncHandler(async (req, res) => {
       if (testError) {
         console.error('Attributes table test error:', testError);
         console.error('Table might not exist or have wrong permissions');
-      } else {
-        console.log('Attributes table is accessible');
       }
 
       const { data: insertedAttributes, error: attributesError } = await req.supabase
@@ -525,11 +521,7 @@ const createAssetType = asyncHandler(async (req, res) => {
         console.error('Full error details:', JSON.stringify(attributesError, null, 2));
         // Note: We don't return an error here since the asset type was created successfully
         // The attributes can be added later if needed
-      } else {
-        console.log('Successfully created attributes:', insertedAttributes);
       }
-    } else {
-      console.log('No attributes provided or empty array');
     }
 
     res.status(201).json({
@@ -1005,8 +997,6 @@ const updateAssetType = asyncHandler(async (req, res) => {
       if (attributesError) {
         console.error('Error creating attributes:', attributesError);
         console.error('Full error details:', JSON.stringify(attributesError, null, 2));
-      } else {
-        console.log('Successfully created attributes:', insertedAttributes);
       }
     }
 

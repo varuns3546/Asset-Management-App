@@ -1,7 +1,34 @@
 import asyncHandler from 'express-async-handler';
+import multer from 'multer';
+import * as XLSX from 'xlsx';
 import supabaseClient from '../config/supabaseClient.js';
 
 const { supabaseAdmin } = supabaseClient;
+
+// Configure multer for spreadsheet upload
+const storage = multer.memoryStorage();
+const spreadsheetUpload = multer({
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  fileFilter: (req, file, cb) => {
+    const allowedMimes = [
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // xlsx
+      'application/vnd.ms-excel', // xls
+      'application/vnd.ms-excel.sheet.macroEnabled.12', // xlsm
+      'text/csv',
+      'text/tab-separated-values',
+      'application/csv',
+    ];
+    const allowedExts = ['.xlsx', '.xls', '.xlsm', '.csv', '.tsv'];
+    const ext = file.originalname.toLowerCase().slice(file.originalname.lastIndexOf('.'));
+    
+    if (allowedMimes.includes(file.mimetype) || allowedExts.includes(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Allowed: xlsx, xls, xlsm, csv, tsv'));
+    }
+  }
+});
 
 // @desc    Get asset with its type's attributes for questionnaire
 // @route   GET /api/questionnaire/:projectId/asset/:assetId
@@ -68,10 +95,10 @@ const getAssetQuestionnaire = asyncHandler(async (req, res) => {
       }
     }
 
-    // Get existing responses for this asset (table might not exist yet)
+    // Get existing attribute values for this asset (table might not exist yet)
     let responsesMap = {};
     const { data: responses, error: responsesError } = await req.supabase
-      .from('questionnaire_responses')
+      .from('attribute_values')
       .select('*')
       .eq('asset_id', assetId);
 
@@ -80,9 +107,9 @@ const getAssetQuestionnaire = asyncHandler(async (req, res) => {
             // Don't fail the request if responses table doesn't exist
     } else if (responses) {
       // Process each response and ensure photos have valid URLs
-      // Photos are stored in response_metadata.photos in questionnaire_responses table
+      // Photos are stored in response_metadata.photos in attribute_values table
       for (const r of responses) {
-        // Get photos from response_metadata (stored in questionnaire_responses table)
+        // Get photos from response_metadata (stored in attribute_values table)
         const responseMetadata = r.response_metadata ? { ...r.response_metadata } : {};
         
         // Process photos if they exist in metadata
@@ -93,12 +120,6 @@ const getAssetQuestionnaire = asyncHandler(async (req, res) => {
             let photoUrl = photo.url;
             let filePath = photo.path;
             
-            console.log('Processing photo:', {
-              name: photo.name || photo.file_name,
-              url: photo.url,
-              path: photo.path,
-              fullPhoto: photo
-            });
             
             // Always generate a fresh signed URL since public URLs may not work if bucket is private
             // Signed URLs work for both public and private buckets
@@ -111,10 +132,6 @@ const getAssetQuestionnaire = asyncHandler(async (req, res) => {
                 
                 if (!signedError && signedUrlData) {
                   photoUrl = signedUrlData.signedUrl;
-                  console.log('Generated signed URL:', {
-                    filePath,
-                    signedUrl: photoUrl
-                  });
                 } else {
                   console.error('Error generating signed URL:', signedError);
                   // Fallback to public URL if signed URL fails
@@ -123,7 +140,6 @@ const getAssetQuestionnaire = asyncHandler(async (req, res) => {
                       .from('project-files')
                       .getPublicUrl(filePath);
                     photoUrl = urlData.publicUrl;
-                    console.log('Fallback to public URL:', photoUrl);
                   } catch (urlError) {
                     console.error('Error generating public URL:', urlError);
                   }
@@ -143,7 +159,6 @@ const getAssetQuestionnaire = asyncHandler(async (req, res) => {
                     .createSignedUrl(filePath, 3600);
                   if (!signedError && signedUrlData) {
                     photoUrl = signedUrlData.signedUrl;
-                    console.log('Regenerated signed URL from existing URL:', photoUrl);
                   }
                 } catch (urlError) {
                   console.error('Error regenerating signed URL:', filePath, urlError);
@@ -201,10 +216,10 @@ const getAssetQuestionnaire = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    Submit/Update questionnaire responses
+// @desc    Submit/Update attribute values
 // @route   POST /api/questionnaire/:projectId/asset/:assetId/submit
 // @access  Private
-const submitQuestionnaireResponses = asyncHandler(async (req, res) => {
+const submitAttributeValues = asyncHandler(async (req, res) => {
   const { projectId, assetId } = req.params;
   const { responses } = req.body; // Array of { attributeId, attributeTitle, value, metadata }
 
@@ -233,7 +248,7 @@ const submitQuestionnaireResponses = asyncHandler(async (req, res) => {
 
     // Get existing responses to compare photos
     const { data: existingResponses, error: fetchError } = await req.supabase
-      .from('questionnaire_responses')
+      .from('attribute_values')
       .select('attribute_id, response_metadata')
       .eq('asset_id', assetId)
       .eq('project_id', projectId);
@@ -316,14 +331,12 @@ const submitQuestionnaireResponses = asyncHandler(async (req, res) => {
       if (storageError) {
         console.error('Error deleting removed photos from storage:', storageError);
         // Continue with response save even if photo deletion fails
-      } else {
-        console.log(`Successfully deleted ${photosToDelete.length} removed photo(s) from storage`);
       }
     }
 
     // Upsert responses (insert or update if exists)
     const { data: savedResponses, error: upsertError } = await req.supabase
-      .from('questionnaire_responses')
+      .from('attribute_values')
       .upsert(responsesToUpsert, {
         onConflict: 'asset_id,attribute_id'
       })
@@ -345,7 +358,7 @@ const submitQuestionnaireResponses = asyncHandler(async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error in submitQuestionnaireResponses:', error);
+    console.error('Error in submitAttributeValues:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error'
@@ -353,15 +366,15 @@ const submitQuestionnaireResponses = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    Get all responses for a project (for reporting)
+// @desc    Get all attribute values for a project (for reporting)
 // @route   GET /api/questionnaire/:projectId/responses
 // @access  Private
-const getProjectResponses = asyncHandler(async (req, res) => {
+const getProjectAttributeValues = asyncHandler(async (req, res) => {
   const { projectId } = req.params;
 
   try {
     const { data: responses, error } = await req.supabase
-      .from('questionnaire_responses')
+      .from('attribute_values')
       .select(`
         *,
         assets(id, title, item_type_id),
@@ -391,16 +404,16 @@ const getProjectResponses = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    Delete questionnaire response and associated photos
+// @desc    Delete attribute value and associated photos
 // @route   DELETE /api/questionnaire/:projectId/asset/:assetId/response/:responseId
 // @access  Private
-const deleteQuestionnaireResponse = asyncHandler(async (req, res) => {
+const deleteAttributeValue = asyncHandler(async (req, res) => {
   const { projectId, assetId, responseId } = req.params;
 
   try {
     // First, get the response to extract photo paths
     const { data: response, error: fetchError } = await req.supabase
-      .from('questionnaire_responses')
+      .from('attribute_values')
       .select('*')
       .eq('id', responseId)
       .eq('asset_id', assetId)
@@ -410,7 +423,7 @@ const deleteQuestionnaireResponse = asyncHandler(async (req, res) => {
     if (fetchError || !response) {
       return res.status(404).json({
         success: false,
-        error: 'Questionnaire response not found'
+        error: 'Attribute value not found'
       });
     }
 
@@ -444,36 +457,34 @@ const deleteQuestionnaireResponse = asyncHandler(async (req, res) => {
         console.error('Error deleting photos from storage:', storageError);
         // Continue with response deletion even if photo deletion fails
         // Log the error but don't fail the request
-      } else {
-        console.log(`Successfully deleted ${photosToDelete.length} photo(s) from storage`);
       }
     }
 
     // Delete the response from the database
     const { error: deleteError } = await req.supabase
-      .from('questionnaire_responses')
+      .from('attribute_values')
       .delete()
       .eq('id', responseId)
       .eq('asset_id', assetId)
       .eq('project_id', projectId);
 
     if (deleteError) {
-      console.error('Error deleting questionnaire response:', deleteError);
+      console.error('Error deleting attribute value:', deleteError);
       return res.status(500).json({
         success: false,
-        error: 'Failed to delete questionnaire response',
+        error: 'Failed to delete attribute value',
         details: deleteError.message
       });
     }
 
     res.status(200).json({
       success: true,
-      message: 'Questionnaire response and associated photos deleted successfully',
+      message: 'Attribute value and associated photos deleted successfully',
       deletedPhotos: photosToDelete.length
     });
 
   } catch (error) {
-    console.error('Error in deleteQuestionnaireResponse:', error);
+    console.error('Error in deleteAttributeValue:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error'
@@ -481,10 +492,400 @@ const deleteQuestionnaireResponse = asyncHandler(async (req, res) => {
   }
 });
 
+// @desc    Parse spreadsheet and return preview for attribute value import
+// @route   POST /api/questionnaire/:projectId/import/preview
+// @access  Private
+const previewImport = [
+  spreadsheetUpload.single('file'),
+  asyncHandler(async (req, res) => {
+    const { projectId } = req.params;
+
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: 'No file uploaded' });
+    }
+
+    try {
+      // Parse the file based on extension
+      const ext = req.file.originalname.toLowerCase().slice(req.file.originalname.lastIndexOf('.'));
+      let workbook;
+      
+      if (ext === '.csv') {
+        const csvContent = req.file.buffer.toString('utf-8');
+        workbook = XLSX.read(csvContent, { type: 'string' });
+      } else if (ext === '.tsv') {
+        const tsvContent = req.file.buffer.toString('utf-8');
+        workbook = XLSX.read(tsvContent, { type: 'string', FS: '\t' });
+      } else {
+        workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+      }
+
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const data = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+
+      if (data.length < 2) {
+        return res.status(400).json({
+          success: false,
+          error: 'File must contain at least a header row and one data row'
+        });
+      }
+
+      const headers = data[0].map(h => String(h).trim());
+      const rows = data.slice(1).filter(row => row.some(cell => cell !== ''));
+
+      // Get assets for this project
+      const { data: assets, error: assetsError } = await req.supabase
+        .from('assets')
+        .select('id, title, item_type_id')
+        .eq('project_id', projectId);
+
+      if (assetsError) {
+        console.error('Error fetching assets:', assetsError);
+        return res.status(500).json({ success: false, error: 'Failed to fetch project assets' });
+      }
+
+      // Get asset types and their attributes
+      const { data: assetTypes, error: typesError } = await req.supabase
+        .from('asset_types')
+        .select('id, title, project_id')
+        .eq('project_id', projectId);
+
+      if (typesError) {
+        console.error('Error fetching asset types:', typesError);
+      }
+
+      // Get all attributes for this project's asset types
+      const typeIds = (assetTypes || []).map(t => t.id);
+      let attributes = [];
+      if (typeIds.length > 0) {
+        const { data: attrsData, error: attrsError } = await req.supabase
+          .from('attributes')
+          .select('id, title, item_type_id, type')
+          .in('item_type_id', typeIds);
+
+        if (!attrsError && attrsData) {
+          attributes = attrsData;
+        }
+      }
+
+      res.status(200).json({
+        success: true,
+        data: {
+          fileName: req.file.originalname,
+          headers,
+          previewRows: rows.slice(0, 10), // First 10 rows for preview
+          totalRows: rows.length,
+          assets: assets || [],
+          assetTypes: assetTypes || [],
+          attributes
+        }
+      });
+
+    } catch (error) {
+      console.error('Error parsing file:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to parse file',
+        details: error.message
+      });
+    }
+  })
+];
+
+// @desc    Import attribute values from spreadsheet
+// @route   POST /api/questionnaire/:projectId/import
+// @access  Private
+const importAttributeValues = [
+  spreadsheetUpload.single('file'),
+  asyncHandler(async (req, res) => {
+    const { projectId } = req.params;
+    const { assetColumn, attributeMappings } = req.body;
+
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: 'No file uploaded' });
+    }
+
+    if (assetColumn === undefined || assetColumn === null) {
+      return res.status(400).json({ success: false, error: 'Asset column mapping is required' });
+    }
+
+    // Parse attributeMappings from JSON string if needed
+    let mappings;
+    try {
+      mappings = typeof attributeMappings === 'string' 
+        ? JSON.parse(attributeMappings) 
+        : attributeMappings;
+    } catch (e) {
+      return res.status(400).json({ success: false, error: 'Invalid attribute mappings format' });
+    }
+
+    if (!mappings || Object.keys(mappings).length === 0) {
+      return res.status(400).json({ success: false, error: 'At least one attribute mapping is required' });
+    }
+
+    try {
+      // Parse the file
+      const ext = req.file.originalname.toLowerCase().slice(req.file.originalname.lastIndexOf('.'));
+      let workbook;
+      
+      if (ext === '.csv') {
+        const csvContent = req.file.buffer.toString('utf-8');
+        workbook = XLSX.read(csvContent, { type: 'string' });
+      } else if (ext === '.tsv') {
+        const tsvContent = req.file.buffer.toString('utf-8');
+        workbook = XLSX.read(tsvContent, { type: 'string', FS: '\t' });
+      } else {
+        workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+      }
+
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const data = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+
+      const headers = data[0];
+      const rows = data.slice(1).filter(row => row.some(cell => cell !== ''));
+
+      // Get assets for matching
+      const { data: assets, error: assetsError } = await req.supabase
+        .from('assets')
+        .select('id, title, item_type_id')
+        .eq('project_id', projectId);
+
+      if (assetsError) {
+        return res.status(500).json({ success: false, error: 'Failed to fetch project assets' });
+      }
+
+      // Create asset lookup map (by title, case-insensitive)
+      const assetMap = new Map();
+      (assets || []).forEach(asset => {
+        assetMap.set(asset.title.toLowerCase().trim(), asset);
+      });
+
+      // Get attributes info
+      const attrIds = Object.keys(mappings);
+      const { data: attributesData } = await req.supabase
+        .from('attributes')
+        .select('id, title, type')
+        .in('id', attrIds);
+
+      const attributeInfo = new Map();
+      (attributesData || []).forEach(attr => {
+        attributeInfo.set(attr.id, attr);
+      });
+
+      // Process each row
+      const results = {
+        imported: 0,
+        skipped: 0,
+        errors: []
+      };
+
+      const responsesToUpsert = [];
+
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const rowNum = i + 2; // Account for header and 0-indexing
+
+        // Get asset identifier from the row
+        const assetIdentifier = String(row[parseInt(assetColumn)] || '').trim().toLowerCase();
+        
+        if (!assetIdentifier) {
+          results.skipped++;
+          results.errors.push({ row: rowNum, error: 'Empty asset identifier' });
+          continue;
+        }
+
+        // Find matching asset
+        const asset = assetMap.get(assetIdentifier);
+        
+        if (!asset) {
+          results.skipped++;
+          results.errors.push({ row: rowNum, error: `Asset not found: "${row[parseInt(assetColumn)]}"` });
+          continue;
+        }
+
+        // Process each attribute mapping
+        for (const [attrId, colIndex] of Object.entries(mappings)) {
+          const value = row[parseInt(colIndex)];
+          const attrInfo = attributeInfo.get(attrId);
+          
+          if (value === undefined || value === null || value === '') {
+            continue; // Skip empty values
+          }
+
+          // Validate number type
+          let responseValue = String(value);
+          if (attrInfo && attrInfo.type === 'number') {
+            const numVal = parseFloat(value);
+            if (isNaN(numVal)) {
+              results.errors.push({ 
+                row: rowNum, 
+                error: `Invalid number for attribute "${attrInfo.title}": "${value}"` 
+              });
+              continue;
+            }
+            responseValue = String(numVal);
+          }
+
+          responsesToUpsert.push({
+            project_id: projectId,
+            asset_id: asset.id,
+            asset_type_id: asset.item_type_id,
+            attribute_id: attrId,
+            attribute_title: attrInfo ? attrInfo.title : 'Unknown',
+            response_value: responseValue,
+            response_metadata: {},
+            created_by: req.user.id
+          });
+        }
+
+        results.imported++;
+      }
+
+      // Batch upsert responses
+      if (responsesToUpsert.length > 0) {
+        const { error: upsertError } = await req.supabase
+          .from('attribute_values')
+          .upsert(responsesToUpsert, {
+            onConflict: 'asset_id,attribute_id'
+          });
+
+        if (upsertError) {
+          console.error('Error upserting responses:', upsertError);
+          return res.status(500).json({
+            success: false,
+            error: 'Failed to save responses',
+            details: upsertError.message
+          });
+        }
+      }
+
+      res.status(200).json({
+        success: true,
+        message: `Successfully imported responses for ${results.imported} assets`,
+        data: {
+          totalRows: rows.length,
+          imported: results.imported,
+          skipped: results.skipped,
+          responsesCreated: responsesToUpsert.length,
+          errors: results.errors.slice(0, 20) // Return first 20 errors
+        }
+      });
+
+    } catch (error) {
+      console.error('Error importing responses:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to import responses',
+        details: error.message
+      });
+    }
+  })
+];
+
+// @desc    Download template for attribute value import
+// @route   GET /api/questionnaire/:projectId/import/template
+// @access  Private
+const downloadTemplate = asyncHandler(async (req, res) => {
+  const { projectId } = req.params;
+  const { assetTypeId } = req.query;
+
+  try {
+    // Get assets for this project (optionally filtered by type)
+    let assetsQuery = req.supabase
+      .from('assets')
+      .select('id, title, item_type_id')
+      .eq('project_id', projectId);
+
+    if (assetTypeId) {
+      assetsQuery = assetsQuery.eq('item_type_id', assetTypeId);
+    }
+
+    const { data: assets, error: assetsError } = await assetsQuery;
+
+    if (assetsError) {
+      return res.status(500).json({ success: false, error: 'Failed to fetch assets' });
+    }
+
+    // Get attributes for the asset type
+    let attributes = [];
+    if (assetTypeId) {
+      const { data: attrsData } = await req.supabase
+        .from('attributes')
+        .select('id, title, type')
+        .eq('item_type_id', assetTypeId)
+        .order('created_at');
+
+      attributes = attrsData || [];
+    } else {
+      // Get all unique attributes for all asset types in the project
+      const { data: assetTypes } = await req.supabase
+        .from('asset_types')
+        .select('id')
+        .eq('project_id', projectId);
+
+      if (assetTypes && assetTypes.length > 0) {
+        const typeIds = assetTypes.map(t => t.id);
+        const { data: attrsData } = await req.supabase
+          .from('attributes')
+          .select('id, title, type, item_type_id')
+          .in('item_type_id', typeIds)
+          .order('created_at');
+
+        attributes = attrsData || [];
+      }
+    }
+
+    // Create workbook
+    const workbook = XLSX.utils.book_new();
+
+    // Create header row: Asset Name + all attributes
+    const headers = ['Asset Name', ...attributes.map(a => a.title)];
+    
+    // Create data rows with asset names
+    const dataRows = (assets || []).map(asset => {
+      const row = [asset.title];
+      // Add empty cells for each attribute
+      attributes.forEach(() => row.push(''));
+      return row;
+    });
+
+    // Create worksheet
+    const wsData = [headers, ...dataRows];
+    const worksheet = XLSX.utils.aoa_to_sheet(wsData);
+
+    // Set column widths
+    const colWidths = headers.map(h => ({ wch: Math.max(15, h.length + 2) }));
+    worksheet['!cols'] = colWidths;
+
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Attribute Values');
+
+    // Generate buffer - use 'array' type and convert to Buffer for compatibility
+    const xlsxData = XLSX.write(workbook, { type: 'array', bookType: 'xlsx' });
+    const buffer = Buffer.from(xlsxData);
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="attribute_values_template.xlsx"');
+    res.setHeader('Content-Length', buffer.length);
+    res.send(buffer);
+
+  } catch (error) {
+    console.error('Error generating template:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to generate template',
+      details: error.message
+    });
+  }
+});
+
 export {
   getAssetQuestionnaire,
-  submitQuestionnaireResponses,
-  getProjectResponses,
-  deleteQuestionnaireResponse
+  submitAttributeValues,
+  getProjectAttributeValues,
+  deleteAttributeValue,
+  previewImport,
+  importAttributeValues,
+  downloadTemplate
 };
 

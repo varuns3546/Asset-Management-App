@@ -174,13 +174,7 @@ const getSelectedProject = asyncHandler(async (req, res) => {
         .eq('id', userId)
         .single();
 
-    // If no profile exists (PGRST116) or other non-critical errors, treat as no selected project
-    // Only log the error for debugging, but don't fail the request
-    if (error && error.code !== 'PGRST116') {
-        console.log('[getSelectedProject] Error fetching user profile:', error.message);
-        // Continue as if no profile exists - return null
-    }
-
+  
     // If no profile exists or no selected project, return null
     const selectedProjectId = profile?.selected_project_id || null;
 

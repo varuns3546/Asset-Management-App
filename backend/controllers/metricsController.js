@@ -116,7 +116,7 @@ const getAllProjectsMetrics = asyncHandler(async (req, res) => {
       .select('*', { count: 'exact', head: true });
 
     const { count: totalResponses } = await supabaseAdmin
-      .from('questionnaire_responses')
+      .from('attribute_values')
       .select('*', { count: 'exact', head: true });
 
     const { count: totalFiles } = await supabaseAdmin
@@ -150,18 +150,18 @@ const getAllProjectsMetrics = asyncHandler(async (req, res) => {
       return sum;
     }, 0) || 0;
 
-    // Extract photo sizes from questionnaire_responses.response_metadata
-    // Photos are stored in questionnaire_responses but NOT in project_files table
+    // Extract photo sizes from attribute_values.response_metadata
+    // Photos are stored in attribute_values but NOT in project_files table
     // Since metadata might not have sizes, we'll look them up from storage
-    const { data: allQuestionnaireResponses } = await supabaseAdmin
-      .from('questionnaire_responses')
+    const { data: allAttributeValues } = await supabaseAdmin
+      .from('attribute_values')
       .select('response_metadata');
 
     let dbPhotoSizeFromMetadata = 0;
     const photoPaths = new Set(); // Collect unique photo paths
     
-    if (allQuestionnaireResponses) {
-      for (const response of allQuestionnaireResponses) {
+    if (allAttributeValues) {
+      for (const response of allAttributeValues) {
         if (response.response_metadata && response.response_metadata.photos) {
           const photos = Array.isArray(response.response_metadata.photos) 
             ? response.response_metadata.photos 
@@ -213,8 +213,8 @@ const getAllProjectsMetrics = asyncHandler(async (req, res) => {
     // 2. Database records + photos from metadata (matches Supabase's tracking method - excludes orphaned files)
     // 3. Bucket enumeration (actual files in storage - includes orphaned files)
     // 
-    // Note: Photos are stored in storage but NOT in project_files table (only in questionnaire_responses metadata)
-    // So we need to extract photo sizes from questionnaire_responses to get accurate total
+    // Note: Photos are stored in storage but NOT in project_files table (only in attribute_values metadata)
+    // So we need to extract photo sizes from attribute_values to get accurate total
     let totalStorageSize = 0;
     let storageDataSource = 'calculated';
     
@@ -743,7 +743,7 @@ async function getRecordCounts(projectId) {
     .eq('project_id', projectId);
 
   const { count: responses } = await supabaseAdmin
-    .from('questionnaire_responses')
+    .from('attribute_values')
     .select('*', { count: 'exact', head: true })
     .eq('project_id', projectId);
 

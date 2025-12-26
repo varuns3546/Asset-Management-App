@@ -100,14 +100,14 @@ SELECT
 
 UNION ALL
 
--- 8. Questionnaire Responses
+-- 8. Attribute Values
 SELECT 
-  'questionnaire_responses' as table_name,
-  (SELECT COUNT(*) FROM questionnaire_responses WHERE project_id = 'a1ecc77b-8bf7-47c9-865b-083e253754b3') as source_count,
-  (SELECT COUNT(*) FROM questionnaire_responses WHERE project_id = '484274f6-ae36-4046-9b80-3e231879be4f') as target_count,
+  'attribute_values' as table_name,
+  (SELECT COUNT(*) FROM attribute_values WHERE project_id = 'a1ecc77b-8bf7-47c9-865b-083e253754b3') as source_count,
+  (SELECT COUNT(*) FROM attribute_values WHERE project_id = '484274f6-ae36-4046-9b80-3e231879be4f') as target_count,
   CASE 
-    WHEN (SELECT COUNT(*) FROM questionnaire_responses WHERE project_id = 'a1ecc77b-8bf7-47c9-865b-083e253754b3') = 
-         (SELECT COUNT(*) FROM questionnaire_responses WHERE project_id = '484274f6-ae36-4046-9b80-3e231879be4f')
+    WHEN (SELECT COUNT(*) FROM attribute_values WHERE project_id = 'a1ecc77b-8bf7-47c9-865b-083e253754b3') = 
+         (SELECT COUNT(*) FROM attribute_values WHERE project_id = '484274f6-ae36-4046-9b80-3e231879be4f')
     THEN '✓ MATCH'
     ELSE '✗ MISMATCH'
   END as status

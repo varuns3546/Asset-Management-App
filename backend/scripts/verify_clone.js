@@ -33,7 +33,7 @@ async function verifyClone() {
     'gis_features',
     'leaflet_shapes',
     'project_files',
-    'questionnaire_responses'
+    'attribute_values'
   ];
 
   const results = [];

@@ -181,7 +181,7 @@ const HomeScreen = () => {
             <ul style={{ marginTop: '15px', paddingLeft: '20px' }}>
               <li><strong>Project</strong> - Create, open, or manage projects</li>
               <li><strong>Structure</strong> - Set up asset hierarchies and types</li>
-              <li><strong>Enter Data</strong> - Add questionnaire responses and geodata</li>
+              <li><strong>Enter Data</strong> - Add attribute values and geodata</li>
               <li><strong>Map</strong> - View and edit your geographic data</li>
               <li><strong>Usage</strong> - View account usage and storage metrics</li>
             </ul>

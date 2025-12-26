@@ -151,7 +151,7 @@ const VisualizationScreen = () => {
                   icon="📍"
                 />
                 <StatCard
-                  title="Questionnaire Responses"
+                  title="Attribute Values"
                   value={projectStats.counts.responses}
                   icon="📋"
                 />
@@ -295,7 +295,7 @@ const VisualizationScreen = () => {
           {!loading && !questionnaireStats && !assetStats && !projectStats && (
             <div className="no-data-message">
               <h2>No Data Available</h2>
-              <p>Start adding assets and questionnaire responses to see visualizations</p>
+              <p>Start adding assets and attribute values to see visualizations</p>
             </div>
           )}
         </div>

@@ -19,7 +19,7 @@ const upload = multer({
   }
 });
 
-// @desc    Upload photo for questionnaire response
+// @desc    Upload photo for attribute value
 // @route   POST /api/questionnaire/:projectId/asset/:assetId/upload-photo
 // @access  Private
 const uploadPhoto = [
