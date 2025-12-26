@@ -10,6 +10,8 @@ import leafletShapesRoutes from './routes/leafletShapesRoutes.js'
 import gisRoutes from './routes/gisRoutes.js'
 import fileRoutes from './routes/fileRoutes.js'
 import questionnaireRoutes from './routes/questionnaireRoutes.js'
+import visualizationRoutes from './routes/visualizationRoutes.js'
+import reportRoutes from './routes/reportRoutes.js'
 
 dotenv.config();
 
@@ -25,6 +27,8 @@ app.use('/api/leaflet-shapes', leafletShapesRoutes);
 app.use('/api/gis', gisRoutes);
 app.use('/api/files', fileRoutes);
 app.use('/api/questionnaire', questionnaireRoutes);
+app.use('/api/visualization', visualizationRoutes);
+app.use('/api/reports', reportRoutes);
 app.get("/", (req, res) => {
   res.send("API is running");
 });

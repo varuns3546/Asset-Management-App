@@ -156,24 +156,39 @@ function countLines(filePath, fileType) {
 function findFiles(dir, extensions, excludeDirs = ['node_modules', 'build', '.git', 'dist']) {
   const files = [];
   
+  // Check if directory exists
+  if (!fs.existsSync(dir)) {
+    console.warn(`Directory does not exist: ${dir}`);
+    return files;
+  }
+  
   function walk(currentDir) {
-    const items = fs.readdirSync(currentDir);
-    
-    items.forEach(item => {
-      const fullPath = path.join(currentDir, item);
-      const stat = fs.statSync(fullPath);
+    try {
+      const items = fs.readdirSync(currentDir);
       
-      if (stat.isDirectory()) {
-        if (!excludeDirs.includes(item)) {
-          walk(fullPath);
+      items.forEach(item => {
+        try {
+          const fullPath = path.join(currentDir, item);
+          const stat = fs.statSync(fullPath);
+          
+          if (stat.isDirectory()) {
+            if (!excludeDirs.includes(item)) {
+              walk(fullPath);
+            }
+          } else {
+            const ext = path.extname(item).toLowerCase();
+            if (extensions.includes(ext) || (ext === '' && extensions.includes(item))) {
+              files.push(fullPath);
+            }
+          }
+        } catch (error) {
+          // Skip files/directories that can't be accessed
+          console.warn(`Skipping ${path.join(currentDir, item)}: ${error.message}`);
         }
-      } else {
-        const ext = path.extname(item).toLowerCase();
-        if (extensions.includes(ext) || (ext === '' && extensions.includes(item))) {
-          files.push(fullPath);
-        }
-      }
-    });
+      });
+    } catch (error) {
+      console.error(`Error reading directory ${currentDir}:`, error.message);
+    }
   }
   
   walk(dir);
@@ -182,6 +197,18 @@ function findFiles(dir, extensions, excludeDirs = ['node_modules', 'build', '.gi
 
 // Process files
 console.log('Counting lines of code (excluding comments)...\n');
+console.log(`Working directory: ${__dirname}\n`);
+
+// Check if directories exist
+if (!fs.existsSync(frontendDir)) {
+  console.error(`Error: Frontend directory not found: ${frontendDir}`);
+  process.exit(1);
+}
+
+if (!fs.existsSync(backendDir)) {
+  console.error(`Error: Backend directory not found: ${backendDir}`);
+  process.exit(1);
+}
 
 // CSS files
 const cssFiles = findFiles(frontendDir, ['.css']);
@@ -228,8 +255,34 @@ jsonFiles.forEach(file => {
   stats.json.empty += counts.emptyLines;
 });
 
-// .env files
-const envFiles = findFiles(__dirname, ['.env']);
+// .env files (look for files starting with .env)
+const envFiles = [];
+function findEnvFiles(dir) {
+  try {
+    const items = fs.readdirSync(dir);
+    items.forEach(item => {
+      if (item.startsWith('.env')) {
+        const fullPath = path.join(dir, item);
+        try {
+          const stat = fs.statSync(fullPath);
+          if (stat.isFile()) {
+            envFiles.push(fullPath);
+          }
+        } catch (e) {
+          // Skip if can't access
+        }
+      }
+    });
+  } catch (e) {
+    // Skip if can't read directory
+  }
+}
+
+// Check root, frontend, and backend directories
+findEnvFiles(__dirname);
+findEnvFiles(frontendDir);
+findEnvFiles(backendDir);
+
 envFiles.forEach(file => {
   const counts = countLines(file, 'env');
   stats.env.files++;

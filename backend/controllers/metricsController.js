@@ -48,7 +48,6 @@ const getProjectMetrics = asyncHandler(async (req, res) => {
       dbMetrics.userDataSize = Math.floor(FREE_TIER_DB_LIMIT * 0.855); // Same for display
       dbMetrics.overhead = 0; // No overhead in test display
       totalStorageSize = Math.floor(FREE_TIER_STORAGE_LIMIT * 0.872); // 892.9 MB
-      console.log('⚠️ TEST MODE: Showing warning values');
     } else {
       dbPercentage = (dbMetrics.totalSize / FREE_TIER_DB_LIMIT) * 100;
       storagePercentage = (totalStorageSize / FREE_TIER_STORAGE_LIMIT) * 100;
@@ -202,7 +201,6 @@ const getAllProjectsMetrics = asyncHandler(async (req, res) => {
       // This is more accurate than 0, but less accurate than individual lookups
       // For now, we'll use a ratio: if we have photo paths but no sizes, use bucket photo size
       if (dbPhotoSizeFromMetadata === 0 && actualPhotoSize > 0) {
-        console.log(`[Metrics] Photos in metadata don't have sizes, using bucket enumeration photo size: ${actualPhotoSize} bytes`);
         dbPhotoSizeFromMetadata = actualPhotoSize;
       }
     }
@@ -233,37 +231,19 @@ const getAllProjectsMetrics = asyncHandler(async (req, res) => {
       
       totalStorageSize = officialSize;
       storageDataSource = 'official_api';
-      console.log(`[Metrics] Using official Supabase storage size: ${totalStorageSize} bytes (${formatBytesAsMB(totalStorageSize)})`);
     } else if (dbTotalSize > 0) {
       // Use database records + photos from metadata - this matches Supabase's tracking method
       // Supabase tracks files that are in the database, not orphaned files in storage
       totalStorageSize = dbTotalSize;
       storageDataSource = 'database_records';
-      console.log(`[Metrics] Using database records + photos from metadata: ${totalStorageSize} bytes (${formatBytesAsMB(totalStorageSize)})`);
-      console.log(`[Metrics]   - Regular files (project_files): ${dbFileSize} bytes (${formatBytesAsMB(dbFileSize)})`);
-      console.log(`[Metrics]   - Photos (questionnaire_responses): ${dbPhotoSizeFromMetadata} bytes (${formatBytesAsMB(dbPhotoSizeFromMetadata)})`);
-      console.log(`[Metrics] Bucket enumeration shows ${actualStorageSize} bytes (${formatBytesAsMB(actualStorageSize)})`);
-      const orphanedSize = actualStorageSize - dbTotalSize;
-      if (orphanedSize > 0) {
-        console.log(`[Metrics]   - Orphaned files (not in database): ${orphanedSize} bytes (${formatBytesAsMB(orphanedSize)})`);
-      }
-      
-      if (officialMetrics) {
-        console.log(`[Metrics] Official metrics object exists but storage_size is missing:`, officialMetrics);
-      } else {
-        console.log(`[Metrics] Note: Management API endpoints returned 404 - API may not be available for this project/plan`);
-        console.log(`[Metrics] Token is verified and working, but metrics endpoints don't exist or have changed`);
-      }
     } else if (actualStorageSize > 0) {
       // Fallback to bucket enumeration if database is empty
       totalStorageSize = actualStorageSize;
       storageDataSource = 'bucket_enumeration';
-      console.log(`[Metrics] Using bucket enumeration (database empty): ${totalStorageSize} bytes (${formatBytesAsMB(totalStorageSize)})`);
     } else {
       // No files found
       totalStorageSize = 0;
       storageDataSource = 'none';
-      console.log(`[Metrics] No storage found in database or buckets`);
     }
 
     // Get accurate database size for entire account
@@ -289,7 +269,6 @@ const getAllProjectsMetrics = asyncHandler(async (req, res) => {
       dbMetrics.userDataSize = Math.floor(FREE_TIER_DB_LIMIT * 0.855);
       dbMetrics.overhead = 0;
       totalStorageSize = Math.floor(FREE_TIER_STORAGE_LIMIT * 0.872);
-      console.log('⚠️ TEST MODE: All Projects showing warning values');
     } else {
       dbPercentage = (dbMetrics.totalSize / FREE_TIER_DB_LIMIT) * 100;
       storagePercentage = (totalStorageSize / FREE_TIER_STORAGE_LIMIT) * 100;
@@ -374,7 +353,6 @@ const getAllProjectsMetrics = asyncHandler(async (req, res) => {
  */
 async function getOfficialSupabaseMetrics() {
   if (!SUPABASE_PROJECT_REF || !SUPABASE_MANAGEMENT_TOKEN) {
-    console.log('[Metrics] Missing SUPABASE_PROJECT_REF or SUPABASE_MANAGEMENT_TOKEN');
     return null;
   }
 
@@ -388,19 +366,11 @@ async function getOfficialSupabaseMetrics() {
       }
     });
 
-    if (projectInfoResponse.ok) {
-      const projectInfo = await projectInfoResponse.json();
-      console.log(`[Metrics] ✓ Token verified - Project: ${projectInfo.name || SUPABASE_PROJECT_REF}`);
-    } else if (projectInfoResponse.status === 401) {
-      console.log('[Metrics] ❌ Token authentication failed - check if SUPABASE_MANAGEMENT_TOKEN is valid');
-      console.log('[Metrics]   → Get a new token from: https://supabase.com/dashboard/account/tokens');
-      return null;
-    } else if (projectInfoResponse.status === 404) {
-      console.log(`[Metrics] ❌ Project not found - check if SUPABASE_PROJECT_REF (${SUPABASE_PROJECT_REF}) is correct`);
+    if (projectInfoResponse.status === 401 || projectInfoResponse.status === 404) {
       return null;
     }
   } catch (err) {
-    console.log(`[Metrics] Error verifying token:`, err.message);
+    // Token verification failed, continue to try endpoints
   }
 
   // Try multiple endpoint formats and API versions
@@ -437,11 +407,6 @@ async function getOfficialSupabaseMetrics() {
       if (response.ok) {
         const data = await response.json();
         
-        // Log the response structure for debugging
-        console.log(`[Metrics] ✓ Successfully fetched from ${endpoint}`);
-        console.log(`[Metrics]   Response keys:`, Object.keys(data));
-        console.log(`[Metrics]   Response sample:`, JSON.stringify(data).substring(0, 300));
-        
         if (data.db_size || data.database_size || data.storage_size || 
             data.disk_volume_size_gb || data.database_size_bytes || data.storage_size_bytes ||
             (Array.isArray(data) && data.length > 0)) {
@@ -465,44 +430,14 @@ async function getOfficialSupabaseMetrics() {
             };
           }
           
-          // Log what we found
-          if (result.storage_size) {
-            console.log(`[Metrics] ✓✓✓ Found official storage_size: ${result.storage_size} bytes (${formatBytesAsMB(result.storage_size)})`);
-          }
-          if (result.db_size) {
-            console.log(`[Metrics] ✓✓✓ Found official db_size: ${result.db_size} bytes (${formatBytesAsMB(result.db_size)})`);
-          }
-          
           return result;
-        } else {
-          // Log response structure for debugging
-          console.log(`[Metrics] Response from ${endpoint} doesn't contain expected fields. Full response:`, JSON.stringify(data).substring(0, 500));
-        }
-      } else {
-        // Log detailed error information
-        const errorText = await response.text().catch(() => 'Unable to read error');
-        if (status === 401) {
-          console.log(`[Metrics] ❌ Authentication failed for ${endpoint}: ${errorText.substring(0, 200)}`);
-        } else if (status === 403) {
-          console.log(`[Metrics] ❌ Permission denied for ${endpoint}: ${errorText.substring(0, 200)}`);
-        } else if (status !== 404) {
-          console.log(`[Metrics] ⚠️ API endpoint ${endpoint} returned status ${status} ${statusText}: ${errorText.substring(0, 200)}`);
         }
       }
     } catch (err) {
-      console.log(`[Metrics] Error fetching from ${endpoint}:`, err.message);
       continue;
     }
   }
 
-  console.log('[Metrics] ⚠️ No official metrics found from any endpoint.');
-  console.log('[Metrics]   Possible reasons:');
-  console.log('[Metrics]   1. Management API endpoints have changed (API is in beta)');
-  console.log('[Metrics]   2. Token doesn\'t have required permissions');
-  console.log('[Metrics]   3. Project is on a plan that doesn\'t support Management API');
-  console.log('[Metrics]   4. Endpoints may require different authentication format');
-  console.log('[Metrics]   → Falling back to database records (matches Supabase dashboard method)');
-  console.log('[Metrics]   → To fix: Get a new Personal Access Token from https://supabase.com/dashboard/account/tokens');
   return null;
 }
 

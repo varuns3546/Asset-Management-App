@@ -1,7 +1,9 @@
 import { useNavigate } from 'react-router-dom'
 import React from 'react'
-import OpenProjectModal from './OpenProjectModal'
 import CreateProjectModal from './CreateProjectModal'
+import MyProjectsModal from './MyProjectsModal'
+import SharedProjectsModal from './SharedProjectsModal'
+import GenerateReportModal from './GenerateReportModal'
 import '../styles/navbar.css'
 
 const Dropdown = ({title, options, isOpen, onToggle, onOpenModal, onCloseModal, onOptionClick, className}) => {
@@ -18,13 +20,17 @@ const Dropdown = ({title, options, isOpen, onToggle, onOpenModal, onCloseModal, 
             }
         }
         
-        // Handle modal options only for Projects dropdown
-        if (onOpenModal && (option === 'Open Project' || option === 'Create Project')) {
+        // Handle modal options
+        if (onOpenModal && (option === 'Create Project' || option === 'My Projects' || option === 'Shared with Me' || option === 'Reports')) {
             console.log('Opening modal for:', option) // Debug log
-            if (option === 'Open Project') {
-                onOpenModal(<OpenProjectModal onClose={onCloseModal} />, 'Open Project')
-            } else if (option === 'Create Project') {
+            if (option === 'Create Project') {
                 onOpenModal(<CreateProjectModal onClose={onCloseModal} />, 'Create Project')
+            } else if (option === 'My Projects') {
+                onOpenModal(<MyProjectsModal onClose={onCloseModal} />, 'My Projects')
+            } else if (option === 'Shared with Me') {
+                onOpenModal(<SharedProjectsModal onClose={onCloseModal} />, 'Shared with Me')
+            } else if (option === 'Reports') {
+                onOpenModal(<GenerateReportModal onClose={onCloseModal} />, 'Generate Report')
             }
         } else {
             // Map other options to routes
@@ -35,6 +41,7 @@ const Dropdown = ({title, options, isOpen, onToggle, onOpenModal, onCloseModal, 
                 'Leaflet': '/leaflet',
                 'Questionnaire': '/questionnaire',
                 'Usage': '/usage',
+                'Visualize Data': '/visualize',
             }
             
             if (routeMap[option]) {
