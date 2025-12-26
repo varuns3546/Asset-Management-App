@@ -16,8 +16,6 @@ import HierarchyScreen from "./screens/HierarchyScreen";
 import AssetTypeScreen from "./screens/AssetTypeScreen";
 import MapScreen from "./screens/MapScreen";
 import QuestionnaireScreen from "./screens/QuestionnaireScreen";
-import PullRequestScreen from "./screens/PullRequestScreen";
-import PullRequestDetail from "./components/pullRequests/PullRequestDetail";
 import Navbar from "./components/Navbar";
 import Modal from "./components/Modal";
 
@@ -102,8 +100,6 @@ function AppContent() {
           <Route path="/asset-types" element={<AssetTypeScreen />} />
           <Route path="/map" element={<MapScreen />} />
           <Route path="/questionnaire" element={<QuestionnaireScreen />} />
-          <Route path="/pull-requests" element={<PullRequestScreen />} />
-          <Route path="/pull-requests/:id" element={<PullRequestDetail />} />
         </Routes>
       </div>
       
