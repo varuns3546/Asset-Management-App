@@ -12,6 +12,7 @@ import LoginScreen from "./screens/LoginScreen";
 import RegisterScreen from "./screens/RegisterScreen";
 import HomeScreen from "./screens/HomeScreen";
 import UsageScreen from "./screens/UsageScreen";
+import VisualizationScreen from "./screens/VisualizationScreen";
 import HierarchyScreen from "./screens/HierarchyScreen";
 import AssetTypeScreen from "./screens/AssetTypeScreen";
 import MapScreen from "./screens/MapScreen";
@@ -96,6 +97,7 @@ function AppContent() {
           <Route path="/register" element={<RegisterScreen />} />
           <Route path="/home" element={<HomeScreen />} />
           <Route path="/usage" element={<UsageScreen />} />
+          <Route path="/visualize" element={<VisualizationScreen />} />
           <Route path="/hierarchies" element={<HierarchyScreen />} />
           <Route path="/asset-types" element={<AssetTypeScreen />} />
           <Route path="/map" element={<MapScreen />} />

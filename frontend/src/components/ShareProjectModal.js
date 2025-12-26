@@ -3,6 +3,9 @@ import { useEffect, useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { getProjects, addUserToProject, removeUserFromProject } from '../features/projects/projectSlice'
 import { loadUser } from '../features/auth/authSlice'
+import ButtonGroup from './forms/ButtonGroup'
+import FormField from './forms/FormField'
+import ErrorMessage from './forms/ErrorMessage'
 import axios from 'axios'
 
 const ShareProjectModal = ({ onClose }) => {
@@ -164,216 +167,254 @@ const ShareProjectModal = ({ onClose }) => {
 
     const selectedProject = ownedProjects.find(p => p.id === selectedProjectId)
 
+    if (isLoading) {
+        return <div className="open-project-modal"><div className="form-group">Loading projects...</div></div>
+    }
+
     return (
-        <div className="modal-overlay" onClick={onClose}>
-            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                <div className="modal-header">
-                    <h2>Share Project</h2>
-                    <button className="modal-close" onClick={onClose}>×</button>
-                </div>
+        <div className="open-project-modal">
+            <div className="form-group">
+                <h2 style={{ marginBottom: '24px', fontSize: '24px', fontWeight: 'bold' }}>
+                    Share Project
+                </h2>
 
-                <div className="modal-body">
-                    {error && (
-                        <div className="error-message" style={{ marginBottom: '16px', padding: '10px', background: '#fee', color: '#c33', borderRadius: '4px' }}>
-                            {error}
-                        </div>
-                    )}
+                {error && (
+                    <ErrorMessage message={error} style={{ marginBottom: '16px' }} />
+                )}
 
-                    {success && (
-                        <div className="success-message" style={{ marginBottom: '16px', padding: '10px', background: '#efe', color: '#3c3', borderRadius: '4px' }}>
-                            {success}
-                        </div>
-                    )}
-
-                    {/* Project Selection */}
-                    <div style={{ marginBottom: '24px' }}>
-                        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
-                            Select Project to Share
-                        </label>
-                        {isLoading ? (
-                            <div>Loading projects...</div>
-                        ) : ownedProjects.length === 0 ? (
-                            <div style={{ padding: '12px', background: '#f5f5f5', borderRadius: '4px', color: '#666' }}>
-                                You don't own any projects yet.
-                            </div>
-                        ) : (
-                            <select
-                                value={selectedProjectId}
-                                onChange={(e) => setSelectedProjectId(e.target.value)}
-                                style={{
-                                    width: '100%',
-                                    padding: '10px',
-                                    fontSize: '14px',
-                                    border: '1px solid #ddd',
-                                    borderRadius: '4px'
-                                }}
-                            >
-                                <option value="">-- Select a project --</option>
-                                {ownedProjects.map(project => (
-                                    <option key={project.id} value={project.id}>
-                                        {project.title}
-                                    </option>
-                                ))}
-                            </select>
-                        )}
+                {success && (
+                    <div style={{ 
+                        marginBottom: '16px', 
+                        padding: '12px', 
+                        background: '#d1fae5', 
+                        color: '#059669', 
+                        borderRadius: '6px',
+                        border: '1px solid #10b981',
+                        fontSize: '16px'
+                    }}>
+                        ✓ {success}
                     </div>
+                )}
 
-                    {selectedProject && (
-                        <>
-                            {/* Add User Section */}
-                            <div style={{ marginBottom: '24px' }}>
-                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
-                                    Add User by Email
-                                </label>
-                                <div style={{ display: 'flex', gap: '8px' }}>
-                                    <input
-                                        type="email"
-                                        value={emailSearch}
-                                        onChange={(e) => setEmailSearch(e.target.value)}
-                                        placeholder="Search by email..."
-                                        style={{
-                                            flex: 1,
-                                            padding: '10px',
-                                            fontSize: '14px',
-                                            border: '1px solid #ddd',
-                                            borderRadius: '4px'
-                                        }}
-                                    />
+                {/* Project Selection */}
+                <FormField
+                    label="Select Project to Share"
+                    id="project-select"
+                    type="select"
+                    value={selectedProjectId}
+                    onChange={(e) => setSelectedProjectId(e.target.value)}
+                    selectOptions={[
+                        { value: '', label: '-- Select a project --' },
+                        ...(ownedProjects || []).map(project => ({
+                            value: project.id,
+                            label: project.title || project.name || `Project ${project.id}`
+                        }))
+                    ]}
+                />
+
+                {ownedProjects.length === 0 && !isLoading && (
+                    <div style={{ 
+                        padding: '16px', 
+                        background: '#f3f4f6', 
+                        borderRadius: '6px', 
+                        color: '#6b7280',
+                        marginTop: '12px',
+                        textAlign: 'center'
+                    }}>
+                        You don't own any projects yet.
+                    </div>
+                )}
+
+                {selectedProject && (
+                    <>
+                        {/* Add User Section */}
+                        <div style={{ marginTop: '24px' }}>
+                            <FormField
+                                label="Add User by Email"
+                                id="email-search"
+                                type="email"
+                                placeholder="Search by email..."
+                                value={emailSearch}
+                                onChange={(e) => setEmailSearch(e.target.value)}
+                            />
+
+                            {/* Search Results */}
+                            {isSearching && (
+                                <div style={{ marginTop: '8px', color: '#6b7280', fontSize: '16px' }}>
+                                    Searching...
                                 </div>
+                            )}
 
-                                {/* Search Results */}
-                                {isSearching && (
-                                    <div style={{ marginTop: '8px', color: '#666', fontSize: '14px' }}>
-                                        Searching...
+                            {!isSearching && searchResults.length > 0 && (
+                                <div style={{ marginTop: '16px' }}>
+                                    <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '12px', fontWeight: '500' }}>
+                                        Select a user to add:
                                     </div>
-                                )}
-
-                                {!isSearching && searchResults.length > 0 && (
-                                    <div style={{ marginTop: '12px' }}>
-                                        <div style={{ fontSize: '12px', color: '#666', marginBottom: '8px' }}>
-                                            Select a user to add:
-                                        </div>
+                                    <div style={{ 
+                                        border: '1px solid #d1d5db', 
+                                        borderRadius: '6px', 
+                                        maxHeight: '300px', 
+                                        overflowY: 'auto',
+                                        padding: '8px'
+                                    }}>
                                         {searchResults.map(userResult => (
                                             <div
                                                 key={userResult.id}
                                                 style={{
-                                                    padding: '10px',
+                                                    padding: '12px',
                                                     marginBottom: '8px',
-                                                    background: '#f9f9f9',
-                                                    border: '1px solid #ddd',
-                                                    borderRadius: '4px',
+                                                    background: '#ffffff',
+                                                    border: '1px solid #e5e7eb',
+                                                    borderRadius: '6px',
                                                     display: 'flex',
                                                     justifyContent: 'space-between',
-                                                    alignItems: 'center'
+                                                    alignItems: 'center',
+                                                    transition: 'all 0.2s'
                                                 }}
                                             >
                                                 <div>
-                                                    <div style={{ fontWeight: '500' }}>
+                                                    <div style={{ 
+                                                        fontWeight: '600',
+                                                        fontSize: '16px',
+                                                        marginBottom: '4px'
+                                                    }}>
                                                         {userResult.firstName} {userResult.lastName}
                                                     </div>
-                                                    <div style={{ fontSize: '12px', color: '#666' }}>
+                                                    <div style={{ fontSize: '14px', color: '#6b7280' }}>
                                                         {userResult.email}
                                                     </div>
                                                 </div>
                                                 <button
+                                                    className="btn btn-primary"
                                                     onClick={() => handleAddUser(userResult.id)}
-                                                    style={{
-                                                        padding: '6px 12px',
-                                                        background: '#007bff',
-                                                        color: 'white',
-                                                        border: 'none',
-                                                        borderRadius: '4px',
-                                                        cursor: 'pointer',
-                                                        fontSize: '13px'
-                                                    }}
+                                                    style={{ fontSize: '14px', padding: '8px 16px' }}
                                                 >
                                                     Add
                                                 </button>
                                             </div>
                                         ))}
                                     </div>
-                                )}
+                                </div>
+                            )}
 
-                                {!isSearching && emailSearch.trim() && searchResults.length === 0 && (
-                                    <div style={{ marginTop: '8px', color: '#666', fontSize: '14px' }}>
-                                        No users found matching "{emailSearch}"
-                                    </div>
-                                )}
-                            </div>
+                            {!isSearching && emailSearch.trim() && searchResults.length === 0 && (
+                                <div style={{ 
+                                    marginTop: '12px', 
+                                    padding: '12px',
+                                    background: '#f3f4f6',
+                                    borderRadius: '6px',
+                                    color: '#6b7280', 
+                                    fontSize: '16px' 
+                                }}>
+                                    No users found matching "{emailSearch}"
+                                </div>
+                            )}
+                        </div>
 
-                            {/* Current Project Users */}
-                            <div>
-                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
-                                    Project Users
-                                </label>
-                                {isLoadingUsers ? (
-                                    <div>Loading users...</div>
-                                ) : !Array.isArray(projectUsers) || projectUsers.length === 0 ? (
-                                    <div style={{ padding: '12px', background: '#f5f5f5', borderRadius: '4px', color: '#666' }}>
-                                        No users have been added to this project yet.
-                                    </div>
-                                ) : (
-                                    <div>
-                                        {projectUsers.map(projectUser => (
-                                            <div
-                                                key={projectUser.user?.id || projectUser.user_id}
-                                                style={{
-                                                    padding: '12px',
-                                                    marginBottom: '8px',
-                                                    background: '#f9f9f9',
-                                                    border: '1px solid #ddd',
-                                                    borderRadius: '4px',
+                        {/* Current Project Users */}
+                        <div style={{ marginTop: '24px' }}>
+                            <label className="form-label">
+                                Project Users ({projectUsers?.length || 0}):
+                            </label>
+                            {isLoadingUsers ? (
+                                <div style={{ padding: '20px', textAlign: 'center', color: '#6b7280' }}>
+                                    Loading users...
+                                </div>
+                            ) : !Array.isArray(projectUsers) || projectUsers.length === 0 ? (
+                                <div style={{ 
+                                    padding: '16px', 
+                                    background: '#f3f4f6', 
+                                    borderRadius: '6px', 
+                                    color: '#6b7280',
+                                    textAlign: 'center'
+                                }}>
+                                    No users have been added to this project yet.
+                                </div>
+                            ) : (
+                                <div style={{ 
+                                    border: '1px solid #d1d5db', 
+                                    borderRadius: '6px', 
+                                    maxHeight: '400px', 
+                                    overflowY: 'auto',
+                                    padding: '8px'
+                                }}>
+                                    {projectUsers.map(projectUser => (
+                                        <div
+                                            key={projectUser.user?.id || projectUser.user_id}
+                                            style={{
+                                                padding: '12px',
+                                                marginBottom: '8px',
+                                                background: '#ffffff',
+                                                border: '1px solid #e5e7eb',
+                                                borderRadius: '6px',
+                                                display: 'flex',
+                                                justifyContent: 'space-between',
+                                                alignItems: 'center',
+                                                transition: 'all 0.2s'
+                                            }}
+                                        >
+                                            <div>
+                                                <div style={{ 
+                                                    fontWeight: '600',
+                                                    fontSize: '16px',
+                                                    marginBottom: '4px',
                                                     display: 'flex',
-                                                    justifyContent: 'space-between',
-                                                    alignItems: 'center'
-                                                }}
-                                            >
-                                                <div>
-                                                    <div style={{ fontWeight: '500' }}>
-                                                        {projectUser.user?.user_metadata?.firstName || ''} {projectUser.user?.user_metadata?.lastName || ''}
-                                                        {projectUser.role === 'owner' && (
-                                                            <span style={{ marginLeft: '8px', padding: '2px 6px', background: '#ffc107', color: '#000', borderRadius: '3px', fontSize: '11px' }}>
-                                                                Owner
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    <div style={{ fontSize: '12px', color: '#666' }}>
-                                                        {projectUser.user?.email || 'Unknown email'}
-                                                    </div>
-                                                    <div style={{ fontSize: '11px', color: '#999', marginTop: '4px' }}>
-                                                        Role: {projectUser.role}
-                                                    </div>
+                                                    alignItems: 'center',
+                                                    gap: '8px'
+                                                }}>
+                                                    {projectUser.user?.user_metadata?.firstName || ''} {projectUser.user?.user_metadata?.lastName || ''}
+                                                    {projectUser.role === 'owner' && (
+                                                        <span style={{ 
+                                                            padding: '2px 8px', 
+                                                            background: '#fbbf24', 
+                                                            color: '#000', 
+                                                            borderRadius: '4px', 
+                                                            fontSize: '12px',
+                                                            fontWeight: '500'
+                                                        }}>
+                                                            Owner
+                                                        </span>
+                                                    )}
                                                 </div>
-                                                {projectUser.role !== 'owner' && (
-                                                    <button
-                                                        onClick={() => handleRemoveUser(projectUser.user?.id || projectUser.user_id)}
-                                                        style={{
-                                                            padding: '6px 12px',
-                                                            background: '#dc3545',
-                                                            color: 'white',
-                                                            border: 'none',
-                                                            borderRadius: '4px',
-                                                            cursor: 'pointer',
-                                                            fontSize: '13px'
-                                                        }}
-                                                    >
-                                                        Remove
-                                                    </button>
-                                                )}
+                                                <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '2px' }}>
+                                                    {projectUser.user?.email || 'Unknown email'}
+                                                </div>
+                                                <div style={{ fontSize: '12px', color: '#9ca3af' }}>
+                                                    Role: {projectUser.role}
+                                                </div>
                                             </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        </>
-                    )}
-                </div>
+                                            {projectUser.role !== 'owner' && (
+                                                <button
+                                                    className="btn btn-secondary"
+                                                    onClick={() => handleRemoveUser(projectUser.user?.id || projectUser.user_id)}
+                                                    style={{ 
+                                                        fontSize: '14px', 
+                                                        padding: '8px 16px',
+                                                        backgroundColor: '#dc2626',
+                                                        borderColor: '#dc2626',
+                                                        color: 'white'
+                                                    }}
+                                                >
+                                                    Remove
+                                                </button>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </>
+                )}
 
-                <div className="modal-footer">
-                    <button className="btn btn-secondary" onClick={onClose}>
-                        Close
-                    </button>
-                </div>
+                <ButtonGroup
+                    buttons={[
+                        {
+                            label: 'Close',
+                            variant: 'secondary',
+                            onClick: onClose
+                        }
+                    ]}
+                />
             </div>
         </div>
     )

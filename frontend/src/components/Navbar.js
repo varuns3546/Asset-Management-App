@@ -1,15 +1,17 @@
 import { useState, useEffect, useRef } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { logout } from '../features/auth/authSlice'
 import '../styles/navbar.css'
 import Dropdown from './Dropdown'
+import ShareProjectModal from './ShareProjectModal'
 
 const Navbar = ({ onOpenModal, onCloseModal }) => {
     const [openDropdown, setOpenDropdown] = useState(null)
     const navbarRef = useRef(null)
     const dispatch = useDispatch()
     const navigate = useNavigate()
+    const location = useLocation()
     const { user } = useSelector((state) => state.auth)
     const toggleDropdown = (dropdownName) => {
         setOpenDropdown(openDropdown === dropdownName ? null : dropdownName)
@@ -33,6 +35,11 @@ const Navbar = ({ onOpenModal, onCloseModal }) => {
             document.removeEventListener('mousedown', handleClickOutside)
         }
     }, [openDropdown])
+    
+    // Close dropdowns when route changes to prevent graphics from mixing up
+    useEffect(() => {
+        setOpenDropdown(null)
+    }, [location.pathname])
     
     const handleNavigate = (path) => {
         navigate(path)
@@ -60,7 +67,7 @@ const Navbar = ({ onOpenModal, onCloseModal }) => {
             <button className="button" onClick={() => handleNavigate('/home')}>Home</button>
             <Dropdown 
                 title="Project" 
-                options={['Save Project', 'Open Project', 'Create Project', 'Upload File']} 
+                options={['Create Project', 'My Projects', 'Shared with Me']} 
                 isOpen={openDropdown === 'projects'}
                 onToggle={() => toggleDropdown('projects')}
                 onOpenModal={onOpenModal}
@@ -89,8 +96,15 @@ const Navbar = ({ onOpenModal, onCloseModal }) => {
                 options={['Visualize Data', 'Reports']}
                 isOpen={openDropdown === 'generate'}
                 onToggle={() => toggleDropdown('generate')}
+                onOpenModal={onOpenModal}
+                onCloseModal={onCloseModal}
             />
-            <button className="button">Share</button>
+            <button 
+                className="button" 
+                onClick={() => onOpenModal(<ShareProjectModal onClose={onCloseModal} />, 'Share Project')}
+            >
+                Share
+            </button>
             <Dropdown
                 title={userFirstName}
                 options={['Usage', 'Logout']}
