@@ -248,6 +248,163 @@ const generateReport = asyncHandler(async (req, res) => {
       }));
     }
 
+    // Data Visualization
+    if (sections.includes('visualization')) {
+      try {
+        // Get questionnaire stats
+        const { data: allAssets } = await supabaseAdmin
+          .from('assets')
+          .select('id, item_type_id')
+          .eq('project_id', projectId);
+
+        const { data: allResponses } = await supabaseAdmin
+          .from('attribute_values')
+          .select('asset_id, attribute_id, response_value, created_at')
+          .eq('project_id', projectId);
+
+        const totalAssets = allAssets?.length || 0;
+        const uniqueAssetIds = new Set((allResponses || []).map(r => r.asset_id));
+        const assetsWithResponses = uniqueAssetIds.size;
+        const completionRate = totalAssets > 0 ? parseFloat(((assetsWithResponses / totalAssets) * 100).toFixed(2)) : 0;
+
+        // Get asset type names
+        const assetTypeIds = [...new Set((allAssets || []).map(a => a.item_type_id).filter(Boolean))];
+        const assetTypeMap = {};
+        if (assetTypeIds.length > 0) {
+          const { data: assetTypes } = await supabaseAdmin
+            .from('asset_types')
+            .select('id, title')
+            .in('id', assetTypeIds);
+          if (assetTypes) {
+            assetTypes.forEach(type => {
+              assetTypeMap[type.id] = type.title;
+            });
+          }
+        }
+
+        // Count by asset type (for questionnaire stats - need totalAssets and assetsWithResponses)
+        const responsesByAssetType = {};
+        (allAssets || []).forEach(asset => {
+          const typeId = asset.item_type_id || 'untyped';
+          const typeName = assetTypeMap[asset.item_type_id] || 'Untyped';
+          
+          if (!responsesByAssetType[typeId]) {
+            responsesByAssetType[typeId] = {
+              typeId,
+              typeName,
+              totalAssets: 0,
+              assetsWithResponses: 0
+            };
+          }
+          
+          responsesByAssetType[typeId].totalAssets++;
+          if (uniqueAssetIds.has(asset.id)) {
+            responsesByAssetType[typeId].assetsWithResponses++;
+          }
+        });
+
+        // Count by asset type (for asset stats - just count)
+        const assetsByType = {};
+        (allAssets || []).forEach(asset => {
+          const typeId = asset.item_type_id || 'untyped';
+          const typeName = assetTypeMap[asset.item_type_id] || 'Untyped';
+          if (!assetsByType[typeId]) {
+            assetsByType[typeId] = { typeName, count: 0 };
+          }
+          assetsByType[typeId].count++;
+        });
+
+        // Count responses by attribute
+        const attributeIds = [...new Set((allResponses || []).map(r => r.attribute_id).filter(Boolean))];
+        const attributeMap = {};
+        if (attributeIds.length > 0) {
+          const { data: attributes } = await supabaseAdmin
+            .from('attributes')
+            .select('id, title')
+            .in('id', attributeIds);
+          if (attributes) {
+            attributes.forEach(attr => {
+              attributeMap[attr.id] = attr.title;
+            });
+          }
+        }
+
+        const responsesByAttribute = {};
+        (allResponses || []).forEach(response => {
+          const attrId = response.attribute_id;
+          if (attrId && attributeMap[attrId]) {
+            if (!responsesByAttribute[attrId]) {
+              responsesByAttribute[attrId] = {
+                attributeTitle: attributeMap[attrId],
+                responseCount: 0
+              };
+            }
+            responsesByAttribute[attrId].responseCount++;
+          }
+        });
+
+        // Timeline data
+        const timelineData = {};
+        (allResponses || []).forEach(response => {
+          if (response.created_at) {
+            const date = new Date(response.created_at).toISOString().split('T')[0];
+            timelineData[date] = (timelineData[date] || 0) + 1;
+          }
+        });
+
+        // Asset stats
+        const { data: assetsWithCoords } = await supabaseAdmin
+          .from('assets')
+          .select('id, beginning_latitude, beginning_longitude, end_latitude, end_longitude, parent_id')
+          .eq('project_id', projectId);
+
+        let assetsWithCoordinates = 0;
+        let assetsWithoutCoordinates = 0;
+        (assetsWithCoords || []).forEach(asset => {
+          if ((asset.beginning_latitude != null && asset.beginning_longitude != null) ||
+              (asset.end_latitude != null && asset.end_longitude != null)) {
+            assetsWithCoordinates++;
+          } else {
+            assetsWithoutCoordinates++;
+          }
+        });
+
+        reportData.visualization = {
+          questionnaire: {
+            summary: {
+              totalAssets,
+              assetsWithResponses,
+              completionRate,
+              totalResponses: (allResponses || []).length
+            },
+            byAssetType: Object.values(responsesByAssetType),
+            byAttribute: Object.values(responsesByAttribute).sort((a, b) => b.responseCount - a.responseCount),
+            timeline: Object.entries(timelineData)
+              .map(([date, count]) => ({ date, count }))
+              .sort((a, b) => a.date.localeCompare(b.date))
+          },
+          assets: {
+            summary: {
+              totalAssets,
+              assetsWithCoordinates,
+              assetsWithoutCoordinates
+            },
+            byType: Object.values(assetsByType)
+          }
+        };
+        console.log('Visualization data prepared:', {
+          hasQuestionnaire: !!reportData.visualization.questionnaire,
+          hasAssets: !!reportData.visualization.assets,
+          questionnaireByAssetType: reportData.visualization.questionnaire?.byAssetType?.length || 0,
+          assetsByType: reportData.visualization.assets?.byType?.length || 0
+        });
+      } catch (error) {
+        console.error('Error fetching visualization data:', error);
+        console.error('Error stack:', error.stack);
+        reportData.visualization = null;
+      }
+    }
+
     // Generate report based on format
     let fileBuffer;
     let mimeType;
