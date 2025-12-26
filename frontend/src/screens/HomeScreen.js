@@ -14,9 +14,7 @@ const HomeScreen = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
-    description: '',
-    latitude: '',
-    longitude: ''
+    description: ''
   });
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -26,9 +24,7 @@ const HomeScreen = () => {
     if (selectedProject) {
       setFormData({
         title: selectedProject.title || selectedProject.name || '',
-        description: selectedProject.description || '',
-        latitude: selectedProject.latitude !== null && selectedProject.latitude !== undefined ? selectedProject.latitude.toString() : '',
-        longitude: selectedProject.longitude !== null && selectedProject.longitude !== undefined ? selectedProject.longitude.toString() : ''
+        description: selectedProject.description || ''
       });
     }
   }, [selectedProject]);
@@ -45,9 +41,7 @@ const HomeScreen = () => {
     if (selectedProject) {
       setFormData({
         title: selectedProject.title || selectedProject.name || '',
-        description: selectedProject.description || '',
-        latitude: selectedProject.latitude !== null && selectedProject.latitude !== undefined ? selectedProject.latitude.toString() : '',
-        longitude: selectedProject.longitude !== null && selectedProject.longitude !== undefined ? selectedProject.longitude.toString() : ''
+        description: selectedProject.description || ''
       });
     }
   };
@@ -63,48 +57,14 @@ const HomeScreen = () => {
       return;
     }
 
-    // Validate latitude if provided
-    if (formData.latitude && formData.latitude.trim() !== '') {
-      const lat = parseFloat(formData.latitude.trim());
-      if (isNaN(lat) || lat < -90 || lat > 90) {
-        setError('Latitude must be a number between -90 and 90');
-        return;
-      }
-    }
-
-    // Validate longitude if provided
-    if (formData.longitude && formData.longitude.trim() !== '') {
-      const lng = parseFloat(formData.longitude.trim());
-      if (isNaN(lng) || lng < -180 || lng > 180) {
-        setError('Longitude must be a number between -180 and 180');
-        return;
-      }
-    }
-
     setSaving(true);
     try {
-      const updateData = {
-        title: formData.title.trim(),
-        description: formData.description.trim() || ''
-      };
-
-      // Add latitude if provided
-      if (formData.latitude && formData.latitude.trim() !== '') {
-        updateData.latitude = parseFloat(formData.latitude.trim());
-      } else {
-        updateData.latitude = null;
-      }
-
-      // Add longitude if provided
-      if (formData.longitude && formData.longitude.trim() !== '') {
-        updateData.longitude = parseFloat(formData.longitude.trim());
-      } else {
-        updateData.longitude = null;
-      }
-
       await dispatch(updateProject({
         projectId: selectedProject.id,
-        projectData: updateData
+        projectData: {
+          title: formData.title.trim(),
+          description: formData.description.trim() || ''
+        }
       })).unwrap();
       
       setIsEditing(false);
@@ -128,7 +88,7 @@ const HomeScreen = () => {
         <div className="metrics-section">
           <h2>Project Information</h2>
           {selectedProject ? (
-            <div className="project-info-card">
+            <div style={{ padding: '20px', background: '#f8f9fa', borderRadius: '8px', marginTop: '20px' }}>
               {isEditing ? (
                 <div>
                   <FormField
@@ -153,38 +113,6 @@ const HomeScreen = () => {
                     disabled={saving}
                   />
 
-                  <div className="coordinates-grid">
-                    <FormField
-                      label="Latitude:"
-                      id="project-latitude-edit"
-                      type="number"
-                      placeholder="e.g., 40.7128"
-                      value={formData.latitude}
-                      onChange={(e) => setFormData({ ...formData, latitude: e.target.value })}
-                      disabled={saving}
-                      inputProps={{ 
-                        step: 'any',
-                        min: '-90',
-                        max: '90'
-                      }}
-                    />
-                    
-                    <FormField
-                      label="Longitude:"
-                      id="project-longitude-edit"
-                      type="number"
-                      placeholder="e.g., -74.0060"
-                      value={formData.longitude}
-                      onChange={(e) => setFormData({ ...formData, longitude: e.target.value })}
-                      disabled={saving}
-                      inputProps={{ 
-                        step: 'any',
-                        min: '-180',
-                        max: '180'
-                      }}
-                    />
-                  </div>
-
                   <ErrorMessage message={error} />
                   
                   <ButtonGroup
@@ -206,37 +134,26 @@ const HomeScreen = () => {
                 </div>
               ) : (
                 <div>
-                  <div className="project-header">
-                    <div className="project-content">
-                      <h3 className="project-title">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px' }}>
+                    <div style={{ flex: 1 }}>
+                      <h3 style={{ marginTop: 0, marginBottom: '8px' }}>
                         {selectedProject.title || selectedProject.name}
                       </h3>
                       {selectedProject.description && (
-                        <p className="project-description">
+                        <p style={{ color: '#666', marginTop: '8px', whiteSpace: 'pre-wrap' }}>
                           {selectedProject.description}
                         </p>
                       )}
                       {!selectedProject.description && (
-                        <p className="project-description-empty">
+                        <p style={{ color: '#999', fontStyle: 'italic', marginTop: '8px' }}>
                           No description
                         </p>
                       )}
-                      {(selectedProject.latitude !== null && selectedProject.latitude !== undefined) || 
-                       (selectedProject.longitude !== null && selectedProject.longitude !== undefined) ? (
-                        <div className="location-values">
-                          {selectedProject.latitude !== null && selectedProject.latitude !== undefined && (
-                            <span>Latitude: {selectedProject.latitude}</span>
-                          )}
-                          <br/>
-                          {selectedProject.longitude !== null && selectedProject.longitude !== undefined && (
-                            <span>Longitude: {selectedProject.longitude}</span>
-                          )}
-                        </div>
-                      ) : null}
                     </div>
                     <button
                       onClick={handleEdit}
-                      className="btn btn-secondary project-edit-button"
+                      className="btn btn-secondary"
+                      style={{ marginLeft: '15px' }}
                     >
                       Edit
                     </button>
@@ -245,11 +162,11 @@ const HomeScreen = () => {
               )}
             </div>
           ) : (
-            <div className="project-info-card">
-              <h3 className="project-title">No Project Selected</h3>
+            <div style={{ padding: '20px', background: '#f8f9fa', borderRadius: '8px', marginTop: '20px' }}>
+              <h3 style={{ marginTop: 0 }}>No Project Selected</h3>
               <p>Please select or create a project to get started.</p>
               <p>Use the <strong>Project</strong> menu in the navigation bar to:</p>
-              <ul className="info-list">
+              <ul style={{ marginTop: '15px', paddingLeft: '20px' }}>
                 <li>Open an existing project</li>
                 <li>Create a new project</li>
               </ul>
@@ -259,25 +176,15 @@ const HomeScreen = () => {
 
         <div className="metrics-section">
           <h2>Getting Started</h2>
-          <div className="project-info-card">
+          <div style={{ padding: '20px', background: '#f8f9fa', borderRadius: '8px', marginTop: '20px' }}>
             <p>Use the navigation menu to access different features:</p>
-            <ul className="info-list">
+            <ul style={{ marginTop: '15px', paddingLeft: '20px' }}>
               <li><strong>Project</strong> - Create, open, or manage projects</li>
               <li><strong>Structure</strong> - Set up asset hierarchies and types</li>
               <li><strong>Enter Data</strong> - Add questionnaire responses and geodata</li>
               <li><strong>Map</strong> - View and edit your geographic data</li>
               <li><strong>Usage</strong> - View account usage and storage metrics</li>
             </ul>
-            <div className="docs-button-container">
-              <a
-                href="https://github.com/varuns3546/GIS-Vulnerability-Assesment-Tool"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-primary docs-link"
-              >
-                📚 Read the Docs
-              </a>
-            </div>
           </div>
         </div>
       </div>

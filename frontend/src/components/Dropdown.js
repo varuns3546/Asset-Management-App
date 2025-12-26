@@ -1,7 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import React from 'react'
-import MyProjectsModal from './MyProjectsModal'
-import SharedProjectsModal from './SharedProjectsModal'
+import OpenProjectModal from './OpenProjectModal'
 import CreateProjectModal from './CreateProjectModal'
 import '../styles/navbar.css'
 
@@ -20,12 +19,10 @@ const Dropdown = ({title, options, isOpen, onToggle, onOpenModal, onCloseModal, 
         }
         
         // Handle modal options only for Projects dropdown
-        if (onOpenModal && (option === 'My Projects' || option === 'Shared with me' || option === 'Create Project')) {
+        if (onOpenModal && (option === 'Open Project' || option === 'Create Project')) {
             console.log('Opening modal for:', option) // Debug log
-            if (option === 'My Projects') {
-                onOpenModal(<MyProjectsModal onClose={onCloseModal} />, 'My Projects')
-            } else if (option === 'Shared with me') {
-                onOpenModal(<SharedProjectsModal onClose={onCloseModal} />, 'Shared with me')
+            if (option === 'Open Project') {
+                onOpenModal(<OpenProjectModal onClose={onCloseModal} />, 'Open Project')
             } else if (option === 'Create Project') {
                 onOpenModal(<CreateProjectModal onClose={onCloseModal} />, 'Create Project')
             }
