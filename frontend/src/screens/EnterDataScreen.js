@@ -25,6 +25,7 @@ const EnterDataScreen = () => {
   const [assetSearchText, setAssetSearchText] = useState('');
   const [showAssetDropdown, setShowAssetDropdown] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showSaveSuccess, setShowSaveSuccess] = useState(false);
   const { isRouteMounted } = useRouteMount();
   const dropdownRef = useClickOutside(() => {
     if (showAssetDropdown) {
@@ -399,7 +400,9 @@ const EnterDataScreen = () => {
       );
 
       if (result.success) {
-        alert('Responses saved successfully!');
+        // Show success notification
+        setShowSaveSuccess(true);
+        setTimeout(() => setShowSaveSuccess(false), 3000);
         // Reload the survey to get fresh data
         handleAssetSelect(selectedAsset.id);
       }
@@ -468,7 +471,15 @@ const EnterDataScreen = () => {
   };
 
   return (
-    <div className="questionnaire-screen">
+    <div className="survey-screen">
+      {/* Success notification bar */}
+      {showSaveSuccess && (
+        <div className="save-success-bar">
+          <span className="success-icon">✓</span>
+          Saved
+        </div>
+      )}
+      
       <div className="survey-header">
         <div className="header-text">
           <h1>Enter Data</h1>
@@ -707,19 +718,6 @@ const EnterDataScreen = () => {
                                             {existingPhotos.map((photo, idx) => {
                                               const actualIndex = responses[attribute.id].indexOf(photo);
                                               
-                                              // Debug: log photo object to see what we're working with
-                                              console.log('Rendering photo:', {
-                                                index: actualIndex,
-                                                name: photo.name,
-                                                url: photo.url,
-                                                path: photo.path,
-                                                fullPhoto: photo
-                                              });
-                                              
-                                              if (!photo.url) {
-                                                console.warn('Photo missing URL:', photo);
-                                              }
-                                              
                                               return (
                                                 <div key={actualIndex} className="photo-thumbnail photo-saved">
                                                   <button
@@ -734,20 +732,12 @@ const EnterDataScreen = () => {
                                                       src={photo.url} 
                                                       alt={photo.name || 'Photo'} 
                                                       onError={(e) => {
-                                                        console.error('Failed to load image:', {
-                                                          url: photo.url,
-                                                          name: photo.name,
-                                                          photo: photo
-                                                        });
                                                         // Hide broken image and show placeholder
                                                         e.target.style.display = 'none';
                                                         const placeholder = document.createElement('div');
                                                         placeholder.className = 'photo-placeholder';
                                                         placeholder.innerHTML = '<span class="photo-icon">📷</span>';
                                                         e.target.parentNode.insertBefore(placeholder, e.target);
-                                                      }}
-                                                      onLoad={() => {
-                                                        // Image loaded successfully
                                                       }}
                                                     />
                                                   ) : (

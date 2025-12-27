@@ -678,3 +678,45 @@
   }
 }
 
+/* Success notification bar */
+.save-success-bar {
+  position: fixed;
+  top: 60px;
+  left: 0;
+  right: 0;
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  color: white;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-weight: 600;
+  font-size: 1rem;
+  z-index: 1000;
+  box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+  animation: slideDown 0.3s ease-out;
+}
+
+.save-success-bar .success-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 50%;
+  font-size: 0.85rem;
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+

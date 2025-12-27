@@ -19,6 +19,7 @@ import MapScreen from "./screens/MapScreen";
 import EnterDataScreen from "./screens/EnterDataScreen";
 import DataViewScreen from "./screens/DataViewScreen";
 import VisualizationScreen from "./screens/VisualizationScreen";
+import ShareProjectScreen from "./screens/ShareProjectScreen";
 import Navbar from "./components/Navbar";
 import Modal from "./components/Modal";
 
@@ -106,6 +107,7 @@ function AppContent() {
           <Route path="/enter-data" element={<EnterDataScreen />} />
           <Route path="/data" element={<DataViewScreen />} />
           <Route path="/visualization" element={<VisualizationScreen />} />
+          <Route path="/share-project" element={<ShareProjectScreen />} />
         </Routes>
       </div>
       
