@@ -155,8 +155,8 @@ const generateReport = asyncHandler(async (req, res) => {
       }));
     }
 
-    // Questionnaire Responses
-    if (sections.includes('questionnaire')) {
+    // Survey Responses
+    if (sections.includes('survey')) {
       const { data: responses } = await supabaseAdmin
         .from('attribute_values')
         .select('asset_id, attribute_id, response_value, created_at')
@@ -251,7 +251,7 @@ const generateReport = asyncHandler(async (req, res) => {
     // Data Visualization
     if (sections.includes('visualization')) {
       try {
-        // Get questionnaire stats
+        // Get survey stats
         const { data: allAssets } = await supabaseAdmin
           .from('assets')
           .select('id, item_type_id')
@@ -282,7 +282,7 @@ const generateReport = asyncHandler(async (req, res) => {
           }
         }
 
-        // Count by asset type (for questionnaire stats - need totalAssets and assetsWithResponses)
+        // Count by asset type (for survey stats - need totalAssets and assetsWithResponses)
         const responsesByAssetType = {};
         (allAssets || []).forEach(asset => {
           const typeId = asset.item_type_id || 'untyped';
@@ -370,7 +370,7 @@ const generateReport = asyncHandler(async (req, res) => {
         });
 
         reportData.visualization = {
-          questionnaire: {
+          survey: {
             summary: {
               totalAssets,
               assetsWithResponses,
@@ -393,9 +393,9 @@ const generateReport = asyncHandler(async (req, res) => {
           }
         };
         console.log('Visualization data prepared:', {
-          hasQuestionnaire: !!reportData.visualization.questionnaire,
+          hasSurvey: !!reportData.visualization.survey,
           hasAssets: !!reportData.visualization.assets,
-          questionnaireByAssetType: reportData.visualization.questionnaire?.byAssetType?.length || 0,
+          surveyByAssetType: reportData.visualization.survey?.byAssetType?.length || 0,
           assetsByType: reportData.visualization.assets?.byType?.length || 0
         });
       } catch (error) {

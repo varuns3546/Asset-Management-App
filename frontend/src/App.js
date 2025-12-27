@@ -17,6 +17,8 @@ import HierarchyScreen from "./screens/HierarchyScreen";
 import AssetTypeScreen from "./screens/AssetTypeScreen";
 import MapScreen from "./screens/MapScreen";
 import EnterDataScreen from "./screens/EnterDataScreen";
+import DataViewScreen from "./screens/DataViewScreen";
+import VisualizationScreen from "./screens/VisualizationScreen";
 import Navbar from "./components/Navbar";
 import Modal from "./components/Modal";
 
@@ -102,6 +104,8 @@ function AppContent() {
           <Route path="/asset-types" element={<AssetTypeScreen />} />
           <Route path="/map" element={<MapScreen />} />
           <Route path="/enter-data" element={<EnterDataScreen />} />
+          <Route path="/data" element={<DataViewScreen />} />
+          <Route path="/visualization" element={<VisualizationScreen />} />
         </Routes>
       </div>
       

@@ -1,0 +1,370 @@
+/* Data View Screen */
+.data-view-screen {
+    padding: 30px;
+    max-width: 1400px;
+    margin: 0 auto;
+    min-height: calc(100vh - 53px);
+}
+
+.data-view-container {
+    width: 100%;
+}
+
+.data-view-container h1 {
+    margin: 0 0 10px 0;
+    color: #333;
+    font-size: 2rem;
+}
+
+.data-view-subtitle {
+    margin: 0 0 30px 0;
+    color: #6c757d;
+    font-size: 0.95rem;
+}
+
+/* Tabs Styles */
+.tabs-container {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.tabs-navigation {
+    display: flex;
+    flex-direction: row;
+    border-bottom: 2px solid #e0e0e0;
+    background: #f8f9fa;
+    padding: 0;
+    margin: 0;
+    overflow-x: auto;
+}
+
+.tab-button {
+    padding: 16px 24px;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    color: #6c757d;
+    transition: all 0.2s;
+    margin-bottom: -2px;
+    white-space: nowrap;
+    position: relative;
+}
+
+.tab-button:hover {
+    color: #333;
+    background: #e9ecef;
+}
+
+.tab-button.active {
+    color: #3b82f6;
+    border-bottom-color: #3b82f6;
+    font-weight: 600;
+    background: white;
+}
+
+.tab-content {
+    padding: 24px;
+    min-height: 400px;
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* Section Styles */
+.section-loading,
+.section-empty {
+    padding: 40px;
+    text-align: center;
+    color: #6c757d;
+    font-size: 1rem;
+}
+
+.section-empty {
+    font-style: italic;
+}
+
+/* Data Table Styles */
+.data-table-container {
+    overflow-x: auto;
+    margin-bottom: 20px;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+}
+
+.data-table thead {
+    background: #f8f9fa;
+}
+
+.data-table th {
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 600;
+    color: #333;
+    border-bottom: 2px solid #dee2e6;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.data-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid #e9ecef;
+    color: #495057;
+    font-size: 0.95rem;
+}
+
+.data-table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+.data-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.photo-count {
+    color: #3b82f6;
+    font-weight: 500;
+}
+
+/* Section Filters */
+.section-filters {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 6px;
+}
+
+.section-filters label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 500;
+    color: #333;
+}
+
+.filter-select {
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 0.95rem;
+    background: white;
+    cursor: pointer;
+}
+
+.filter-select:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Data Summary */
+.data-summary {
+    margin-top: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.data-summary p {
+    margin: 0;
+    color: #495057;
+    font-size: 0.95rem;
+}
+
+/* Photos Section */
+.photos-data-section {
+    display: flex;
+    flex-direction: column;
+}
+
+.photo-table-thumbnail {
+    width: 80px;
+    height: 80px;
+    overflow: hidden;
+    border-radius: 4px;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.photo-table-thumbnail:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.photo-table-thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Photo Lightbox */
+.photo-lightbox {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    padding: 20px;
+}
+
+.photo-lightbox-content {
+    position: relative;
+    max-width: 90%;
+    max-height: 90%;
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.photo-lightbox-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #dc3545;
+    color: white;
+    border: none;
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    font-size: 1.5rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.photo-lightbox-close:hover {
+    background: #c82333;
+}
+
+.photo-lightbox-content img {
+    max-width: 100%;
+    max-height: 70vh;
+    object-fit: contain;
+    border-radius: 4px;
+}
+
+.photo-lightbox-info {
+    margin-top: 15px;
+    text-align: center;
+    color: #333;
+}
+
+.photo-lightbox-info p {
+    margin: 5px 0;
+}
+
+/* Files Section */
+.files-data-section .file-icon {
+    margin-right: 8px;
+    font-size: 1.2rem;
+}
+
+.btn-small {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+}
+
+/* Hierarchy Section */
+.hierarchy-data-section {
+    display: flex;
+    flex-direction: column;
+}
+
+.hierarchy-view-container {
+    min-height: 400px;
+    max-height: 600px;
+    overflow: auto;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 20px;
+    background: #f8f9fa;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .data-view-screen {
+        padding: 15px;
+    }
+
+    .data-view-container h1 {
+        font-size: 1.5rem;
+    }
+
+    .tabs-navigation {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .tab-button {
+        padding: 12px 18px;
+        font-size: 0.9rem;
+    }
+
+    .tab-content {
+        padding: 18px;
+    }
+
+    .data-table {
+        font-size: 0.85rem;
+    }
+
+    .data-table th,
+    .data-table td {
+        padding: 8px 12px;
+    }
+
+    .photo-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 10px;
+    }
+
+    .data-summary {
+        flex-direction: column;
+        gap: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .data-view-screen {
+        padding: 10px;
+    }
+
+    .photo-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    }
+
+    .data-table-container {
+        overflow-x: scroll;
+    }
+}
+

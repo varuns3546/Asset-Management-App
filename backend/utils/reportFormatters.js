@@ -18,15 +18,15 @@ export const formatPDFReport = async (data, sections) => {
   if (sections.includes('visualization') && data.visualization) {
     console.log('Starting chart generation...');
     console.log('Visualization data structure:', {
-      hasQuestionnaire: !!data.visualization.questionnaire,
+      hasSurvey: !!data.visualization.survey,
       hasAssets: !!data.visualization.assets
     });
     
     try {
-      // Generate questionnaire charts
-      if (data.visualization.questionnaire) {
-        const qStats = data.visualization.questionnaire;
-        console.log('Questionnaire stats:', {
+      // Generate survey charts
+      if (data.visualization.survey) {
+        const qStats = data.visualization.survey;
+        console.log('Survey stats:', {
           hasByAssetType: !!(qStats.byAssetType && qStats.byAssetType.length > 0),
           hasByAttribute: !!(qStats.byAttribute && qStats.byAttribute.length > 0),
           hasTimeline: !!(qStats.timeline && qStats.timeline.length > 0)
@@ -171,7 +171,7 @@ export const formatPDFReport = async (data, sections) => {
       }
 
       // Attribute Values
-      if (sections.includes('questionnaire') && data.responses && data.responses.length > 0) {
+      if (sections.includes('survey') && data.responses && data.responses.length > 0) {
         doc.fontSize(16).text('Attribute Values', { underline: true });
         doc.moveDown();
         doc.fontSize(12);
@@ -245,10 +245,10 @@ export const formatPDFReport = async (data, sections) => {
           doc.fontSize(16).text('Data Visualization', { underline: true });
           doc.moveDown(1);
 
-          // Questionnaire Statistics
-          if (data.visualization.questionnaire) {
-            const qStats = data.visualization.questionnaire;
-            doc.fontSize(14).text('Questionnaire Statistics', { underline: true });
+          // Survey Statistics
+          if (data.visualization.survey) {
+            const qStats = data.visualization.survey;
+            doc.fontSize(14).text('Survey Statistics', { underline: true });
             doc.moveDown(0.5);
             doc.fontSize(12);
             
@@ -477,13 +477,13 @@ export const formatExcelReport = async (data, sections) => {
 
   // Data Visualization Sheet
   if (sections.includes('visualization') && data.visualization) {
-    // Questionnaire Statistics Sheet
-    if (data.visualization.questionnaire) {
-      const qStats = data.visualization.questionnaire;
-      const vizSheet = workbook.addWorksheet('Visualization - Questionnaire');
+    // Survey Statistics Sheet
+    if (data.visualization.survey) {
+      const qStats = data.visualization.survey;
+      const vizSheet = workbook.addWorksheet('Visualization - Survey');
       
       if (qStats.summary) {
-        vizSheet.addRow(['Questionnaire Summary']);
+        vizSheet.addRow(['Survey Summary']);
         vizSheet.addRow(['Property', 'Value']);
         vizSheet.addRow(['Total Assets', qStats.summary.totalAssets || 0]);
         vizSheet.addRow(['Assets with Responses', qStats.summary.assetsWithResponses || 0]);
@@ -622,10 +622,10 @@ export const formatCSVReport = (data, sections) => {
   if (sections.includes('visualization') && data.visualization) {
     csvLines.push('=== DATA VISUALIZATION ===');
     
-    // Questionnaire Statistics
-    if (data.visualization.questionnaire) {
-      const qStats = data.visualization.questionnaire;
-      csvLines.push('--- Questionnaire Statistics ---');
+    // Survey Statistics
+    if (data.visualization.survey) {
+      const qStats = data.visualization.survey;
+      csvLines.push('--- Survey Statistics ---');
       
       if (qStats.summary) {
         csvLines.push('Property,Value');

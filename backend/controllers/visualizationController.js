@@ -7,7 +7,7 @@ if (!supabaseAdmin) {
   console.error('ERROR: supabaseAdmin is not available. Check SUPABASE_SERVICE_ROLE_KEY in environment variables.');
 }
 
-// @desc    Get attribute value statistics
+// @desc    Get attribute value statistics (survey stats)
 // @route   GET /api/visualization/:projectId/questionnaire-stats
 // @access  Private
 const getAttributeValueStats = asyncHandler(async (req, res) => {
@@ -230,7 +230,7 @@ const getAttributeValueStats = asyncHandler(async (req, res) => {
     console.error('Error in getAttributeValueStats:', error.message);
     res.status(500).json({
       success: false,
-      error: 'Failed to get questionnaire statistics',
+      error: 'Failed to get survey statistics',
       details: error.message
     });
   }

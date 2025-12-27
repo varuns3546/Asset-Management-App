@@ -66,8 +66,8 @@ const Navbar = ({ onOpenModal, onCloseModal }) => {
         <div className="container" ref={navbarRef}>
             <button className="button" onClick={() => handleNavigate('/home')}>Home</button>
             <Dropdown 
-                title="Project" 
-                options={['Create Project', 'My Projects', 'Shared with Me']} 
+                title="Projects" 
+                options={['Create Project', 'Projects']} 
                 isOpen={openDropdown === 'projects'}
                 onToggle={() => toggleDropdown('projects')}
                 onOpenModal={onOpenModal}
@@ -75,7 +75,7 @@ const Navbar = ({ onOpenModal, onCloseModal }) => {
             />
             <Dropdown 
                 title="View" 
-                options={['Data', 'Map', 'Charts and Graphs', 'Reports']} 
+                options={['Data', 'Map', 'Data Visualization']} 
                 isOpen={openDropdown === 'view'}
                 onToggle={() => toggleDropdown('view')}
             />
