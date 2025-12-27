@@ -106,7 +106,7 @@ const CreateProjectModal = ({ onClose }) => {
                     },
                     {
                         label: loading ? 'Creating...' : 'Create Project',
-                        variant: 'success',
+                        variant: 'primary',
                         onClick: handleCreateProject,
                         disabled: loading
                     }
