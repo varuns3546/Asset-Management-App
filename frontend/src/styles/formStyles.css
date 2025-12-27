@@ -1,3 +1,5 @@
+/* Shared form utility classes used across multiple components */
+
 .form-group {
     margin-bottom: 19px;
 }
@@ -17,6 +19,10 @@
     font-size: 17px;
 }
 
+.form-input::placeholder {
+    font-size: 17px;
+}
+
 .form-textarea {
     width: 100%;
     padding: 10px 14px;
@@ -24,6 +30,10 @@
     border-radius: 5px;
     font-size: 17px;
     resize: vertical;
+}
+
+.form-textarea::placeholder {
+    font-size: 17px;
 }
 
 .form-select {
@@ -69,100 +79,7 @@
     background: #2563eb;
 }
 
-.create-project-modal .form-group {
-    margin-bottom: 19px;
-}
-
-.create-project-modal .form-label {
-    display: block;
-    margin-bottom: 10px;
-    font-weight: 500;
-    font-size: 17px;
-}
-
-.create-project-modal .form-input {
-    width: 100%;
-    padding: 10px 14px;
-    border: 1px solid #d1d5db;
-    border-radius: 5px;
-    font-size: 17px;
-}
-
-.create-project-modal .form-textarea {
-    width: 100%;
-    padding: 10px 14px;
-    border: 1px solid #d1d5db;
-    border-radius: 5px;
-    font-size: 17px;
-    resize: vertical;
-}
-
-.create-project-modal .form-input::placeholder,
-.create-project-modal .form-textarea::placeholder {
-    font-size: 17px;
-}
-
-.create-project-modal .button-group {
-    display: flex;
-    gap: 14px;
-    justify-content: flex-end;
-    margin-top: 19px;
-}
-
-.create-project-modal .btn {
-    padding: 10px 19px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 17px;
-    font-weight: 500;
-}
-
-.open-project-modal .form-group {
-    margin-bottom: 19px;
-}
-
-.open-project-modal .form-label {
-    display: block;
-    margin-bottom: 10px;
-    font-weight: 500;
-    font-size: 17px;
-}
-
-.open-project-modal .form-input {
-    width: 100%;
-    padding: 10px 14px;
-    border: 1px solid #d1d5db;
-    border-radius: 5px;
-    font-size: 17px;
-}
-
-.open-project-modal .form-select {
-    width: 100%;
-    padding: 10px 14px;
-    border: 1px solid #d1d5db;
-    border-radius: 5px;
-    font-size: 17px;
-}
-
-.open-project-modal .form-input::placeholder {
-    font-size: 17px;
-}
-
-.open-project-modal .button-group {
-    display: flex;
-    gap: 14px;
-    justify-content: flex-end;
-    margin-top: 19px;
-}
-
-.open-project-modal .btn {
-    padding: 10px 19px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 17px;
-    font-weight: 500;
-}
-
+/* Responsive styles */
 @media (max-width: 1199px) {
     .form-label {
         font-size: 15px;
@@ -172,6 +89,11 @@
     .form-textarea,
     .form-select {
         padding: 8px 13px;
+        font-size: 15px;
+    }
+    
+    .form-input::placeholder,
+    .form-textarea::placeholder {
         font-size: 15px;
     }
     
@@ -195,6 +117,11 @@
     .form-textarea,
     .form-select {
         padding: 7px 11px;
+        font-size: 14px;
+    }
+    
+    .form-input::placeholder,
+    .form-textarea::placeholder {
         font-size: 14px;
     }
     
@@ -225,6 +152,11 @@
         font-size: 12px;
     }
     
+    .form-input::placeholder,
+    .form-textarea::placeholder {
+        font-size: 12px;
+    }
+    
     .button-group {
         gap: 10px;
         flex-direction: column;
@@ -236,3 +168,4 @@
         width: 100%;
     }
 }
+

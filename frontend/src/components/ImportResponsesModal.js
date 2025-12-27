@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import questionnaireService from '../services/questionnaireService';
+import surveyService from '../services/surveyService';
 import '../styles/importResponsesModal.css';
 
 const ImportResponsesModal = ({ isOpen, onClose, projectId, token, onImportSuccess }) => {
@@ -23,7 +23,7 @@ const ImportResponsesModal = ({ isOpen, onClose, projectId, token, onImportSucce
       if (!isOpen || !projectId || !token) return;
       
       try {
-        const response = await questionnaireService.getAssetTypes(projectId, token);
+        const response = await surveyService.getAssetTypes(projectId, token);
         if (response.success) {
           setAssetTypes(response.data || []);
         }
@@ -73,7 +73,7 @@ const ImportResponsesModal = ({ isOpen, onClose, projectId, token, onImportSucce
     setError('');
 
     try {
-      const result = await questionnaireService.previewImport(projectId, file, token);
+      const result = await surveyService.previewImport(projectId, file, token);
       
       if (result.success) {
         setPreviewData(result.data);
@@ -99,7 +99,7 @@ const ImportResponsesModal = ({ isOpen, onClose, projectId, token, onImportSucce
     setError('');
     
     try {
-      await questionnaireService.downloadTemplate(
+      await surveyService.downloadTemplate(
         projectId, 
         selectedAssetType !== 'all' ? selectedAssetType : null,
         token
@@ -137,7 +137,7 @@ const ImportResponsesModal = ({ isOpen, onClose, projectId, token, onImportSucce
     setError('');
 
     try {
-      const result = await questionnaireService.importResponses(
+      const result = await surveyService.importResponses(
         projectId,
         file,
         assetColumn,
@@ -302,7 +302,7 @@ const ImportResponsesModal = ({ isOpen, onClose, projectId, token, onImportSucce
               <div className="mapping-section">
                 <h4>2. Map Attribute Columns</h4>
                 <p className="mapping-help">
-                  Match spreadsheet columns to questionnaire attributes
+                  Match spreadsheet columns to survey attributes
                 </p>
                 
                 <div className="asset-type-filter">

@@ -1,4 +1,4 @@
-import '../styles/projectComponents.css'
+import '../styles/formStyles.css'
 import { createProject, setSelectedProjectAsync } from '../features/projects/projectSlice'
 import { useDispatch } from 'react-redux'
 import { useState } from 'react'

@@ -6,7 +6,7 @@ const visualizationApi = axios.create({
   baseURL: `${API_BASE_URL}/api/visualization`,
 });
 
-const getQuestionnaireStats = async (projectId, token) => {
+const getSurveyStats = async (projectId, token) => {
   const response = await visualizationApi.get(`/${projectId}/questionnaire-stats`, {
     headers: {
       'Authorization': `Bearer ${token}`
@@ -34,7 +34,7 @@ const getProjectStats = async (projectId, token) => {
 };
 
 const visualizationService = {
-  getQuestionnaireStats,
+  getSurveyStats,
   getAssetStats,
   getProjectStats
 };

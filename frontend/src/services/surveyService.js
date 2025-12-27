@@ -2,8 +2,8 @@ import axios from 'axios';
 
 const API_URL = `${process.env.REACT_APP_API_BASE_URL}/api/questionnaire/`;
 
-// Get asset questionnaire with attributes
-const getAssetQuestionnaire = async (projectId, assetId, token) => {
+// Get asset survey with attributes
+const getAssetSurvey = async (projectId, assetId, token) => {
   const config = {
     headers: {
       Authorization: `Bearer ${token}`
@@ -63,7 +63,7 @@ const getAssetTypes = async (projectId, token) => {
   return response.data;
 };
 
-// Upload photo for questionnaire
+// Upload photo for survey
 const uploadPhoto = async (projectId, assetId, attributeId, file, token) => {
   const formData = new FormData();
   formData.append('photo', file);
@@ -178,7 +178,7 @@ const downloadTemplate = async (projectId, assetTypeId, token) => {
   const downloadUrl = window.URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = downloadUrl;
-  link.download = 'questionnaire_template.xlsx';
+  link.download = 'survey_template.xlsx';
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -187,8 +187,8 @@ const downloadTemplate = async (projectId, assetTypeId, token) => {
   return { success: true };
 };
 
-const questionnaireService = {
-  getAssetQuestionnaire,
+const surveyService = {
+  getAssetSurvey,
   submitResponses,
   getProjectResponses,
   getAssetTypes,
@@ -199,5 +199,5 @@ const questionnaireService = {
   downloadTemplate
 };
 
-export default questionnaireService;
+export default surveyService;
 

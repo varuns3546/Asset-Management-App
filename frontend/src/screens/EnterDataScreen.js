@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import questionnaireService from '../services/questionnaireService';
+import surveyService from '../services/surveyService';
 import { getHierarchy } from '../features/projects/projectSlice';
 import { useRouteMount } from '../contexts/RouteMountContext';
 import useClickOutside from '../hooks/useClickOutside';
 import useDebouncedAsync from '../hooks/useDebouncedAsync';
 import ImportResponsesModal from '../components/ImportResponsesModal';
-import '../styles/questionnaire.css';
+import '../styles/survey.css';
 
 const EnterDataScreen = () => {
   const dispatch = useDispatch();
@@ -16,7 +16,7 @@ const EnterDataScreen = () => {
   const [assets, setAssets] = useState([]);
   const [assetTypes, setAssetTypes] = useState([]);
   const [selectedAsset, setSelectedAsset] = useState(null);
-  const [questionnaireData, setQuestionnaireData] = useState(null);
+  const [surveyData, setSurveyData] = useState(null);
   const [responses, setResponses] = useState({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -55,7 +55,7 @@ const EnterDataScreen = () => {
       if (!selectedProject || !user) return;
 
       try {
-        const response = await questionnaireService.getAssetTypes(
+        const response = await surveyService.getAssetTypes(
           selectedProject.id,
           user.token
         );
@@ -91,12 +91,12 @@ const EnterDataScreen = () => {
     }
   }, [currentHierarchy]);
 
-  // Load questionnaire when asset is selected
+  // Load survey when asset is selected
   const handleAssetSelect = async (assetId) => {
     if (!assetId || !selectedProject) {
       if (isRouteMounted()) {
         setSelectedAsset(null);
-        setQuestionnaireData(null);
+        setSurveyData(null);
         setResponses({});
       }
       return;
@@ -107,14 +107,14 @@ const EnterDataScreen = () => {
     }
     
     try {
-      const data = await questionnaireService.getAssetQuestionnaire(
+      const data = await surveyService.getAssetSurvey(
         selectedProject.id,
         assetId,
         user.token
       );
 
       if (data.success && isRouteMounted()) {
-        setQuestionnaireData(data.data);
+        setSurveyData(data.data);
         setSelectedAsset(data.data.asset);
         
         // Initialize responses from existing data
@@ -138,7 +138,7 @@ const EnterDataScreen = () => {
       }
     } catch (error) {
       if (isRouteMounted()) {
-        console.error('Error loading questionnaire:', error);
+        console.error('Error loading survey:', error);
       }
     } finally {
       if (isRouteMounted()) {
@@ -293,19 +293,19 @@ const EnterDataScreen = () => {
 
   // Submit responses
   const handleSubmit = async () => {
-    if (!selectedAsset || !questionnaireData) return;
+    if (!selectedAsset || !surveyData) return;
 
     setSaving(true);
     try {
       // First, collect all photos marked for deletion
       const photosToDelete = [];
-      questionnaireData.attributes.forEach(attr => {
+      surveyData.attributes.forEach(attr => {
         if (attr.type === 'photos' && Array.isArray(responses[attr.id])) {
           // Find any photos marked for deletion that are no longer in the responses
           const currentPhotoIds = responses[attr.id].map(p => p.path).filter(Boolean);
           
-          // Check original questionnaire data for photos that were removed
-          const originalResponse = questionnaireData.responses?.[attr.id];
+          // Check original survey data for photos that were removed
+          const originalResponse = surveyData.responses?.[attr.id];
           if (originalResponse?.response_metadata?.photos) {
             originalResponse.response_metadata.photos.forEach(photo => {
               if (!currentPhotoIds.includes(photo.path)) {
@@ -319,7 +319,7 @@ const EnterDataScreen = () => {
       // Delete marked photos from storage
       for (const filePath of photosToDelete) {
         try {
-          await questionnaireService.deletePhoto(filePath, user.token);
+          await surveyService.deletePhoto(filePath, user.token);
         } catch (error) {
           console.error('Error deleting photo:', error);
           // Continue even if deletion fails
@@ -327,7 +327,7 @@ const EnterDataScreen = () => {
       }
 
       const responsesArray = await Promise.all(
-        questionnaireData.attributes.map(async (attr) => {
+        surveyData.attributes.map(async (attr) => {
           let value = responses[attr.id] || '';
           let metadata = {};
 
@@ -353,7 +353,7 @@ const EnterDataScreen = () => {
             // Upload only NEW photos
             for (const file of newFiles) {
               try {
-                const uploadResponse = await questionnaireService.uploadPhoto(
+                const uploadResponse = await surveyService.uploadPhoto(
                   selectedProject.id,
                   selectedAsset.id,
                   attr.id,
@@ -391,7 +391,7 @@ const EnterDataScreen = () => {
         })
       );
 
-      const result = await questionnaireService.submitResponses(
+      const result = await surveyService.submitResponses(
         selectedProject.id,
         selectedAsset.id,
         responsesArray,
@@ -400,7 +400,7 @@ const EnterDataScreen = () => {
 
       if (result.success) {
         alert('Responses saved successfully!');
-        // Reload the questionnaire to get fresh data
+        // Reload the survey to get fresh data
         handleAssetSelect(selectedAsset.id);
       }
     } catch (error) {
@@ -451,7 +451,7 @@ const EnterDataScreen = () => {
 
   if (!selectedProject) {
     return (
-      <div className="questionnaire-screen">
+      <div className="survey-screen">
         <div className="no-project-message">
           <h2>No Project Selected</h2>
           <p>Please select a project from the home screen to enter data.</p>
@@ -469,7 +469,7 @@ const EnterDataScreen = () => {
 
   return (
     <div className="questionnaire-screen">
-      <div className="questionnaire-header">
+      <div className="survey-header">
         <div className="header-text">
           <h1>Enter Data</h1>
           <p>Select an asset and enter attribute values</p>
@@ -496,7 +496,7 @@ const EnterDataScreen = () => {
         onImportSuccess={handleImportSuccess}
       />
 
-      <div className="questionnaire-content">
+      <div className="survey-content">
         {/* Filter and Asset Selection */}
         <div className="asset-selection">
           <div className="filter-section">
@@ -508,7 +508,7 @@ const EnterDataScreen = () => {
                 onChange={(e) => {
                   setTypeFilter(e.target.value);
                   setSelectedAsset(null);
-                  setQuestionnaireData(null);
+                  setSurveyData(null);
                   setResponses({});
                   setAssetSearchText('');
                   setShowAssetDropdown(false);
@@ -573,7 +573,7 @@ const EnterDataScreen = () => {
           </div>
         </div>
 
-        {/* Questionnaire Form */}
+        {/* Survey Form */}
         {loading && (
           <div className="loading">
             <div className="loading-spinner"></div>
@@ -581,23 +581,23 @@ const EnterDataScreen = () => {
           </div>
         )}
 
-        {!loading && questionnaireData && (
-          <div className="questionnaire-form">
+        {!loading && surveyData && (
+          <div className="survey-form">
             <div className="asset-info">
               <h2>{selectedAsset.title}</h2>
               <p className="asset-type">
-                Type: {questionnaireData.assetType?.title || 'No Type'}
+                Type: {surveyData.assetType?.title || 'No Type'}
               </p>
             </div>
 
-            {questionnaireData.attributes.length === 0 ? (
+            {surveyData.attributes.length === 0 ? (
               <div className="no-attributes">
                 <p>This asset type has no attributes defined.</p>
                 <p>Please add attributes in the <strong>Structure → Asset Types</strong> section.</p>
               </div>
             ) : (
               <div className="questions-container">
-                {questionnaireData.attributes.map((attribute, index) => (
+                {surveyData.attributes.map((attribute, index) => (
                   <div key={attribute.id} className="question-item">
                     <label htmlFor={`attr-${attribute.id}`}>
                       <span className="question-number">{index + 1}.</span>
@@ -778,7 +778,7 @@ const EnterDataScreen = () => {
               </div>
             )}
 
-            {questionnaireData.attributes.length > 0 && (
+            {surveyData.attributes.length > 0 && (
               <div className="form-actions">
                 <button
                   onClick={handleSubmit}

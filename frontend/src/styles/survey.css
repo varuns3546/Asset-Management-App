@@ -1,4 +1,4 @@
-.questionnaire-screen {
+.survey-screen {
   padding: 20px;
   max-width: 1200px;
   margin: 0 auto;
@@ -6,7 +6,7 @@
   background-color: #f5f5f5;
 }
 
-.questionnaire-header {
+.survey-header {
   margin-bottom: 30px;
   padding: 20px;
   background: white;
@@ -22,13 +22,13 @@
   flex: 1;
 }
 
-.questionnaire-header h1 {
+.survey-header h1 {
   font-size: 2rem;
   margin-bottom: 10px;
   color: #333;
 }
 
-.questionnaire-header p {
+.survey-header p {
   color: #666;
   font-size: 1rem;
   margin: 0;
@@ -76,7 +76,7 @@
   font-size: 1.1rem;
 }
 
-.questionnaire-content {
+.survey-content {
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -253,7 +253,7 @@
   color: #666;
 }
 
-.questionnaire-form {
+.survey-form {
   background: white;
   padding: 30px;
   border-radius: 8px;
@@ -549,19 +549,19 @@
 }
 
 @media (max-width: 1199px) {
-  .questionnaire-screen {
+  .survey-screen {
     padding: 18px;
   }
   
-  .questionnaire-header {
+  .survey-header {
     padding: 18px;
   }
   
-  .questionnaire-header h1 {
+  .survey-header h1 {
     font-size: 1.7rem;
   }
   
-  .questionnaire-form {
+  .survey-form {
     padding: 24px;
   }
   
@@ -571,11 +571,11 @@
 }
 
 @media (max-width: 768px) {
-  .questionnaire-screen {
+  .survey-screen {
     padding: 10px;
   }
 
-  .questionnaire-header {
+  .survey-header {
     padding: 15px;
     flex-direction: column;
     align-items: stretch;
@@ -585,7 +585,7 @@
     margin-bottom: 12px;
   }
 
-  .questionnaire-header h1 {
+  .survey-header h1 {
     font-size: 1.5rem;
   }
 
@@ -593,7 +593,7 @@
     justify-content: center;
   }
 
-  .questionnaire-form {
+  .survey-form {
     padding: 20px;
   }
 
@@ -617,19 +617,19 @@
 }
 
 @media (max-width: 480px) {
-  .questionnaire-screen {
+  .survey-screen {
     padding: 8px;
   }
   
-  .questionnaire-header {
+  .survey-header {
     padding: 12px;
   }
   
-  .questionnaire-header h1 {
+  .survey-header h1 {
     font-size: 1.3rem;
   }
   
-  .questionnaire-form {
+  .survey-form {
     padding: 16px;
   }
   
@@ -677,3 +677,4 @@
     max-width: 80px;
   }
 }
+

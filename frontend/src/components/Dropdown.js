@@ -1,8 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import React from 'react'
 import CreateProjectModal from './CreateProjectModal'
-import MyProjectsModal from './MyProjectsModal'
-import SharedProjectsModal from './SharedProjectsModal'
+import ProjectsModal from './ProjectsModal'
 import '../styles/navbar.css'
 
 const Dropdown = ({title, options, isOpen, onToggle, onOpenModal, onCloseModal, onOptionClick, className}) => {
@@ -20,18 +19,18 @@ const Dropdown = ({title, options, isOpen, onToggle, onOpenModal, onCloseModal, 
         }
         
         // Handle modal options
-        if (onOpenModal && (option === 'Create Project' || option === 'My Projects' || option === 'Shared with Me')) {
-            console.log('Opening modal for:', option) // Debug log
+        if (onOpenModal && (option === 'Create Project' || option === 'Projects' || option === 'My Projects')) {
             if (option === 'Create Project') {
                 onOpenModal(<CreateProjectModal onClose={onCloseModal} />, 'Create Project')
-            } else if (option === 'My Projects') {
-                onOpenModal(<MyProjectsModal onClose={onCloseModal} />, 'My Projects')
-            } else if (option === 'Shared with Me') {
-                onOpenModal(<SharedProjectsModal onClose={onCloseModal} />, 'Shared with Me')
+            } else if (option === 'Projects' || option === 'My Projects') {
+                // Open the combined ProjectsModal with myProjects tab
+                onOpenModal(<ProjectsModal onClose={onCloseModal} initialTab="myProjects" />, 'Projects')
             }
         } else {
             // Map other options to routes
             const routeMap = {
+                'Data': '/data',
+                'Data Visualization': '/visualization',
                 'Asset Hierarchy': '/hierarchies',
                 'Asset Types': '/asset-types',
                 'Map': '/map',

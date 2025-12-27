@@ -1,4 +1,4 @@
-import '../styles/projectComponents.css'
+import '../styles/formStyles.css'
 import { useEffect, useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { getProjects, addUserToProject, removeUserFromProject } from '../features/projects/projectSlice'
@@ -8,9 +8,9 @@ import FormField from './forms/FormField'
 import ErrorMessage from './forms/ErrorMessage'
 import axios from 'axios'
 
-const ShareProjectModal = ({ onClose }) => {
+const ShareProjectModal = ({ onClose, initialProjectId = '' }) => {
     const dispatch = useDispatch()
-    const [selectedProjectId, setSelectedProjectId] = useState('')
+    const [selectedProjectId, setSelectedProjectId] = useState(initialProjectId)
     const [emailSearch, setEmailSearch] = useState('')
     const [searchResults, setSearchResults] = useState([])
     const [isSearching, setIsSearching] = useState(false)
@@ -25,14 +25,28 @@ const ShareProjectModal = ({ onClose }) => {
         dispatch(loadUser())
     }, [dispatch])
 
+    // Only load projects if we don't have any
+    // Skip if projects already exist (they might be loaded from ProjectsModal)
+    const hasProjectsAlready = projects && Array.isArray(projects) && projects.length > 0
+    
     useEffect(() => {
-        if (user && user.token) {
-            dispatch(getProjects())
-        }
-    }, [dispatch, user])
+        if (!user?.token) return
+        if (hasProjectsAlready) return // Don't reload if we already have projects
+        if (isLoading) return // Don't reload if already loading
+        
+        dispatch(getProjects())
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user?.token]) // Only depend on user token
 
     // Filter projects to only show ones the user owns
     const ownedProjects = (projects || []).filter(project => project.owner_id === user?.id)
+
+    // Set initial project ID when prop changes
+    useEffect(() => {
+        if (initialProjectId) {
+            setSelectedProjectId(initialProjectId)
+        }
+    }, [initialProjectId])
 
     // Load project users when a project is selected
     useEffect(() => {
@@ -167,7 +181,9 @@ const ShareProjectModal = ({ onClose }) => {
 
     const selectedProject = ownedProjects.find(p => p.id === selectedProjectId)
 
-    if (isLoading) {
+    // Only show loading if we're actively loading AND don't have projects yet
+    // If projects already exist (even if isLoading is true from other actions), show the modal
+    if (isLoading && !hasProjectsAlready && user?.token) {
         return <div className="open-project-modal"><div className="form-group">Loading projects...</div></div>
     }
 
