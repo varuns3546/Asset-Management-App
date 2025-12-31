@@ -7,6 +7,7 @@ import MapNavbar from '../components/map/MapNavbar';
 import FileUploadModal from '../components/FileUploadModal';
 import AddFeatureModal from '../components/map/AddFeatureModal';
 import StyleLayerModal from '../components/map/StyleLayerModal';
+import ExportLayersModal from '../components/map/ExportLayersModal';
 import ErrorMessage from '../components/forms/ErrorMessage';
 import { getHierarchy, getFeatureTypes, updateFeatureType } from '../features/projects/projectSlice';
 import * as gisLayerService from '../services/gisLayerService';
@@ -34,6 +35,7 @@ const MapScreen = () => {
   const [selectedLayerForFeature, setSelectedLayerForFeature] = useState(null);
   const [showStyleLayerModal, setShowStyleLayerModal] = useState(false);
   const [selectedLayerForStyle, setSelectedLayerForStyle] = useState(null);
+  const [showExportModal, setShowExportModal] = useState(false);
   const [error, setError] = useState('');
   const [zoomToFeature, setZoomToFeature] = useState(null);
   const [zoomToLayer, setZoomToLayer] = useState(null);
@@ -1064,6 +1066,7 @@ const MapScreen = () => {
         setLabelColor={setLabelColor}
         labelBackgroundColor={labelBackgroundColor}
         setLabelBackgroundColor={setLabelBackgroundColor}
+        onExportClick={() => setShowExportModal(true)}
       />
       <div className="map-content-container">
         <LeftMapPanel 
@@ -1143,6 +1146,16 @@ const MapScreen = () => {
         layer={selectedLayerForStyle}
         onSave={handleSaveLayerStyle}
       />
+
+      {/* Export Layers Modal */}
+      {selectedProject && (
+        <ExportLayersModal
+          isOpen={showExportModal}
+          onClose={() => setShowExportModal(false)}
+          layers={allLayers}
+          projectId={selectedProject.id}
+        />
+      )}
         </div>
     );
 };
