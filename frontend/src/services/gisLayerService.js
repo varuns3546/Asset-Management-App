@@ -121,6 +121,45 @@ export const deleteFeature = async (projectId, layerId, featureId) => {
   }
 };
 
+// Export layers to GeoPackage
+export const exportLayersToGeoPackage = async (projectId, layerIds = []) => {
+  try {
+    const response = await gisApi.post(
+      `/${projectId}/export`,
+      { layerIds },
+      {
+        responseType: 'blob' // Important for file downloads
+      }
+    );
+
+    // Create download link
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    
+    // Extract filename from Content-Disposition header if available
+    const contentDisposition = response.headers['content-disposition'];
+    let filename = `export_${Date.now()}.gpkg`;
+    if (contentDisposition) {
+      const filenameMatch = contentDisposition.match(/filename="?(.+)"?/i);
+      if (filenameMatch) {
+        filename = filenameMatch[1];
+      }
+    }
+    
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+
+    return { success: true, message: 'Export completed successfully' };
+  } catch (error) {
+    console.error('Error exporting layers:', error);
+    throw error;
+  }
+};
+
 export default {
   getGisLayers,
   createGisLayer,
@@ -128,6 +167,7 @@ export default {
   deleteGisLayer,
   getLayerFeatures,
   addFeature,
-  deleteFeature
+  deleteFeature,
+  exportLayersToGeoPackage
 };
 

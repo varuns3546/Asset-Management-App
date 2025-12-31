@@ -16,5 +16,8 @@ router.get('/:projectId/layers/:layerId/features', authenticateUser, gisControll
 router.post('/:projectId/layers/:layerId/features', authenticateUser, gisController.addFeature);
 router.delete('/:projectId/layers/:layerId/features/:featureId', authenticateUser, gisController.deleteFeature);
 
+// Export route
+router.post('/:projectId/export', authenticateUser, gisController.exportLayersToGeoPackage);
+
 export default router;
 

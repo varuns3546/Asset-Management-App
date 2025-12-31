@@ -14,7 +14,8 @@ const TopMapPanel = ({
   labelColor,
   setLabelColor,
   labelBackgroundColor,
-  setLabelBackgroundColor
+  setLabelBackgroundColor,
+  onExportClick
 }) => {
   const [isResizing, setIsResizing] = useState(false);
   const [startY, setStartY] = useState(0);
@@ -165,6 +166,15 @@ const TopMapPanel = ({
           <button className="toolbar-btn">Search</button>
           <button className="toolbar-btn">Layers</button>
           <button className="toolbar-btn">Tools</button>
+          {onExportClick && (
+            <button 
+              className="toolbar-btn"
+              onClick={onExportClick}
+              title="Export layers to QGIS (GeoPackage)"
+            >
+              Export to QGIS
+            </button>
+          )}
           <div className="basemap-dropdown-container" ref={dropdownRef}>
             <button 
               className="toolbar-btn"

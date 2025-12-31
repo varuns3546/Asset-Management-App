@@ -651,6 +651,966 @@ const deleteFeature = asyncHandler(async (req, res) => {
   }
 });
 
+// Export layers to GeoPackage format
+const exportLayersToGeoPackage = asyncHandler(async (req, res) => {
+  const { projectId } = req.params;
+  const { layerIds } = req.body; // Optional array of layer IDs, if empty exports all
+
+  if (!projectId) {
+    return res.status(400).json({
+      success: false,
+      error: 'Project ID is required'
+    });
+  }
+
+  // Verify user has access to the project
+  const { data: projectUser, error: projectUserError } = await req.supabase
+    .from('project_users')
+    .select('id')
+    .eq('project_id', projectId)
+    .eq('user_id', req.user.id)
+    .single();
+
+  if (projectUserError || !projectUser) {
+    const { data: project, error: projectError } = await req.supabase
+      .from('projects')
+      .select('id, name')
+      .eq('id', projectId)
+      .eq('owner_id', req.user.id)
+      .single();
+
+    if (projectError || !project) {
+      return res.status(404).json({
+        success: false,
+        error: 'Project not found or access denied'
+      });
+    }
+  }
+
+  try {
+    // Get project name for filename
+    const { data: project } = await req.supabase
+      .from('projects')
+      .select('name')
+      .eq('id', projectId)
+      .single();
+
+    const projectName = project?.name || 'project';
+
+    // Fetch layers to export
+    let query = req.supabase
+      .from('gis_layers')
+      .select('*')
+      .eq('project_id', projectId)
+      .order('created_at');
+
+    if (layerIds && Array.isArray(layerIds) && layerIds.length > 0) {
+      query = query.in('id', layerIds);
+    }
+
+    const { data: layers, error: layersError } = await query;
+
+    if (layersError) {
+      console.error('Error fetching layers:', layersError);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to fetch layers'
+      });
+    }
+
+    if (!layers || layers.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'No layers found to export'
+      });
+    }
+
+    // Import required modules
+    const Database = (await import('better-sqlite3')).default;
+    const fs = await import('fs');
+    const path = await import('path');
+    const os = await import('os');
+
+    // Create temporary file path
+    const tempDir = os.tmpdir();
+    const tempFilePath = path.join(tempDir, `export_${Date.now()}.gpkg`);
+
+    // Helper to convert GeoJSON to GeoPackage binary format
+    // GeoPackage uses a specific binary format: magic byte (0x47) + version (0x00) + flags + envelope + WKB
+    const geojsonToGeoPackageBinary = (geojson) => {
+      if (!geojson || !geojson.type) {
+        throw new Error('Invalid GeoJSON geometry');
+      }
+
+      // First, create WKB
+      const wkbBuffer = Buffer.allocUnsafe(1024);
+      let wkbOffset = 0;
+
+      // Write byte order (1 = little endian)
+      wkbBuffer.writeUInt8(1, wkbOffset++);
+
+      // Write geometry type (with Z and M flags set to 0)
+      const typeMap = {
+        'Point': 1,
+        'LineString': 2,
+        'Polygon': 3,
+        'MultiPoint': 4,
+        'MultiLineString': 5,
+        'MultiPolygon': 6
+      };
+
+      const typeCode = typeMap[geojson.type] || 0;
+      wkbBuffer.writeUInt32LE(typeCode, wkbOffset);
+      wkbOffset += 4;
+
+      // Write coordinates based on type
+      if (geojson.type === 'Point' && geojson.coordinates) {
+        const [x, y] = geojson.coordinates;
+        wkbBuffer.writeDoubleLE(x, wkbOffset);
+        wkbOffset += 8;
+        wkbBuffer.writeDoubleLE(y, wkbOffset);
+        wkbOffset += 8;
+      } else if (geojson.type === 'LineString' && geojson.coordinates) {
+        wkbBuffer.writeUInt32LE(geojson.coordinates.length, wkbOffset);
+        wkbOffset += 4;
+        for (const [x, y] of geojson.coordinates) {
+          wkbBuffer.writeDoubleLE(x, wkbOffset);
+          wkbOffset += 8;
+          wkbBuffer.writeDoubleLE(y, wkbOffset);
+          wkbOffset += 8;
+        }
+      } else if (geojson.type === 'Polygon' && geojson.coordinates) {
+        // Polygon has rings (exterior + holes)
+        wkbBuffer.writeUInt32LE(geojson.coordinates.length, wkbOffset);
+        wkbOffset += 4;
+        for (const ring of geojson.coordinates) {
+          wkbBuffer.writeUInt32LE(ring.length, wkbOffset);
+          wkbOffset += 4;
+          for (const [x, y] of ring) {
+            wkbBuffer.writeDoubleLE(x, wkbOffset);
+            wkbOffset += 8;
+            wkbBuffer.writeDoubleLE(y, wkbOffset);
+            wkbOffset += 8;
+          }
+        }
+      } else {
+        throw new Error(`Unsupported geometry type: ${geojson.type}`);
+      }
+
+      const wkb = wkbBuffer.slice(0, wkbOffset);
+
+      // Calculate envelope (bounding box)
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      
+      const extractCoords = (coords) => {
+        if (Array.isArray(coords[0])) {
+          coords.forEach(coord => extractCoords(coord));
+        } else {
+          const [x, y] = coords;
+          minX = Math.min(minX, x);
+          minY = Math.min(minY, y);
+          maxX = Math.max(maxX, x);
+          maxY = Math.max(maxY, y);
+        }
+      };
+      
+      extractCoords(geojson.coordinates);
+
+      // Build GeoPackage binary format
+      // Header: magic (1 byte) + version (1 byte) + flags (1 byte) + envelope (varies)
+      const envelopeSize = 32; // 4 doubles (minX, maxX, minY, maxY) = 32 bytes
+      const headerSize = 1 + 1 + 1 + envelopeSize; // magic + version + flags + envelope
+      const totalSize = headerSize + wkb.length;
+      
+      const gpkgBuffer = Buffer.allocUnsafe(totalSize);
+      let offset = 0;
+
+      // Magic byte (0x47 = 'G')
+      gpkgBuffer.writeUInt8(0x47, offset++);
+      
+      // Version (0x00)
+      gpkgBuffer.writeUInt8(0x00, offset++);
+      
+      // Flags byte: standard geometry (0x01 = standard, no extended)
+      gpkgBuffer.writeUInt8(0x01, offset++);
+      
+      // Envelope: minX, maxX, minY, maxY (all doubles)
+      gpkgBuffer.writeDoubleLE(minX, offset);
+      offset += 8;
+      gpkgBuffer.writeDoubleLE(maxX, offset);
+      offset += 8;
+      gpkgBuffer.writeDoubleLE(minY, offset);
+      offset += 8;
+      gpkgBuffer.writeDoubleLE(maxY, offset);
+      offset += 8;
+      
+      // Append WKB
+      wkb.copy(gpkgBuffer, offset);
+
+      return gpkgBuffer;
+    };
+
+    // Create SQLite database (better-sqlite3 is synchronous)
+    const db = new Database(tempFilePath);
+
+    // Set GeoPackage application ID and user version
+    // This marks the file as a GeoPackage
+    db.pragma('application_id = 0x47504B47'); // 'GPKG' in hex
+    db.pragma('user_version = 10200'); // GeoPackage version 1.2.0
+
+    // Initialize GeoPackage metadata tables
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS gpkg_spatial_ref_sys (
+        srs_name TEXT NOT NULL,
+        srs_id INTEGER PRIMARY KEY,
+        organization TEXT NOT NULL,
+        organization_coordsys_id INTEGER NOT NULL,
+        definition TEXT NOT NULL,
+        description TEXT
+      )
+    `);
+
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS gpkg_contents (
+        table_name TEXT NOT NULL PRIMARY KEY,
+        data_type TEXT NOT NULL,
+        identifier TEXT UNIQUE,
+        description TEXT,
+        last_change DATETIME NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+        min_x DOUBLE,
+        min_y DOUBLE,
+        max_x DOUBLE,
+        max_y DOUBLE,
+        srs_id INTEGER,
+        CONSTRAINT fk_gc_srs FOREIGN KEY (srs_id) REFERENCES gpkg_spatial_ref_sys(srs_id)
+      )
+    `);
+
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS gpkg_geometry_columns (
+        table_name TEXT NOT NULL,
+        column_name TEXT NOT NULL,
+        geometry_type_name TEXT NOT NULL,
+        srs_id INTEGER NOT NULL,
+        z TINYINT NOT NULL,
+        m TINYINT NOT NULL,
+        CONSTRAINT pk_geom_cols PRIMARY KEY (table_name, column_name),
+        CONSTRAINT fk_gc_tn FOREIGN KEY (table_name) REFERENCES gpkg_contents(table_name),
+        CONSTRAINT fk_gc_srs FOREIGN KEY (srs_id) REFERENCES gpkg_spatial_ref_sys(srs_id)
+      )
+    `);
+
+    // Create gpkg_extensions table (helps QGIS recognize geometry columns)
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS gpkg_extensions (
+        table_name TEXT,
+        column_name TEXT,
+        extension_name TEXT NOT NULL,
+        definition TEXT NOT NULL,
+        scope TEXT NOT NULL,
+        CONSTRAINT ge_tce UNIQUE (table_name, column_name, extension_name)
+      )
+    `);
+
+    // Insert WGS84 spatial reference system (EPSG:4326)
+    db.prepare(`
+      INSERT OR REPLACE INTO gpkg_spatial_ref_sys 
+      (srs_name, srs_id, organization, organization_coordsys_id, definition, description)
+      VALUES 
+      ('WGS 84', 4326, 'EPSG', 4326, 
+       'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]]',
+       'WGS 84')
+    `).run();
+
+    // Also insert Web Mercator (EPSG:3857) since user's project uses it
+    db.prepare(`
+      INSERT OR REPLACE INTO gpkg_spatial_ref_sys 
+      (srs_name, srs_id, organization, organization_coordsys_id, definition, description)
+      VALUES 
+      ('WGS 84 / Pseudo-Mercator', 3857, 'EPSG', 3857,
+       'PROJCS["WGS 84 / Pseudo-Mercator",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]],PROJECTION["Mercator_1SP"],PARAMETER["central_meridian",0],PARAMETER["scale_factor",1],PARAMETER["false_easting",0],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["X",EAST],AXIS["Y",NORTH],EXTENT[-20037508.34,-20037508.34,20037508.34,20037508.34],AUTHORITY["EPSG","3857"]]',
+       'Web Mercator')
+    `).run();
+
+    // Process each layer
+    for (const layer of layers) {
+      try {
+        // Fetch features for this layer with GeoJSON geometry
+        const { data: rpcFeatures, error: rpcError } = await req.supabase
+          .rpc('get_gis_features_geojson', { p_layer_id: layer.id });
+
+        if (rpcError) {
+          console.warn(`Error fetching features for layer ${layer.name}:`, rpcError);
+          continue;
+        }
+
+        if (!rpcFeatures || rpcFeatures.length === 0) {
+          console.log(`Layer ${layer.name} has no features, skipping`);
+          continue;
+        }
+
+        // Fetch asset_id for features (RPC might not include it)
+        const featureIds = rpcFeatures.map(f => f.id).filter(id => id != null);
+        let assetIdMap = new Map();
+        
+        if (featureIds.length > 0) {
+          const { data: featuresWithAssetId, error: assetIdError } = await req.supabase
+            .from('gis_features')
+            .select('id, asset_id')
+            .in('id', featureIds);
+
+          if (!assetIdError && featuresWithAssetId) {
+            featuresWithAssetId.forEach(f => {
+              if (f.asset_id) {
+                assetIdMap.set(f.id, f.asset_id);
+              }
+            });
+          }
+        }
+
+        // Merge asset_id into features
+        const features = rpcFeatures.map(f => ({
+          ...f,
+          asset_id: assetIdMap.get(f.id) || f.asset_id || null
+        }));
+
+        if (!features || features.length === 0) {
+          console.log(`Layer ${layer.name} has no features, skipping`);
+          continue;
+        }
+
+        // Sanitize layer name for table name
+        const tableName = layer.name
+          .replace(/[^a-zA-Z0-9_]/g, '_')
+          .replace(/^[0-9]/, '_$&')
+          .substring(0, 63);
+
+        // Determine geometry type from first feature
+        let geometryTypeName = 'GEOMETRY';
+        let geometryTypeCode = 0; // Generic geometry
+
+        if (features.length > 0 && features[0].geometry_geojson) {
+          try {
+            const geom = typeof features[0].geometry_geojson === 'string'
+              ? JSON.parse(features[0].geometry_geojson)
+              : features[0].geometry_geojson;
+
+            const typeMap = {
+              'Point': { name: 'POINT', code: 1 },
+              'LineString': { name: 'LINESTRING', code: 2 },
+              'Polygon': { name: 'POLYGON', code: 3 },
+              'MultiPoint': { name: 'MULTIPOINT', code: 4 },
+              'MultiLineString': { name: 'MULTILINESTRING', code: 5 },
+              'MultiPolygon': { name: 'MULTIPOLYGON', code: 6 }
+            };
+
+            if (typeMap[geom.type]) {
+              geometryTypeName = typeMap[geom.type].name;
+              geometryTypeCode = typeMap[geom.type].code;
+            }
+          } catch (e) {
+            console.warn('Error parsing geometry type:', e);
+          }
+        }
+
+        // Collect asset IDs from features
+        const assetIds = new Set();
+        features.forEach(f => {
+          // Check asset_id column first, then properties
+          if (f.asset_id) {
+            assetIds.add(f.asset_id);
+          } else if (f.properties) {
+            const props = typeof f.properties === 'string' ? JSON.parse(f.properties) : f.properties;
+            if (props.asset_id) {
+              assetIds.add(props.asset_id);
+            }
+          }
+        });
+
+        // Fetch asset data for all assets linked to features in this layer
+        let assetsMap = new Map();
+        let assetAttributesMap = new Map(); // Map of asset_id -> {attribute_name: value}
+        
+        if (assetIds.size > 0) {
+          const assetIdsArray = Array.from(assetIds);
+          
+          // Fetch assets
+          const { data: assets, error: assetsError } = await req.supabase
+            .from('assets')
+            .select('*')
+            .in('id', assetIdsArray)
+            .eq('project_id', projectId);
+
+          if (!assetsError && assets) {
+            assets.forEach(asset => {
+              assetsMap.set(asset.id, asset);
+            });
+
+            // Fetch attribute values for these assets
+            const { data: attributeValues, error: attrError } = await req.supabase
+              .from('attribute_values')
+              .select('asset_id, attribute_id, value')
+              .in('asset_id', assetIdsArray)
+              .eq('project_id', projectId);
+
+            if (!attrError && attributeValues) {
+              // Get attribute names
+              const attributeIds = [...new Set(attributeValues.map(av => av.attribute_id))];
+              if (attributeIds.length > 0) {
+                const { data: attributes, error: attrsError } = await req.supabase
+                  .from('attributes')
+                  .select('id, title')
+                  .in('id', attributeIds);
+
+                if (!attrsError && attributes) {
+                  const attrIdToName = new Map();
+                  attributes.forEach(attr => {
+                    attrIdToName.set(attr.id, attr.title);
+                  });
+
+                  // Build map of asset_id -> {attribute_name: value}
+                  attributeValues.forEach(av => {
+                    const attrName = attrIdToName.get(av.attribute_id);
+                    if (attrName) {
+                      if (!assetAttributesMap.has(av.asset_id)) {
+                        assetAttributesMap.set(av.asset_id, {});
+                      }
+                      assetAttributesMap.get(av.asset_id)[attrName] = av.value;
+                    }
+                  });
+                }
+              }
+            }
+          }
+        }
+
+        // Extract all unique property keys from feature properties
+        const propertyKeys = new Set();
+        features.forEach(f => {
+          if (f.properties) {
+            const props = typeof f.properties === 'string' ? JSON.parse(f.properties) : f.properties;
+            Object.keys(props).forEach(key => {
+              if (key !== 'asset_id') {
+                propertyKeys.add(key);
+              }
+            });
+          }
+        });
+
+        // Check if any assets have beginning or end coordinates
+        let hasBeginningCoords = false;
+        let hasEndCoords = false;
+        assetsMap.forEach(asset => {
+          if (asset.beginning_latitude != null && asset.beginning_longitude != null) {
+            hasBeginningCoords = true;
+          }
+          if (asset.end_latitude != null && asset.end_longitude != null) {
+            hasEndCoords = true;
+          }
+        });
+
+        // Add asset fields to column set
+        const assetFields = new Set(['title', 'beginning_latitude', 'beginning_longitude', 'end_latitude', 'end_longitude', 'item_type_id', 'parent_id']);
+        const allAttributeNames = new Set();
+        assetAttributesMap.forEach(attrs => {
+          Object.keys(attrs).forEach(attrName => {
+            allAttributeNames.add(attrName);
+          });
+        });
+
+        // Build column definitions
+        let createTableSQL = `CREATE TABLE "${tableName}" (id INTEGER PRIMARY KEY AUTOINCREMENT, geometry BLOB NOT NULL`;
+        
+        if (features.some(f => f.name)) {
+          createTableSQL += ', name TEXT';
+        }
+
+        // Add feature property columns
+        propertyKeys.forEach(key => {
+          const sanitizedKey = key.replace(/[^a-zA-Z0-9_]/g, '_').substring(0, 63);
+          createTableSQL += `, "${sanitizedKey}" TEXT`;
+        });
+
+        // Add asset columns (only if we have assets)
+        if (assetsMap.size > 0) {
+          assetFields.forEach(field => {
+            const sanitizedKey = field.replace(/[^a-zA-Z0-9_]/g, '_').substring(0, 63);
+            createTableSQL += `, "asset_${sanitizedKey}" TEXT`;
+          });
+
+          // Add attribute columns
+          allAttributeNames.forEach(attrName => {
+            const sanitizedKey = attrName.replace(/[^a-zA-Z0-9_]/g, '_').substring(0, 63);
+            createTableSQL += `, "attr_${sanitizedKey}" TEXT`;
+          });
+
+          // Add geometry columns for beginning and end points
+          if (hasBeginningCoords) {
+            createTableSQL += ', beginning_point BLOB';
+          }
+          if (hasEndCoords) {
+            createTableSQL += ', end_point BLOB';
+          }
+        }
+
+        createTableSQL += ')';
+
+        db.exec(createTableSQL);
+
+        // Calculate bounding box for the layer
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        features.forEach(f => {
+          if (f.geometry_geojson) {
+            try {
+              const geom = typeof f.geometry_geojson === 'string'
+                ? JSON.parse(f.geometry_geojson)
+                : f.geometry_geojson;
+              
+              const extractCoords = (coords) => {
+                if (Array.isArray(coords[0])) {
+                  coords.forEach(coord => extractCoords(coord));
+                } else {
+                  const [x, y] = coords;
+                  minX = Math.min(minX, x);
+                  minY = Math.min(minY, y);
+                  maxX = Math.max(maxX, x);
+                  maxY = Math.max(maxY, y);
+                }
+              };
+              extractCoords(geom.coordinates);
+            } catch (e) {
+              // Skip if geometry parsing fails
+            }
+          }
+        });
+
+        // Register in gpkg_contents with bounding box
+        db.prepare(`
+          INSERT INTO gpkg_contents 
+          (table_name, data_type, identifier, description, last_change, min_x, min_y, max_x, max_y, srs_id)
+          VALUES (?, 'features', ?, ?, datetime('now'), ?, ?, ?, ?, 4326)
+        `).run(
+          tableName, 
+          layer.name, 
+          layer.description || null,
+          isFinite(minX) ? minX : null,
+          isFinite(minY) ? minY : null,
+          isFinite(maxX) ? maxX : null,
+          isFinite(maxY) ? maxY : null
+        );
+
+        // Register in gpkg_geometry_columns
+        db.prepare(`
+          INSERT INTO gpkg_geometry_columns 
+          (table_name, column_name, geometry_type_name, srs_id, z, m)
+          VALUES (?, 'geometry', ?, 4326, 0, 0)
+        `).run(tableName, geometryTypeName);
+
+        // Register beginning_point and end_point as geometry columns if they exist
+        if (hasBeginningCoords) {
+          db.prepare(`
+            INSERT INTO gpkg_geometry_columns 
+            (table_name, column_name, geometry_type_name, srs_id, z, m)
+            VALUES (?, 'beginning_point', 'POINT', 4326, 0, 0)
+          `).run(tableName);
+        }
+        if (hasEndCoords) {
+          db.prepare(`
+            INSERT INTO gpkg_geometry_columns 
+            (table_name, column_name, geometry_type_name, srs_id, z, m)
+            VALUES (?, 'end_point', 'POINT', 4326, 0, 0)
+          `).run(tableName);
+        }
+
+        // Insert features
+        for (const feature of features) {
+          try {
+            if (!feature.geometry_geojson) continue;
+
+            const geom = typeof feature.geometry_geojson === 'string'
+              ? JSON.parse(feature.geometry_geojson)
+              : feature.geometry_geojson;
+
+            // Convert GeoJSON to GeoPackage binary format
+            let geometryWKB;
+            try {
+              geometryWKB = geojsonToGeoPackageBinary(geom);
+            } catch (gpkgError) {
+              console.warn('Error converting geometry to GeoPackage format:', gpkgError);
+              // Skip this feature if geometry conversion fails
+              continue;
+            }
+
+            // Get asset_id from feature
+            let assetId = feature.asset_id || null;
+            if (!assetId && feature.properties) {
+              const props = typeof feature.properties === 'string'
+                ? JSON.parse(feature.properties)
+                : feature.properties;
+              assetId = props.asset_id || null;
+            }
+
+            // Get asset data if available
+            const asset = assetId ? assetsMap.get(assetId) : null;
+            const assetAttributes = assetId ? assetAttributesMap.get(assetId) : null;
+
+            // Create Point geometries from asset coordinates
+            let beginningPointWKB = null;
+            let endPointWKB = null;
+
+            if (asset) {
+              // Create beginning point if coordinates exist
+              if (asset.beginning_latitude != null && asset.beginning_longitude != null) {
+                try {
+                  const beginningPoint = {
+                    type: 'Point',
+                    coordinates: [parseFloat(asset.beginning_longitude), parseFloat(asset.beginning_latitude)]
+                  };
+                  beginningPointWKB = geojsonToGeoPackageBinary(beginningPoint);
+                } catch (e) {
+                  console.warn('Error creating beginning point geometry:', e);
+                }
+              }
+
+              // Create end point if coordinates exist
+              if (asset.end_latitude != null && asset.end_longitude != null) {
+                try {
+                  const endPoint = {
+                    type: 'Point',
+                    coordinates: [parseFloat(asset.end_longitude), parseFloat(asset.end_latitude)]
+                  };
+                  endPointWKB = geojsonToGeoPackageBinary(endPoint);
+                } catch (e) {
+                  console.warn('Error creating end point geometry:', e);
+                }
+              }
+            }
+
+            let insertSQL = `INSERT INTO "${tableName}" (geometry`;
+            let values = [geometryWKB];
+            let placeholders = '?';
+
+            if (feature.name) {
+              insertSQL += ', name';
+              values.push(feature.name);
+              placeholders += ', ?';
+            }
+
+            // Add feature properties
+            if (feature.properties) {
+              const props = typeof feature.properties === 'string'
+                ? JSON.parse(feature.properties)
+                : feature.properties;
+
+              Object.keys(props).forEach(key => {
+                if (key !== 'asset_id') {
+                  const sanitizedKey = key.replace(/[^a-zA-Z0-9_]/g, '_').substring(0, 63);
+                  insertSQL += `, "${sanitizedKey}"`;
+                  const value = props[key];
+                  values.push(value !== null && value !== undefined ? String(value) : null);
+                  placeholders += ', ?';
+                }
+              });
+            }
+
+            // Add asset fields
+            if (assetsMap.size > 0) {
+              assetFields.forEach(field => {
+                const sanitizedKey = field.replace(/[^a-zA-Z0-9_]/g, '_').substring(0, 63);
+                insertSQL += `, "asset_${sanitizedKey}"`;
+                const value = asset ? asset[field] : null;
+                values.push(value !== null && value !== undefined ? String(value) : null);
+                placeholders += ', ?';
+              });
+
+              // Add attribute values
+              allAttributeNames.forEach(attrName => {
+                const sanitizedKey = attrName.replace(/[^a-zA-Z0-9_]/g, '_').substring(0, 63);
+                insertSQL += `, "attr_${sanitizedKey}"`;
+                const value = assetAttributes ? assetAttributes[attrName] : null;
+                values.push(value !== null && value !== undefined ? String(value) : null);
+                placeholders += ', ?';
+              });
+
+              // Add beginning_point geometry if column exists
+              if (hasBeginningCoords) {
+                insertSQL += ', beginning_point';
+                values.push(beginningPointWKB);
+                placeholders += ', ?';
+              }
+
+              // Add end_point geometry if column exists
+              if (hasEndCoords) {
+                insertSQL += ', end_point';
+                values.push(endPointWKB);
+                placeholders += ', ?';
+              }
+            }
+
+            insertSQL += `) VALUES (${placeholders})`;
+            db.prepare(insertSQL).run(...values);
+          } catch (insertError) {
+            console.warn(`Error inserting feature in layer ${layer.name}:`, insertError);
+          }
+        }
+      } catch (layerError) {
+        console.error(`Error processing layer ${layer.name}:`, layerError);
+      }
+    }
+
+    // Create a separate "Assets" table with ALL assets from the project
+    // This includes assets whether they have GIS features or not
+    try {
+      const { data: allAssets, error: allAssetsError } = await req.supabase
+        .from('assets')
+        .select('*')
+        .eq('project_id', projectId)
+        .order('created_at');
+
+      if (!allAssetsError && allAssets && allAssets.length > 0) {
+        // Fetch all attribute values for all assets
+        const allAssetIds = allAssets.map(a => a.id);
+        const { data: allAttributeValues, error: allAttrError } = await req.supabase
+          .from('attribute_values')
+          .select('asset_id, attribute_id, value')
+          .in('asset_id', allAssetIds)
+          .eq('project_id', projectId);
+
+        // Get attribute names
+        let allAssetAttributesMap = new Map();
+        if (!allAttrError && allAttributeValues) {
+          const allAttributeIds = [...new Set(allAttributeValues.map(av => av.attribute_id))];
+          if (allAttributeIds.length > 0) {
+            const { data: allAttributes, error: allAttrsError } = await req.supabase
+              .from('attributes')
+              .select('id, title')
+              .in('id', allAttributeIds);
+
+            if (!allAttrsError && allAttributes) {
+              const allAttrIdToName = new Map();
+              allAttributes.forEach(attr => {
+                allAttrIdToName.set(attr.id, attr.title);
+              });
+
+              allAttributeValues.forEach(av => {
+                const attrName = allAttrIdToName.get(av.attribute_id);
+                if (attrName) {
+                  if (!allAssetAttributesMap.has(av.asset_id)) {
+                    allAssetAttributesMap.set(av.asset_id, {});
+                  }
+                  allAssetAttributesMap.get(av.asset_id)[attrName] = av.value;
+                }
+              });
+            }
+          }
+        }
+
+        // Check if any assets have coordinates
+        let hasBeginningCoords = false;
+        let hasEndCoords = false;
+        allAssets.forEach(asset => {
+          if (asset.beginning_latitude != null && asset.beginning_longitude != null) {
+            hasBeginningCoords = true;
+          }
+          if (asset.end_latitude != null && asset.end_longitude != null) {
+            hasEndCoords = true;
+          }
+        });
+
+        // Build assets table
+        const assetsTableName = 'Assets';
+        let createAssetsTableSQL = `CREATE TABLE "${assetsTableName}" (id TEXT PRIMARY KEY`;
+
+        // Add all asset fields
+        const assetFields = ['title', 'item_type_id', 'parent_id', 'beginning_latitude', 'beginning_longitude', 'end_latitude', 'end_longitude', 'order_index', 'created_at', 'updated_at'];
+        assetFields.forEach(field => {
+          createAssetsTableSQL += `, "${field}" TEXT`;
+        });
+
+        // Add attribute columns
+        const allAssetAttributeNames = new Set();
+        allAssetAttributesMap.forEach(attrs => {
+          Object.keys(attrs).forEach(attrName => {
+            allAssetAttributeNames.add(attrName);
+          });
+        });
+
+        allAssetAttributeNames.forEach(attrName => {
+          const sanitizedKey = attrName.replace(/[^a-zA-Z0-9_]/g, '_').substring(0, 63);
+          createAssetsTableSQL += `, "attr_${sanitizedKey}" TEXT`;
+        });
+
+        // Add geometry columns for coordinates
+        if (hasBeginningCoords) {
+          createAssetsTableSQL += ', beginning_point BLOB';
+        }
+        if (hasEndCoords) {
+          createAssetsTableSQL += ', end_point BLOB';
+        }
+
+        createAssetsTableSQL += ')';
+
+        db.exec(createAssetsTableSQL);
+
+        // Calculate bounding box for assets
+        let assetsMinX = Infinity, assetsMinY = Infinity, assetsMaxX = -Infinity, assetsMaxY = -Infinity;
+        allAssets.forEach(asset => {
+          if (asset.beginning_latitude != null && asset.beginning_longitude != null) {
+            const x = parseFloat(asset.beginning_longitude);
+            const y = parseFloat(asset.beginning_latitude);
+            assetsMinX = Math.min(assetsMinX, x);
+            assetsMinY = Math.min(assetsMinY, y);
+            assetsMaxX = Math.max(assetsMaxX, x);
+            assetsMaxY = Math.max(assetsMaxY, y);
+          }
+          if (asset.end_latitude != null && asset.end_longitude != null) {
+            const x = parseFloat(asset.end_longitude);
+            const y = parseFloat(asset.end_latitude);
+            assetsMinX = Math.min(assetsMinX, x);
+            assetsMinY = Math.min(assetsMinY, y);
+            assetsMaxX = Math.max(assetsMaxX, x);
+            assetsMaxY = Math.max(assetsMaxY, y);
+          }
+        });
+
+        // Register in gpkg_contents with bounding box
+        db.prepare(`
+          INSERT INTO gpkg_contents 
+          (table_name, data_type, identifier, description, last_change, min_x, min_y, max_x, max_y, srs_id)
+          VALUES (?, 'features', ?, ?, datetime('now'), ?, ?, ?, ?, 4326)
+        `).run(
+          assetsTableName, 
+          'All Assets', 
+          'All assets from the project, including those without GIS features',
+          isFinite(assetsMinX) ? assetsMinX : null,
+          isFinite(assetsMinY) ? assetsMinY : null,
+          isFinite(assetsMaxX) ? assetsMaxX : null,
+          isFinite(assetsMaxY) ? assetsMaxY : null
+        );
+
+        // Register geometry columns
+        if (hasBeginningCoords) {
+          db.prepare(`
+            INSERT INTO gpkg_geometry_columns 
+            (table_name, column_name, geometry_type_name, srs_id, z, m)
+            VALUES (?, 'beginning_point', 'POINT', 4326, 0, 0)
+          `).run(assetsTableName);
+        }
+        if (hasEndCoords) {
+          db.prepare(`
+            INSERT INTO gpkg_geometry_columns 
+            (table_name, column_name, geometry_type_name, srs_id, z, m)
+            VALUES (?, 'end_point', 'POINT', 4326, 0, 0)
+          `).run(assetsTableName);
+        }
+
+        // Insert all assets
+        for (const asset of allAssets) {
+          try {
+            // Create point geometries from coordinates
+            let beginningPointWKB = null;
+            let endPointWKB = null;
+
+            if (asset.beginning_latitude != null && asset.beginning_longitude != null) {
+              try {
+                const beginningPoint = {
+                  type: 'Point',
+                  coordinates: [parseFloat(asset.beginning_longitude), parseFloat(asset.beginning_latitude)]
+                };
+                beginningPointWKB = geojsonToGeoPackageBinary(beginningPoint);
+              } catch (e) {
+                console.warn('Error creating beginning point geometry:', e);
+              }
+            }
+
+            if (asset.end_latitude != null && asset.end_longitude != null) {
+              try {
+                const endPoint = {
+                  type: 'Point',
+                  coordinates: [parseFloat(asset.end_longitude), parseFloat(asset.end_latitude)]
+                };
+                endPointWKB = geojsonToGeoPackageBinary(endPoint);
+              } catch (e) {
+                console.warn('Error creating end point geometry:', e);
+              }
+            }
+
+            const assetAttributes = allAssetAttributesMap.get(asset.id) || {};
+
+            let insertSQL = `INSERT INTO "${assetsTableName}" (id`;
+            let values = [asset.id];
+            let placeholders = '?';
+
+            // Add asset fields
+            assetFields.forEach(field => {
+              insertSQL += `, "${field}"`;
+              const value = asset[field];
+              values.push(value !== null && value !== undefined ? String(value) : null);
+              placeholders += ', ?';
+            });
+
+            // Add attribute values
+            allAssetAttributeNames.forEach(attrName => {
+              const sanitizedKey = attrName.replace(/[^a-zA-Z0-9_]/g, '_').substring(0, 63);
+              insertSQL += `, "attr_${sanitizedKey}"`;
+              const value = assetAttributes[attrName];
+              values.push(value !== null && value !== undefined ? String(value) : null);
+              placeholders += ', ?';
+            });
+
+            // Add geometry columns
+            if (hasBeginningCoords) {
+              insertSQL += ', beginning_point';
+              values.push(beginningPointWKB);
+              placeholders += ', ?';
+            }
+            if (hasEndCoords) {
+              insertSQL += ', end_point';
+              values.push(endPointWKB);
+              placeholders += ', ?';
+            }
+
+            insertSQL += `) VALUES (${placeholders})`;
+            db.prepare(insertSQL).run(...values);
+          } catch (insertError) {
+            console.warn(`Error inserting asset ${asset.id}:`, insertError);
+          }
+        }
+      }
+    } catch (assetsTableError) {
+      console.error('Error creating assets table:', assetsTableError);
+      // Continue even if assets table fails - at least the layers are exported
+    }
+
+    // Close database
+    db.close();
+
+    // Read the file and send it
+    const fileBuffer = fs.readFileSync(tempFilePath);
+
+    // Clean up temp file
+    fs.unlinkSync(tempFilePath);
+
+    // Set response headers
+    const sanitizedProjectName = projectName.replace(/[^a-zA-Z0-9_-]/g, '_');
+    const filename = `${sanitizedProjectName}_export_${Date.now()}.gpkg`;
+
+    res.setHeader('Content-Type', 'application/geopackage+sqlite3');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Length', fileBuffer.length);
+
+    res.status(200).send(fileBuffer);
+
+  } catch (error) {
+    console.error('Error exporting to GeoPackage:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to export layers to GeoPackage',
+      message: error.message
+    });
+  }
+});
+
 export default {
   getGisLayers,
   createGisLayer,
@@ -658,6 +1618,9 @@ export default {
   deleteGisLayer,
   getLayerFeatures,
   addFeature,
-  deleteFeature
+  deleteFeature,
+  exportLayersToGeoPackage
 };
+
+
 
