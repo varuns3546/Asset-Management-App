@@ -122,7 +122,7 @@ export const deleteFeature = async (projectId, layerId, featureId) => {
 };
 
 // Export layers to GeoPackage
-export const exportLayersToGeoPackage = async (projectId, layerIds = []) => {
+export const exportLayersToGeoPackage = async (projectId, layerIds = [], projectName = null) => {
   try {
     const response = await gisApi.post(
       `/${projectId}/export`,
@@ -132,21 +132,36 @@ export const exportLayersToGeoPackage = async (projectId, layerIds = []) => {
       }
     );
 
+    // Determine filename - prefer project name if provided, otherwise try to extract from headers
+    let filename = `export_${Date.now()}.gpkg`;
+    
+    if (projectName) {
+      // Use provided project name
+      const sanitized = projectName.replace(/[^a-zA-Z0-9_-]/g, '_');
+      filename = `${sanitized}.gpkg`;
+    } else {
+      // Try to extract from Content-Disposition header
+      let contentDisposition = null;
+      if (response.headers) {
+        // Try multiple ways to access headers (axios may store them differently with blob responses)
+        contentDisposition = response.headers['content-disposition'] || 
+                            response.headers['Content-Disposition'] ||
+                            (typeof response.headers.get === 'function' ? response.headers.get('content-disposition') : null);
+      }
+      
+      if (contentDisposition) {
+        // Match filename="value" or filename=value (handles both quoted and unquoted)
+        const filenameMatch = contentDisposition.match(/filename\*?=["']?([^"';]+)["']?/i);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1].trim();
+        }
+      }
+    }
+    
     // Create download link
     const url = window.URL.createObjectURL(new Blob([response.data]));
     const link = document.createElement('a');
     link.href = url;
-    
-    // Extract filename from Content-Disposition header if available
-    const contentDisposition = response.headers['content-disposition'];
-    let filename = `export_${Date.now()}.gpkg`;
-    if (contentDisposition) {
-      const filenameMatch = contentDisposition.match(/filename="?(.+)"?/i);
-      if (filenameMatch) {
-        filename = filenameMatch[1];
-      }
-    }
-    
     link.setAttribute('download', filename);
     document.body.appendChild(link);
     link.click();
