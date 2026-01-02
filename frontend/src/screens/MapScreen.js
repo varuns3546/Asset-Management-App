@@ -85,28 +85,40 @@ const MapScreen = () => {
             ? featuresResponse.data.map(f => {
                 let coordinates = [];
                 
-                try {
-                  if (f.geometry_geojson) {
-                    const geom = JSON.parse(f.geometry_geojson);
+                // Priority 1: Use beginning_latitude/beginning_longitude if available (backend now provides these)
+                if (f.beginning_latitude != null && f.beginning_longitude != null) {
+                  coordinates = [[parseFloat(f.beginning_latitude), parseFloat(f.beginning_longitude)]];
+                }
+                // Priority 2: Parse geometry_geojson if coordinates not set
+                else if (f.geometry_geojson) {
+                  try {
+                    const geom = typeof f.geometry_geojson === 'string' 
+                      ? JSON.parse(f.geometry_geojson)
+                      : f.geometry_geojson;
                     
                     // Convert GeoJSON coordinates to our format [lat, lng]
-                    if (geom.type === 'Point') {
-                      coordinates = [[geom.coordinates[1], geom.coordinates[0]]]; // [lat, lng]
-                    } else if (geom.type === 'LineString') {
-                      coordinates = geom.coordinates.map(coord => [coord[1], coord[0]]);
-                    } else if (geom.type === 'Polygon') {
-                      coordinates = geom.coordinates[0].map(coord => [coord[1], coord[0]]);
+                    if (geom && geom.coordinates) {
+                      if (geom.type === 'Point') {
+                        coordinates = [[geom.coordinates[1], geom.coordinates[0]]]; // [lat, lng]
+                      } else if (geom.type === 'LineString') {
+                        coordinates = geom.coordinates.map(coord => [coord[1], coord[0]]);
+                      } else if (geom.type === 'Polygon') {
+                        coordinates = geom.coordinates[0].map(coord => [coord[1], coord[0]]);
+                      }
                     }
+                  } catch (error) {
+                    console.error('Error parsing geometry for feature', f.id, ':', error);
                   }
-                } catch (error) {
-                  console.error('Error parsing geometry:', error);
                 }
                 
                 return {
                   id: f.id,
                   name: f.name,
                   coordinates: coordinates,
-                  properties: f.properties
+                  properties: f.properties,
+                  // Keep original coordinate fields for compatibility
+                  beginning_latitude: f.beginning_latitude,
+                  beginning_longitude: f.beginning_longitude
                 };
               })
               .filter(f => f.coordinates && f.coordinates.length > 0) // Filter out features with no coordinates
@@ -163,7 +175,17 @@ const MapScreen = () => {
         });
         
         if (isRouteMounted()) {
-          setLayers(loadedLayers.filter(l => l !== null));
+          const filteredLayers = loadedLayers.filter(l => l !== null);
+          console.log('MapScreen: Setting layers state with', filteredLayers.length, 'layers');
+          const totalFeatures = filteredLayers.reduce((sum, l) => sum + (l.features?.length || 0), 0);
+          console.log('MapScreen: Total features across all layers:', totalFeatures);
+          if (filteredLayers.length > 0) {
+            console.log('MapScreen: First layer:', filteredLayers[0].name, 'has', filteredLayers[0].features?.length, 'features');
+            if (filteredLayers[0].features && filteredLayers[0].features.length > 0) {
+              console.log('MapScreen: First feature of first layer:', filteredLayers[0].features[0]);
+            }
+          }
+          setLayers(filteredLayers);
         }
       }
     } catch (error) {

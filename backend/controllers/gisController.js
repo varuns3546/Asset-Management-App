@@ -345,35 +345,68 @@ const getLayerFeatures = asyncHandler(async (req, res) => {
   }
 
   try {
-    // Use PostGIS function to get features with GeoJSON geometry
-    const { data: features, error } = await req.supabase
-      .rpc('get_gis_features_geojson', { p_layer_id: layerId });
+    // Fetch features directly from the table with all fields
+    const { data: rawFeatures, error: fetchError } = await req.supabase
+      .from('gis_features')
+      .select('*')
+      .eq('layer_id', layerId)
+      .order('created_at');
 
-    if (error) {
-      console.error('Error fetching features:', error);
-      // Fallback to regular query if function doesn't exist
-      const { data: fallbackFeatures, error: fallbackError } = await req.supabase
-        .from('gis_features')
-        .select('*')
-        .eq('layer_id', layerId)
-        .order('created_at');
+    if (fetchError) {
+      console.error('Error fetching features for layer', layerId, ':', fetchError);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to fetch features'
+      });
+    }
 
-      if (fallbackError) {
-        return res.status(500).json({
-          success: false,
-          error: 'Failed to fetch features'
-        });
+    // Extract coordinates from geometry_geojson for map display
+    const features = (rawFeatures || []).map(feature => {
+      // If coordinates aren't already set, extract them from geometry_geojson
+      if (feature.geometry_geojson && !feature.beginning_latitude) {
+        try {
+          const geom = typeof feature.geometry_geojson === 'string' 
+            ? JSON.parse(feature.geometry_geojson) 
+            : feature.geometry_geojson;
+          
+          if (geom && geom.coordinates) {
+            if (geom.type === 'Point') {
+              feature.beginning_longitude = geom.coordinates[0];
+              feature.beginning_latitude = geom.coordinates[1];
+            } else if (geom.type === 'LineString' && geom.coordinates.length > 0) {
+              // Use first point of line
+              feature.beginning_longitude = geom.coordinates[0][0];
+              feature.beginning_latitude = geom.coordinates[0][1];
+            } else if (geom.type === 'Polygon' && geom.coordinates.length > 0 && geom.coordinates[0].length > 0) {
+              // Use first point of outer ring
+              feature.beginning_longitude = geom.coordinates[0][0][0];
+              feature.beginning_latitude = geom.coordinates[0][0][1];
+            }
+          }
+        } catch (e) {
+          console.warn(`Error extracting coordinates from feature ${feature.id}:`, e);
+        }
       }
+      return feature;
+    });
 
-      return res.status(200).json({
-        success: true,
-        data: fallbackFeatures || []
+    // Debug logging
+    const featuresWithCoords = features.filter(f => f.beginning_latitude && f.beginning_longitude);
+    console.log(`Layer ${layerId}: Returned ${features.length} features, ${featuresWithCoords.length} have coordinates`);
+    if (features.length > 0) {
+      const firstFeature = features[0];
+      console.log(`  First feature:`, {
+        id: firstFeature.id,
+        name: firstFeature.name,
+        has_geometry_geojson: !!firstFeature.geometry_geojson,
+        beginning_latitude: firstFeature.beginning_latitude,
+        beginning_longitude: firstFeature.beginning_longitude
       });
     }
 
     res.status(200).json({
       success: true,
-      data: features || []
+      data: features
     });
 
   } catch (error) {
@@ -816,10 +849,10 @@ const exportLayersToGeoPackage = asyncHandler(async (req, res) => {
       
       extractCoords(geojson.coordinates);
 
-      // Build GeoPackage binary format
-      // Header: magic (1 byte) + version (1 byte) + flags (1 byte) + envelope (varies)
-      const envelopeSize = 32; // 4 doubles (minX, maxX, minY, maxY) = 32 bytes
-      const headerSize = 1 + 1 + 1 + envelopeSize; // magic + version + flags + envelope
+      // Build GeoPackage binary format according to GeoPackage spec
+      // Format: magic (1) + version (1) + flags (1) + srs_id (4) + WKB
+      // We'll use NO envelope for simplicity - QGIS handles this better
+      const headerSize = 1 + 1 + 1 + 4; // magic + version + flags + srs_id (no envelope)
       const totalSize = headerSize + wkb.length;
       
       const gpkgBuffer = Buffer.allocUnsafe(totalSize);
@@ -831,18 +864,18 @@ const exportLayersToGeoPackage = asyncHandler(async (req, res) => {
       // Version (0x00)
       gpkgBuffer.writeUInt8(0x00, offset++);
       
-      // Flags byte: standard geometry (0x01 = standard, no extended)
+      // Flags byte (8 bits):
+      // - Bit 0 (0x01): 1 = StandardGeoPackageBinary  
+      // - Bits 1-3 (0x0E): envelope type: 000 = no envelope
+      // - Bit 4 (0x10): 0 = not empty
+      // - Bit 5 (0x20): 0 = little endian (WKB byte order)
+      // - Bits 6-7: reserved (0)
+      // Value: 0x01 (standard binary, no envelope, not empty, little endian)
       gpkgBuffer.writeUInt8(0x01, offset++);
       
-      // Envelope: minX, maxX, minY, maxY (all doubles)
-      gpkgBuffer.writeDoubleLE(minX, offset);
-      offset += 8;
-      gpkgBuffer.writeDoubleLE(maxX, offset);
-      offset += 8;
-      gpkgBuffer.writeDoubleLE(minY, offset);
-      offset += 8;
-      gpkgBuffer.writeDoubleLE(maxY, offset);
-      offset += 8;
+      // SRID (Spatial Reference System ID) - 4326 for WGS84
+      gpkgBuffer.writeInt32LE(4326, offset);
+      offset += 4;
       
       // Append WKB
       wkb.copy(gpkgBuffer, offset);
@@ -938,18 +971,51 @@ const exportLayersToGeoPackage = asyncHandler(async (req, res) => {
     // Process each layer
     for (const layer of layers) {
       try {
-        // Fetch features for this layer with GeoJSON geometry
-        const { data: rpcFeatures, error: rpcError } = await req.supabase
-          .rpc('get_gis_features_geojson', { p_layer_id: layer.id });
+        // Fetch features for this layer - we'll get geometry as WKT/GeoJSON
+        // First try the RPC function if it exists
+        let rpcFeatures = null;
+        let rpcError = null;
+        
+        try {
+          const result = await req.supabase
+            .rpc('get_gis_features_geojson', { p_layer_id: layer.id });
+          rpcFeatures = result.data;
+          rpcError = result.error;
+        } catch (e) {
+          console.log(`RPC function get_gis_features_geojson not available, using direct query`);
+          rpcError = e;
+        }
 
-        if (rpcError) {
-          console.warn(`Error fetching features for layer ${layer.name}:`, rpcError);
-          continue;
+        // If RPC fails, fetch features directly
+        if (rpcError || !rpcFeatures) {
+          const { data: rawFeatures, error: fetchError } = await req.supabase
+            .from('gis_features')
+            .select('*')
+            .eq('layer_id', layer.id)
+            .order('created_at');
+
+          if (fetchError) {
+            console.warn(`Error fetching features for layer ${layer.name}:`, fetchError);
+            continue;
+          }
+          
+          rpcFeatures = rawFeatures;
         }
 
         if (!rpcFeatures || rpcFeatures.length === 0) {
           console.log(`Layer ${layer.name} has no features, skipping`);
           continue;
+        }
+        
+        console.log(`Layer ${layer.name}: fetched ${rpcFeatures.length} features`);
+        
+        // Check if any features have geometry_geojson
+        const featuresWithGeometry = rpcFeatures.filter(f => f.geometry_geojson);
+        if (featuresWithGeometry.length === 0) {
+          console.warn(`Layer ${layer.name}: No features have geometry_geojson data! This suggests the PostGIS geometry column needs to be converted. Run the migration: backend/migrations/create_gis_geojson_functions.sql`);
+          // Continue anyway to export the layer table structure and attribute data
+        } else {
+          console.log(`Layer ${layer.name}: ${featuresWithGeometry.length} features have geometry data`);
         }
 
         // Fetch asset_id for features (RPC might not include it)
@@ -1229,9 +1295,14 @@ const exportLayersToGeoPackage = asyncHandler(async (req, res) => {
         `).run(tableName, geometryTypeName);
 
         // Insert features
+        let insertedCount = 0;
+        let skippedCount = 0;
         for (const feature of features) {
           try {
-            if (!feature.geometry_geojson) continue;
+            if (!feature.geometry_geojson) {
+              skippedCount++;
+              continue;
+            }
 
             const geom = typeof feature.geometry_geojson === 'string'
               ? JSON.parse(feature.geometry_geojson)
@@ -1241,9 +1312,14 @@ const exportLayersToGeoPackage = asyncHandler(async (req, res) => {
             let geometryWKB;
             try {
               geometryWKB = geojsonToGeoPackageBinary(geom);
+              // Log first feature's geometry details
+              if (insertedCount === 0) {
+                console.log(`Layer ${layer.name}: First feature geometry type: ${geom.type}, WKB size: ${geometryWKB.length} bytes`);
+              }
             } catch (gpkgError) {
               console.warn('Error converting geometry to GeoPackage format:', gpkgError);
               // Skip this feature if geometry conversion fails
+              skippedCount++;
               continue;
             }
 
@@ -1355,10 +1431,24 @@ const exportLayersToGeoPackage = asyncHandler(async (req, res) => {
 
             insertSQL += `) VALUES (${placeholders})`;
             db.prepare(insertSQL).run(...values);
+            insertedCount++;
           } catch (insertError) {
             console.warn(`Error inserting feature in layer ${layer.name}:`, insertError);
+            skippedCount++;
           }
         }
+        
+        // Summary for this layer
+        console.log(`Layer ${layer.name}: Successfully inserted ${insertedCount} features, skipped ${skippedCount} features`);
+        
+        // Verify data was written
+        const rowCount = db.prepare(`SELECT COUNT(*) as count FROM "${tableName}"`).get();
+        console.log(`Layer ${layer.name}: Table "${tableName}" has ${rowCount.count} total rows`);
+        
+        // Check if geometry column has data
+        const geomCount = db.prepare(`SELECT COUNT(*) as count FROM "${tableName}" WHERE geometry IS NOT NULL`).get();
+        console.log(`Layer ${layer.name}: ${geomCount.count} rows have geometry data`);
+        
       } catch (layerError) {
         console.error(`Error processing layer ${layer.name}:`, layerError);
       }
@@ -1376,6 +1466,49 @@ const exportLayersToGeoPackage = asyncHandler(async (req, res) => {
       if (!allAssetsError && allAssets && allAssets.length > 0) {
         // Fetch all attribute values for all assets
         const allAssetIds = allAssets.map(a => a.id);
+        
+        // Fetch GIS features for all assets to get their geometries
+        // We need to get all features across all layers for this project that have asset_ids
+        const { data: allLayers, error: allLayersError } = await req.supabase
+          .from('gis_layers')
+          .select('id')
+          .eq('project_id', projectId);
+        
+        // Create a map of asset_id -> geometry (GeoJSON)
+        const assetGeometryMap = new Map();
+        if (!allLayersError && allLayers && allLayers.length > 0) {
+          // Fetch features from all layers that have asset_ids
+          let totalFeaturesWithAssets = 0;
+          for (const layer of allLayers) {
+            // Fetch features directly - select all columns to get geometry_geojson
+            const { data: layerFeatures, error: layerFeaturesError } = await req.supabase
+              .from('gis_features')
+              .select('*')
+              .eq('layer_id', layer.id)
+              .not('asset_id', 'is', null);
+            
+            if (!layerFeaturesError && layerFeatures) {
+              totalFeaturesWithAssets += layerFeatures.length;
+              layerFeatures.forEach(feature => {
+                if (feature.asset_id && feature.geometry_geojson && !assetGeometryMap.has(feature.asset_id)) {
+                  try {
+                    const geom = typeof feature.geometry_geojson === 'string'
+                      ? JSON.parse(feature.geometry_geojson)
+                      : feature.geometry_geojson;
+                    assetGeometryMap.set(feature.asset_id, geom);
+                  } catch (e) {
+                    console.warn('Error parsing feature geometry for asset:', feature.asset_id, e);
+                  }
+                }
+              });
+            }
+          }
+          console.log(`Found ${totalFeaturesWithAssets} features with asset_ids, fetched geometries for ${assetGeometryMap.size} assets from gis_features table`);
+          if (totalFeaturesWithAssets > 0 && assetGeometryMap.size === 0) {
+            console.warn('WARNING: Features have asset_ids but no geometry_geojson data! Run migration: backend/migrations/create_gis_geojson_functions.sql');
+          }
+        }
+        
         const { data: allAttributeValues, error: allAttrError } = await req.supabase
           .from('attribute_values')
           .select('asset_id, attribute_id, value')
@@ -1451,7 +1584,8 @@ const exportLayersToGeoPackage = asyncHandler(async (req, res) => {
         // NOTE: We do NOT include beginning_point and end_point columns here
         // to avoid confusing QGIS - the geometry column contains the primary geometry data
         const hasAnyCoords = hasBeginningCoords || hasEndCoords;
-        if (hasAnyCoords) {
+        const hasGisFeatureGeometries = assetGeometryMap.size > 0;
+        if (hasAnyCoords || hasGisFeatureGeometries) {
           createAssetsTableSQL += ', geometry BLOB';
         }
 
@@ -1465,22 +1599,49 @@ const exportLayersToGeoPackage = asyncHandler(async (req, res) => {
 
         // Calculate bounding box for assets
         let assetsMinX = Infinity, assetsMinY = Infinity, assetsMaxX = -Infinity, assetsMaxY = -Infinity;
+        
+        // Helper to extract coordinates from geometry and update bounding box
+        const updateBoundsFromGeometry = (geom) => {
+          if (!geom || !geom.coordinates) return;
+          
+          const extractCoords = (coords) => {
+            if (Array.isArray(coords[0])) {
+              coords.forEach(coord => extractCoords(coord));
+            } else {
+              const [x, y] = coords;
+              assetsMinX = Math.min(assetsMinX, x);
+              assetsMinY = Math.min(assetsMinY, y);
+              assetsMaxX = Math.max(assetsMaxX, x);
+              assetsMaxY = Math.max(assetsMaxY, y);
+            }
+          };
+          
+          extractCoords(geom.coordinates);
+        };
+        
         allAssets.forEach(asset => {
-          if (asset.beginning_latitude != null && asset.beginning_longitude != null) {
-            const x = parseFloat(asset.beginning_longitude);
-            const y = parseFloat(asset.beginning_latitude);
-            assetsMinX = Math.min(assetsMinX, x);
-            assetsMinY = Math.min(assetsMinY, y);
-            assetsMaxX = Math.max(assetsMaxX, x);
-            assetsMaxY = Math.max(assetsMaxY, y);
-          }
-          if (asset.end_latitude != null && asset.end_longitude != null) {
-            const x = parseFloat(asset.end_longitude);
-            const y = parseFloat(asset.end_latitude);
-            assetsMinX = Math.min(assetsMinX, x);
-            assetsMinY = Math.min(assetsMinY, y);
-            assetsMaxX = Math.max(assetsMaxX, x);
-            assetsMaxY = Math.max(assetsMaxY, y);
+          // First try to use geometry from gis_features
+          const featureGeometry = assetGeometryMap.get(asset.id);
+          if (featureGeometry) {
+            updateBoundsFromGeometry(featureGeometry);
+          } else {
+            // Fallback to coordinate fields
+            if (asset.beginning_latitude != null && asset.beginning_longitude != null) {
+              const x = parseFloat(asset.beginning_longitude);
+              const y = parseFloat(asset.beginning_latitude);
+              assetsMinX = Math.min(assetsMinX, x);
+              assetsMinY = Math.min(assetsMinY, y);
+              assetsMaxX = Math.max(assetsMaxX, x);
+              assetsMaxY = Math.max(assetsMaxY, y);
+            }
+            if (asset.end_latitude != null && asset.end_longitude != null) {
+              const x = parseFloat(asset.end_longitude);
+              const y = parseFloat(asset.end_latitude);
+              assetsMinX = Math.min(assetsMinX, x);
+              assetsMinY = Math.min(assetsMinY, y);
+              assetsMaxX = Math.max(assetsMaxX, x);
+              assetsMaxY = Math.max(assetsMaxY, y);
+            }
           }
         });
 
@@ -1506,19 +1667,21 @@ const exportLayersToGeoPackage = asyncHandler(async (req, res) => {
         // they are just BLOB columns for additional data, not display geometries
         // Delete any existing geometry column registrations first to avoid conflicts
         db.prepare(`DELETE FROM gpkg_geometry_columns WHERE table_name = ?`).run(assetsTableName);
-        if (hasAnyCoords) {
+        if (hasAnyCoords || assetGeometryMap.size > 0) {
           console.log('Registering geometry column for Assets table');
+          // Use 'GEOMETRY' as the type since assets may have different geometry types (Point, LineString, Polygon)
+          // from their linked GIS features
           db.prepare(`
             INSERT INTO gpkg_geometry_columns 
             (table_name, column_name, geometry_type_name, srs_id, z, m)
-            VALUES (?, 'geometry', 'POINT', 4326, 0, 0)
+            VALUES (?, 'geometry', 'GEOMETRY', 4326, 0, 0)
           `).run(assetsTableName);
           
           // Verify registration
           const checkGeom = db.prepare(`SELECT * FROM gpkg_geometry_columns WHERE table_name = ?`).all(assetsTableName);
           console.log('Registered geometry columns for Assets:', JSON.stringify(checkGeom, null, 2));
         } else {
-          console.log('WARNING: No coordinates found in assets, geometry column NOT created!');
+          console.log('WARNING: No coordinates or geometries found in assets, geometry column NOT created!');
         }
 
         // Insert all assets
@@ -1526,16 +1689,34 @@ const exportLayersToGeoPackage = asyncHandler(async (req, res) => {
         let assetsWithoutGeometry = 0;
         for (const asset of allAssets) {
           try {
-            // Create primary geometry (prefer beginning coordinates, fallback to end coordinates)
+            // Create primary geometry
+            // Priority: 1) Use geometry from gis_features table if available
+            //           2) Fallback to creating point from beginning coordinates
+            //           3) Fallback to creating point from end coordinates
             let geometryWKB = null;
             
-            if (asset.beginning_latitude != null && asset.beginning_longitude != null) {
+            // First, try to get geometry from gis_features table
+            const featureGeometry = assetGeometryMap.get(asset.id);
+            if (featureGeometry) {
+              try {
+                // Log first few assets to verify we're using feature geometry
+                if (allAssets.indexOf(asset) < 3) {
+                  console.log(`Asset ${asset.id} using geometry from gis_features:`, featureGeometry.type);
+                }
+                geometryWKB = geojsonToGeoPackageBinary(featureGeometry);
+              } catch (e) {
+                console.warn('Error converting feature geometry for asset:', asset.id, e);
+              }
+            }
+            
+            // Fallback: Create point from beginning coordinates if no feature geometry
+            if (!geometryWKB && asset.beginning_latitude != null && asset.beginning_longitude != null) {
               try {
                 const lng = parseFloat(asset.beginning_longitude);
                 const lat = parseFloat(asset.beginning_latitude);
                 // Log first few assets to verify coordinates
                 if (allAssets.indexOf(asset) < 3) {
-                  console.log(`Asset ${asset.id} coordinates: lng=${lng}, lat=${lat}`);
+                  console.log(`Asset ${asset.id} using beginning coordinates: lng=${lng}, lat=${lat}`);
                 }
                 const point = {
                   type: 'Point',
@@ -1543,15 +1724,18 @@ const exportLayersToGeoPackage = asyncHandler(async (req, res) => {
                 };
                 geometryWKB = geojsonToGeoPackageBinary(point);
               } catch (e) {
-                console.warn('Error creating primary geometry:', e);
+                console.warn('Error creating primary geometry from beginning coordinates:', e);
               }
-            } else if (asset.end_latitude != null && asset.end_longitude != null) {
+            }
+            
+            // Second fallback: Use end coordinates if available
+            if (!geometryWKB && asset.end_latitude != null && asset.end_longitude != null) {
               try {
                 const lng = parseFloat(asset.end_longitude);
                 const lat = parseFloat(asset.end_latitude);
                 // Log first few assets to verify coordinates
                 if (allAssets.indexOf(asset) < 3) {
-                  console.log(`Asset ${asset.id} coordinates (from end): lng=${lng}, lat=${lat}`);
+                  console.log(`Asset ${asset.id} using end coordinates: lng=${lng}, lat=${lat}`);
                 }
                 const point = {
                   type: 'Point',
@@ -1589,7 +1773,7 @@ const exportLayersToGeoPackage = asyncHandler(async (req, res) => {
             // Add primary geometry column (required for QGIS display)
             // NOTE: We do NOT include beginning_point and end_point columns
             // to avoid confusing QGIS - the geometry column contains the primary geometry data
-            if (hasAnyCoords) {
+            if (hasAnyCoords || hasGisFeatureGeometries) {
               insertSQL += ', geometry';
               values.push(geometryWKB);
               placeholders += ', ?';
@@ -1638,6 +1822,25 @@ const exportLayersToGeoPackage = asyncHandler(async (req, res) => {
       // Continue even if assets table fails - at least the layers are exported
     }
 
+    // Verify GeoPackage metadata before closing
+    try {
+      const contents = db.prepare(`SELECT * FROM gpkg_contents`).all();
+      console.log(`\n=== GeoPackage Summary ===`);
+      console.log(`Total tables in gpkg_contents: ${contents.length}`);
+      contents.forEach(c => {
+        console.log(`  - ${c.table_name} (${c.data_type}): bbox [${c.min_x}, ${c.min_y}, ${c.max_x}, ${c.max_y}]`);
+      });
+      
+      const geomCols = db.prepare(`SELECT * FROM gpkg_geometry_columns`).all();
+      console.log(`\nGeometry columns registered: ${geomCols.length}`);
+      geomCols.forEach(g => {
+        console.log(`  - ${g.table_name}.${g.column_name}: ${g.geometry_type_name}`);
+      });
+      console.log(`=========================\n`);
+    } catch (e) {
+      console.error('Error verifying GeoPackage metadata:', e);
+    }
+    
     // Close database
     db.close();
 
