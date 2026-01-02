@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import Modal from '../Modal';
 import ErrorMessage from '../forms/ErrorMessage';
 import * as gisLayerService from '../../services/gisLayerService';
 import '../../styles/modal.css';
 
 const ExportLayersModal = ({ isOpen, onClose, layers, projectId }) => {
+  const { selectedProject } = useSelector((state) => state.projects);
   const [selectedLayerIds, setSelectedLayerIds] = useState([]);
   const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState('');
@@ -55,7 +57,8 @@ const ExportLayersModal = ({ isOpen, onClose, layers, projectId }) => {
     setSuccessMessage('');
 
     try {
-      await gisLayerService.exportLayersToGeoPackage(projectId, selectedLayerIds);
+      const projectName = selectedProject?.name || selectedProject?.title || null;
+      await gisLayerService.exportLayersToGeoPackage(projectId, selectedLayerIds, projectName);
       setSuccessMessage('Export completed successfully! The file should download automatically.');
       
       // Close modal after a short delay
@@ -72,7 +75,7 @@ const ExportLayersModal = ({ isOpen, onClose, layers, projectId }) => {
 
   if (!layers || layers.length === 0) {
     return (
-      <Modal isOpen={isOpen} onClose={onClose} title="Export Layers to QGIS">
+      <Modal isOpen={isOpen} onClose={onClose} title="Export Layers to GeoPackage">
         <div style={{ padding: '20px', textAlign: 'center' }}>
           <p>No layers available to export.</p>
           <button 
@@ -98,7 +101,7 @@ const ExportLayersModal = ({ isOpen, onClose, layers, projectId }) => {
   const noneSelected = selectedLayerIds.length === 0;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Export Layers to QGIS">
+    <Modal isOpen={isOpen} onClose={onClose} title="Export Layers to GeoPackage">
       <div style={{ padding: '20px' }}>
         <p style={{ marginBottom: '20px', color: '#666' }}>
           Select the layers you want to export to GeoPackage format (.gpkg) for use in QGIS.

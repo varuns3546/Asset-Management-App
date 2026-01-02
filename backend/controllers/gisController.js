@@ -932,6 +932,9 @@ const exportLayersToGeoPackage = asyncHandler(async (req, res) => {
        'Web Mercator')
     `).run();
 
+    // Track used table names to avoid duplicates
+    const usedTableNames = new Set();
+
     // Process each layer
     for (const layer of layers) {
       try {
@@ -979,11 +982,22 @@ const exportLayersToGeoPackage = asyncHandler(async (req, res) => {
           continue;
         }
 
-        // Sanitize layer name for table name
-        const tableName = layer.name
+        // Sanitize layer name for table name and ensure uniqueness
+        let baseTableName = layer.name
           .replace(/[^a-zA-Z0-9_]/g, '_')
           .replace(/^[0-9]/, '_$&')
           .substring(0, 63);
+        
+        let tableName = baseTableName;
+        let counter = 1;
+        while (usedTableNames.has(tableName)) {
+          // Append counter to make unique, ensuring total length doesn't exceed 63
+          const suffix = `_${counter}`;
+          const maxLength = 63 - suffix.length;
+          tableName = baseTableName.substring(0, maxLength) + suffix;
+          counter++;
+        }
+        usedTableNames.add(tableName);
 
         // Determine geometry type from first feature
         let geometryTypeName = 'GEOMETRY';
@@ -1155,6 +1169,8 @@ const exportLayersToGeoPackage = asyncHandler(async (req, res) => {
 
         createTableSQL += ')';
 
+        // Drop table if it exists (in case of duplicate names from previous iterations)
+        db.exec(`DROP TABLE IF EXISTS "${tableName}"`);
         db.exec(createTableSQL);
 
         // Calculate bounding box for the layer
@@ -1185,13 +1201,16 @@ const exportLayersToGeoPackage = asyncHandler(async (req, res) => {
         });
 
         // Register in gpkg_contents with bounding box
+        // Use tableName as identifier to ensure uniqueness (layer.name may be duplicated)
+        // Delete any existing entry first to avoid conflicts
+        db.prepare(`DELETE FROM gpkg_contents WHERE table_name = ?`).run(tableName);
         db.prepare(`
           INSERT INTO gpkg_contents 
           (table_name, data_type, identifier, description, last_change, min_x, min_y, max_x, max_y, srs_id)
           VALUES (?, 'features', ?, ?, datetime('now'), ?, ?, ?, ?, 4326)
         `).run(
           tableName, 
-          layer.name, 
+          tableName, // Use unique tableName as identifier instead of layer.name
           layer.description || null,
           isFinite(minX) ? minX : null,
           isFinite(minY) ? minY : null,
@@ -1199,28 +1218,15 @@ const exportLayersToGeoPackage = asyncHandler(async (req, res) => {
           isFinite(maxY) ? maxY : null
         );
 
-        // Register in gpkg_geometry_columns
+        // Register ONLY the primary geometry column in gpkg_geometry_columns
+        // Do NOT register beginning_point and end_point - they are just BLOB columns for additional data
+        // GeoPackage spec requires only ONE geometry column per table to be registered for display
+        db.prepare(`DELETE FROM gpkg_geometry_columns WHERE table_name = ?`).run(tableName);
         db.prepare(`
           INSERT INTO gpkg_geometry_columns 
           (table_name, column_name, geometry_type_name, srs_id, z, m)
           VALUES (?, 'geometry', ?, 4326, 0, 0)
         `).run(tableName, geometryTypeName);
-
-        // Register beginning_point and end_point as geometry columns if they exist
-        if (hasBeginningCoords) {
-          db.prepare(`
-            INSERT INTO gpkg_geometry_columns 
-            (table_name, column_name, geometry_type_name, srs_id, z, m)
-            VALUES (?, 'beginning_point', 'POINT', 4326, 0, 0)
-          `).run(tableName);
-        }
-        if (hasEndCoords) {
-          db.prepare(`
-            INSERT INTO gpkg_geometry_columns 
-            (table_name, column_name, geometry_type_name, srs_id, z, m)
-            VALUES (?, 'end_point', 'POINT', 4326, 0, 0)
-          `).run(tableName);
-        }
 
         // Insert features
         for (const feature of features) {
@@ -1440,16 +1446,21 @@ const exportLayersToGeoPackage = asyncHandler(async (req, res) => {
           createAssetsTableSQL += `, "attr_${sanitizedKey}" TEXT`;
         });
 
-        // Add geometry columns for coordinates
-        if (hasBeginningCoords) {
-          createAssetsTableSQL += ', beginning_point BLOB';
-        }
-        if (hasEndCoords) {
-          createAssetsTableSQL += ', end_point BLOB';
+        // Add primary geometry column for displaying assets in QGIS
+        // This is required for QGIS to recognize and display the layer
+        // NOTE: We do NOT include beginning_point and end_point columns here
+        // to avoid confusing QGIS - the geometry column contains the primary geometry data
+        const hasAnyCoords = hasBeginningCoords || hasEndCoords;
+        if (hasAnyCoords) {
+          createAssetsTableSQL += ', geometry BLOB';
         }
 
         createAssetsTableSQL += ')';
 
+        console.log('Creating Assets table with SQL:', createAssetsTableSQL);
+        console.log('hasAnyCoords:', hasAnyCoords, 'hasBeginningCoords:', hasBeginningCoords, 'hasEndCoords:', hasEndCoords);
+        console.log('Table SQL includes geometry column:', createAssetsTableSQL.includes('geometry BLOB'));
+        
         db.exec(createAssetsTableSQL);
 
         // Calculate bounding box for assets
@@ -1474,6 +1485,8 @@ const exportLayersToGeoPackage = asyncHandler(async (req, res) => {
         });
 
         // Register in gpkg_contents with bounding box
+        // Delete any existing entry first to avoid conflicts
+        db.prepare(`DELETE FROM gpkg_contents WHERE table_name = ?`).run(assetsTableName);
         db.prepare(`
           INSERT INTO gpkg_contents 
           (table_name, data_type, identifier, description, last_change, min_x, min_y, max_x, max_y, srs_id)
@@ -1488,50 +1501,65 @@ const exportLayersToGeoPackage = asyncHandler(async (req, res) => {
           isFinite(assetsMaxY) ? assetsMaxY : null
         );
 
-        // Register geometry columns
-        if (hasBeginningCoords) {
+        // Register ONLY the primary geometry column (required for QGIS display)
+        // Do NOT register beginning_point and end_point as geometry columns - 
+        // they are just BLOB columns for additional data, not display geometries
+        // Delete any existing geometry column registrations first to avoid conflicts
+        db.prepare(`DELETE FROM gpkg_geometry_columns WHERE table_name = ?`).run(assetsTableName);
+        if (hasAnyCoords) {
+          console.log('Registering geometry column for Assets table');
           db.prepare(`
             INSERT INTO gpkg_geometry_columns 
             (table_name, column_name, geometry_type_name, srs_id, z, m)
-            VALUES (?, 'beginning_point', 'POINT', 4326, 0, 0)
+            VALUES (?, 'geometry', 'POINT', 4326, 0, 0)
           `).run(assetsTableName);
-        }
-        if (hasEndCoords) {
-          db.prepare(`
-            INSERT INTO gpkg_geometry_columns 
-            (table_name, column_name, geometry_type_name, srs_id, z, m)
-            VALUES (?, 'end_point', 'POINT', 4326, 0, 0)
-          `).run(assetsTableName);
+          
+          // Verify registration
+          const checkGeom = db.prepare(`SELECT * FROM gpkg_geometry_columns WHERE table_name = ?`).all(assetsTableName);
+          console.log('Registered geometry columns for Assets:', JSON.stringify(checkGeom, null, 2));
+        } else {
+          console.log('WARNING: No coordinates found in assets, geometry column NOT created!');
         }
 
         // Insert all assets
+        let assetsWithGeometry = 0;
+        let assetsWithoutGeometry = 0;
         for (const asset of allAssets) {
           try {
-            // Create point geometries from coordinates
-            let beginningPointWKB = null;
-            let endPointWKB = null;
-
+            // Create primary geometry (prefer beginning coordinates, fallback to end coordinates)
+            let geometryWKB = null;
+            
             if (asset.beginning_latitude != null && asset.beginning_longitude != null) {
               try {
-                const beginningPoint = {
+                const lng = parseFloat(asset.beginning_longitude);
+                const lat = parseFloat(asset.beginning_latitude);
+                // Log first few assets to verify coordinates
+                if (allAssets.indexOf(asset) < 3) {
+                  console.log(`Asset ${asset.id} coordinates: lng=${lng}, lat=${lat}`);
+                }
+                const point = {
                   type: 'Point',
-                  coordinates: [parseFloat(asset.beginning_longitude), parseFloat(asset.beginning_latitude)]
+                  coordinates: [lng, lat]
                 };
-                beginningPointWKB = geojsonToGeoPackageBinary(beginningPoint);
+                geometryWKB = geojsonToGeoPackageBinary(point);
               } catch (e) {
-                console.warn('Error creating beginning point geometry:', e);
+                console.warn('Error creating primary geometry:', e);
               }
-            }
-
-            if (asset.end_latitude != null && asset.end_longitude != null) {
+            } else if (asset.end_latitude != null && asset.end_longitude != null) {
               try {
-                const endPoint = {
+                const lng = parseFloat(asset.end_longitude);
+                const lat = parseFloat(asset.end_latitude);
+                // Log first few assets to verify coordinates
+                if (allAssets.indexOf(asset) < 3) {
+                  console.log(`Asset ${asset.id} coordinates (from end): lng=${lng}, lat=${lat}`);
+                }
+                const point = {
                   type: 'Point',
-                  coordinates: [parseFloat(asset.end_longitude), parseFloat(asset.end_latitude)]
+                  coordinates: [lng, lat]
                 };
-                endPointWKB = geojsonToGeoPackageBinary(endPoint);
+                geometryWKB = geojsonToGeoPackageBinary(point);
               } catch (e) {
-                console.warn('Error creating end point geometry:', e);
+                console.warn('Error creating primary geometry from end coordinates:', e);
               }
             }
 
@@ -1558,23 +1586,51 @@ const exportLayersToGeoPackage = asyncHandler(async (req, res) => {
               placeholders += ', ?';
             });
 
-            // Add geometry columns
-            if (hasBeginningCoords) {
-              insertSQL += ', beginning_point';
-              values.push(beginningPointWKB);
-              placeholders += ', ?';
-            }
-            if (hasEndCoords) {
-              insertSQL += ', end_point';
-              values.push(endPointWKB);
+            // Add primary geometry column (required for QGIS display)
+            // NOTE: We do NOT include beginning_point and end_point columns
+            // to avoid confusing QGIS - the geometry column contains the primary geometry data
+            if (hasAnyCoords) {
+              insertSQL += ', geometry';
+              values.push(geometryWKB);
               placeholders += ', ?';
             }
 
             insertSQL += `) VALUES (${placeholders})`;
+            
+            // Count assets with/without geometry
+            if (geometryWKB !== null) {
+              assetsWithGeometry++;
+            } else {
+              assetsWithoutGeometry++;
+            }
+            
+            // Log first asset insert to verify geometry column is included
+            if (asset === allAssets[0]) {
+              console.log('First asset INSERT SQL:', insertSQL.substring(0, 300));
+              console.log('First asset has geometryWKB:', geometryWKB !== null, 'Size:', geometryWKB ? geometryWKB.length : 0);
+            }
+            
             db.prepare(insertSQL).run(...values);
           } catch (insertError) {
             console.warn(`Error inserting asset ${asset.id}:`, insertError);
           }
+        }
+        
+        // Verify geometry column exists in table
+        try {
+          const tableInfo = db.prepare(`PRAGMA table_info("${assetsTableName}")`).all();
+          const geometryColumn = tableInfo.find(col => col.name === 'geometry');
+          console.log('Geometry column in Assets table:', geometryColumn ? 'EXISTS' : 'MISSING');
+          if (geometryColumn) {
+            console.log('Geometry column details:', geometryColumn);
+          }
+          
+          // Count how many assets have geometry data
+          const assetsWithGeomCount = db.prepare(`SELECT COUNT(*) as count FROM "${assetsTableName}" WHERE geometry IS NOT NULL`).get();
+          console.log(`Assets with geometry data: ${assetsWithGeomCount.count} out of ${allAssets.length} total`);
+          console.log(`Assets without geometry: ${assetsWithoutGeometry}, Assets with geometry: ${assetsWithGeometry}`);
+        } catch (e) {
+          console.error('Error checking table info:', e);
         }
       }
     } catch (assetsTableError) {
@@ -1593,7 +1649,7 @@ const exportLayersToGeoPackage = asyncHandler(async (req, res) => {
 
     // Set response headers
     const sanitizedProjectName = projectName.replace(/[^a-zA-Z0-9_-]/g, '_');
-    const filename = `${sanitizedProjectName}_export_${Date.now()}.gpkg`;
+    const filename = `${sanitizedProjectName}.gpkg`;
 
     res.setHeader('Content-Type', 'application/geopackage+sqlite3');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
