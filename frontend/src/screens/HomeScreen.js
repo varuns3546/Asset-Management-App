@@ -4,6 +4,8 @@ import { updateProject } from '../features/projects/projectSlice';
 import FormField from '../components/forms/FormField';
 import ButtonGroup from '../components/forms/ButtonGroup';
 import ErrorMessage from '../components/forms/ErrorMessage';
+import MapPreview from '../components/map/MapPreview';
+import projectService from '../features/projects/projectService';
 import '../styles/homeScreen.css';
 
 const HomeScreen = () => {
@@ -18,6 +20,11 @@ const HomeScreen = () => {
   });
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [surveyStatistics, setSurveyStatistics] = useState({
+    surveyQuestionsTotal: 0,
+    surveyAnswersTotal: 0
+  });
+  const [loadingStatistics, setLoadingStatistics] = useState(false);
 
   // Initialize form data when project changes
   useEffect(() => {
@@ -28,6 +35,42 @@ const HomeScreen = () => {
       });
     }
   }, [selectedProject]);
+
+  // Fetch survey statistics when project changes
+  useEffect(() => {
+    const fetchSurveyStatistics = async () => {
+      if (!selectedProject?.id || !user) {
+        setSurveyStatistics({
+          surveyQuestionsTotal: 0,
+          surveyAnswersTotal: 0
+        });
+        return;
+      }
+
+      setLoadingStatistics(true);
+      try {
+        const userData = JSON.parse(localStorage.getItem('user'));
+        const response = await projectService.getSurveyStatistics(
+          selectedProject.id,
+          userData?.token
+        );
+        
+        if (response.success && response.data) {
+          setSurveyStatistics({
+            surveyQuestionsTotal: response.data.surveyQuestionsTotal || 0,
+            surveyAnswersTotal: response.data.surveyAnswersTotal || 0
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching survey statistics:', error);
+        // Don't show error to user, just keep default values
+      } finally {
+        setLoadingStatistics(false);
+      }
+    };
+
+    fetchSurveyStatistics();
+  }, [selectedProject?.id, user]);
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -158,6 +201,38 @@ const HomeScreen = () => {
                       Edit
                     </button>
                   </div>
+                  
+                  {/* Map Snapshot */}
+                  {selectedProject.map_snapshot_url && (
+                    <div style={{ marginTop: '20px', marginBottom: '20px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #ddd' }}>
+                      <img 
+                        src={selectedProject.map_snapshot_url} 
+                        alt="Map snapshot" 
+                        style={{ 
+                          width: '100%', 
+                          height: 'auto', 
+                          maxHeight: '400px',
+                          objectFit: 'cover',
+                          display: 'block'
+                        }}
+                        onError={(e) => {
+                          // Hide image if it fails to load
+                          e.target.style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  )}
+                  
+                  {/* Map Preview */}
+                  <div className="map-preview-section">
+                    <h4>Map Preview</h4>
+                    <MapPreview 
+                      projectId={selectedProject.id}
+                      projectCoordinates={selectedProject.latitude != null && selectedProject.longitude != null
+                        ? [parseFloat(selectedProject.latitude), parseFloat(selectedProject.longitude)]
+                        : null}
+                    />
+                  </div>
                 </div>
               )}
             </div>
@@ -170,6 +245,34 @@ const HomeScreen = () => {
                 <li>Open an existing project</li>
                 <li>Create a new project</li>
               </ul>
+            </div>
+          )}
+        </div>
+
+        <div className="metrics-section">
+          <h2>Survey Statistics</h2>
+          {selectedProject ? (
+            <div style={{ padding: '20px', background: '#f8f9fa', borderRadius: '8px', marginTop: '20px' }}>
+              {loadingStatistics ? (
+                <p>Loading statistics...</p>
+              ) : (
+                <>
+                  <div style={{ marginBottom: '15px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                      <span style={{ fontSize: '16px', color: '#495057' }}>Survey Questions Total:</span>
+                      <strong style={{ fontSize: '18px', color: '#212529' }}>{surveyStatistics.surveyQuestionsTotal}</strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '16px', color: '#495057' }}>Survey Answers Total:</span>
+                      <strong style={{ fontSize: '18px', color: '#212529' }}>{surveyStatistics.surveyAnswersTotal}</strong>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          ) : (
+            <div style={{ padding: '20px', background: '#f8f9fa', borderRadius: '8px', marginTop: '20px' }}>
+              <p>Please select a project to view survey statistics.</p>
             </div>
           )}
         </div>

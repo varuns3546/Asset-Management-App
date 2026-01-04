@@ -170,9 +170,9 @@ const HierarchyTree = ({ hierarchyItems, onRemoveItem, onItemClick, itemTypes = 
         }
         // Handle uncategorized filter
         if (selectedTypeFilter === 'uncategorized') {
-            return items.filter(item => !item.item_type_id)
+            return items.filter(item => !item.asset_type_id)
         }
-        return items.filter(item => item.item_type_id === selectedTypeFilter)
+        return items.filter(item => item.asset_type_id === selectedTypeFilter)
     }
 
     // Get unique item types from hierarchy items
@@ -181,17 +181,17 @@ const HierarchyTree = ({ hierarchyItems, onRemoveItem, onItemClick, itemTypes = 
         let uncategorizedCount = 0
         
         hierarchyItems.forEach(item => {
-            if (item.item_type_id) {
-                const itemType = itemTypes.find(type => type.id === item.item_type_id)
+            if (item.asset_type_id) {
+                const itemType = itemTypes.find(type => type.id === item.asset_type_id)
                 if (itemType) {
-                    if (!typeMap.has(item.item_type_id)) {
-                        typeMap.set(item.item_type_id, {
+                    if (!typeMap.has(item.asset_type_id)) {
+                        typeMap.set(item.asset_type_id, {
                             id: itemType.id,
                             title: itemType.title,
                             count: 0
                         })
                     }
-                    typeMap.get(item.item_type_id).count++
+                    typeMap.get(item.asset_type_id).count++
                 }
             } else {
                 // Count items without types
@@ -246,7 +246,7 @@ const HierarchyTree = ({ hierarchyItems, onRemoveItem, onItemClick, itemTypes = 
             itemTypeMap.set(type.id, {
                 id: `type_${type.id}`,
                 title: type.title,
-                item_type_id: type.id,
+                asset_type_id: type.id,
                 children: [],
                 isItemType: true,
                 originalType: type
@@ -258,7 +258,7 @@ const HierarchyTree = ({ hierarchyItems, onRemoveItem, onItemClick, itemTypes = 
         const uncategorizedNode = {
             id: uncategorizedNodeId,
             title: 'Uncategorized (No Type)',
-            item_type_id: null,
+            asset_type_id: null,
             children: [],
             isItemType: true,
             originalType: null
@@ -313,9 +313,9 @@ const HierarchyTree = ({ hierarchyItems, onRemoveItem, onItemClick, itemTypes = 
                 itemMap.get(item.parent_id).children.push(itemNode)
             } else {
                 // This is a root item - attach to its item type node
-                if (item.item_type_id && itemTypeMap.has(item.item_type_id)) {
-                    itemTypeMap.get(item.item_type_id).children.push(itemNode)
-                } else if (!item.item_type_id) {
+                if (item.asset_type_id && itemTypeMap.has(item.asset_type_id)) {
+                    itemTypeMap.get(item.asset_type_id).children.push(itemNode)
+                } else if (!item.asset_type_id) {
                     // Item has no type - attach to uncategorized node
                     uncategorizedNode.children.push(itemNode)
                 }
@@ -437,7 +437,7 @@ const HierarchyTree = ({ hierarchyItems, onRemoveItem, onItemClick, itemTypes = 
                 // Store the full original hierarchy (with all item data) for accurate restoration
                 const originalHierarchy = hierarchyItems.map(h => ({
                     id: h.id,
-                    item_type_id: h.item_type_id,
+                    asset_type_id: h.asset_type_id,
                     order_index: h.order_index
                 }));
                 performDelete([{
@@ -607,7 +607,7 @@ const HierarchyTree = ({ hierarchyItems, onRemoveItem, onItemClick, itemTypes = 
                         <div className="no-types-message">
                             No item types found. Create item types first to use filtering.
                             <br />
-                            <small>Debug: {hierarchyItems?.length || 0} hierarchy items, {itemTypes?.length || 0} item types, {hierarchyItems?.filter(item => item.item_type_id)?.length || 0} items with types</small>
+                            <small>Debug: {hierarchyItems?.length || 0} hierarchy items, {itemTypes?.length || 0} item types, {hierarchyItems?.filter(item => item.asset_type_id)?.length || 0} items with types</small>
                             <br />
                             <small>To fix: Go to the Item Type screen and create some item types, then assign them to your hierarchy items.</small>
                         </div>

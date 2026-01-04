@@ -89,7 +89,7 @@ const HierarchyScreen = () => {
                 featureData: {
                     title: itemData.title,
                     description: itemData.description || '',
-                    item_type_id: itemData.item_type_id || null,
+                    asset_type_id: itemData.asset_type_id || null,
                     parent_id: parentId,
                     beginning_latitude: itemData.beginning_latitude,
                     beginning_longitude: itemData.beginning_longitude,
@@ -236,7 +236,7 @@ const HierarchyScreen = () => {
                     
                     // If no Type column mapped, use sheet default type
                     if (!hasTypeColumn && sheetDefaultTypeId) {
-                        transformedRow.item_type_id = sheetDefaultTypeId;
+                        transformedRow.asset_type_id = sheetDefaultTypeId;
                         
                     }
                     
@@ -253,9 +253,9 @@ const HierarchyScreen = () => {
                                 const cellValue = row[sheetColIndex];
                                 
                                 if (mapping.mappedTo === 'type') {
-                                    // Map type name to item_type_id
+                                    // Map type name to asset_type_id
                                     const typeName = String(cellValue).trim();
-                                    transformedRow.item_type_id = typeNameToIdMap[typeName];
+                                    transformedRow.asset_type_id = typeNameToIdMap[typeName];
                                 } else {
                                     transformedRow[mapping.mappedTo] = cellValue;
                                 }
@@ -263,7 +263,7 @@ const HierarchyScreen = () => {
                         }
                     })
                     
-                    if (transformedRow.title && transformedRow.item_type_id) {
+                    if (transformedRow.title && transformedRow.asset_type_id) {
                         allTransformedData.push(transformedRow);
                     }
                 });

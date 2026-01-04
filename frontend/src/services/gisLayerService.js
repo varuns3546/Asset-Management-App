@@ -175,6 +175,49 @@ export const exportLayersToGeoPackage = async (projectId, layerIds = [], project
   }
 };
 
+// Export layers to GeoJSON (simpler and works perfectly in QGIS)
+export const exportLayersToGeoJSON = async (projectId, layerIds = [], projectName = null) => {
+  try {
+    const response = await gisApi.post(
+      `/${projectId}/export/geojson`,
+      { layerIds },
+      { 
+        responseType: 'blob' // Handle as file download (ZIP containing GeoJSON + QML)
+      }
+    );
+
+    // Get filename from Content-Disposition header
+    let filename = `${projectName || 'export'}_geojson.zip`;
+    const contentDisposition = response.headers['content-disposition'] || 
+                               response.headers['Content-Disposition'];
+    
+    if (contentDisposition) {
+      const filenameMatch = contentDisposition.match(/filename\*?=["']?([^"';]+)["']?/i);
+      if (filenameMatch && filenameMatch[1]) {
+        filename = filenameMatch[1].trim();
+      }
+    }
+
+    // Create download link with the blob
+    const blob = new Blob([response.data], { type: 'application/zip' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    
+    // Cleanup
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error exporting to GeoJSON:', error);
+    throw error;
+  }
+};
+
 export default {
   getGisLayers,
   createGisLayer,
@@ -183,6 +226,7 @@ export default {
   getLayerFeatures,
   addFeature,
   deleteFeature,
-  exportLayersToGeoPackage
+  exportLayersToGeoPackage,
+  exportLayersToGeoJSON
 };
 

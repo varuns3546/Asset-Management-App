@@ -8,6 +8,7 @@ import '../../styles/modal.css';
 const ExportLayersModal = ({ isOpen, onClose, layers, projectId }) => {
   const { selectedProject } = useSelector((state) => state.projects);
   const [selectedLayerIds, setSelectedLayerIds] = useState([]);
+  const [exportFormat, setExportFormat] = useState('geojson'); // 'geojson' or 'geopackage'
   const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -58,7 +59,13 @@ const ExportLayersModal = ({ isOpen, onClose, layers, projectId }) => {
 
     try {
       const projectName = selectedProject?.name || selectedProject?.title || null;
-      await gisLayerService.exportLayersToGeoPackage(projectId, selectedLayerIds, projectName);
+      
+      if (exportFormat === 'geojson') {
+        await gisLayerService.exportLayersToGeoJSON(projectId, selectedLayerIds, projectName);
+      } else {
+        await gisLayerService.exportLayersToGeoPackage(projectId, selectedLayerIds, projectName);
+      }
+      
       setSuccessMessage('Export completed successfully! The file should download automatically.');
       
       // Close modal after a short delay
@@ -75,7 +82,7 @@ const ExportLayersModal = ({ isOpen, onClose, layers, projectId }) => {
 
   if (!layers || layers.length === 0) {
     return (
-      <Modal isOpen={isOpen} onClose={onClose} title="Export Layers to GeoPackage">
+      <Modal isOpen={isOpen} onClose={onClose} title="Export Layers">
         <div style={{ padding: '20px', textAlign: 'center' }}>
           <p>No layers available to export.</p>
           <button 
@@ -101,10 +108,44 @@ const ExportLayersModal = ({ isOpen, onClose, layers, projectId }) => {
   const noneSelected = selectedLayerIds.length === 0;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Export Layers to GeoPackage">
+    <Modal isOpen={isOpen} onClose={onClose} title="Export Layers">
       <div style={{ padding: '20px' }}>
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ display: 'block', marginBottom: '10px', fontWeight: '500' }}>
+            Export Format:
+          </label>
+          <div style={{ display: 'flex', gap: '20px', marginBottom: '10px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+              <input
+                type="radio"
+                value="geojson"
+                checked={exportFormat === 'geojson'}
+                onChange={(e) => setExportFormat(e.target.value)}
+                style={{ marginRight: '8px' }}
+              />
+              <div>
+                <div style={{ fontWeight: '500' }}>GeoJSON (.geojson)</div>
+                <div style={{ fontSize: '12px', color: '#666' }}>Recommended - Includes auto-labels for QGIS</div>
+              </div>
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+              <input
+                type="radio"
+                value="geopackage"
+                checked={exportFormat === 'geopackage'}
+                onChange={(e) => setExportFormat(e.target.value)}
+                style={{ marginRight: '8px' }}
+              />
+              <div>
+                <div style={{ fontWeight: '500' }}>GeoPackage (.gpkg)</div>
+                <div style={{ fontSize: '12px', color: '#666' }}>Binary format</div>
+              </div>
+            </label>
+          </div>
+        </div>
+
         <p style={{ marginBottom: '20px', color: '#666' }}>
-          Select the layers you want to export to GeoPackage format (.gpkg) for use in QGIS.
+          Select the layers you want to export for use in QGIS or other GIS software.
         </p>
 
         <div style={{ marginBottom: '20px' }}>
@@ -226,14 +267,14 @@ const ExportLayersModal = ({ isOpen, onClose, layers, projectId }) => {
             disabled={isExporting || selectedLayerIds.length === 0}
             style={{
               padding: '10px 20px',
-              backgroundColor: isExporting || selectedLayerIds.length === 0 ? '#ccc' : '#007bff',
+              backgroundColor: isExporting || selectedLayerIds.length === 0 ? '#ccc' : '#28a745',
               color: 'white',
               border: 'none',
               borderRadius: '4px',
               cursor: isExporting || selectedLayerIds.length === 0 ? 'not-allowed' : 'pointer'
             }}
           >
-            {isExporting ? 'Exporting...' : 'Export to GeoPackage'}
+            {isExporting ? 'Exporting...' : `Export to ${exportFormat === 'geojson' ? 'GeoJSON' : 'GeoPackage'}`}
           </button>
         </div>
       </div>

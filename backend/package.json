@@ -12,17 +12,22 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@ngageoint/geopackage": "^4.2.6",
+    "@ngageoint/simple-features-geojson-js": "^1.1.1",
+    "@ngageoint/simple-features-js": "^1.1.1",
     "@supabase/supabase-js": "^2.57.4",
+    "adm-zip": "^0.5.16",
+    "better-sqlite3": "^11.6.0",
     "body-parser": "^2.2.0",
     "chartjs-node-canvas": "^5.0.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",
     "exceljs": "^4.4.0",
     "express": "^5.1.0",
-    "better-sqlite3": "^11.6.0",
     "express-async-handler": "^1.2.0",
     "multer": "^2.0.2",
     "pdfkit": "^0.15.2",
+    "wkx": "^0.5.0",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

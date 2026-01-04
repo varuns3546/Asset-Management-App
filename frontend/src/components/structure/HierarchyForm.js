@@ -18,7 +18,7 @@ const HierarchyForm = ({
     const { selectedProject, currentHierarchy } = useSelector((state) => state.projects);
     const initialState = {
         title: '',
-        item_type_id: null,
+        asset_type_id: null,
         parent_id: null,
         beginning_latitude: '',
         end_latitude: '',
@@ -34,7 +34,7 @@ const HierarchyForm = ({
         if (selectedItem) {
             setNewItem({
                 title: selectedItem.title || '',
-                item_type_id: selectedItem.item_type_id || null,
+                asset_type_id: selectedItem.asset_type_id || null,
                 parent_id: selectedItem.parent_id || null,
                 beginning_latitude: selectedItem.beginning_latitude || '',
                 end_latitude: selectedItem.end_latitude || '',
@@ -51,8 +51,8 @@ const HierarchyForm = ({
     const handleNewItemChange = (e) => {
         const { name, value } = e.target;
         
-        // If item_type_id changes, clear coordinates if new item type doesn't have coordinates
-        if (name === 'item_type_id') {
+        // If asset_type_id changes, clear coordinates if new item type doesn't have coordinates
+        if (name === 'asset_type_id') {
             const selectedItemType = itemTypes.find(type => type.id === value);
             setNewItem(prev => ({
                 ...prev,
@@ -80,7 +80,7 @@ const HierarchyForm = ({
         }
 
         // Check if coordinates are valid (only validate fields that are filled)
-        const selectedItemType = itemTypes.find(type => type.id === newItem.item_type_id);
+        const selectedItemType = itemTypes.find(type => type.id === newItem.asset_type_id);
         if (selectedItemType?.has_coordinates) {
             const coordError = validateHierarchyCoordinates(newItem);
             if (coordError) {
@@ -92,7 +92,7 @@ const HierarchyForm = ({
         // Store the current form data before clearing
         const itemData = {
             title: newItem.title,
-            item_type_id: newItem.item_type_id || null,
+            asset_type_id: newItem.asset_type_id || null,
             parent_id: newItem.parent_id || null,
             beginning_latitude: newItem.beginning_latitude ? parseFloat(newItem.beginning_latitude) : null,
             end_latitude: newItem.end_latitude ? parseFloat(newItem.end_latitude) : null,
@@ -166,9 +166,9 @@ const HierarchyForm = ({
                 />
                 <FormField
                     label=""
-                    id="item_type_id"
+                    id="asset_type_id"
                     type="select"
-                    value={newItem.item_type_id || ''}
+                    value={newItem.asset_type_id || ''}
                     onChange={handleNewItemChange}
                     selectOptions={[
                         { value: '', label: 'No item type (optional)' },
@@ -177,7 +177,7 @@ const HierarchyForm = ({
                             label: itemType.title
                         }))
                     ]}
-                    inputProps={{ name: 'item_type_id' }}
+                    inputProps={{ name: 'asset_type_id' }}
                 />
                 <FormField
                     label=""
@@ -196,8 +196,8 @@ const HierarchyForm = ({
                 />
                 
                 {/* Coordinates fields - only show if item type has coordinates */}
-                {newItem.item_type_id && (() => {
-                    const selectedItemType = itemTypes.find(type => type.id === newItem.item_type_id);
+                {newItem.asset_type_id && (() => {
+                    const selectedItemType = itemTypes.find(type => type.id === newItem.asset_type_id);
                     return selectedItemType?.has_coordinates;
                 })() && (
                     <div className="coordinates-section">

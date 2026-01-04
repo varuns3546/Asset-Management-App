@@ -17,7 +17,9 @@ const {
   removeUserFromProject,
   cloneProject,
   getMasterProjects,
-  setProjectAsMaster
+  setProjectAsMaster,
+  uploadMapSnapshot,
+  getSurveyStatistics
 } = projectController;
 
 const {
@@ -47,6 +49,9 @@ router.get('/masters', getMasterProjects);
 
 // Metrics and export routes - must come BEFORE /:id routes to avoid route conflicts
 router.get('/all-projects/metrics', getAllProjectsMetrics);
+
+// Map snapshot route - must come before /:id routes to avoid conflicts
+router.post('/:id/snapshot', uploadMapSnapshot);
 
 router.get('/:id', getProject);
 router.delete('/:id', deleteProject);
@@ -79,6 +84,7 @@ router.delete('/:id/hierarchy/feature-types/:featureTypeId', deleteAssetType);
 // Metrics and export routes
 router.get('/:id/metrics', getProjectMetrics);
 router.get('/:id/export', exportProjectData);
+router.get('/:id/survey-statistics', getSurveyStatistics);
 
 // Version control routes
 router.post('/:id/clone', cloneProject);

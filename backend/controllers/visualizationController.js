@@ -45,7 +45,7 @@ const getAttributeValueStats = asyncHandler(async (req, res) => {
     // Get all assets for the project
     const { data: assets, error: assetsError } = await supabaseAdmin
       .from('assets')
-      .select('id, item_type_id')
+      .select('id, asset_type_id')
       .eq('project_id', projectId);
 
     if (assetsError) {
@@ -83,7 +83,7 @@ const getAttributeValueStats = asyncHandler(async (req, res) => {
 
     // Get asset types
     if (assets && assets.length > 0) {
-      const assetTypeIds = [...new Set(assets.map(a => a.item_type_id).filter(Boolean))];
+      const assetTypeIds = [...new Set(assets.map(a => a.asset_type_id).filter(Boolean))];
       if (assetTypeIds.length > 0) {
         const { data: assetTypes } = await supabaseAdmin
           .from('asset_types')
@@ -101,8 +101,8 @@ const getAttributeValueStats = asyncHandler(async (req, res) => {
     // Count responses by asset type
     if (assets && Array.isArray(assets)) {
       assets.forEach(asset => {
-        const typeId = asset.item_type_id || 'untyped';
-        const typeName = assetTypeMap[asset.item_type_id] || 'Untyped';
+        const typeId = asset.asset_type_id || 'untyped';
+        const typeName = assetTypeMap[asset.asset_type_id] || 'Untyped';
         
         if (!responsesByAssetType[typeId]) {
           responsesByAssetType[typeId] = {
@@ -124,7 +124,7 @@ const getAttributeValueStats = asyncHandler(async (req, res) => {
       allResponses.forEach(response => {
         const asset = assets.find(a => a.id === response.asset_id);
         if (asset) {
-          const typeId = asset.item_type_id || 'untyped';
+          const typeId = asset.asset_type_id || 'untyped';
           if (responsesByAssetType[typeId]) {
             responsesByAssetType[typeId].totalResponses++;
           }
@@ -274,7 +274,7 @@ const getAssetStats = asyncHandler(async (req, res) => {
     // Get all assets
     const { data: assets, error: assetsError } = await supabaseAdmin
       .from('assets')
-      .select('id, item_type_id, beginning_latitude, beginning_longitude, end_latitude, end_longitude, parent_id')
+      .select('id, asset_type_id, beginning_latitude, beginning_longitude, end_latitude, end_longitude, parent_id')
       .eq('project_id', projectId);
 
     if (assetsError) {
@@ -291,7 +291,7 @@ const getAssetStats = asyncHandler(async (req, res) => {
 
     // Count by asset type
     const assetsByType = {};
-    const assetTypeIds = [...new Set(allAssets.map(a => a.item_type_id).filter(Boolean))];
+    const assetTypeIds = [...new Set(allAssets.map(a => a.asset_type_id).filter(Boolean))];
     
     if (assetTypeIds.length > 0) {
       const { data: assetTypes } = await supabaseAdmin
@@ -319,7 +319,7 @@ const getAssetStats = asyncHandler(async (req, res) => {
     if (allAssets && Array.isArray(allAssets)) {
       allAssets.forEach(asset => {
         // Count by type
-        const typeId = asset.item_type_id || 'untyped';
+        const typeId = asset.asset_type_id || 'untyped';
         if (assetsByType[typeId]) {
           assetsByType[typeId].count++;
         } else if (typeId === 'untyped') {

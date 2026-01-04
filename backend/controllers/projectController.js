@@ -1,6 +1,22 @@
 import asyncHandler from 'express-async-handler';
+import multer from 'multer';
 import supabaseClient from '../config/supabaseClient.js';
 const { supabaseAdmin } = supabaseClient;
+
+// Configure multer for snapshot upload
+const storage = multer.memoryStorage();
+const uploadSnapshot = multer({ 
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit for snapshots
+  fileFilter: (req, file, cb) => {
+    // Only allow image files
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'), false);
+    }
+  }
+});
 
 const getProjects = asyncHandler(async (req, res) => {
   const userId = req.user.id;
@@ -205,7 +221,16 @@ const createProject = asyncHandler(async (req, res) => {
 
 const updateProject = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { title, description, latitude, longitude } = req.body;
+  const { 
+    title, 
+    description, 
+    latitude, 
+    longitude, 
+    map_snapshot_url,
+    label_font_size,
+    label_color,
+    label_background_color
+  } = req.body;
 
   if (!id) {
     return res.status(400).json({
@@ -214,7 +239,8 @@ const updateProject = asyncHandler(async (req, res) => {
     });
   }
 
-  if (!title && !description && latitude === undefined && longitude === undefined) {
+  if (!title && !description && latitude === undefined && longitude === undefined && !map_snapshot_url && 
+      label_font_size === undefined && !label_color && !label_background_color) {
     return res.status(400).json({
       success: false,
       error: 'At least one field must be provided for update'
@@ -223,9 +249,13 @@ const updateProject = asyncHandler(async (req, res) => {
   
   const updateData = { 
     ...(title && { title }), 
-    ...(description && { description }),
+    ...(description !== undefined && { description }),
     ...(latitude !== undefined && { latitude: parseFloat(latitude) }),
-    ...(longitude !== undefined && { longitude: parseFloat(longitude) })
+    ...(longitude !== undefined && { longitude: parseFloat(longitude) }),
+    ...(map_snapshot_url !== undefined && { map_snapshot_url }),
+    ...(label_font_size !== undefined && { label_font_size: parseInt(label_font_size) }),
+    ...(label_color && { label_color }),
+    ...(label_background_color && { label_background_color })
   };
 
   const { data: existingProject, error: checkError } = await req.supabase
@@ -604,7 +634,7 @@ const cloneProject = asyncHandler(async (req, res) => {
         const clonedAttributes = attributes.map(attr => ({
           title: attr.title,
           data_type: attr.data_type,
-          item_type_id: attr.item_type_id ? assetTypeMap[attr.item_type_id] || null : null, // Remap to cloned asset type ID
+          asset_type_id: attr.asset_type_id ? assetTypeMap[attr.asset_type_id] || null : null, // Remap to cloned asset type ID
           project_id: clonedProject.id
         }));
         const { error: attrError } = await req.supabase.from('attributes').insert(clonedAttributes);
@@ -631,7 +661,7 @@ const cloneProject = asyncHandler(async (req, res) => {
           .from('assets')
           .insert({
             title: asset.title,
-            item_type_id: asset.item_type_id ? assetTypeMap[asset.item_type_id] || null : null, // Remap to cloned asset type ID
+            asset_type_id: asset.asset_type_id ? assetTypeMap[asset.asset_type_id] || null : null, // Remap to cloned asset type ID
             parent_id: null, // Will be updated after all assets are cloned
             beginning_latitude: asset.beginning_latitude,
             end_latitude: asset.end_latitude,
@@ -1126,6 +1156,236 @@ const setProjectAsMaster = asyncHandler(async (req, res) => {
   res.status(200).json(updatedProject);
 });
 
+// Get survey statistics for a project
+const getSurveyStatistics = asyncHandler(async (req, res) => {
+  const { id } = req.params; // project id
+
+  if (!id) {
+    return res.status(400).json({
+      success: false,
+      error: 'Project ID is required'
+    });
+  }
+
+  // Verify project access
+  const { data: projectUser, error: projectUserError } = await req.supabase
+    .from('project_users')
+    .select('id')
+    .eq('project_id', id)
+    .eq('user_id', req.user.id)
+    .single();
+
+  if (projectUserError || !projectUser) {
+    // Check if owner
+    const { data: project, error: projectError } = await req.supabase
+      .from('projects')
+      .select('id')
+      .eq('id', id)
+      .eq('owner_id', req.user.id)
+      .single();
+
+    if (projectError || !project) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied to this project'
+      });
+    }
+  }
+
+  try {
+    // Get all asset types for this project
+    const { data: assetTypes, error: assetTypesError } = await req.supabase
+      .from('asset_types')
+      .select('id')
+      .eq('project_id', id);
+
+    if (assetTypesError) {
+      console.error('Error fetching asset types:', assetTypesError);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to fetch asset types'
+      });
+    }
+
+    let surveyQuestionsTotal = 0;
+
+    // If there are asset types, count attributes for each
+    if (assetTypes && assetTypes.length > 0) {
+      const assetTypeIds = assetTypes.map(at => at.id);
+      
+      // Count attributes for all asset types in this project
+      const { count: attributesCount, error: attributesError } = await req.supabase
+        .from('attributes')
+        .select('*', { count: 'exact', head: true })
+        .in('asset_type_id', assetTypeIds);
+
+      if (attributesError) {
+        console.error('Error counting attributes:', attributesError);
+      } else {
+        surveyQuestionsTotal = attributesCount || 0;
+      }
+    }
+
+    // Count total attribute values (survey answers) for this project
+    const { count: surveyAnswersTotal, error: answersError } = await req.supabase
+      .from('attribute_values')
+      .select('*', { count: 'exact', head: true })
+      .eq('project_id', id);
+
+    if (answersError) {
+      console.error('Error counting attribute values:', answersError);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to fetch survey answers count'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        surveyQuestionsTotal: surveyQuestionsTotal || 0,
+        surveyAnswersTotal: surveyAnswersTotal || 0
+      }
+    });
+
+  } catch (error) {
+    console.error('Error in getSurveyStatistics:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error while fetching survey statistics'
+    });
+  }
+});
+
+// Upload map snapshot for a project
+const uploadMapSnapshot = [
+  uploadSnapshot.single('snapshot'),
+  asyncHandler(async (req, res) => {
+    const { id } = req.params; // project id
+    
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        error: 'No snapshot file provided'
+      });
+    }
+
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        error: 'Project ID is required'
+      });
+    }
+
+    // Verify project access
+    const { data: projectUser, error: projectUserError } = await req.supabase
+      .from('project_users')
+      .select('id')
+      .eq('project_id', id)
+      .eq('user_id', req.user.id)
+      .single();
+
+    if (projectUserError || !projectUser) {
+      // Check if owner
+      const { data: project, error: projectError } = await req.supabase
+        .from('projects')
+        .select('id')
+        .eq('id', id)
+        .eq('owner_id', req.user.id)
+        .single();
+
+      if (projectError || !project) {
+        return res.status(403).json({
+          success: false,
+          error: 'Access denied to this project'
+        });
+      }
+    }
+
+    try {
+      // Delete old snapshot if it exists
+      const { data: existingProject } = await req.supabase
+        .from('projects')
+        .select('map_snapshot_url')
+        .eq('id', id)
+        .single();
+
+      if (existingProject?.map_snapshot_url) {
+        // Extract path from URL (format: /storage/v1/object/public/project-files/...)
+        const urlPath = existingProject.map_snapshot_url.split('/project-files/')[1];
+        if (urlPath) {
+          const oldPath = `${id}/snapshots/${urlPath.split('/').slice(-1)[0]}`;
+          try {
+            await supabaseAdmin.storage.from('project-files').remove([oldPath]);
+          } catch (err) {
+            // Ignore errors when deleting old file
+            console.warn('Error deleting old snapshot:', err);
+          }
+        }
+      }
+
+      // Create unique storage path: projectId/snapshots/timestamp_snapshot.png
+      const timestamp = Date.now();
+      const fileExt = req.file.originalname.split('.').pop() || 'png';
+      const storagePath = `${id}/snapshots/${timestamp}_snapshot.${fileExt}`;
+      
+      // Upload to Supabase Storage
+      const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
+        .from('project-files')
+        .upload(storagePath, req.file.buffer, {
+          contentType: req.file.mimetype,
+          upsert: false
+        });
+
+      if (uploadError) {
+        console.error('Storage upload error:', uploadError);
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to upload snapshot to storage'
+        });
+      }
+
+      // Get public URL
+      const { data: urlData } = supabaseAdmin.storage
+        .from('project-files')
+        .getPublicUrl(storagePath);
+
+      // Update project with snapshot URL
+      const { data: updatedProject, error: updateError } = await req.supabase
+        .from('projects')
+        .update({ map_snapshot_url: urlData.publicUrl })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (updateError) {
+        console.error('Database update error:', updateError);
+        // Cleanup: delete from storage if DB update fails
+        await supabaseAdmin.storage.from('project-files').remove([storagePath]);
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to update project with snapshot URL'
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        data: {
+          snapshotUrl: urlData.publicUrl,
+          project: updatedProject
+        }
+      });
+
+    } catch (error) {
+      console.error('Error in uploadMapSnapshot:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Internal server error while uploading snapshot'
+      });
+    }
+  })
+];
+
 export default {
   getProjects,
   getSharedProjects,
@@ -1138,5 +1398,7 @@ export default {
   removeUserFromProject,
   cloneProject,
   getMasterProjects,
-  setProjectAsMaster
+  setProjectAsMaster,
+  uploadMapSnapshot,
+  getSurveyStatistics
 };

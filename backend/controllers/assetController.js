@@ -162,7 +162,7 @@ const addAssetToGisLayer = async (supabase, projectId, layerId, asset) => {
       p_geometry_wkt: geometryWKT,
       p_properties: {
         title: asset.title,
-        item_type_id: asset.item_type_id || null
+        asset_type_id: asset.asset_type_id || null
       }
     });
   
@@ -235,12 +235,12 @@ const getHierarchy = asyncHandler(async (req, res) => {
 
   try {
     // Get all assets for this project
-    // Order by item_type_id first (to group by type), then order_index, then created_at
+    // Order by asset_type_id first (to group by type), then order_index, then created_at
     const { data: assets, error } = await req.supabase
       .from('assets')
       .select('*')
       .eq('project_id', project_id)
-      .order('item_type_id', { ascending: true, nullsFirst: true })
+      .order('asset_type_id', { ascending: true, nullsFirst: true })
       .order('order_index', { ascending: true, nullsFirst: false })
       .order('created_at', { ascending: true });
 
@@ -387,20 +387,20 @@ const getAssetTypes = asyncHandler(async (req, res) => {
       const { data: attributes, error: attributesError } = await req.supabase
         .from('attributes')
         .select('*')
-        .in('item_type_id', assetTypeIds);
+        .in('asset_type_id', assetTypeIds);
 
       if (attributesError) {
         console.error('Error fetching attributes:', attributesError);
         // Continue without attributes if there's an error
       } else {
-        // Group attributes by item_type_id
+        // Group attributes by asset_type_id
         const attributesByAssetType = {};
         if (attributes) {
           attributes.forEach(attr => {
-            if (!attributesByAssetType[attr.item_type_id]) {
-              attributesByAssetType[attr.item_type_id] = [];
+            if (!attributesByAssetType[attr.asset_type_id]) {
+              attributesByAssetType[attr.asset_type_id] = [];
             }
-            attributesByAssetType[attr.item_type_id].push(attr.title);
+            attributesByAssetType[attr.asset_type_id].push(attr.title);
           });
         }
 
@@ -494,7 +494,7 @@ const createAssetType = asyncHandler(async (req, res) => {
     // Create attributes if they exist
     if (attributes && attributes.length > 0) {
       const attributesToInsert = attributes.map(attribute => ({
-        item_type_id: assetType.id,
+        asset_type_id: assetType.id,
         title: typeof attribute === 'string' ? attribute.trim() : attribute.title.trim(),
         type: typeof attribute === 'string' ? 'text' : (attribute.type || 'text')
       }));
@@ -656,7 +656,7 @@ const deleteAssetType = asyncHandler(async (req, res) => {
 
 // Create individual asset
 const createAsset = asyncHandler(async (req, res) => {
-  const { title, item_type_id, parent_id, beginning_latitude, end_latitude, beginning_longitude, end_longitude, created_at, order_index } = req.body;
+  const { title, asset_type_id, parent_id, beginning_latitude, end_latitude, beginning_longitude, end_longitude, created_at, order_index } = req.body;
   const { id: project_id } = req.params;
 
   if (!project_id) {
@@ -701,7 +701,7 @@ const createAsset = asyncHandler(async (req, res) => {
     // Build asset data
     const assetData = {
       title: title.trim(),
-      item_type_id: item_type_id || null,
+      asset_type_id: asset_type_id || null,
       parent_id: parent_id || null,
       project_id: project_id,
       beginning_latitude: beginning_latitude || null,
@@ -710,8 +710,8 @@ const createAsset = asyncHandler(async (req, res) => {
       end_longitude: end_longitude || null
     };
     
-    // Set order_index if provided, otherwise set to max + 1 for this item_type_id
-    // Order_index is scoped per item_type_id to maintain ordering within each type group
+    // Set order_index if provided, otherwise set to max + 1 for this asset_type_id
+    // Order_index is scoped per asset_type_id to maintain ordering within each type group
     if (order_index !== undefined && order_index !== null) {
       // When restoring an item with a specific order_index, shift other items to make room
       const shiftQuery = req.supabase
@@ -720,11 +720,11 @@ const createAsset = asyncHandler(async (req, res) => {
         .eq('project_id', project_id)
         .gte('order_index', order_index);
       
-      // Scope to the same item_type_id
-      if (item_type_id) {
-        shiftQuery.eq('item_type_id', item_type_id);
+      // Scope to the same asset_type_id
+      if (asset_type_id) {
+        shiftQuery.eq('asset_type_id', asset_type_id);
       } else {
-        shiftQuery.is('item_type_id', null);
+        shiftQuery.is('asset_type_id', null);
       }
       
       const { data: itemsToShift } = await shiftQuery;
@@ -741,16 +741,16 @@ const createAsset = asyncHandler(async (req, res) => {
       
       assetData.order_index = order_index;
     } else {
-      // Get the max order_index for this project and item_type_id (to maintain ordering within type)
+      // Get the max order_index for this project and asset_type_id (to maintain ordering within type)
       const query = req.supabase
         .from('assets')
         .select('order_index')
         .eq('project_id', project_id);
       
-      if (item_type_id) {
-        query.eq('item_type_id', item_type_id);
+      if (asset_type_id) {
+        query.eq('asset_type_id', asset_type_id);
       } else {
-        query.is('item_type_id', null);
+        query.is('asset_type_id', null);
       }
       
       const { data: maxOrderData } = await query
@@ -782,11 +782,11 @@ const createAsset = asyncHandler(async (req, res) => {
       try {
         // Get asset type if it exists
         let assetType = null;
-        if (asset.item_type_id) {
+        if (asset.asset_type_id) {
           const { data: typeData } = await req.supabase
             .from('asset_types')
             .select('id, title, description')
-            .eq('id', asset.item_type_id)
+            .eq('id', asset.asset_type_id)
             .single();
           assetType = typeData;
         }
@@ -797,7 +797,7 @@ const createAsset = asyncHandler(async (req, res) => {
           project_id,
           req.user.id,
           assetType,
-          asset.item_type_id
+          asset.asset_type_id
         );
 
         if (layer) {
@@ -975,7 +975,7 @@ const updateAssetType = asyncHandler(async (req, res) => {
     const { error: deleteError } = await req.supabase
       .from('attributes')
       .delete()
-      .eq('item_type_id', featureTypeId);
+      .eq('asset_type_id', featureTypeId);
 
     if (deleteError) {
       console.error('Error deleting existing attributes:', deleteError);
@@ -984,7 +984,7 @@ const updateAssetType = asyncHandler(async (req, res) => {
     // Then insert new attributes if they exist
     if (attributes && attributes.length > 0) {
       const attributesToInsert = attributes.map(attribute => ({
-        item_type_id: featureTypeId,
+        asset_type_id: featureTypeId,
         title: typeof attribute === 'string' ? attribute.trim() : attribute.title.trim(),
         type: typeof attribute === 'string' ? 'text' : (attribute.type || 'text')
       }));
@@ -1015,7 +1015,7 @@ const updateAssetType = asyncHandler(async (req, res) => {
 });
 
 const updateAsset = asyncHandler(async (req, res) => {
-  const { title, item_type_id, parent_id, beginning_latitude, end_latitude, beginning_longitude, end_longitude, created_at, order_index } = req.body;
+  const { title, asset_type_id, parent_id, beginning_latitude, end_latitude, beginning_longitude, end_longitude, created_at, order_index } = req.body;
   const { id: project_id, featureId } = req.params;
 
   if (!project_id) {
@@ -1068,7 +1068,7 @@ const updateAsset = asyncHandler(async (req, res) => {
     // Build update object
     const updateData = {
       title: title.trim(),
-      item_type_id: item_type_id || null,
+      asset_type_id: asset_type_id || null,
       parent_id: parent_id || null,
       beginning_latitude: beginning_latitude || null,
       end_latitude: end_latitude || null,
@@ -1093,11 +1093,11 @@ const updateAsset = asyncHandler(async (req, res) => {
         .eq('project_id', project_id)
         .gte('order_index', order_index);
       
-      // Scope to the same item_type_id
-      if (item_type_id) {
-        shiftQuery.eq('item_type_id', item_type_id);
+      // Scope to the same asset_type_id
+      if (asset_type_id) {
+        shiftQuery.eq('asset_type_id', asset_type_id);
       } else {
-        shiftQuery.is('item_type_id', null);
+        shiftQuery.is('asset_type_id', null);
       }
       
       const { data: itemsToShift } = await shiftQuery;
@@ -1313,9 +1313,9 @@ const importHierarchyData = asyncHandler(async (req, res) => {
     for (let i = 0; i < data.length; i++) {
       const row = data[i];
       try {
-        // Extract title and item_type_id from mapped data
+        // Extract title and asset_type_id from mapped data
         const title = row.title?.trim();
-        const itemTypeId = row.item_type_id;
+        const itemTypeId = row.asset_type_id;
 
         if (!title) {
           errors.push({ row: i + 1, error: 'Title is required' });
@@ -1338,7 +1338,7 @@ const importHierarchyData = asyncHandler(async (req, res) => {
         // Build asset data
         const assetData = {
           title,
-          item_type_id: itemTypeId,
+          asset_type_id: itemTypeId,
           project_id: project_id,
           parent_id: null // Set in pass 2
         };
@@ -1418,7 +1418,7 @@ const importHierarchyData = asyncHandler(async (req, res) => {
 
     // PASS 3: Create GIS layers and features for assets with coordinates
     try {
-      // Group assets by item_type_id
+      // Group assets by asset_type_id
       const assetsByType = {};
       for (const asset of createdAssets) {
         // Only include assets with valid coordinates
@@ -1432,7 +1432,7 @@ const importHierarchyData = asyncHandler(async (req, res) => {
           if (!isNaN(latNum) && !isNaN(lngNum) && 
               latNum >= -90 && latNum <= 90 && 
               lngNum >= -180 && lngNum <= 180) {
-            const typeId = asset.item_type_id || 'uncategorized';
+            const typeId = asset.asset_type_id || 'uncategorized';
             if (!assetsByType[typeId]) {
               assetsByType[typeId] = [];
             }

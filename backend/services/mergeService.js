@@ -101,7 +101,7 @@ export const calculateDiff = async (supabase, sourceProjectId, targetProjectId) 
           sourceAsset.beginning_longitude !== matching.beginning_longitude ||
           sourceAsset.end_latitude !== matching.end_latitude ||
           sourceAsset.end_longitude !== matching.end_longitude ||
-          sourceAsset.item_type_id !== matching.item_type_id;
+          sourceAsset.asset_type_id !== matching.asset_type_id;
 
         if (hasChanges) {
           changes.hierarchy.push({
@@ -380,7 +380,7 @@ export const mergeHierarchy = async (supabase, sourceProjectId, targetProjectId,
         .insert({
           title: sourceAsset.title,
           description: sourceAsset.description,
-          item_type_id: sourceAsset.item_type_id,
+          asset_type_id: sourceAsset.asset_type_id,
           parent_id: sourceAsset.parent_id,
           beginning_latitude: sourceAsset.beginning_latitude,
           beginning_longitude: sourceAsset.beginning_longitude,
@@ -400,7 +400,7 @@ export const mergeHierarchy = async (supabase, sourceProjectId, targetProjectId,
         beginning_longitude: resolution?.data?.beginning_longitude ?? sourceAsset.beginning_longitude,
         end_latitude: resolution?.data?.end_latitude ?? sourceAsset.end_latitude,
         end_longitude: resolution?.data?.end_longitude ?? sourceAsset.end_longitude,
-        item_type_id: resolution?.data?.item_type_id ?? sourceAsset.item_type_id
+        asset_type_id: resolution?.data?.asset_type_id ?? sourceAsset.asset_type_id
       };
 
       const { error } = await supabase
@@ -450,13 +450,13 @@ export const mergeAssetTypes = async (supabase, sourceProjectId, targetProjectId
         const { data: sourceAttributes } = await supabase
           .from('attributes')
           .select('*')
-          .eq('item_type_id', sourceType.id);
+          .eq('asset_type_id', sourceType.id);
 
         if (sourceAttributes && sourceAttributes.length > 0) {
           const clonedAttributes = sourceAttributes.map(attr => ({
             title: attr.title,
             data_type: attr.data_type,
-            item_type_id: newType.id,
+            asset_type_id: newType.id,
             project_id: targetProjectId
           }));
           await supabase.from('attributes').insert(clonedAttributes);

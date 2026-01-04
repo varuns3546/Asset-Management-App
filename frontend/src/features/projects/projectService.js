@@ -227,6 +227,23 @@ const setProjectAsMaster = async (projectId, master, token) => {
     return response.data;
 }
 
+const uploadMapSnapshot = async (projectId, snapshotFile, token) => {
+    const formData = new FormData();
+    formData.append('snapshot', snapshotFile);
+    
+    const response = await projectApi.post(`/${projectId}/snapshot`, formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data'
+        }
+    });
+    return response.data;
+}
+
+const getSurveyStatistics = async (projectId, token) => {
+    const response = await projectApi.get(`/${projectId}/survey-statistics`);
+    return response.data;
+}
+
 const projectService = {
     getProjects,
     getSharedProjects,
@@ -253,7 +270,9 @@ const projectService = {
     setUserSelectedProject,
     cloneProject,
     getMasterProjects,
-    setProjectAsMaster
+    setProjectAsMaster,
+    uploadMapSnapshot,
+    getSurveyStatistics
 }
 
 export default projectService;

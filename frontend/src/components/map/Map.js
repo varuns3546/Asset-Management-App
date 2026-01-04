@@ -481,11 +481,102 @@ const MapReadyTracker = ({ targetCenter, onMapReady }) => {
   return null;
 };
 
-const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, features = [], featureTypes = [], showLabels = true, labelFontSize = 12, labelColor = '#000000', labelBackgroundColor = 'rgba(255, 255, 255, 0.6)', layers = [], layerFeatures = {}, zoomToFeature = null, zoomToLayer = null, onMapLoadingChange }) => {
+// Component to fit bounds to all features for snapshot
+const FitAllFeaturesHandler = ({ layers, shouldFit, onFitComplete }) => {
+  const map = useMap();
+  const previousFitRef = useRef(null);
+
+  useEffect(() => {
+    if (!shouldFit || !layers || layers.length === 0) return;
+
+    // Check if this is a new fit request
+    const fitKey = Date.now();
+    if (previousFitRef.current === fitKey) return;
+    previousFitRef.current = fitKey;
+
+    try {
+      if (!map || !map.fitBounds) return;
+
+      // Collect all valid coordinates from all visible layers
+      const bounds = [];
+      layers.forEach(layer => {
+        if (!layer.visible || !layer.features || layer.features.length === 0) return;
+        
+        layer.features.forEach(feature => {
+          if (feature.coordinates && feature.coordinates.length > 0) {
+            const firstCoord = feature.coordinates[0];
+            // Check if first coordinate is a simple [lat, lng] pair (Point)
+            if (Array.isArray(firstCoord) && firstCoord.length === 2 && 
+                typeof firstCoord[0] === 'number' && typeof firstCoord[1] === 'number') {
+              // Point feature - single coordinate
+              const [lat, lng] = firstCoord;
+              if (!isNaN(lat) && !isNaN(lng)) {
+                bounds.push([lat, lng]);
+              }
+            } else {
+              // LineString or Polygon - multiple coordinates
+              feature.coordinates.forEach(coord => {
+                if (Array.isArray(coord) && coord.length >= 2) {
+                  const [lat, lng] = coord;
+                  if (typeof lat === 'number' && typeof lng === 'number' && !isNaN(lat) && !isNaN(lng)) {
+                    bounds.push([lat, lng]);
+                  }
+                }
+              });
+            }
+          }
+        });
+      });
+
+      if (bounds.length > 0) {
+        // Create a Leaflet bounds object
+        const latLngBounds = L.latLngBounds(bounds);
+        
+        // Fit bounds with minimal padding to maximize zoom
+        map.fitBounds(latLngBounds, { 
+          padding: [20, 20], // Minimal padding
+          maxZoom: 18, // Allow maximum zoom
+          animate: true 
+        });
+        
+        // Wait for moveend event to ensure zoom is complete
+        const onMoveEnd = () => {
+          map.off('moveend', onMoveEnd);
+          // Small delay to ensure rendering is complete
+          setTimeout(() => {
+            if (onFitComplete) {
+              onFitComplete();
+            }
+          }, 300);
+        };
+        
+        map.once('moveend', onMoveEnd);
+      } else if (onFitComplete) {
+        // No features, call callback immediately
+        onFitComplete();
+      }
+    } catch (error) {
+      console.error('Error fitting bounds to all features:', error);
+      if (onFitComplete) {
+        onFitComplete();
+      }
+    }
+  }, [layers, shouldFit, map, onFitComplete]);
+
+  return null;
+};
+
+const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, features = [], featureTypes = [], showLabels = true, labelFontSize = 12, labelColor = '#000000', labelBackgroundColor = 'rgba(255, 255, 255, 0.6)', layers = [], layerFeatures = {}, zoomToFeature = null, zoomToLayer = null, onMapLoadingChange, fitAllFeaturesForSnapshot = false, onSnapshotFitComplete, onFeatureContextMenu }) => {
   const [isMapLoading, setIsMapLoading] = useState(true);
   const [isMapReady, setIsMapReady] = useState(false);
   const mapReadyCalledRef = useRef(false);
   const markersReadyRef = useRef(false);
+  
+  // Handle feature context menu
+  const handleContextMenu = useCallback((e, feature, layer) => {
+    if (!onFeatureContextMenu) return;
+    onFeatureContextMenu(e, feature, layer);
+  }, [onFeatureContextMenu]);
   
   // Get selected asset IDs from Redux
   const selectedAssetIds = useSelector((state) => state.projects.selectedAssetIds || []);
@@ -536,7 +627,7 @@ const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, featu
   const getFeatureColor = useCallback((feature) => {
     // Find the asset type layer for this feature's type
     const assetTypeLayer = layers.find(l => 
-      l.isAssetTypeLayer && l.assetTypeId === feature.item_type_id
+      l.isAssetTypeLayer && l.assetTypeId === feature.asset_type_id
     );
     if (assetTypeLayer?.style?.color) {
       return assetTypeLayer.style.color;
@@ -546,7 +637,7 @@ const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, featu
 
   // Get feature type name (memoized)
   const getFeatureTypeName = useCallback((feature) => {
-    const typeInfo = featureTypeMap[feature.item_type_id];
+    const typeInfo = featureTypeMap[feature.asset_type_id];
     return typeInfo?.title || 'Unknown Type';
   }, [featureTypeMap]);
 
@@ -554,7 +645,7 @@ const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, featu
   const getFeatureIcon = useCallback((feature) => {
     // Find the asset type layer for this feature's type
     const assetTypeLayer = layers.find(l => 
-      l.isAssetTypeLayer && l.assetTypeId === feature.item_type_id
+      l.isAssetTypeLayer && l.assetTypeId === feature.asset_type_id
     );
     if (assetTypeLayer?.style?.symbol) {
       return assetTypeLayer.style.symbol;
@@ -811,6 +902,13 @@ const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, featu
             shouldZoom={!!zoomToLayer}
           />
         )}
+        {fitAllFeaturesForSnapshot && (
+          <FitAllFeaturesHandler 
+            layers={layers}
+            shouldFit={fitAllFeaturesForSnapshot}
+            onFitComplete={onSnapshotFitComplete}
+          />
+        )}
       <TileLayer
         key={selectedBasemap}
         attribution={basemap.attribution}
@@ -862,6 +960,15 @@ const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, featu
               key={feature.id}
               position={position}
               icon={customIcon}
+              eventHandlers={{
+                contextmenu: (e) => {
+                  // Find the layer this feature belongs to (asset type layer)
+                  const layer = layers.find(l => 
+                    l.isAssetTypeLayer && l.assetTypeId === feature.asset_type_id
+                  );
+                  handleContextMenu(e, feature, layer || null);
+                }
+              }}
             >
             {showLabels && (
               <Tooltip 
@@ -931,6 +1038,11 @@ const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, featu
                 key={`layer-${layer.id}-feature-${feature.id}`}
                 position={[lat, lng]}
                 icon={iconToUse}
+                eventHandlers={{
+                  contextmenu: (e) => {
+                    handleContextMenu(e, feature, layer);
+                  }
+                }}
               >
                 {showLabels && (
                   <Tooltip 
@@ -981,6 +1093,11 @@ const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, featu
                     color: isSelected ? highlightColor : layerColor,
                     weight: isSelected ? layerWeight + 2 : layerWeight, // Thicker when selected
                     opacity: layerOpacity
+                  }}
+                  eventHandlers={{
+                    contextmenu: (e) => {
+                      handleContextMenu(e, feature, layer);
+                    }
                   }}
                 >
                   <Popup>
@@ -1048,6 +1165,11 @@ const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, featu
                     weight: isSelected ? layerWeight + 2 : layerWeight, // Thicker border when selected
                     opacity: layerOpacity
                   }}
+                  eventHandlers={{
+                    contextmenu: (e) => {
+                      handleContextMenu(e, feature, layer);
+                    }
+                  }}
                 >
                   <Popup>
                     <div className="popup-content">
@@ -1099,7 +1221,7 @@ const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, featu
           return null;
         });
       });
-      }, [layers, showLabels, labelFontSize, labelColor, labelBackgroundColor, createCustomIcon, getLabelBackgroundColor, selectedAssetIdsSet])}
+      }, [layers, showLabels, labelFontSize, labelColor, labelBackgroundColor, createCustomIcon, getLabelBackgroundColor, selectedAssetIdsSet, handleContextMenu])}
         </MapContainer>
       </div>
     </div>
