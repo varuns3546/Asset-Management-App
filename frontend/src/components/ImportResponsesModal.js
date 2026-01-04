@@ -171,7 +171,7 @@ const ImportResponsesModal = ({ isOpen, onClose, projectId, token, onImportSucce
     }
     
     return previewData.attributes.filter(
-      attr => attr.item_type_id === selectedAssetType
+      attr => attr.asset_type_id === selectedAssetType
     );
   };
 
@@ -321,7 +321,7 @@ const ImportResponsesModal = ({ isOpen, onClose, projectId, token, onImportSucce
                 <div className="attribute-mappings">
                   {getFilteredAttributes().map(attr => {
                     const typeName = previewData.assetTypes.find(
-                      t => t.id === attr.item_type_id
+                      t => t.id === attr.asset_type_id
                     )?.title || '';
                     return (
                       <div key={attr.id} className="attribute-mapping-row">

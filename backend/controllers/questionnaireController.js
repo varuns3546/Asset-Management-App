@@ -63,11 +63,11 @@ const getAssetQuestionnaire = asyncHandler(async (req, res) => {
 
     // Get the asset type
     let assetType = null;
-    if (asset.item_type_id) {
+    if (asset.asset_type_id) {
       const { data: typeData, error: typeError } = await req.supabase
         .from('asset_types')
         .select('*')
-        .eq('id', asset.item_type_id)
+        .eq('id', asset.asset_type_id)
         .single();
 
       if (typeError) {
@@ -79,11 +79,11 @@ const getAssetQuestionnaire = asyncHandler(async (req, res) => {
 
     // Get attributes for this asset type (only if asset has a type)
     let attributes = [];
-    if (asset.item_type_id) {
+    if (asset.asset_type_id) {
       const { data: attributesData, error: attributesError } = await req.supabase
         .from('attributes')
         .select('*')
-        .eq('item_type_id', asset.item_type_id)
+        .eq('asset_type_id', asset.asset_type_id)
         .order('created_at');
 
       if (attributesError) {
@@ -234,7 +234,7 @@ const submitAttributeValues = asyncHandler(async (req, res) => {
     // Get the asset to validate and get asset_type_id
     const { data: asset, error: assetError } = await req.supabase
       .from('assets')
-      .select('id, item_type_id, project_id')
+      .select('id, asset_type_id, project_id')
       .eq('id', assetId)
       .eq('project_id', projectId)
       .single();
@@ -282,17 +282,37 @@ const submitAttributeValues = asyncHandler(async (req, res) => {
       });
     }
 
-    // Prepare data for upsert
-    const responsesToUpsert = responses.map(r => ({
-      project_id: projectId,
-      asset_id: assetId,
-      asset_type_id: asset.item_type_id,
-      attribute_id: r.attributeId,
-      attribute_title: r.attributeTitle,
-      response_value: r.value || null,
-      response_metadata: r.metadata || {},
-      created_by: req.user.id
-    }));
+    // Prepare data for upsert and identify entries to delete
+    const responsesToUpsert = [];
+    const responsesToDelete = [];
+    
+    responses.forEach(r => {
+      const responseValue = r.value || null;
+      const responseMetadata = r.metadata || {};
+      
+      // Check if response is blank (empty value and empty metadata)
+      const isEmptyValue = !responseValue || (typeof responseValue === 'string' && responseValue.trim() === '');
+      const isEmptyMetadata = !responseMetadata || 
+        (typeof responseMetadata === 'object' && Object.keys(responseMetadata).length === 0) ||
+        (typeof responseMetadata === 'string' && (responseMetadata === '{}' || responseMetadata.trim() === ''));
+      
+      // If both value and metadata are empty, mark for deletion
+      if (isEmptyValue && isEmptyMetadata) {
+        responsesToDelete.push(r.attributeId);
+      } else {
+        // Otherwise, prepare for upsert
+        responsesToUpsert.push({
+          project_id: projectId,
+          asset_id: assetId,
+          asset_type_id: asset.asset_type_id,
+          attribute_id: r.attributeId,
+          attribute_title: r.attributeTitle,
+          response_value: responseValue,
+          response_metadata: responseMetadata,
+          created_by: req.user.id
+        });
+      }
+    });
 
     // Collect photos to delete (photos that were in old response but not in new)
     const photosToDelete = [];
@@ -334,27 +354,48 @@ const submitAttributeValues = asyncHandler(async (req, res) => {
       }
     }
 
-    // Upsert responses (insert or update if exists)
-    const { data: savedResponses, error: upsertError } = await req.supabase
-      .from('attribute_values')
-      .upsert(responsesToUpsert, {
-        onConflict: 'asset_id,attribute_id'
-      })
-      .select();
+    // Delete blank responses
+    if (responsesToDelete.length > 0) {
+      const { error: deleteError } = await req.supabase
+        .from('attribute_values')
+        .delete()
+        .eq('asset_id', assetId)
+        .eq('project_id', projectId)
+        .in('attribute_id', responsesToDelete);
 
-    if (upsertError) {
-      console.error('Error upserting responses:', upsertError);
-      return res.status(500).json({
-        success: false,
-        error: 'Failed to save responses'
-      });
+      if (deleteError) {
+        console.error('Error deleting blank responses:', deleteError);
+        // Continue with upsert even if deletion fails
+      }
+    }
+
+    // Upsert non-blank responses (insert or update if exists)
+    let savedResponses = [];
+    if (responsesToUpsert.length > 0) {
+      const { data: upsertedResponses, error: upsertError } = await req.supabase
+        .from('attribute_values')
+        .upsert(responsesToUpsert, {
+          onConflict: 'asset_id,attribute_id'
+        })
+        .select();
+
+      if (upsertError) {
+        console.error('Error upserting responses:', upsertError);
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to save responses'
+        });
+      }
+      
+      savedResponses = upsertedResponses || [];
     }
 
     res.status(200).json({
       success: true,
       message: 'Responses saved successfully',
       data: savedResponses,
-      deletedPhotos: photosToDelete.length
+      deletedPhotos: photosToDelete.length,
+      deletedResponses: responsesToDelete.length
     });
 
   } catch (error) {
@@ -377,7 +418,7 @@ const getProjectAttributeValues = asyncHandler(async (req, res) => {
       .from('attribute_values')
       .select(`
         *,
-        assets(id, title, item_type_id),
+        assets(id, title, asset_type_id),
         asset_types(id, title)
       `)
       .eq('project_id', projectId)
@@ -536,7 +577,7 @@ const previewImport = [
       // Get assets for this project
       const { data: assets, error: assetsError } = await req.supabase
         .from('assets')
-        .select('id, title, item_type_id')
+        .select('id, title, asset_type_id')
         .eq('project_id', projectId);
 
       if (assetsError) {
@@ -560,8 +601,8 @@ const previewImport = [
       if (typeIds.length > 0) {
         const { data: attrsData, error: attrsError } = await req.supabase
           .from('attributes')
-          .select('id, title, item_type_id, type')
-          .in('item_type_id', typeIds);
+          .select('id, title, asset_type_id, type')
+          .in('asset_type_id', typeIds);
 
         if (!attrsError && attrsData) {
           attributes = attrsData;
@@ -648,7 +689,7 @@ const importAttributeValues = [
       // Get assets for matching
       const { data: assets, error: assetsError } = await req.supabase
         .from('assets')
-        .select('id, title, item_type_id')
+        .select('id, title, asset_type_id')
         .eq('project_id', projectId);
 
       if (assetsError) {
@@ -730,7 +771,7 @@ const importAttributeValues = [
           responsesToUpsert.push({
             project_id: projectId,
             asset_id: asset.id,
-            asset_type_id: asset.item_type_id,
+            asset_type_id: asset.asset_type_id,
             attribute_id: attrId,
             attribute_title: attrInfo ? attrInfo.title : 'Unknown',
             response_value: responseValue,
@@ -794,11 +835,11 @@ const downloadTemplate = asyncHandler(async (req, res) => {
     // Get assets for this project (optionally filtered by type)
     let assetsQuery = req.supabase
       .from('assets')
-      .select('id, title, item_type_id')
+      .select('id, title, asset_type_id')
       .eq('project_id', projectId);
 
     if (assetTypeId) {
-      assetsQuery = assetsQuery.eq('item_type_id', assetTypeId);
+      assetsQuery = assetsQuery.eq('asset_type_id', assetTypeId);
     }
 
     const { data: assets, error: assetsError } = await assetsQuery;
@@ -813,7 +854,7 @@ const downloadTemplate = asyncHandler(async (req, res) => {
       const { data: attrsData } = await req.supabase
         .from('attributes')
         .select('id, title, type')
-        .eq('item_type_id', assetTypeId)
+        .eq('asset_type_id', assetTypeId)
         .order('created_at');
 
       attributes = attrsData || [];
@@ -828,8 +869,8 @@ const downloadTemplate = asyncHandler(async (req, res) => {
         const typeIds = assetTypes.map(t => t.id);
         const { data: attrsData } = await req.supabase
           .from('attributes')
-          .select('id, title, type, item_type_id')
-          .in('item_type_id', typeIds)
+          .select('id, title, type, asset_type_id')
+          .in('asset_type_id', typeIds)
           .order('created_at');
 
         attributes = attrsData || [];

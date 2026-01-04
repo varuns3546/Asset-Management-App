@@ -9,13 +9,17 @@ import AddFeatureModal from '../components/map/AddFeatureModal';
 import StyleLayerModal from '../components/map/StyleLayerModal';
 import ExportLayersModal from '../components/map/ExportLayersModal';
 import ErrorMessage from '../components/forms/ErrorMessage';
-import { getHierarchy, getFeatureTypes, updateFeatureType } from '../features/projects/projectSlice';
+import { getHierarchy, getFeatureTypes, updateFeatureType, getProject } from '../features/projects/projectSlice';
 import * as gisLayerService from '../services/gisLayerService';
 import { getRandomUnusedStyle } from '../constants/itemTypeIcons';
 import '../styles/map.css';
 import { useRouteMount } from '../contexts/RouteMountContext';
 import useProjectData from '../hooks/useProjectData';
 import useDebouncedAsync from '../hooks/useDebouncedAsync';
+import html2canvas from 'html2canvas';
+import projectService from '../features/projects/projectService';
+import useClickOutside from '../hooks/useClickOutside';
+import ContextMenu from '../components/common/ContextMenu';
 
 const MapScreen = () => {
   const { currentHierarchy, currentFeatureTypes } = useSelector((state) => state.projects);
@@ -43,10 +47,198 @@ const MapScreen = () => {
   const [isLoadingLayers, setIsLoadingLayers] = useState(false);
   const containerRef = useRef(null);
   const { isRouteMounted } = useRouteMount();
+  const snapshotCapturedRef = useRef(false);
+  const [fitForSnapshot, setFitForSnapshot] = useState(false);
+  const [featureContextMenu, setFeatureContextMenu] = useState(null);
+  const featureContextMenuRef = useRef(null);
+  
+  // Load label settings from project
+  useEffect(() => {
+    if (selectedProject) {
+      if (selectedProject.label_font_size !== undefined) {
+        setLabelFontSize(selectedProject.label_font_size);
+      }
+      if (selectedProject.label_color) {
+        setLabelColor(selectedProject.label_color);
+      }
+      if (selectedProject.label_background_color) {
+        setLabelBackgroundColor(selectedProject.label_background_color);
+      }
+    }
+  }, [selectedProject?.id]); // Only re-run when project changes
+  
+  // Save label settings to database with debouncing
+  const saveLabelSettings = useCallback(async (settings) => {
+    if (!selectedProject?.id) return;
+    
+    try {
+      await projectService.updateProject(selectedProject.id, settings);
+    } catch (error) {
+      console.error('Error saving label settings:', error);
+      if (isRouteMounted()) {
+        setError('Failed to save label settings');
+      }
+    }
+  }, [selectedProject?.id, isRouteMounted]);
+  
+  // Wrapper functions to save label settings when they change
+  const handleLabelFontSizeChange = useCallback((size) => {
+    setLabelFontSize(size);
+    saveLabelSettings({ label_font_size: size });
+  }, [saveLabelSettings]);
+  
+  const handleLabelColorChange = useCallback((color) => {
+    setLabelColor(color);
+    saveLabelSettings({ label_color: color });
+  }, [saveLabelSettings]);
+  
+  const handleLabelBackgroundColorChange = useCallback((color) => {
+    setLabelBackgroundColor(color);
+    saveLabelSettings({ label_background_color: color });
+  }, [saveLabelSettings]);
   
   // Memoize the callback to prevent unnecessary re-renders
   const handleMapLoadingChange = useCallback((loading) => {
     setIsMapLoading(loading);
+  }, []);
+
+  // Function to capture and upload snapshot
+  const captureSnapshot = useCallback(async () => {
+    if (!isRouteMounted() || snapshotCapturedRef.current) return;
+    
+    try {
+      // Find the map container (leaflet-container)
+      const mapContainer = document.querySelector('.leaflet-container');
+      if (!mapContainer) {
+        console.warn('Map container not found for snapshot');
+        return;
+      }
+
+      // Wait a bit for map to settle after fitting bounds
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Capture snapshot using html2canvas
+      const canvas = await html2canvas(mapContainer, {
+        useCORS: true,
+        allowTaint: false,
+        backgroundColor: '#ffffff',
+        logging: false,
+        width: mapContainer.offsetWidth,
+        height: mapContainer.offsetHeight
+      });
+
+      // Convert canvas to blob
+      canvas.toBlob(async (blob) => {
+        if (!blob || !isRouteMounted() || snapshotCapturedRef.current) return;
+        
+        try {
+          // Create a File from blob
+          const file = new File([blob], 'map-snapshot.png', { type: 'image/png' });
+          
+          // Upload snapshot
+          const user = localStorage.getItem('user');
+          if (!user) return;
+          const userData = JSON.parse(user);
+          
+          const response = await projectService.uploadMapSnapshot(
+            selectedProject.id,
+            file,
+            userData.token
+          );
+          
+          if (response.success && isRouteMounted()) {
+            snapshotCapturedRef.current = true;
+            setFitForSnapshot(false); // Reset fit state
+            console.log('Map snapshot uploaded successfully');
+            // Refresh project to get updated snapshot URL
+            dispatch(getProject(selectedProject.id));
+          }
+        } catch (error) {
+          console.error('Error uploading map snapshot:', error);
+          setFitForSnapshot(false);
+        }
+      }, 'image/png', 0.9); // 90% quality
+      
+    } catch (error) {
+      console.error('Error capturing map snapshot:', error);
+      setFitForSnapshot(false);
+    }
+  }, [selectedProject?.id, isRouteMounted, dispatch]);
+
+  // Handle snapshot fit complete callback
+  const handleSnapshotFitComplete = useCallback(() => {
+    // After fitting bounds, capture the snapshot
+    captureSnapshot();
+  }, [captureSnapshot]);
+
+  // Use layers from database (which now includes asset type layers)
+  const allLayers = useMemo(() => {
+    return layers;
+  }, [layers]);
+
+  // Trigger snapshot capture when map is ready and has features
+  useEffect(() => {
+    if (!selectedProject?.id || isMapLoading || snapshotCapturedRef.current) return;
+    
+    // Check if we have any features to show
+    const hasFeatures = allLayers.some(layer => 
+      layer.visible && layer.features && layer.features.length > 0
+    );
+    
+    if (!hasFeatures) {
+      // No features, just capture the current view
+      const timer = setTimeout(() => {
+        captureSnapshot();
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+    
+    // Wait a bit for map to fully render, then fit bounds to all features
+    const timer = setTimeout(() => {
+      if (!isRouteMounted() || snapshotCapturedRef.current) return;
+      setFitForSnapshot(true);
+    }, 2000); // Wait 2 seconds after map loads
+    
+    return () => clearTimeout(timer);
+  }, [selectedProject?.id, isMapLoading, allLayers, isRouteMounted, captureSnapshot]);
+
+  // Reset snapshot capture flag when project changes
+  useEffect(() => {
+    snapshotCapturedRef.current = false;
+  }, [selectedProject?.id]);
+
+  // Close context menu when clicking outside
+  useClickOutside(featureContextMenuRef, () => {
+    setFeatureContextMenu(null);
+  });
+
+  // Handle feature context menu
+  const handleFeatureContextMenu = useCallback((e, feature, layer) => {
+    if (!e || !feature) return;
+    
+    // Only show context menu for features that belong to a layer (custom layers, not asset types)
+    if (!layer) return;
+    
+    // Get mouse coordinates from Leaflet event
+    // Leaflet events have originalEvent which contains the DOM event
+    const domEvent = e.originalEvent || e;
+    const x = domEvent.clientX || domEvent.pageX || 0;
+    const y = domEvent.clientY || domEvent.pageY || 0;
+    
+    // Prevent default browser context menu
+    if (domEvent.preventDefault) {
+      domEvent.preventDefault();
+    }
+    if (domEvent.stopPropagation) {
+      domEvent.stopPropagation();
+    }
+    
+    setFeatureContextMenu({
+      x: x,
+      y: y,
+      feature: feature,
+      layer: layer
+    });
   }, []);
 
 
@@ -331,7 +523,7 @@ const MapScreen = () => {
       // Mark sync as in progress
       syncInProgressRef.current = true;
 
-      // Group assets by item_type_id
+      // Group assets by asset_type_id
       const assetsByType = {};
       let assetsWithCoords = 0;
       let assetsWithoutCoords = 0;
@@ -352,7 +544,7 @@ const MapScreen = () => {
               lngNum >= -180 && lngNum <= 180) {
             
             assetsWithCoords++;
-            const typeId = asset.item_type_id || 'uncategorized';
+            const typeId = asset.asset_type_id || 'uncategorized';
             if (!assetsByType[typeId]) {
               assetsByType[typeId] = [];
             }
@@ -472,7 +664,7 @@ const MapScreen = () => {
                   properties: {
                     title: asset.title,
                     asset_id: asset.id,
-                    item_type_id: asset.item_type_id || null
+                    asset_type_id: asset.asset_type_id || null
                   }
                 }
               );
@@ -585,11 +777,6 @@ const MapScreen = () => {
     }
   );
 
-
-  // Use layers from database (which now includes asset type layers)
-  const allLayers = useMemo(() => {
-    return layers;
-  }, [layers]);
 
   // Update CSS variables based on actual component heights
   useEffect(() => {
@@ -973,6 +1160,14 @@ const MapScreen = () => {
     }
   };
 
+  // Handle delete from context menu
+  const handleDeleteFeatureFromMenu = useCallback(() => {
+    if (!featureContextMenu?.feature || !featureContextMenu?.layer) return;
+    
+    handleRemoveFeature(featureContextMenu.layer.id, featureContextMenu.feature.id);
+    setFeatureContextMenu(null);
+  }, [featureContextMenu, handleRemoveFeature]);
+
   const handleRestoreLayer = async (layerData) => {
     if (!selectedProject?.id) return;
     setError('');
@@ -1083,11 +1278,11 @@ const MapScreen = () => {
         showLabels={showLabels}
         setShowLabels={setShowLabels}
         labelFontSize={labelFontSize}
-        setLabelFontSize={setLabelFontSize}
+        setLabelFontSize={handleLabelFontSizeChange}
         labelColor={labelColor}
-        setLabelColor={setLabelColor}
+        setLabelColor={handleLabelColorChange}
         labelBackgroundColor={labelBackgroundColor}
-        setLabelBackgroundColor={setLabelBackgroundColor}
+        setLabelBackgroundColor={handleLabelBackgroundColorChange}
         onExportClick={() => setShowExportModal(true)}
       />
       <div className="map-content-container">
@@ -1133,6 +1328,9 @@ const MapScreen = () => {
             zoomToFeature={zoomToFeature}
             zoomToLayer={zoomToLayer}
             onMapLoadingChange={handleMapLoadingChange}
+            fitAllFeaturesForSnapshot={fitForSnapshot}
+            onSnapshotFitComplete={handleSnapshotFitComplete}
+            onFeatureContextMenu={handleFeatureContextMenu}
                                     />
                                 </div>
                             </div>
@@ -1176,6 +1374,20 @@ const MapScreen = () => {
           onClose={() => setShowExportModal(false)}
           layers={allLayers}
           projectId={selectedProject.id}
+        />
+      )}
+
+      {/* Feature Context Menu */}
+      {featureContextMenu && (
+        <ContextMenu
+          contextMenu={{
+            x: featureContextMenu.x,
+            y: featureContextMenu.y,
+            itemsToDelete: new Set([featureContextMenu.feature.id])
+          }}
+          contextMenuRef={featureContextMenuRef}
+          onDeleteClick={handleDeleteFeatureFromMenu}
+          itemType="feature"
         />
       )}
         </div>

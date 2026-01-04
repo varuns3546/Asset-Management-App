@@ -420,9 +420,9 @@ const EnterDataScreen = () => {
     
     // Filter by type
     if (typeFilter === 'no-type') {
-      filtered = filtered.filter(asset => !asset.item_type_id);
+      filtered = filtered.filter(asset => !asset.asset_type_id);
     } else if (typeFilter !== 'all') {
-      filtered = filtered.filter(asset => asset.item_type_id === typeFilter);
+      filtered = filtered.filter(asset => asset.asset_type_id === typeFilter);
     }
     
     // Filter by search text
@@ -438,7 +438,7 @@ const EnterDataScreen = () => {
   // Get only asset types that have assets
   const getAssetTypesWithAssets = () => {
     return assetTypes.filter(type => 
-      assets.some(asset => asset.item_type_id === type.id)
+      assets.some(asset => asset.asset_type_id === type.id)
     );
   };
 
@@ -558,7 +558,7 @@ const EnterDataScreen = () => {
               {showAssetDropdown && filteredAssets.length > 0 && (
                 <div className="asset-dropdown-list">
                   {filteredAssets.map(asset => {
-                    const assetType = assetTypes.find(type => type.id === asset.item_type_id);
+                    const assetType = assetTypes.find(type => type.id === asset.asset_type_id);
                     const typeName = assetType ? assetType.title : 'No Type';
                     return (
                       <div

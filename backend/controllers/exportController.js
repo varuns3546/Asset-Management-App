@@ -40,7 +40,7 @@ const exportProjectData = asyncHandler(async (req, res) => {
       const { data: attributesData } = await req.supabase
         .from('attributes')
         .select('*')
-        .in('item_type_id', assetTypeIds);
+        .in('asset_type_id', assetTypeIds);
       attributes = attributesData || [];
     }
 

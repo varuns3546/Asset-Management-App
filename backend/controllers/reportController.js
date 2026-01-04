@@ -108,11 +108,11 @@ const generateReport = asyncHandler(async (req, res) => {
     if (sections.includes('assets')) {
       const { data: assets } = await supabaseAdmin
         .from('assets')
-        .select('id, title, item_type_id, parent_id, beginning_latitude, beginning_longitude')
+        .select('id, title, asset_type_id, parent_id, beginning_latitude, beginning_longitude')
         .eq('project_id', projectId);
 
       // Get asset types for names
-      const assetTypeIds = [...new Set((assets || []).map(a => a.item_type_id).filter(Boolean))];
+      const assetTypeIds = [...new Set((assets || []).map(a => a.asset_type_id).filter(Boolean))];
       const assetTypeMap = {};
       if (assetTypeIds.length > 0) {
         const { data: assetTypes } = await supabaseAdmin
@@ -148,7 +148,7 @@ const generateReport = asyncHandler(async (req, res) => {
 
       reportData.assets = (assets || []).map(asset => ({
         title: asset.title || 'Untitled',
-        typeName: assetTypeMap[asset.item_type_id] || 'Untyped',
+        typeName: assetTypeMap[asset.asset_type_id] || 'Untyped',
         parentTitle: asset.parent_id ? parentMap[asset.parent_id] : null,
         beginning_latitude: asset.beginning_latitude,
         beginning_longitude: asset.beginning_longitude
@@ -215,15 +215,15 @@ const generateReport = asyncHandler(async (req, res) => {
       if (typeIds.length > 0) {
         const { data: attributes } = await supabaseAdmin
           .from('attributes')
-          .select('id, title, item_type_id')
-          .in('item_type_id', typeIds);
+          .select('id, title, asset_type_id')
+          .in('asset_type_id', typeIds);
         
         if (attributes) {
           attributes.forEach(attr => {
-            if (!attributesByType[attr.item_type_id]) {
-              attributesByType[attr.item_type_id] = [];
+            if (!attributesByType[attr.asset_type_id]) {
+              attributesByType[attr.asset_type_id] = [];
             }
-            attributesByType[attr.item_type_id].push({ title: attr.title });
+            attributesByType[attr.asset_type_id].push({ title: attr.title });
           });
         }
       }
@@ -231,12 +231,12 @@ const generateReport = asyncHandler(async (req, res) => {
       // Get asset counts per type
       const { data: allAssets } = await supabaseAdmin
         .from('assets')
-        .select('item_type_id')
+        .select('asset_type_id')
         .eq('project_id', projectId);
 
       const assetCounts = {};
       (allAssets || []).forEach(asset => {
-        const typeId = asset.item_type_id || 'untyped';
+        const typeId = asset.asset_type_id || 'untyped';
         assetCounts[typeId] = (assetCounts[typeId] || 0) + 1;
       });
 
@@ -254,7 +254,7 @@ const generateReport = asyncHandler(async (req, res) => {
         // Get survey stats
         const { data: allAssets } = await supabaseAdmin
           .from('assets')
-          .select('id, item_type_id')
+          .select('id, asset_type_id')
           .eq('project_id', projectId);
 
         const { data: allResponses } = await supabaseAdmin
@@ -268,7 +268,7 @@ const generateReport = asyncHandler(async (req, res) => {
         const completionRate = totalAssets > 0 ? parseFloat(((assetsWithResponses / totalAssets) * 100).toFixed(2)) : 0;
 
         // Get asset type names
-        const assetTypeIds = [...new Set((allAssets || []).map(a => a.item_type_id).filter(Boolean))];
+        const assetTypeIds = [...new Set((allAssets || []).map(a => a.asset_type_id).filter(Boolean))];
         const assetTypeMap = {};
         if (assetTypeIds.length > 0) {
           const { data: assetTypes } = await supabaseAdmin
@@ -285,8 +285,8 @@ const generateReport = asyncHandler(async (req, res) => {
         // Count by asset type (for survey stats - need totalAssets and assetsWithResponses)
         const responsesByAssetType = {};
         (allAssets || []).forEach(asset => {
-          const typeId = asset.item_type_id || 'untyped';
-          const typeName = assetTypeMap[asset.item_type_id] || 'Untyped';
+          const typeId = asset.asset_type_id || 'untyped';
+          const typeName = assetTypeMap[asset.asset_type_id] || 'Untyped';
           
           if (!responsesByAssetType[typeId]) {
             responsesByAssetType[typeId] = {
@@ -306,8 +306,8 @@ const generateReport = asyncHandler(async (req, res) => {
         // Count by asset type (for asset stats - just count)
         const assetsByType = {};
         (allAssets || []).forEach(asset => {
-          const typeId = asset.item_type_id || 'untyped';
-          const typeName = assetTypeMap[asset.item_type_id] || 'Untyped';
+          const typeId = asset.asset_type_id || 'untyped';
+          const typeName = assetTypeMap[asset.asset_type_id] || 'Untyped';
           if (!assetsByType[typeId]) {
             assetsByType[typeId] = { typeName, count: 0 };
           }

@@ -1,4 +1,6 @@
 import asyncHandler from 'express-async-handler';
+import { GeoPackageAPI, GeometryType } from '@ngageoint/geopackage';
+import AdmZip from 'adm-zip';
 
 // Get all GIS layers for a project
 const getGisLayers = asyncHandler(async (req, res) => {
@@ -768,90 +770,19 @@ const exportLayersToGeoPackage = asyncHandler(async (req, res) => {
     const tempDir = os.tmpdir();
     const tempFilePath = path.join(tempDir, `export_${Date.now()}.gpkg`);
 
-    // Helper to convert GeoJSON to GeoPackage binary format
-    // GeoPackage uses a specific binary format: magic byte (0x47) + version (0x00) + flags + envelope + WKB
+    // Helper to convert GeoJSON to GeoPackage binary format using wkx library
+    // GeoPackage uses a specific binary format: magic byte (0x47) + version (0x00) + flags + srs_id + WKB
     const geojsonToGeoPackageBinary = (geojson) => {
       if (!geojson || !geojson.type) {
         throw new Error('Invalid GeoJSON geometry');
       }
 
-      // First, create WKB
-      const wkbBuffer = Buffer.allocUnsafe(1024);
-      let wkbOffset = 0;
-
-      // Write byte order (1 = little endian)
-      wkbBuffer.writeUInt8(1, wkbOffset++);
-
-      // Write geometry type (with Z and M flags set to 0)
-      const typeMap = {
-        'Point': 1,
-        'LineString': 2,
-        'Polygon': 3,
-        'MultiPoint': 4,
-        'MultiLineString': 5,
-        'MultiPolygon': 6
-      };
-
-      const typeCode = typeMap[geojson.type] || 0;
-      wkbBuffer.writeUInt32LE(typeCode, wkbOffset);
-      wkbOffset += 4;
-
-      // Write coordinates based on type
-      if (geojson.type === 'Point' && geojson.coordinates) {
-        const [x, y] = geojson.coordinates;
-        wkbBuffer.writeDoubleLE(x, wkbOffset);
-        wkbOffset += 8;
-        wkbBuffer.writeDoubleLE(y, wkbOffset);
-        wkbOffset += 8;
-      } else if (geojson.type === 'LineString' && geojson.coordinates) {
-        wkbBuffer.writeUInt32LE(geojson.coordinates.length, wkbOffset);
-        wkbOffset += 4;
-        for (const [x, y] of geojson.coordinates) {
-          wkbBuffer.writeDoubleLE(x, wkbOffset);
-          wkbOffset += 8;
-          wkbBuffer.writeDoubleLE(y, wkbOffset);
-          wkbOffset += 8;
-        }
-      } else if (geojson.type === 'Polygon' && geojson.coordinates) {
-        // Polygon has rings (exterior + holes)
-        wkbBuffer.writeUInt32LE(geojson.coordinates.length, wkbOffset);
-        wkbOffset += 4;
-        for (const ring of geojson.coordinates) {
-          wkbBuffer.writeUInt32LE(ring.length, wkbOffset);
-          wkbOffset += 4;
-          for (const [x, y] of ring) {
-            wkbBuffer.writeDoubleLE(x, wkbOffset);
-            wkbOffset += 8;
-            wkbBuffer.writeDoubleLE(y, wkbOffset);
-            wkbOffset += 8;
-          }
-        }
-      } else {
-        throw new Error(`Unsupported geometry type: ${geojson.type}`);
-      }
-
-      const wkb = wkbBuffer.slice(0, wkbOffset);
-
-      // Calculate envelope (bounding box)
-      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-      
-      const extractCoords = (coords) => {
-        if (Array.isArray(coords[0])) {
-          coords.forEach(coord => extractCoords(coord));
-        } else {
-          const [x, y] = coords;
-          minX = Math.min(minX, x);
-          minY = Math.min(minY, y);
-          maxX = Math.max(maxX, x);
-          maxY = Math.max(maxY, y);
-        }
-      };
-      
-      extractCoords(geojson.coordinates);
+      // Use wkx library to create proper WKB from GeoJSON
+      const geometry = wkx.Geometry.parseGeoJSON(geojson);
+      const wkb = geometry.toWkb();
 
       // Build GeoPackage binary format according to GeoPackage spec
       // Format: magic (1) + version (1) + flags (1) + srs_id (4) + WKB
-      // We'll use NO envelope for simplicity - QGIS handles this better
       const headerSize = 1 + 1 + 1 + 4; // magic + version + flags + srs_id (no envelope)
       const totalSize = headerSize + wkb.length;
       
@@ -865,16 +796,19 @@ const exportLayersToGeoPackage = asyncHandler(async (req, res) => {
       gpkgBuffer.writeUInt8(0x00, offset++);
       
       // Flags byte (8 bits):
-      // - Bit 0 (0x01): 1 = StandardGeoPackageBinary  
-      // - Bits 1-3 (0x0E): envelope type: 000 = no envelope
-      // - Bit 4 (0x10): 0 = not empty
-      // - Bit 5 (0x20): 0 = little endian (WKB byte order)
-      // - Bits 6-7: reserved (0)
-      // Value: 0x01 (standard binary, no envelope, not empty, little endian)
-      gpkgBuffer.writeUInt8(0x01, offset++);
+      // - Bit 0 (0x01): Binary type (0=GP, 1=Standard) - use 1 for Standard
+      // - Bits 1-3 (0x0E): Envelope contents: 0=no envelope, 1=XY, 2=XYZ, 3=XYM, 4=XYZM
+      // - Bit 4 (0x10): Empty geometry flag (0=non-empty, 1=empty)
+      // - Bit 5 (0x20): Endianness of SRID (0=Big Endian, 1=Little Endian)
+      // - Bits 6-7: Reserved (must be 0)
+      // Use Big Endian for SRID (bit 5 = 0) which is more standard
+      // The WKB has its own endianness indicator (first byte of WKB)
+      // Value: 0x01 (standard GP binary, no envelope, not empty, big endian SRID)
+      gpkgBuffer.writeUInt8(0x01, offset++)
       
       // SRID (Spatial Reference System ID) - 4326 for WGS84
-      gpkgBuffer.writeInt32LE(4326, offset);
+      // Write in Big Endian to match the flags byte (bit 5 = 0)
+      gpkgBuffer.writeInt32BE(4326, offset);
       offset += 4;
       
       // Append WKB
@@ -1065,33 +999,55 @@ const exportLayersToGeoPackage = asyncHandler(async (req, res) => {
         }
         usedTableNames.add(tableName);
 
-        // Determine geometry type from first feature
+        // Determine geometry type from all features (check multiple features to find the type)
+        // QGIS requires specific geometry types (POINT, LINESTRING, POLYGON) not generic GEOMETRY
         let geometryTypeName = 'GEOMETRY';
         let geometryTypeCode = 0; // Generic geometry
 
-        if (features.length > 0 && features[0].geometry_geojson) {
-          try {
-            const geom = typeof features[0].geometry_geojson === 'string'
-              ? JSON.parse(features[0].geometry_geojson)
-              : features[0].geometry_geojson;
+        const typeMap = {
+          'Point': { name: 'POINT', code: 1 },
+          'LineString': { name: 'LINESTRING', code: 2 },
+          'Polygon': { name: 'POLYGON', code: 3 },
+          'MultiPoint': { name: 'MULTIPOINT', code: 4 },
+          'MultiLineString': { name: 'MULTILINESTRING', code: 5 },
+          'MultiPolygon': { name: 'MULTIPOLYGON', code: 6 },
+          // Also handle lowercase and variations
+          'point': { name: 'POINT', code: 1 },
+          'linestring': { name: 'LINESTRING', code: 2 },
+          'polygon': { name: 'POLYGON', code: 3 },
+          'line': { name: 'LINESTRING', code: 2 }
+        };
 
-            const typeMap = {
-              'Point': { name: 'POINT', code: 1 },
-              'LineString': { name: 'LINESTRING', code: 2 },
-              'Polygon': { name: 'POLYGON', code: 3 },
-              'MultiPoint': { name: 'MULTIPOINT', code: 4 },
-              'MultiLineString': { name: 'MULTILINESTRING', code: 5 },
-              'MultiPolygon': { name: 'MULTIPOLYGON', code: 6 }
-            };
+        // Check all features to find the geometry type
+        for (const feature of features) {
+          if (feature.geometry_geojson) {
+            try {
+              const geom = typeof feature.geometry_geojson === 'string'
+                ? JSON.parse(feature.geometry_geojson)
+                : feature.geometry_geojson;
 
-            if (typeMap[geom.type]) {
-              geometryTypeName = typeMap[geom.type].name;
-              geometryTypeCode = typeMap[geom.type].code;
+              if (geom && geom.type && typeMap[geom.type]) {
+                geometryTypeName = typeMap[geom.type].name;
+                geometryTypeCode = typeMap[geom.type].code;
+                break; // Found a valid geometry type, use it
+              }
+            } catch (e) {
+              // Continue to next feature
             }
-          } catch (e) {
-            console.warn('Error parsing geometry type:', e);
           }
         }
+        
+        // Fallback to layer's geometry_type if no features had geometry
+        if (geometryTypeName === 'GEOMETRY' && layer.geometry_type) {
+          const layerGeometryType = layer.geometry_type.toLowerCase();
+          if (typeMap[layerGeometryType]) {
+            geometryTypeName = typeMap[layerGeometryType].name;
+            geometryTypeCode = typeMap[layerGeometryType].code;
+            console.log(`Layer ${layer.name}: Using layer geometry_type: ${layerGeometryType} -> ${geometryTypeName}`);
+          }
+        }
+        
+        console.log(`Layer ${layer.name}: Determined geometry type: ${geometryTypeName} (code: ${geometryTypeCode})`);
 
         // Collect asset IDs from features
         const assetIds = new Set();
@@ -1190,7 +1146,7 @@ const exportLayersToGeoPackage = asyncHandler(async (req, res) => {
         });
 
         // Add asset fields to column set
-        const assetFields = new Set(['title', 'beginning_latitude', 'beginning_longitude', 'end_latitude', 'end_longitude', 'item_type_id', 'parent_id']);
+        const assetFields = new Set(['title', 'beginning_latitude', 'beginning_longitude', 'end_latitude', 'end_longitude', 'asset_type_id', 'parent_id']);
         const allAttributeNames = new Set();
         assetAttributesMap.forEach(attrs => {
           Object.keys(attrs).forEach(attrName => {
@@ -1315,6 +1271,12 @@ const exportLayersToGeoPackage = asyncHandler(async (req, res) => {
               // Log first feature's geometry details
               if (insertedCount === 0) {
                 console.log(`Layer ${layer.name}: First feature geometry type: ${geom.type}, WKB size: ${geometryWKB.length} bytes`);
+                console.log(`Layer ${layer.name}: First feature coordinates:`, geom.coordinates);
+                // Log first 20 bytes of geometry in hex for debugging
+                const hexBytes = Array.from(geometryWKB.slice(0, Math.min(30, geometryWKB.length)))
+                  .map(b => b.toString(16).padStart(2, '0'))
+                  .join(' ');
+                console.log(`Layer ${layer.name}: First feature geometry hex (first 30 bytes): ${hexBytes}`);
               }
             } catch (gpkgError) {
               console.warn('Error converting geometry to GeoPackage format:', gpkgError);
@@ -1366,6 +1328,13 @@ const exportLayersToGeoPackage = asyncHandler(async (req, res) => {
                   console.warn('Error creating end point geometry:', e);
                 }
               }
+            }
+
+            // Verify geometry is not null before insertion
+            if (!geometryWKB || !Buffer.isBuffer(geometryWKB)) {
+              console.error(`Feature ${feature.id} in layer ${layer.name}: geometryWKB is invalid:`, geometryWKB);
+              skippedCount++;
+              continue;
             }
 
             let insertSQL = `INSERT INTO "${tableName}" (geometry`;
@@ -1430,7 +1399,20 @@ const exportLayersToGeoPackage = asyncHandler(async (req, res) => {
             }
 
             insertSQL += `) VALUES (${placeholders})`;
-            db.prepare(insertSQL).run(...values);
+            const insertResult = db.prepare(insertSQL).run(...values);
+            
+            // Verify the geometry was written for the first feature
+            if (insertedCount === 0) {
+              const checkGeom = db.prepare(`SELECT geometry FROM "${tableName}" WHERE ROWID = ?`).get(insertResult.lastInsertRowid);
+              if (!checkGeom || !checkGeom.geometry) {
+                console.error(`Layer ${layer.name}: First feature geometry was NOT written to database!`);
+                console.error(`Insert result:`, insertResult);
+                console.error(`geometryWKB type:`, typeof geometryWKB, 'isBuffer:', Buffer.isBuffer(geometryWKB), 'length:', geometryWKB ? geometryWKB.length : 0);
+              } else {
+                console.log(`Layer ${layer.name}: First feature geometry WAS written, size: ${checkGeom.geometry.length} bytes`);
+              }
+            }
+            
             insertedCount++;
           } catch (insertError) {
             console.warn(`Error inserting feature in layer ${layer.name}:`, insertError);
@@ -1561,7 +1543,7 @@ const exportLayersToGeoPackage = asyncHandler(async (req, res) => {
         let createAssetsTableSQL = `CREATE TABLE "${assetsTableName}" (id TEXT PRIMARY KEY`;
 
         // Add all asset fields
-        const assetFields = ['title', 'item_type_id', 'parent_id', 'beginning_latitude', 'beginning_longitude', 'end_latitude', 'end_longitude', 'order_index', 'created_at', 'updated_at'];
+        const assetFields = ['title', 'asset_type_id', 'parent_id', 'beginning_latitude', 'beginning_longitude', 'end_latitude', 'end_longitude', 'order_index', 'created_at', 'updated_at'];
         assetFields.forEach(field => {
           createAssetsTableSQL += `, "${field}" TEXT`;
         });
@@ -1870,6 +1852,300 @@ const exportLayersToGeoPackage = asyncHandler(async (req, res) => {
   }
 });
 
+// Export layers to GeoJSON format (much simpler than GeoPackage!)
+const exportLayersToGeoJSON = asyncHandler(async (req, res) => {
+  const { projectId } = req.params;
+  const { layerIds } = req.body; // Optional array of layer IDs
+
+  if (!projectId) {
+    return res.status(400).json({
+      success: false,
+      error: 'Project ID is required'
+    });
+  }
+
+  // Verify user has access to the project
+  const { data: projectUser, error: projectUserError } = await req.supabase
+    .from('project_users')
+    .select('id')
+    .eq('project_id', projectId)
+    .eq('user_id', req.user.id)
+    .single();
+
+  if (projectUserError || !projectUser) {
+    const { data: project, error: projectError } = await req.supabase
+      .from('projects')
+      .select('id, name')
+      .eq('id', projectId)
+      .eq('owner_id', req.user.id)
+      .single();
+
+    if (projectError || !project) {
+      return res.status(404).json({
+        success: false,
+        error: 'Project not found or access denied'
+      });
+    }
+  }
+
+  try {
+    // Get project name
+    const { data: project } = await req.supabase
+      .from('projects')
+      .select('name')
+      .eq('id', projectId)
+      .single();
+
+    const projectName = project?.name || 'project';
+
+    // Fetch layers to export
+    let query = req.supabase
+      .from('gis_layers')
+      .select('*')
+      .eq('project_id', projectId)
+      .order('created_at');
+
+    if (layerIds && Array.isArray(layerIds) && layerIds.length > 0) {
+      query = query.in('id', layerIds);
+    }
+
+    const { data: layers, error: layersError } = await query;
+
+    if (layersError) {
+      console.error('Error fetching layers:', layersError);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to fetch layers'
+      });
+    }
+
+    if (!layers || layers.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'No layers found to export'
+      });
+    }
+
+    // Create separate GeoJSON files for each layer (so they import as separate layers in QGIS)
+    const layerGeoJSONs = [];
+
+    for (const layer of layers) {
+      // Fetch features with geometry_geojson
+      const { data: features, error: fetchError } = await req.supabase
+        .rpc('get_gis_features_geojson', { p_layer_id: layer.id });
+
+      if (fetchError || !features) {
+        console.warn(`Error fetching features for layer ${layer.name}:`, fetchError);
+        continue;
+      }
+
+      // Parse layer style
+      const layerStyle = typeof layer.style === 'string' 
+        ? JSON.parse(layer.style) 
+        : layer.style || {};
+
+      // Create features array with layer style info
+      const layerFeatures = features
+        .filter(f => f.geometry_geojson)
+        .map(f => {
+          const geom = typeof f.geometry_geojson === 'string' 
+            ? JSON.parse(f.geometry_geojson) 
+            : f.geometry_geojson;
+
+          return {
+            type: 'Feature',
+            geometry: geom,
+            properties: {
+              id: f.id,
+              name: f.name || 'Unnamed Feature',
+              label: f.name || 'Unnamed Feature',
+              asset_id: f.asset_id,
+              // Include layer style for QGIS rendering
+              symbol: layerStyle.symbol || 'marker',
+              color: layerStyle.color || '#3388ff',
+              fill_color: layerStyle.fillColor || layerStyle.color || '#3388ff',
+              opacity: layerStyle.opacity || 1,
+              fill_opacity: layerStyle.fillOpacity || 0.2,
+              weight: layerStyle.weight || 3,
+              ...(f.properties || {})
+            }
+          };
+        });
+
+      layerGeoJSONs.push({
+        name: layer.name,
+        style: layerStyle,
+        geojson: {
+          type: 'FeatureCollection',
+          name: layer.name,
+          crs: {
+            type: 'name',
+            properties: {
+              name: 'urn:ogc:def:crs:EPSG::4326'
+            }
+          },
+          features: layerFeatures
+        }
+      });
+    }
+
+    // Create a QML style file with symbols and labels matching MapScreen
+    const createQMLStyle = (layerStyle) => {
+      // Map symbols to QGIS marker shapes
+      const symbolMap = {
+        'marker': 'circle',
+        'circle': 'circle',
+        'square': 'square',
+        'diamond': 'diamond',
+        'triangle': 'triangle',
+        'star': 'star',
+        'cross': 'cross',
+        'bar': 'rectangle',
+        'hexagon': 'hexagon',
+        'pin': 'arrowhead'
+      };
+
+      const symbol = layerStyle.symbol || 'marker';
+      const qgisShape = symbolMap[symbol] || 'circle';
+      const color = layerStyle.color || '#3388ff';
+      
+      // Convert hex color to RGB
+      const hexToRgb = (hex) => {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {
+          r: parseInt(result[1], 16),
+          g: parseInt(result[2], 16),
+          b: parseInt(result[3], 16)
+        } : { r: 51, g: 136, b: 255 };
+      };
+      
+      // Parse rgba color to RGB + Alpha
+      const parseRgba = (rgba) => {
+        const match = /rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/.exec(rgba);
+        if (match) {
+          return {
+            r: parseInt(match[1]),
+            g: parseInt(match[2]),
+            b: parseInt(match[3]),
+            a: match[4] ? Math.round(parseFloat(match[4]) * 255) : 255
+          };
+        }
+        return { r: 255, g: 255, b: 255, a: 153 };
+      };
+      
+      const rgb = hexToRgb(color);
+      const labelTextRgb = hexToRgb('#000000'); // Default black text
+      const labelBgRgba = parseRgba('rgba(255, 255, 255, 0.6)'); // Default translucent white
+
+      return `<!DOCTYPE qgis PUBLIC 'http://mrcc.com/qgis.dtd' 'SYSTEM'>
+<qgis version="3.28.0" styleCategories="AllStyleCategories">
+  <renderer-v2 type="singleSymbol" symbollevels="0" forceraster="0" enableorderby="0">
+    <symbols>
+      <symbol type="marker" name="0" alpha="1" clip_to_extent="1" force_rhr="0">
+        <data_defined_properties>
+          <Option type="Map">
+            <Option type="QString" name="name" value=""/>
+            <Option name="properties"/>
+            <Option type="QString" name="type" value="collection"/>
+          </Option>
+        </data_defined_properties>
+        <layer class="SimpleMarker" enabled="1" locked="0" pass="0">
+          <Option type="Map">
+            <Option type="QString" name="angle" value="0"/>
+            <Option type="QString" name="cap_style" value="square"/>
+            <Option type="QString" name="color" value="${rgb.r},${rgb.g},${rgb.b},255"/>
+            <Option type="QString" name="horizontal_anchor_point" value="1"/>
+            <Option type="QString" name="joinstyle" value="bevel"/>
+            <Option type="QString" name="name" value="${qgisShape}"/>
+            <Option type="QString" name="offset" value="0,0"/>
+            <Option type="QString" name="offset_map_unit_scale" value="3x:0,0,0,0,0,0"/>
+            <Option type="QString" name="offset_unit" value="MM"/>
+            <Option type="QString" name="outline_color" value="${rgb.r},${rgb.g},${rgb.b},255"/>
+            <Option type="QString" name="outline_style" value="solid"/>
+            <Option type="QString" name="outline_width" value="0.4"/>
+            <Option type="QString" name="outline_width_map_unit_scale" value="3x:0,0,0,0,0,0"/>
+            <Option type="QString" name="outline_width_unit" value="MM"/>
+            <Option type="QString" name="scale_method" value="diameter"/>
+            <Option type="QString" name="size" value="3"/>
+            <Option type="QString" name="size_map_unit_scale" value="3x:0,0,0,0,0,0"/>
+            <Option type="QString" name="size_unit" value="MM"/>
+            <Option type="QString" name="vertical_anchor_point" value="1"/>
+          </Option>
+          <data_defined_properties>
+            <Option type="Map">
+              <Option type="QString" name="name" value=""/>
+              <Option name="properties"/>
+              <Option type="QString" name="type" value="collection"/>
+            </Option>
+          </data_defined_properties>
+        </layer>
+      </symbol>
+    </symbols>
+  </renderer-v2>
+  <labeling type="simple">
+    <settings calloutType="simple">
+      <text-style fontFamily="Arial" fontSizeUnit="Point" textColor="${labelTextRgb.r},${labelTextRgb.g},${labelTextRgb.b},255" fontSize="10" fieldName="label" isExpression="0" textOpacity="1">
+        <text-buffer bufferDraw="1" bufferSize="0.8" bufferColor="${labelBgRgba.r},${labelBgRgba.g},${labelBgRgba.b},${labelBgRgba.a}" bufferSizeUnits="MM" bufferOpacity="1"/>
+        <background shapeDraw="1" shapeType="0" shapeSizeType="1" shapeSizeX="1" shapeSizeY="1" shapeRotationType="0" shapeRotation="0" shapeOffsetX="0" shapeOffsetY="0" shapeRadiiX="0.2" shapeRadiiY="0.2" shapeFillColor="${labelBgRgba.r},${labelBgRgba.g},${labelBgRgba.b},${labelBgRgba.a}" shapeBorderColor="255,255,255,0" shapeBorderWidth="0" shapeBorderWidthUnit="MM" shapeJoinStyle="64" shapeSizeUnit="MM" shapeOffsetUnit="MM" shapeRadiiUnit="MM"/>
+      </text-style>
+      <placement placement="1" dist="5" priority="5" offsetType="1" quadOffset="2" yOffset="-3" xOffset="3" distUnits="MM" placementFlags="10" repeatDistance="0" maxCurvedCharAngleIn="25" maxCurvedCharAngleOut="-25"/>
+      <rendering scaleVisibility="0" fontLimitPixelSize="0" labelPerPart="0" limitNumLabels="0" maxNumLabels="2000" minFeatureSize="0" scaleMin="0" scaleMax="0" displayAll="1" obstacleType="1" obstacle="1" obstacleFactor="1" zIndex="0" mergeLines="0" upsidedownLabels="0"/>
+    </settings>
+  </labeling>
+</qgis>`;
+    };
+
+    // Set response headers for download
+    const sanitizedProjectName = projectName.replace(/[^a-zA-Z0-9_-]/g, '_');
+    
+    // Create a ZIP file containing separate GeoJSON and QML files for each layer
+    const zip = new AdmZip();
+    let totalFeatures = 0;
+
+    // Add each layer as a separate GeoJSON + QML pair
+    for (const layerData of layerGeoJSONs) {
+      const sanitizedLayerName = layerData.name.replace(/[^a-zA-Z0-9_-]/g, '_');
+      const layerFilename = layerGeoJSONs.length === 1 
+        ? sanitizedProjectName 
+        : `${sanitizedProjectName}_${sanitizedLayerName}`;
+      
+      // Add GeoJSON file
+      zip.addFile(
+        `${layerFilename}.geojson`,
+        Buffer.from(JSON.stringify(layerData.geojson, null, 2), 'utf-8')
+      );
+      
+      // Add QML style file with same basename so QGIS auto-applies it
+      zip.addFile(
+        `${layerFilename}.qml`,
+        Buffer.from(createQMLStyle(layerData.style), 'utf-8')
+      );
+
+      totalFeatures += layerData.geojson.features.length;
+    }
+
+    // Generate ZIP buffer
+    const zipBuffer = zip.toBuffer();
+    
+    console.log(`Generated ZIP file: ${sanitizedProjectName}_geojson.zip (${zipBuffer.length} bytes)`);
+    console.log(`ZIP contains ${totalFeatures} feature(s) across ${layerGeoJSONs.length} layer(s)`);
+
+    // Send the ZIP file
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="${sanitizedProjectName}_geojson.zip"`);
+    res.setHeader('Content-Length', zipBuffer.length);
+    return res.status(200).send(zipBuffer);
+
+  } catch (error) {
+    console.error('Error exporting to GeoJSON:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to export layers to GeoJSON',
+      message: error.message
+    });
+  }
+});
+
 export default {
   getGisLayers,
   createGisLayer,
@@ -1878,7 +2154,8 @@ export default {
   getLayerFeatures,
   addFeature,
   deleteFeature,
-  exportLayersToGeoPackage
+  exportLayersToGeoPackage,
+  exportLayersToGeoJSON
 };
 
 

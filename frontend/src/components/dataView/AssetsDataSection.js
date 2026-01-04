@@ -62,7 +62,7 @@ const AssetsDataSection = ({ projectId, user }) => {
 
     const filteredAssets = currentHierarchy 
         ? (filterType 
-            ? currentHierarchy.filter(asset => asset.item_type_id === filterType)
+            ? currentHierarchy.filter(asset => asset.asset_type_id === filterType)
             : currentHierarchy)
         : [];
 
@@ -113,7 +113,7 @@ const AssetsDataSection = ({ projectId, user }) => {
                         {filteredAssets.map((asset) => (
                             <tr key={asset.id}>
                                 <td>{asset.title || 'Untitled'}</td>
-                                <td>{getAssetTypeName(asset.item_type_id)}</td>
+                                <td>{getAssetTypeName(asset.asset_type_id)}</td>
                                 <td>{getParentName(asset.parent_id)}</td>
                                 <td>{formatCoordinates(asset)}</td>
                                 <td>{formatDate(asset.created_at)}</td>

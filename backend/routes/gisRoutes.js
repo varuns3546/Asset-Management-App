@@ -19,5 +19,8 @@ router.delete('/:projectId/layers/:layerId/features/:featureId', authenticateUse
 // Export route
 router.post('/:projectId/export', authenticateUser, gisController.exportLayersToGeoPackage);
 
+// Export routes
+router.post('/:projectId/export/geojson', authenticateUser, gisController.exportLayersToGeoJSON);
+
 export default router;
 
