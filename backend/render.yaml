@@ -3,7 +3,7 @@ services:
     name: gis-vulnerability-tool
     env: node
     region: oregon
-    buildCommand: npm install && npm rebuild canvas
+    buildCommand: npm install && npm rebuild canvas --build-from-source
     startCommand: npm start
     envVars:
       - key: NODE_VERSION

@@ -470,6 +470,51 @@ const createAssetType = asyncHandler(async (req, res) => {
   }
 
   try {
+    // If this is a sub-type, inherit attributes and has_coordinates from parent
+    let inheritedAttributes = attributes || [];
+    let inheritedHasCoordinates = has_coordinates || false;
+    
+    if (subtype_of_id) {
+      // Fetch parent asset type
+      const { data: parentType, error: parentError } = await req.supabase
+        .from('asset_types')
+        .select('has_coordinates, id')
+        .eq('id', subtype_of_id)
+        .single();
+      
+      if (!parentError && parentType) {
+        // Inherit has_coordinates from parent
+        inheritedHasCoordinates = parentType.has_coordinates || false;
+        
+        // Fetch parent's attributes
+        const { data: parentAttributes, error: parentAttrError } = await req.supabase
+          .from('attributes')
+          .select('title, type')
+          .eq('asset_type_id', subtype_of_id);
+        
+        if (!parentAttrError && parentAttributes && parentAttributes.length > 0) {
+          // If no attributes provided, inherit all from parent
+          if (!attributes || attributes.length === 0) {
+            inheritedAttributes = parentAttributes;
+          } else {
+            // Merge: parent attributes + new attributes (avoid duplicates)
+            const existingTitles = new Set(attributes.map(a => 
+              typeof a === 'string' ? a.toLowerCase() : a.title.toLowerCase()
+            ));
+            const parentAttrsToAdd = parentAttributes.filter(pa => 
+              !existingTitles.has(pa.title.toLowerCase())
+            );
+            inheritedAttributes = [...parentAttrsToAdd, ...attributes];
+          }
+        }
+        
+        console.log(`Sub-type "${name}" inheriting from parent ${subtype_of_id}:`, {
+          has_coordinates: inheritedHasCoordinates,
+          attributes_count: inheritedAttributes.length
+        });
+      }
+    }
+
     const { data: assetType, error } = await req.supabase
       .from('asset_types')
       .insert({
@@ -478,7 +523,7 @@ const createAssetType = asyncHandler(async (req, res) => {
         project_id: project_id,
         parent_ids: parent_ids || null,
         subtype_of_id: subtype_of_id || null,
-        has_coordinates: has_coordinates || false
+        has_coordinates: inheritedHasCoordinates
       })
       .select()
       .single();
@@ -491,9 +536,9 @@ const createAssetType = asyncHandler(async (req, res) => {
       });
     }
 
-    // Create attributes if they exist
-    if (attributes && attributes.length > 0) {
-      const attributesToInsert = attributes.map(attribute => ({
+    // Create attributes if they exist (using inherited attributes if sub-type)
+    if (inheritedAttributes && inheritedAttributes.length > 0) {
+      const attributesToInsert = inheritedAttributes.map(attribute => ({
         asset_type_id: assetType.id,
         title: typeof attribute === 'string' ? attribute.trim() : attribute.title.trim(),
         type: typeof attribute === 'string' ? 'text' : (attribute.type || 'text')
@@ -947,6 +992,51 @@ const updateAssetType = asyncHandler(async (req, res) => {
   }
 
   try {
+    // If this is a sub-type, inherit attributes and has_coordinates from parent
+    let inheritedAttributes = attributes || [];
+    let inheritedHasCoordinates = has_coordinates || false;
+    
+    if (subtype_of_id) {
+      // Fetch parent asset type
+      const { data: parentType, error: parentError } = await req.supabase
+        .from('asset_types')
+        .select('has_coordinates, id')
+        .eq('id', subtype_of_id)
+        .single();
+      
+      if (!parentError && parentType) {
+        // Inherit has_coordinates from parent
+        inheritedHasCoordinates = parentType.has_coordinates || false;
+        
+        // Fetch parent's attributes
+        const { data: parentAttributes, error: parentAttrError } = await req.supabase
+          .from('attributes')
+          .select('title, type')
+          .eq('asset_type_id', subtype_of_id);
+        
+        if (!parentAttrError && parentAttributes && parentAttributes.length > 0) {
+          // If no attributes provided, inherit all from parent
+          if (!attributes || attributes.length === 0) {
+            inheritedAttributes = parentAttributes;
+          } else {
+            // Merge: parent attributes + new attributes (avoid duplicates)
+            const existingTitles = new Set(attributes.map(a => 
+              typeof a === 'string' ? a.toLowerCase() : a.title.toLowerCase()
+            ));
+            const parentAttrsToAdd = parentAttributes.filter(pa => 
+              !existingTitles.has(pa.title.toLowerCase())
+            );
+            inheritedAttributes = [...parentAttrsToAdd, ...attributes];
+          }
+        }
+        
+        console.log(`Sub-type "${name}" inheriting from parent ${subtype_of_id}:`, {
+          has_coordinates: inheritedHasCoordinates,
+          attributes_count: inheritedAttributes.length
+        });
+      }
+    }
+
     // Update the asset type
     const { data: assetType, error: updateError } = await req.supabase
       .from('asset_types')
@@ -955,7 +1045,7 @@ const updateAssetType = asyncHandler(async (req, res) => {
         description: description || null,
         parent_ids: parent_ids || null,
         subtype_of_id: subtype_of_id || null,
-        has_coordinates: has_coordinates || false
+        has_coordinates: inheritedHasCoordinates
       })
       .eq('id', featureTypeId)
       .eq('project_id', project_id)
@@ -981,9 +1071,9 @@ const updateAssetType = asyncHandler(async (req, res) => {
       console.error('Error deleting existing attributes:', deleteError);
     }
 
-    // Then insert new attributes if they exist
-    if (attributes && attributes.length > 0) {
-      const attributesToInsert = attributes.map(attribute => ({
+    // Then insert new attributes if they exist (using inherited attributes if sub-type)
+    if (inheritedAttributes && inheritedAttributes.length > 0) {
+      const attributesToInsert = inheritedAttributes.map(attribute => ({
         asset_type_id: featureTypeId,
         title: typeof attribute === 'string' ? attribute.trim() : attribute.title.trim(),
         type: typeof attribute === 'string' ? 'text' : (attribute.type || 'text')
