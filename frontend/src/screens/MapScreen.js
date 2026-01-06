@@ -16,7 +16,6 @@ import '../styles/map.css';
 import { useRouteMount } from '../contexts/RouteMountContext';
 import useProjectData from '../hooks/useProjectData';
 import useDebouncedAsync from '../hooks/useDebouncedAsync';
-import html2canvas from 'html2canvas';
 import projectService from '../features/projects/projectService';
 import useClickOutside from '../hooks/useClickOutside';
 import ContextMenu from '../components/common/ContextMenu';
@@ -47,8 +46,6 @@ const MapScreen = () => {
   const [isLoadingLayers, setIsLoadingLayers] = useState(false);
   const containerRef = useRef(null);
   const { isRouteMounted } = useRouteMount();
-  const snapshotCapturedRef = useRef(false);
-  const [fitForSnapshot, setFitForSnapshot] = useState(false);
   const [featureContextMenu, setFeatureContextMenu] = useState(null);
   const featureContextMenuRef = useRef(null);
   
@@ -102,110 +99,10 @@ const MapScreen = () => {
     setIsMapLoading(loading);
   }, []);
 
-  // Function to capture and upload snapshot
-  const captureSnapshot = useCallback(async () => {
-    if (!isRouteMounted() || snapshotCapturedRef.current) return;
-    
-    try {
-      // Find the map container (leaflet-container)
-      const mapContainer = document.querySelector('.leaflet-container');
-      if (!mapContainer) {
-        console.warn('Map container not found for snapshot');
-        return;
-      }
-
-      // Wait a bit for map to settle after fitting bounds
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // Capture snapshot using html2canvas
-      const canvas = await html2canvas(mapContainer, {
-        useCORS: true,
-        allowTaint: false,
-        backgroundColor: '#ffffff',
-        logging: false,
-        width: mapContainer.offsetWidth,
-        height: mapContainer.offsetHeight
-      });
-
-      // Convert canvas to blob
-      canvas.toBlob(async (blob) => {
-        if (!blob || !isRouteMounted() || snapshotCapturedRef.current) return;
-        
-        try {
-          // Create a File from blob
-          const file = new File([blob], 'map-snapshot.png', { type: 'image/png' });
-          
-          // Upload snapshot
-          const user = localStorage.getItem('user');
-          if (!user) return;
-          const userData = JSON.parse(user);
-          
-          const response = await projectService.uploadMapSnapshot(
-            selectedProject.id,
-            file,
-            userData.token
-          );
-          
-          if (response.success && isRouteMounted()) {
-            snapshotCapturedRef.current = true;
-            setFitForSnapshot(false); // Reset fit state
-            console.log('Map snapshot uploaded successfully');
-            // Refresh project to get updated snapshot URL
-            dispatch(getProject(selectedProject.id));
-          }
-        } catch (error) {
-          console.error('Error uploading map snapshot:', error);
-          setFitForSnapshot(false);
-        }
-      }, 'image/png', 0.9); // 90% quality
-      
-    } catch (error) {
-      console.error('Error capturing map snapshot:', error);
-      setFitForSnapshot(false);
-    }
-  }, [selectedProject?.id, isRouteMounted, dispatch]);
-
-  // Handle snapshot fit complete callback
-  const handleSnapshotFitComplete = useCallback(() => {
-    // After fitting bounds, capture the snapshot
-    captureSnapshot();
-  }, [captureSnapshot]);
-
   // Use layers from database (which now includes asset type layers)
   const allLayers = useMemo(() => {
     return layers;
   }, [layers]);
-
-  // Trigger snapshot capture when map is ready and has features
-  useEffect(() => {
-    if (!selectedProject?.id || isMapLoading || snapshotCapturedRef.current) return;
-    
-    // Check if we have any features to show
-    const hasFeatures = allLayers.some(layer => 
-      layer.visible && layer.features && layer.features.length > 0
-    );
-    
-    if (!hasFeatures) {
-      // No features, just capture the current view
-      const timer = setTimeout(() => {
-        captureSnapshot();
-      }, 2000);
-      return () => clearTimeout(timer);
-    }
-    
-    // Wait a bit for map to fully render, then fit bounds to all features
-    const timer = setTimeout(() => {
-      if (!isRouteMounted() || snapshotCapturedRef.current) return;
-      setFitForSnapshot(true);
-    }, 2000); // Wait 2 seconds after map loads
-    
-    return () => clearTimeout(timer);
-  }, [selectedProject?.id, isMapLoading, allLayers, isRouteMounted, captureSnapshot]);
-
-  // Reset snapshot capture flag when project changes
-  useEffect(() => {
-    snapshotCapturedRef.current = false;
-  }, [selectedProject?.id]);
 
   // Close context menu when clicking outside
   useClickOutside(featureContextMenuRef, () => {
@@ -1328,8 +1225,6 @@ const MapScreen = () => {
             zoomToFeature={zoomToFeature}
             zoomToLayer={zoomToLayer}
             onMapLoadingChange={handleMapLoadingChange}
-            fitAllFeaturesForSnapshot={fitForSnapshot}
-            onSnapshotFitComplete={handleSnapshotFitComplete}
             onFeatureContextMenu={handleFeatureContextMenu}
                                     />
                                 </div>

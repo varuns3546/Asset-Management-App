@@ -202,27 +202,6 @@ const HomeScreen = () => {
                     </button>
                   </div>
                   
-                  {/* Map Snapshot */}
-                  {selectedProject.map_snapshot_url && (
-                    <div style={{ marginTop: '20px', marginBottom: '20px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #ddd' }}>
-                      <img 
-                        src={selectedProject.map_snapshot_url} 
-                        alt="Map snapshot" 
-                        style={{ 
-                          width: '100%', 
-                          height: 'auto', 
-                          maxHeight: '400px',
-                          objectFit: 'cover',
-                          display: 'block'
-                        }}
-                        onError={(e) => {
-                          // Hide image if it fails to load
-                          e.target.style.display = 'none';
-                        }}
-                      />
-                    </div>
-                  )}
-                  
                   {/* Map Preview */}
                   <div className="map-preview-section">
                     <h4>Map Preview</h4>
