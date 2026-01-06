@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: gis-vulnerability-tool
+    env: node
+    region: oregon
+    buildCommand: npm install && npm rebuild canvas
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 22.16.0
+    # Install system dependencies
+    nativeEnvironment:
+      packages:
+        - libcairo2-dev
+        - libpango1.0-dev
+        - libjpeg-dev
+        - libgif-dev
+        - librsvg2-dev
