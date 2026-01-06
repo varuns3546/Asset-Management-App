@@ -65,20 +65,13 @@ const AssetTypeForm = ({
                 at.subtype_of_id === selectedAsset.id
             );
             
-            // Set selected existing sub-types
+            // Set selected existing sub-types (for the dropdown display)
             setSelectedExistingSubTypes(existingSubTypes.map(st => st.id));
             setExistingSubTypeDropdown({ id: 1, value: '' }); // Reset dropdown
             
-            if (existingSubTypes.length > 0) {
-                const subTypesData = existingSubTypes.map((subType, index) => ({
-                    id: index + 1,
-                    value: subType.title || '',
-                    existingId: subType.id
-                }));
-                setSubTypes(subTypesData);
-            } else {
-                setSubTypes([{ id: 1, value: '', existingId: null }]);
-            }
+            // Don't populate subTypes array with existing ones - they're shown via selectedExistingSubTypes
+            // Only reset to empty input for creating NEW sub-types
+            setSubTypes([{ id: 1, value: '', existingId: null }]);
             
             setHasCoordinates(selectedAsset.has_coordinates || false);
             setIsEditing(true);
@@ -351,8 +344,8 @@ const AssetTypeForm = ({
                                     description: existingType.description || '',
                                     parent_ids: existingType.parent_ids || [],
                                     subtype_of_id: currentAssetTypeId, // Set as sub-type
-                                    attributes: existingType.attributes || [],
-                                    has_coordinates: existingType.has_coordinates || false
+                                    attributes: existingType.attributes || [] // Keep existing attributes, backend will merge with parent
+                                    // Note: has_coordinates will be inherited from parent by backend
                                 }
                             })).unwrap();
                         }
@@ -372,9 +365,8 @@ const AssetTypeForm = ({
                                 name: subTypeName,
                                 description: '',
                                 parent_ids: [],
-                                subtype_of_id: currentAssetTypeId, // Set as sub-type of the newly created type
-                                attributes: [],
-                                has_coordinates: false
+                                subtype_of_id: currentAssetTypeId // Backend will inherit attributes and has_coordinates from parent
+                                // Note: Don't send attributes or has_coordinates - let backend inherit them
                             }
                         })).unwrap();
                     } catch (error) {
@@ -592,10 +584,56 @@ const AssetTypeForm = ({
                 <div className="form-group">
                     <label className="form-label">Sub-Types:</label>
                     
-                    {/* Select Existing Types as Sub-Types */}
+                    {/* Create New Sub-Types */}
                     <div style={{ marginBottom: '15px' }}>
                         <label className="form-label" style={{ fontSize: '13px', marginBottom: '5px', display: 'block' }}>
-                            Select Existing Types as Sub-Types:
+                            Create New Sub-Types:
+                        </label>
+                        {subTypes.map((subType, index) => (
+                            <div key={subType.id} className="parent-dropdown-row">
+                                <input
+                                    type="text"
+                                    value={subType.value}
+                                    onChange={(e) => handleSubTypeChange(subType.id, e.target.value)}
+                                    placeholder={subType.existingId ? `Sub-Type ${index + 1} (existing)` : `Sub-Type ${index + 1}`}
+                                    className="form-input parent-dropdown"
+                                    disabled={!!subType.existingId}
+                                    style={subType.existingId ? { backgroundColor: '#f0f0f0', cursor: 'not-allowed' } : {}}
+                                />
+                                {subTypes.length > 1 && (
+                                    <button
+                                        type="button"
+                                        onClick={() => removeSubType(subType.id)}
+                                        className="remove-parent-button"
+                                        title={subType.existingId ? "Existing sub-types cannot be removed here. Delete from tree if needed." : "Remove this sub-type"}
+                                        disabled={!!subType.existingId}
+                                        style={subType.existingId ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
+                                    >
+                                        ×
+                                    </button>
+                                )}
+                            </div>
+                        ))}
+                        <button
+                            type="button"
+                            onClick={addAnotherSubType}
+                            className="add-parent-button"
+                        >
+                            + Add Sub-Type
+                        </button>
+                        <p style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
+                            {subTypes.some(st => st.existingId) 
+                                ? 'Existing sub-types are shown in gray. Add new sub-types below.' 
+                                : isEditing && selectedAsset
+                                ? 'Enter sub-type names. They will be created when you save.'
+                                : 'Enter sub-type names for this new type. They will be created when you save.'}
+                        </p>
+                    </div>
+                    
+                    {/* Select Existing Types as Sub-Types */}
+                    <div style={{ marginTop: '15px' }}>
+                        <label className="form-label" style={{ fontSize: '13px', marginBottom: '5px', display: 'block' }}>
+                            Or Select Existing Types as Sub-Types:
                         </label>
                         <div className="parent-dropdown-row">
                             <select
@@ -649,52 +687,6 @@ const AssetTypeForm = ({
                         )}
                         <p style={{ fontSize: '11px', color: '#666', marginTop: '5px' }}>
                             Invalid types (self, circular references, already sub-types) are filtered out.
-                        </p>
-                    </div>
-                    
-                    {/* Create New Sub-Types */}
-                    <div style={{ marginTop: '15px' }}>
-                        <label className="form-label" style={{ fontSize: '13px', marginBottom: '5px', display: 'block' }}>
-                            Or Create New Sub-Types:
-                        </label>
-                        {subTypes.map((subType, index) => (
-                            <div key={subType.id} className="parent-dropdown-row">
-                                <input
-                                    type="text"
-                                    value={subType.value}
-                                    onChange={(e) => handleSubTypeChange(subType.id, e.target.value)}
-                                    placeholder={subType.existingId ? `Sub-Type ${index + 1} (existing)` : `Sub-Type ${index + 1}`}
-                                    className="form-input parent-dropdown"
-                                    disabled={!!subType.existingId}
-                                    style={subType.existingId ? { backgroundColor: '#f0f0f0', cursor: 'not-allowed' } : {}}
-                                />
-                                {subTypes.length > 1 && (
-                                    <button
-                                        type="button"
-                                        onClick={() => removeSubType(subType.id)}
-                                        className="remove-parent-button"
-                                        title={subType.existingId ? "Existing sub-types cannot be removed here. Delete from tree if needed." : "Remove this sub-type"}
-                                        disabled={!!subType.existingId}
-                                        style={subType.existingId ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
-                                    >
-                                        ×
-                                    </button>
-                                )}
-                            </div>
-                        ))}
-                        <button
-                            type="button"
-                            onClick={addAnotherSubType}
-                            className="add-parent-button"
-                        >
-                            + Add Sub-Type
-                        </button>
-                        <p style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
-                            {subTypes.some(st => st.existingId) 
-                                ? 'Existing sub-types are shown in gray. Add new sub-types below.' 
-                                : isEditing && selectedAsset
-                                ? 'Enter sub-type names. They will be created when you save.'
-                                : 'Enter sub-type names for this new type. They will be created when you save.'}
                         </p>
                     </div>
                 </div>

@@ -85,7 +85,7 @@ const Navbar = ({ onOpenModal, onCloseModal }) => {
                 isOpen={openDropdown === 'structure'}
                 onToggle={() => toggleDropdown('structure')}
             />
-            <button className="button" onClick={() => handleNavigate('/enter-data')}>Enter Data</button>
+            <button className="button" onClick={() => handleNavigate('/survey')}>Survey</button>
             <button className="button" onClick={() => handleNavigate('/reports')}>Reports</button>
             <button 
                 className="button" 

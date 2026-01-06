@@ -8,7 +8,7 @@ import useDebouncedAsync from '../hooks/useDebouncedAsync';
 import ImportResponsesModal from '../components/ImportResponsesModal';
 import '../styles/survey.css';
 
-const EnterDataScreen = () => {
+const SurveyScreen = () => {
   const dispatch = useDispatch();
   const { selectedProject, currentHierarchy } = useSelector((state) => state.projects);
   const { user } = useSelector((state) => state.auth);
@@ -23,15 +23,12 @@ const EnterDataScreen = () => {
   const [typeFilter, setTypeFilter] = useState('all');
   const [collapsedSections, setCollapsedSections] = useState({});
   const [assetSearchText, setAssetSearchText] = useState('');
-  const [showAssetDropdown, setShowAssetDropdown] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showSaveSuccess, setShowSaveSuccess] = useState(false);
+  const [completionStatus, setCompletionStatus] = useState({});
+  const [sortColumn, setSortColumn] = useState('name');
+  const [sortDirection, setSortDirection] = useState('asc');
   const { isRouteMounted } = useRouteMount();
-  const dropdownRef = useClickOutside(() => {
-    if (showAssetDropdown) {
-      setShowAssetDropdown(false);
-    }
-  }, showAssetDropdown);
 
   // Load assets for the project (debounced to prevent excessive calls)
   useDebouncedAsync(
@@ -91,6 +88,52 @@ const EnterDataScreen = () => {
       setAssets(currentHierarchy);
     }
   }, [currentHierarchy]);
+
+  // Fetch completion status for all assets
+  useEffect(() => {
+    const fetchCompletionStatus = async () => {
+      if (!selectedProject || !user || assets.length === 0) return;
+
+      try {
+        const statusMap = {};
+        for (const asset of assets) {
+          if (!asset.asset_type_id) continue;
+          
+          const assetType = assetTypes.find(type => type.id === asset.asset_type_id);
+          if (!assetType || !assetType.attributes || assetType.attributes.length === 0) continue;
+
+          // Fetch responses for this asset
+          const data = await surveyService.getAssetSurvey(
+            selectedProject.id,
+            asset.id,
+            user.token
+          );
+
+          if (data.success && data.data) {
+            const totalAttributes = data.data.attributes?.length || 0;
+            const filledAttributes = data.data.responses ? Object.keys(data.data.responses).filter(attrId => {
+              const response = data.data.responses[attrId];
+              return response.response_value || (response.response_metadata && response.response_metadata.photos && response.response_metadata.photos.length > 0);
+            }).length : 0;
+
+            statusMap[asset.id] = {
+              total: totalAttributes,
+              filled: filledAttributes,
+              percentage: totalAttributes > 0 ? (filledAttributes / totalAttributes) * 100 : 0
+            };
+          }
+        }
+
+        if (isRouteMounted()) {
+          setCompletionStatus(statusMap);
+        }
+      } catch (error) {
+        console.error('Error fetching completion status:', error);
+      }
+    };
+
+    fetchCompletionStatus();
+  }, [assets, assetTypes, selectedProject, user, isRouteMounted]);
 
   // Load survey when asset is selected
   const handleAssetSelect = async (assetId) => {
@@ -418,6 +461,13 @@ const EnterDataScreen = () => {
   const getFilteredAssets = () => {
     let filtered = assets;
     
+    // Only show assets whose type has attributes
+    filtered = filtered.filter(asset => {
+      if (!asset.asset_type_id) return false; // No type = no attributes
+      const assetType = assetTypes.find(type => type.id === asset.asset_type_id);
+      return assetType && assetType.attributes && assetType.attributes.length > 0;
+    });
+    
     // Filter by type
     if (typeFilter === 'no-type') {
       filtered = filtered.filter(asset => !asset.asset_type_id);
@@ -435,21 +485,94 @@ const EnterDataScreen = () => {
     return filtered;
   };
 
-  // Get only asset types that have assets
+  // Get only asset types that have assets AND have attributes
   const getAssetTypesWithAssets = () => {
     return assetTypes.filter(type => 
+      type.attributes && type.attributes.length > 0 &&
       assets.some(asset => asset.asset_type_id === type.id)
     );
   };
 
-  // Handle asset selection from dropdown
-  const handleAssetSelectFromDropdown = (asset) => {
-    setAssetSearchText(asset.title);
-    setShowAssetDropdown(false);
-    handleAssetSelect(asset.id);
+  // Sort assets based on current sort column and direction
+  const getSortedAssets = (assetsToSort) => {
+    const sorted = [...assetsToSort];
+    
+    sorted.sort((a, b) => {
+      let aValue, bValue;
+      
+      switch (sortColumn) {
+        case 'name':
+          aValue = a.title.toLowerCase();
+          bValue = b.title.toLowerCase();
+          break;
+        case 'type':
+          const aType = assetTypes.find(type => type.id === a.asset_type_id);
+          const bType = assetTypes.find(type => type.id === b.asset_type_id);
+          aValue = aType?.title.toLowerCase() || '';
+          bValue = bType?.title.toLowerCase() || '';
+          break;
+        case 'attributes':
+          const aTypeAttr = assetTypes.find(type => type.id === a.asset_type_id);
+          const bTypeAttr = assetTypes.find(type => type.id === b.asset_type_id);
+          aValue = aTypeAttr?.attributes?.length || 0;
+          bValue = bTypeAttr?.attributes?.length || 0;
+          break;
+        case 'completion':
+          aValue = completionStatus[a.id]?.percentage || 0;
+          bValue = completionStatus[b.id]?.percentage || 0;
+          break;
+        default:
+          return 0;
+      }
+      
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+    
+    return sorted;
+  };
+
+  // Handle column header click for sorting
+  const handleSort = (column) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
+  // Navigation functions
+  const handleNavigate = (direction) => {
+    const currentIndex = sortedFilteredAssets.findIndex(asset => asset.id === selectedAsset?.id);
+    if (currentIndex === -1) return;
+    
+    let nextIndex;
+    if (direction === 'next') {
+      nextIndex = currentIndex + 1;
+      if (nextIndex >= sortedFilteredAssets.length) nextIndex = 0; // Wrap to beginning
+    } else {
+      nextIndex = currentIndex - 1;
+      if (nextIndex < 0) nextIndex = sortedFilteredAssets.length - 1; // Wrap to end
+    }
+    
+    const nextAsset = sortedFilteredAssets[nextIndex];
+    if (nextAsset) {
+      handleAssetSelect(nextAsset.id);
+      setAssetSearchText(nextAsset.title);
+    }
+  };
+
+  const handleCloseForm = () => {
+    setSelectedAsset(null);
+    setSurveyData(null);
+    setResponses({});
+    setAssetSearchText('');
   };
 
   const filteredAssets = getFilteredAssets();
+  const sortedFilteredAssets = getSortedAssets(filteredAssets);
   const assetTypesWithAssets = getAssetTypesWithAssets();
 
   if (!selectedProject) {
@@ -482,7 +605,7 @@ const EnterDataScreen = () => {
       
       <div className="survey-header">
         <div className="header-text">
-          <h1>Enter Data</h1>
+          <h1>Survey</h1>
           <p>Select an asset and enter attribute values</p>
         </div>
         <button 
@@ -508,81 +631,134 @@ const EnterDataScreen = () => {
       />
 
       <div className="survey-content">
-        {/* Filter and Asset Selection */}
-        <div className="asset-selection">
-          <div className="filter-section">
-            <div className="filter-group">
-              <label htmlFor="type-filter">Filter by Type:</label>
-              <select
-                id="type-filter"
-                value={typeFilter}
-                onChange={(e) => {
-                  setTypeFilter(e.target.value);
-                  setSelectedAsset(null);
-                  setSurveyData(null);
-                  setResponses({});
-                  setAssetSearchText('');
-                  setShowAssetDropdown(false);
-                }}
-                className="filter-dropdown"
-              >
-                <option value="all">All Types</option>
-                <option value="no-type">No Type</option>
-                {assetTypesWithAssets.map(type => (
-                  <option key={type.id} value={type.id}>
-                    {type.title}
-                  </option>
-                ))}
-              </select>
-              <span className="asset-count">
-                ({filteredAssets.length} asset{filteredAssets.length !== 1 ? 's' : ''})
-              </span>
+        {/* Filter and Search */}
+        {!surveyData && (
+          <div className="asset-selection">
+            <div className="filter-section">
+              <div className="filter-group">
+                <label htmlFor="type-filter">Filter by Type:</label>
+                <select
+                  id="type-filter"
+                  value={typeFilter}
+                  onChange={(e) => setTypeFilter(e.target.value)}
+                  className="filter-dropdown"
+                >
+                  <option value="all">All Types</option>
+                  {assetTypesWithAssets.map(type => (
+                    <option key={type.id} value={type.id}>
+                      {type.title}
+                    </option>
+                  ))}
+                </select>
+                <span className="asset-count">
+                  ({sortedFilteredAssets.length} asset{sortedFilteredAssets.length !== 1 ? 's' : ''})
+                </span>
+              </div>
+              <div className="filter-group">
+                <label htmlFor="asset-search">Search:</label>
+                <input
+                  id="asset-search"
+                  type="text"
+                  value={assetSearchText}
+                  onChange={(e) => setAssetSearchText(e.target.value)}
+                  placeholder="Search assets..."
+                  className="asset-search-input"
+                />
+              </div>
             </div>
-          </div>
 
-          <div className="asset-select-group">
-            <label htmlFor="asset-search">Select Asset:</label>
-            <div className="searchable-dropdown" ref={dropdownRef}>
-              <input
-                id="asset-search"
-                type="text"
-                value={assetSearchText}
-                onChange={(e) => {
-                  setAssetSearchText(e.target.value);
-                  setShowAssetDropdown(true);
-                }}
-                onFocus={() => setShowAssetDropdown(true)}
-                placeholder="Type to search or click to browse..."
-                className="asset-search-input"
-              />
-              {showAssetDropdown && filteredAssets.length > 0 && (
-                <div className="asset-dropdown-list">
-                  {filteredAssets.map(asset => {
-                    const assetType = assetTypes.find(type => type.id === asset.asset_type_id);
-                    const typeName = assetType ? assetType.title : 'No Type';
-                    return (
-                      <div
-                        key={asset.id}
-                        className="asset-dropdown-item"
-                        onClick={() => handleAssetSelectFromDropdown(asset)}
-                      >
-                        <span className="asset-item-title">{asset.title}</span>
-                        <span className="asset-item-type">({typeName})</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-              {showAssetDropdown && assetSearchText && filteredAssets.length === 0 && (
-                <div className="asset-dropdown-list">
-                  <div className="asset-dropdown-item asset-no-results">
-                    No assets found matching "{assetSearchText}"
-                  </div>
-                </div>
-              )}
+            {/* Assets Table */}
+            <div className="assets-table-container">
+              <table className="assets-table">
+                <thead>
+                  <tr>
+                    <th onClick={() => handleSort('name')} className="sortable">
+                      Asset Name
+                      {sortColumn === 'name' && (
+                        <span className="sort-indicator">{sortDirection === 'asc' ? ' ▲' : ' ▼'}</span>
+                      )}
+                    </th>
+                    <th onClick={() => handleSort('type')} className="sortable">
+                      Type
+                      {sortColumn === 'type' && (
+                        <span className="sort-indicator">{sortDirection === 'asc' ? ' ▲' : ' ▼'}</span>
+                      )}
+                    </th>
+                    <th onClick={() => handleSort('attributes')} className="sortable">
+                      Attributes
+                      {sortColumn === 'attributes' && (
+                        <span className="sort-indicator">{sortDirection === 'asc' ? ' ▲' : ' ▼'}</span>
+                      )}
+                    </th>
+                    <th onClick={() => handleSort('completion')} className="sortable">
+                      Status
+                      {sortColumn === 'completion' && (
+                        <span className="sort-indicator">{sortDirection === 'asc' ? ' ▲' : ' ▼'}</span>
+                      )}
+                    </th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedFilteredAssets.length === 0 ? (
+                    <tr>
+                      <td colSpan="5" className="no-assets">
+                        {assetSearchText ? `No assets found matching "${assetSearchText}"` : 'No assets with attributes found'}
+                      </td>
+                    </tr>
+                  ) : (
+                    sortedFilteredAssets.map(asset => {
+                      const assetType = assetTypes.find(type => type.id === asset.asset_type_id);
+                      const status = completionStatus[asset.id] || { total: 0, filled: 0, percentage: 0 };
+                      const attributeCount = assetType?.attributes?.length || 0;
+                      
+                      return (
+                        <tr 
+                          key={asset.id}
+                          onClick={() => {
+                            handleAssetSelect(asset.id);
+                            setAssetSearchText(asset.title);
+                          }}
+                          className="asset-row"
+                        >
+                          <td className="asset-name" data-label="Name">{asset.title}</td>
+                          <td className="asset-type" data-label="Type">{assetType?.title || 'No Type'}</td>
+                          <td className="asset-attributes" data-label="Attributes">{attributeCount} attribute{attributeCount !== 1 ? 's' : ''}</td>
+                          <td className="asset-status" data-label="Status">
+                            <div className="status-container">
+                              <div className="progress-bar">
+                                <div 
+                                  className={`progress-fill ${
+                                    status.percentage === 100 ? 'complete' :
+                                    status.percentage > 0 ? 'partial' : 'empty'
+                                  }`}
+                                  style={{ width: `${status.percentage}%` }}
+                                />
+                              </div>
+                              <span className="status-text">{status.filled}/{status.total}</span>
+                            </div>
+                          </td>
+                          <td className="asset-action" data-label="Action">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleAssetSelect(asset.id);
+                                setAssetSearchText(asset.title);
+                              }}
+                              className="edit-btn"
+                            >
+                              Edit →
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Survey Form */}
         {loading && (
@@ -594,11 +770,35 @@ const EnterDataScreen = () => {
 
         {!loading && surveyData && (
           <div className="survey-form">
-            <div className="asset-info">
-              <h2>{selectedAsset.title}</h2>
-              <p className="asset-type">
-                Type: {surveyData.assetType?.title || 'No Type'}
-              </p>
+            {/* Navigation Controls */}
+            <div className="form-navigation">
+              <button
+                onClick={() => handleNavigate('prev')}
+                className="nav-btn prev-btn"
+                title="Previous asset"
+              >
+                ← Previous
+              </button>
+              <div className="form-header-info">
+                <h2>{selectedAsset.title}</h2>
+                <span className="form-asset-type">{surveyData.assetType?.title || 'No Type'}</span>
+              </div>
+              <div className="nav-right-controls">
+                <button
+                  onClick={() => handleNavigate('next')}
+                  className="nav-btn next-btn"
+                  title="Next asset"
+                >
+                  Next →
+                </button>
+                <button
+                  onClick={handleCloseForm}
+                  className="nav-btn close-btn"
+                  title="Back to list"
+                >
+                  ✕ Close
+                </button>
+              </div>
             </div>
 
             {surveyData.attributes.length === 0 ? (
@@ -786,5 +986,5 @@ const EnterDataScreen = () => {
   );
 };
 
-export default EnterDataScreen;
+export default SurveyScreen;
 

@@ -430,6 +430,13 @@ const createAssetType = asyncHandler(async (req, res) => {
   const { name, description, parent_ids, subtype_of_id, attributes, has_coordinates } = req.body;
   const { id: project_id } = req.params;
 
+  console.log('[createAssetType] Request body:', { 
+    name, 
+    subtype_of_id, 
+    has_coordinates, 
+    attributes_count: attributes?.length || 0 
+  });
+
   if (!project_id) {
     return res.status(400).json({
       success: false,
@@ -475,6 +482,7 @@ const createAssetType = asyncHandler(async (req, res) => {
     let inheritedHasCoordinates = has_coordinates || false;
     
     if (subtype_of_id) {
+      console.log(`[createAssetType] Detected sub-type creation for "${name}", parent ID: ${subtype_of_id}`);
       // Fetch parent asset type
       const { data: parentType, error: parentError } = await req.supabase
         .from('asset_types')
@@ -508,10 +516,16 @@ const createAssetType = asyncHandler(async (req, res) => {
           }
         }
         
-        console.log(`Sub-type "${name}" inheriting from parent ${subtype_of_id}:`, {
-          has_coordinates: inheritedHasCoordinates,
-          attributes_count: inheritedAttributes.length
+        console.log(`Sub-type "${name}" inherited from parent:`, {
+          parent_id: subtype_of_id,
+          parent_has_coordinates: parentType.has_coordinates,
+          inherited_has_coordinates: inheritedHasCoordinates,
+          parent_attributes_count: parentAttributes?.length || 0,
+          inherited_attributes_count: inheritedAttributes.length,
+          inherited_attributes: inheritedAttributes.map(a => a.title || a)
         });
+      } else {
+        console.log(`Parent type ${subtype_of_id} not found or error:`, parentError);
       }
     }
 
@@ -1030,10 +1044,16 @@ const updateAssetType = asyncHandler(async (req, res) => {
           }
         }
         
-        console.log(`Sub-type "${name}" inheriting from parent ${subtype_of_id}:`, {
-          has_coordinates: inheritedHasCoordinates,
-          attributes_count: inheritedAttributes.length
+        console.log(`Sub-type "${name}" inherited from parent:`, {
+          parent_id: subtype_of_id,
+          parent_has_coordinates: parentType.has_coordinates,
+          inherited_has_coordinates: inheritedHasCoordinates,
+          parent_attributes_count: parentAttributes?.length || 0,
+          inherited_attributes_count: inheritedAttributes.length,
+          inherited_attributes: inheritedAttributes.map(a => a.title || a)
         });
+      } else {
+        console.log(`Parent type ${subtype_of_id} not found or error:`, parentError);
       }
     }
 
