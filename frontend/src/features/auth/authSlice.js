@@ -64,10 +64,18 @@ export const login = createAsyncThunk('auth/login', async (user, thunkAPI) => {
     try {
     return await authService.login(user)
   } catch (error) {
-    const message =
-      (error.response && error.response.data && error.response.data.message) ||
-      error.message ||
-      error.toString()
+    let message = 'Invalid credentials'
+
+    // If it's a 400 error, it's likely invalid credentials
+    if (error.response && error.response.status === 400) {
+      message = 'Invalid credentials'
+    } else {
+      // For other errors, use the default message extraction
+      message = (error.response && error.response.data && error.response.data.message) ||
+                error.message ||
+                error.toString()
+    }
+
     return thunkAPI.rejectWithValue(message)
   }
 })
