@@ -2,22 +2,29 @@ import '../styles/formStyles.css'
 import '../styles/projectsModal.css'
 import { useEffect, useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
-import { useNavigate } from 'react-router-dom'
-import { getProjects, getSharedProjects, setSelectedProjectAsync, deleteProject, cloneProject, getMasterProjects } from '../features/projects/projectSlice'
+import { 
+    getProjects, 
+    getSharedProjects, 
+    setSelectedProjectAsync, 
+    deleteProject, 
+    cloneProject, 
+    getMasterProjects 
+    } from '../features/projects/projectSlice'
 import { loadUser } from '../features/auth/authSlice'
 import ButtonGroup from './forms/ButtonGroup'
 import FormField from './forms/FormField'
+import ShareProjectModal from './ShareProjectModal'
 
 const ProjectsModal = ({ onClose, initialTab = 'myProjects' }) => {
     const dispatch = useDispatch()
-    const navigate = useNavigate()
     const [activeTab, setActiveTab] = useState(initialTab) // 'myProjects' or 'shared'
     const [selectedProjectId, setSelectedProjectId] = useState('')
     const [searchTerm, setSearchTerm] = useState('')
     const [deleteConfirmation, setDeleteConfirmation] = useState({ show: false, project: null, input: '' })
     const [showCloneModal, setShowCloneModal] = useState(false)
     const [cloneData, setCloneData] = useState({ masterProjectId: '', title: '', description: '' })
-    const [shareDropdownOpen, setShareDropdownOpen] = useState(null)
+    const [showShareModal, setShowShareModal] = useState(false)
+    const [shareProjectId, setShareProjectId] = useState('')
     const { projects, masterProjects, isLoading, isError, message } = useSelector((state) => state.projects)
     const { user } = useSelector((state) => state.auth)
 
@@ -233,8 +240,13 @@ const ProjectsModal = ({ onClose, initialTab = 'myProjects' }) => {
     }
 
     const handleShareClick = (projectId) => {
-        if (onClose) onClose()
-        navigate(`/share-project?projectId=${projectId}`)
+        setShareProjectId(projectId)
+        setShowShareModal(true)
+    }
+
+    const handleShareClose = () => {
+        setShowShareModal(false)
+        setShareProjectId('')
     }
 
     // Reset selected project when switching tabs
@@ -356,6 +368,18 @@ const ProjectsModal = ({ onClose, initialTab = 'myProjects' }) => {
                         ]}
                     />
                 </div>
+            </div>
+        )
+    }
+
+    // Show share modal
+    if (showShareModal) {
+        return (
+            <div className="open-project-modal">
+                <ShareProjectModal 
+                    onClose={handleShareClose}
+                    initialProjectId={shareProjectId}
+                />
             </div>
         )
     }
@@ -875,6 +899,22 @@ const ProjectsModal = ({ onClose, initialTab = 'myProjects' }) => {
                     </>
                 )}
             </div>
+            
+            <ButtonGroup
+                buttons={[
+                    {
+                        label: 'Cancel',
+                        variant: 'secondary',
+                        onClick: handleCancel
+                    },
+                    {
+                        label: 'Open Selected Project',
+                        variant: 'primary',
+                        onClick: handleOpenProject,
+                        disabled: !selectedProjectId
+                    }
+                ]}
+            />
         </div>
     )
 }
