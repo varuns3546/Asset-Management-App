@@ -115,6 +115,9 @@
     background: #f8f9fa;
     border-bottom: 1px solid #dee2e6;
     padding: 15px 20px;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
 }
 
 .type-filter-header {
@@ -197,9 +200,10 @@
     margin-top: 15px;
     padding-top: 15px;
     border-top: 1px solid #dee2e6;
-    max-height: 400px;
+    flex: 1;
     overflow-y: auto;
-    overscroll-behavior: contain; 
+    overscroll-behavior: contain;
+    min-height: 0;
 }
 
 .filtered-tree-content {

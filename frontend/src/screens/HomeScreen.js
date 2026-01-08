@@ -16,7 +16,9 @@ const HomeScreen = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
-    description: ''
+    description: '',
+    latitude: '',
+    longitude: ''
   });
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -31,7 +33,9 @@ const HomeScreen = () => {
     if (selectedProject) {
       setFormData({
         title: selectedProject.title || selectedProject.name || '',
-        description: selectedProject.description || ''
+        description: selectedProject.description || '',
+        latitude: selectedProject.latitude || '',
+        longitude: selectedProject.longitude || ''
       });
     }
   }, [selectedProject]);
@@ -84,7 +88,9 @@ const HomeScreen = () => {
     if (selectedProject) {
       setFormData({
         title: selectedProject.title || selectedProject.name || '',
-        description: selectedProject.description || ''
+        description: selectedProject.description || '',
+        latitude: selectedProject.latitude || '',
+        longitude: selectedProject.longitude || ''
       });
     }
   };
@@ -106,7 +112,9 @@ const HomeScreen = () => {
         projectId: selectedProject.id,
         projectData: {
           title: formData.title.trim(),
-          description: formData.description.trim() || ''
+          description: formData.description.trim() || '',
+          latitude: formData.latitude ? parseFloat(formData.latitude) : null,
+          longitude: formData.longitude ? parseFloat(formData.longitude) : null
         }
       })).unwrap();
       
@@ -156,6 +164,30 @@ const HomeScreen = () => {
                     disabled={saving}
                   />
 
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                    <FormField
+                      label="Latitude:"
+                      id="project-latitude-edit"
+                      type="number"
+                      placeholder="Enter latitude..."
+                      value={formData.latitude}
+                      onChange={(e) => setFormData({ ...formData, latitude: e.target.value })}
+                      disabled={saving}
+                      step="any"
+                    />
+                    
+                    <FormField
+                      label="Longitude:"
+                      id="project-longitude-edit"
+                      type="number"
+                      placeholder="Enter longitude..."
+                      value={formData.longitude}
+                      onChange={(e) => setFormData({ ...formData, longitude: e.target.value })}
+                      disabled={saving}
+                      step="any"
+                    />
+                  </div>
+
                   <ErrorMessage message={error} />
                   
                   <ButtonGroup
@@ -191,6 +223,15 @@ const HomeScreen = () => {
                         <p style={{ color: '#999', fontStyle: 'italic', marginTop: '8px' }}>
                           No description
                         </p>
+                      )}
+                      {(selectedProject.latitude != null || selectedProject.longitude != null) && (
+                        <div style={{ marginTop: '15px', padding: '10px', background: '#e9ecef', borderRadius: '6px', display: 'inline-block' }}>
+                          <strong style={{ color: '#495057' }}>Coordinates:</strong>
+                          <div style={{ marginTop: '5px', color: '#666' }}>
+                            <span>Latitude: {selectedProject.latitude != null ? selectedProject.latitude : 'Not set'}</span>
+                            <span style={{ marginLeft: '20px' }}>Longitude: {selectedProject.longitude != null ? selectedProject.longitude : 'Not set'}</span>
+                          </div>
+                        </div>
                       )}
                     </div>
                     <button

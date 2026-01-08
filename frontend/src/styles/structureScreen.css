@@ -73,10 +73,13 @@
 .hierarchy-right-panel {
     flex: 1 1 auto; 
     min-width: 400px;
-    overflow-y: auto;
+    overflow: hidden;
     border-left: 2px solid #e0e0e0;
     padding-left: 20px;
-    width: 100%; 
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
 }
 
 .hierarchy-edit-container {
@@ -149,6 +152,8 @@
     width: 100%;
     display: flex;
     flex-direction: column;
+    flex: 1;
+    min-height: 0;
 }
 
 .no-hierarchy-selected {
