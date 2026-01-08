@@ -331,26 +331,50 @@ const AssetTypeForm = ({
             }
             
             // Update selected existing types to be sub-types
-            if (selectedExistingSubTypes.length > 0 && currentAssetTypeId) {
-                for (const existingTypeId of selectedExistingSubTypes) {
+            // Include both the selected ones AND the current dropdown value
+            const allSelectedSubTypes = [...selectedExistingSubTypes];
+            if (existingSubTypeDropdown.value && !allSelectedSubTypes.includes(existingSubTypeDropdown.value)) {
+                allSelectedSubTypes.push(existingSubTypeDropdown.value);
+            }
+            
+            if (allSelectedSubTypes.length > 0 && currentAssetTypeId) {
+                // Refetch current feature types to ensure we have fresh data
+                const refreshedTypesResult = await dispatch(getFeatureTypes(selectedProject.id)).unwrap();
+                const freshTypes = refreshedTypesResult?.data || currentFeatureTypes || [];
+                
+                for (const existingTypeId of allSelectedSubTypes) {
                     try {
-                        const existingType = assetTypes?.find(at => at.id === existingTypeId);
+                        const existingType = freshTypes.find(at => at.id === existingTypeId);
                         if (existingType) {
-                            await dispatch(updateFeatureType({
+                            const updatePayload = {
+                                name: existingType.title,
+                                description: existingType.description || '',
+                                parent_ids: existingType.parent_ids || [],
+                                subtype_of_id: currentAssetTypeId, // Set as sub-type
+                                attributes: existingType.attributes || [], // Keep existing attributes, backend will merge with parent
+                                has_coordinates: existingType.has_coordinates // Keep existing setting
+                            };
+                            
+                            console.log(`[SUBTYPE UPDATE] Updating type "${existingType.title}" (ID: ${existingTypeId})`);
+                            console.log(`[SUBTYPE UPDATE] Setting subtype_of_id to: ${currentAssetTypeId}`);
+                            console.log(`[SUBTYPE UPDATE] Full payload:`, JSON.stringify(updatePayload, null, 2));
+                            
+                            const result = await dispatch(updateFeatureType({
                                 projectId: selectedProject.id,
                                 featureTypeId: existingTypeId,
-                                featureTypeData: {
-                                    name: existingType.title,
-                                    description: existingType.description || '',
-                                    parent_ids: existingType.parent_ids || [],
-                                    subtype_of_id: currentAssetTypeId, // Set as sub-type
-                                    attributes: existingType.attributes || [] // Keep existing attributes, backend will merge with parent
-                                    // Note: has_coordinates will be inherited from parent by backend
-                                }
+                                featureTypeData: updatePayload
                             })).unwrap();
+                            
+                            console.log(`[SUBTYPE UPDATE] Success! Response:`, result);
+                        } else {
+                            console.error(`[SUBTYPE UPDATE] Could not find type with ID ${existingTypeId} in fresh types list`);
+                            alert(`Could not find the selected type (ID: ${existingTypeId}). Please refresh and try again.`);
                         }
                     } catch (error) {
-                        console.error(`Error updating existing type "${existingTypeId}" to sub-type:`, error);
+                        const typeName = freshTypes.find(at => at.id === existingTypeId)?.title || existingTypeId;
+                        console.error(`[SUBTYPE UPDATE] Error updating "${typeName}":`, error);
+                        console.error(`[SUBTYPE UPDATE] Error details:`, error.response?.data || error.message);
+                        alert(`Failed to update "${typeName}" as a subtype. Error: ${error.response?.data?.error || error.message || 'Unknown error'}`);
                     }
                 }
             }
@@ -633,7 +657,7 @@ const AssetTypeForm = ({
                     {/* Select Existing Types as Sub-Types */}
                     <div style={{ marginTop: '15px' }}>
                         <label className="form-label" style={{ fontSize: '13px', marginBottom: '5px', display: 'block' }}>
-                            Or Select Existing Types as Sub-Types:
+                            Or Select Existing Type as Sub-Type:
                         </label>
                         <div className="parent-dropdown-row">
                             <select
@@ -659,8 +683,9 @@ const AssetTypeForm = ({
                                 onClick={addExistingSubType}
                                 className="add-parent-button"
                                 disabled={!existingSubTypeDropdown.value}
+                                title="Add this type to the list for multiple sub-types"
                             >
-                                Add
+                                + Add More
                             </button>
                         </div>
                         {selectedExistingSubTypes.length > 0 && (
@@ -686,7 +711,13 @@ const AssetTypeForm = ({
                             </div>
                         )}
                         <p style={{ fontSize: '11px', color: '#666', marginTop: '5px' }}>
-                            Invalid types (self, circular references, already sub-types) are filtered out.
+                            {existingSubTypeDropdown.value ? (
+                                <span style={{ color: '#28a745', fontWeight: '500' }}>
+                                    Selected type will be set as a sub-type when you save. Click "+ Add More" to select additional sub-types.
+                                </span>
+                            ) : (
+                                'Invalid types (self, circular references, already sub-types) are filtered out.'
+                            )}
                         </p>
                     </div>
                 </div>

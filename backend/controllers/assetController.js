@@ -1218,6 +1218,15 @@ const updateAssetType = asyncHandler(async (req, res) => {
   const { name, description, parent_ids, subtype_of_id, attributes, has_coordinates } = req.body;
   const { id: project_id, featureTypeId } = req.params;
 
+  console.log('[updateAssetType] Received request:');
+  console.log('  Project ID:', project_id);
+  console.log('  Feature Type ID:', featureTypeId);
+  console.log('  Name:', name);
+  console.log('  subtype_of_id:', subtype_of_id);
+  console.log('  parent_ids:', parent_ids);
+  console.log('  has_coordinates:', has_coordinates);
+  console.log('  Full body:', JSON.stringify(req.body, null, 2));
+
   if (!project_id) {
     return res.status(400).json({
       success: false,
@@ -1317,19 +1326,28 @@ const updateAssetType = asyncHandler(async (req, res) => {
     }
 
     // Update the asset type
+    const updateData = {
+      title: name.trim(),
+      description: description || null,
+      parent_ids: parent_ids || null,
+      subtype_of_id: subtype_of_id || null,
+      has_coordinates: inheritedHasCoordinates
+    };
+    
+    console.log('[updateAssetType] Sending update to database:', JSON.stringify(updateData, null, 2));
+    
     const { data: assetType, error: updateError } = await req.supabase
       .from('asset_types')
-      .update({
-        title: name.trim(),
-        description: description || null,
-        parent_ids: parent_ids || null,
-        subtype_of_id: subtype_of_id || null,
-        has_coordinates: inheritedHasCoordinates
-      })
+      .update(updateData)
       .eq('id', featureTypeId)
       .eq('project_id', project_id)
       .select()
       .single();
+    
+    console.log('[updateAssetType] Database response:', assetType ? 'Success' : 'Failed');
+    if (assetType) {
+      console.log('[updateAssetType] Updated asset type:', JSON.stringify(assetType, null, 2));
+    }
 
     if (updateError) {
       console.error('Error updating asset type:', updateError);

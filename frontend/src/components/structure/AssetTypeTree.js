@@ -53,47 +53,81 @@ const TreeNode = ({
     return (
         <div className="tree-node vertical-node">
             <div className="node-row">
-                <div 
-                    className={`node-content ${isSelected ? 'selected' : ''}`}
-                    onClick={handleAssetClick}
-                    onMouseDown={onMouseDown}
-                    onContextMenu={handleContextMenuClick}
-                    style={{ 
-                        userSelect: 'none',
-                        cursor: 'pointer',
-                        pointerEvents: 'auto',
-                        backgroundColor: isSelected ? '#e7f1ff' : undefined,
-                        borderColor: isSelected ? '#007bff' : undefined
-                    }}
-                    title="Click to edit, right-click for menu"
-                >
-                    {(hasSubTypes || hasChildren) && (
-                        <button 
-                            className="expand-button"
-                            onClick={handleToggle}
-                            title={isExpanded ? 'Collapse' : 'Expand'}
-                        >
-                            {isExpanded ? '−' : '+'}
-                        </button>
-                    )}
-                    <span className="node-title">
-                        {node.title}
-                        {node.subtype_of_id && assetTypes && (() => {
-                            const parentType = assetTypes.find(at => at.id === node.subtype_of_id);
-                            // Only show parent name if parent exists in the list
-                            return parentType ? (
-                                <span style={{ color: '#6c757d', fontSize: '0.9em', fontWeight: 'normal' }}>
-                                    {' '}({parentType.title})
-                                </span>
-                            ) : null;
-                        })()}
-                    </span>
-                    <div className="node-indicators">
-                        {hasMultipleParents && <span className="multiple-parents-indicator" title="Has multiple parents">🔗</span>}
+                {/* Left side: node content + subtypes stacked vertically */}
+                <div className="node-with-subtypes">
+                    <div 
+                        className={`node-content ${isSelected ? 'selected' : ''}`}
+                        onClick={handleAssetClick}
+                        onMouseDown={onMouseDown}
+                        onContextMenu={handleContextMenuClick}
+                        style={{ 
+                            userSelect: 'none',
+                            cursor: 'pointer',
+                            pointerEvents: 'auto',
+                            backgroundColor: isSelected ? '#e7f1ff' : undefined,
+                            borderColor: isSelected ? '#007bff' : undefined
+                        }}
+                        title="Click to edit, right-click for menu"
+                    >
+                        {(hasSubTypes || hasChildren) && (
+                            <button 
+                                className="expand-button"
+                                onClick={handleToggle}
+                                title={isExpanded ? 'Collapse' : 'Expand'}
+                            >
+                                {isExpanded ? '−' : '+'}
+                            </button>
+                        )}
+                        <span className="node-title">
+                            {node.title}
+                            {node.subtype_of_id && assetTypes && (() => {
+                                const parentType = assetTypes.find(at => at.id === node.subtype_of_id);
+                                // Only show parent name if parent exists in the list
+                                return parentType ? (
+                                    <span style={{ color: '#6c757d', fontSize: '0.9em', fontWeight: 'normal' }}>
+                                        {' '}({parentType.title})
+                                    </span>
+                                ) : null;
+                            })()}
+                        </span>
+                        <div className="node-indicators">
+                            {hasMultipleParents && <span className="multiple-parents-indicator" title="Has multiple parents">🔗</span>}
+                        </div>
                     </div>
+                    
+                    {/* Sub-types appear vertically below parent, touching the bottom */}
+                    {hasSubTypes && isExpanded && (
+                        <div 
+                            className="children vertical-children" 
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {node.subTypes.map(subType => {
+                                const subTypeIsSelected = checkNodeSelected ? checkNodeSelected(subType) : false
+                                const subTypeIndex = getNodeIndex ? getNodeIndex(subType) : undefined
+                                return (
+                                    <TreeNode 
+                                        key={subType.id} 
+                                        node={subType} 
+                                        level={level + 1} 
+                                        parentCount={parentCount + 1}
+                                        onAssetClick={onAssetClick}
+                                        isTopLevel={false}
+                                        assetTypes={assetTypes}
+                                        isSelected={subTypeIsSelected}
+                                        onItemSelect={onItemSelect}
+                                        onContextMenu={onContextMenu}
+                                        onMouseDown={onMouseDown}
+                                        itemIndex={subTypeIndex}
+                                        checkNodeSelected={checkNodeSelected}
+                                        getNodeIndex={getNodeIndex}
+                                    />
+                                )
+                            })}
+                        </div>
+                    )}
                 </div>
                 
-                {/* Children types appear horizontally to the right of the node content, but stack vertically if multiple */}
+                {/* Children types appear horizontally to the right of the node+subtypes, stack vertically if multiple */}
                 {hasChildren && isExpanded && (
                     <div 
                         className="children horizontal-children vertical-stack" 
@@ -124,37 +158,6 @@ const TreeNode = ({
                     </div>
                 )}
             </div>
-            
-            {/* Sub-types appear vertically below parent */}
-            {hasSubTypes && isExpanded && (
-                <div 
-                    className="children vertical-children" 
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    {node.subTypes.map(subType => {
-                        const subTypeIsSelected = checkNodeSelected ? checkNodeSelected(subType) : false
-                        const subTypeIndex = getNodeIndex ? getNodeIndex(subType) : undefined
-                        return (
-                            <TreeNode 
-                                key={subType.id} 
-                                node={subType} 
-                                level={level + 1} 
-                                parentCount={parentCount + 1}
-                                onAssetClick={onAssetClick}
-                                isTopLevel={false}
-                                assetTypes={assetTypes}
-                                isSelected={subTypeIsSelected}
-                                onItemSelect={onItemSelect}
-                                onContextMenu={onContextMenu}
-                                onMouseDown={onMouseDown}
-                                itemIndex={subTypeIndex}
-                                checkNodeSelected={checkNodeSelected}
-                                getNodeIndex={getNodeIndex}
-                            />
-                        )
-                    })}
-                </div>
-            )}
         </div>
     )
 }
@@ -224,24 +227,17 @@ const AssetTypeTree = ({ assetTypes = [], onRemoveAssetType, onAssetClick }) => 
             // Build relationships - process sub-types first, then children types
             items.forEach(item => {
                 const itemId = String(item.id)
-                console.log(`Processing item: ${item.title || itemId}`, {
-                    id: itemId,
-                    subtype_of_id: item.subtype_of_id,
-                    parent_ids: item.parent_ids
-                })
                 
                 // Handle sub-types (subtype_of_id relationship) - takes precedence
                 if (item.subtype_of_id) {
                     const parentIdStr = String(item.subtype_of_id)
                     const parent = itemMap.get(parentIdStr)
                     if (parent && parent.id !== item.id) { // Prevent self-reference
-                        console.log(`  -> Adding as sub-type to ${parent.title || parentIdStr}`)
                         parent.subTypes.push(itemMap.get(itemId))
                         processedItems.add(itemId)
                     } else {
                         // Parent doesn't exist or is self, treat as root
                         if (!processedItems.has(itemId)) {
-                            console.log(`  -> Parent not found, adding to root`)
                             rootItems.push(itemMap.get(itemId))
                             processedItems.add(itemId)
                         }
@@ -254,7 +250,6 @@ const AssetTypeTree = ({ assetTypes = [], onRemoveAssetType, onAssetClick }) => 
                 const itemId = String(item.id)
                 // Skip if already processed as a sub-type
                 if (processedItems.has(itemId)) {
-                    console.log(`Skipping ${item.title || itemId} - already processed as sub-type`)
                     return
                 }
                 
@@ -268,17 +263,13 @@ const AssetTypeTree = ({ assetTypes = [], onRemoveAssetType, onAssetClick }) => 
                         
                         if (itemMap.has(parentIdStr) && parentIdStr !== itemId) { // Prevent self-reference
                             const parent = itemMap.get(parentIdStr)
-                            console.log(`  -> Adding as child to ${parent.title || parentIdStr}`)
                             parent.children.push(itemMap.get(itemId))
                             hasValidParent = true
-                        } else {
-                            console.log(`  -> Invalid parent ${parentIdStr} (self-reference or not found, itemMap has: ${Array.from(itemMap.keys()).join(', ')})`)
                         }
                     })
                     
                     // If no valid parent exists, promote to root level
                     if (!hasValidParent && !processedItems.has(itemId)) {
-                        console.log(`  -> No valid parent, adding to root`)
                         rootItems.push(itemMap.get(itemId))
                         processedItems.add(itemId)
                     } else if (hasValidParent) {
@@ -287,13 +278,10 @@ const AssetTypeTree = ({ assetTypes = [], onRemoveAssetType, onAssetClick }) => 
                     }
                 } else if (!processedItems.has(itemId)) {
                     // No parents - this is a root item
-                    console.log(`  -> No parents, adding to root`)
                     rootItems.push(itemMap.get(itemId))
                     processedItems.add(itemId)
                 }
             })
-            
-            console.log(`Final rootItems count: ${rootItems.length}`, rootItems.map(r => r.title || r.id))
 
             return rootItems
         } catch (error) {
@@ -316,12 +304,9 @@ const AssetTypeTree = ({ assetTypes = [], onRemoveAssetType, onAssetClick }) => 
     // Build tree with error handling
     let treeData = []
     try {
-        console.log('Building tree with asset types:', safeAssetTypes)
         treeData = buildTree(safeAssetTypes)
-        console.log('Tree data built:', treeData)
     } catch (error) {
         console.error('Error building tree structure:', error)
-        console.error('Asset types data:', safeAssetTypes)
         treeData = [] // Return empty tree on error
     }
 
@@ -336,6 +321,49 @@ const AssetTypeTree = ({ assetTypes = [], onRemoveAssetType, onAssetClick }) => 
         })
         return map
     }, [flatItems])
+
+    // Calculate and set vertical line heights after render (for horizontal children only)
+    useEffect(() => {
+        if (!treeContentRef.current) return;
+
+        const updateVerticalLineHeights = () => {
+            // Find all horizontal vertical stack containers (children types)
+            const horizontalVerticalStacks = treeContentRef.current.querySelectorAll('.horizontal-children.vertical-stack');
+            
+            horizontalVerticalStacks.forEach(stack => {
+                const children = Array.from(stack.querySelectorAll(':scope > .vertical-node'));
+                
+                // Only process if there are multiple children
+                if (children.length > 1) {
+                    const firstChild = children[0];
+                    const lastChild = children[children.length - 1];
+                    
+                    // Get the positions of the connection points (at top: 16px of each child)
+                    const firstChildRect = firstChild.getBoundingClientRect();
+                    const lastChildRect = lastChild.getBoundingClientRect();
+                    
+                    // Calculate the vertical distance between connection points
+                    const verticalDistance = lastChildRect.top - firstChildRect.top;
+                    
+                    // Set the CSS variable on the last child
+                    lastChild.style.setProperty('--vertical-line-height', `${verticalDistance}px`);
+                }
+            });
+        };
+
+        // Run after render and when tree changes
+        updateVerticalLineHeights();
+        
+        // Also update on zoom level changes or window resize
+        const resizeObserver = new ResizeObserver(updateVerticalLineHeights);
+        if (treeContentRef.current) {
+            resizeObserver.observe(treeContentRef.current);
+        }
+
+        return () => {
+            resizeObserver.disconnect();
+        };
+    }, [treeData, zoomLevel, treeKey, isTreeExpanded])
 
     // Use the reusable hook for context menu and selection
     const {

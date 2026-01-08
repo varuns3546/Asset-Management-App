@@ -302,47 +302,32 @@
 
 /* Removed complex line styling - using simpler approach */
 
+/* Container for node-content + subtypes stacked vertically */
+.node-with-subtypes {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
 .vertical-children {
     display: flex;
     flex-direction: column;
     margin-top: 0; 
-    margin-left: 15px; 
+    margin-left: 0; 
     padding-left: 0; 
     position: relative;
     gap: 0; 
 }
 
-/* Simple line from parent to first child (for vertical children below) */
-.vertical-children > .vertical-node:first-child::before {
-    content: '';
-    position: absolute;
-    left: -15px;
-    top: 0;
-    width: 2px;
-    height: 16px;
-    background-color: #dee2e6;
-    z-index: 0;
-    pointer-events: none;
+/* Each subtype node - no connecting lines, slightly indented, no vertical gaps */
+.vertical-children > .vertical-node {
+    position: relative;
+    flex-shrink: 0;
+    margin-left: 20px;
+    margin-top: 0;
 }
 
-/* Vertical line connecting multiple children */
-.vertical-children:has(.vertical-node:nth-child(2)) {
-    border-left: 2px solid #dee2e6;
-    padding-left: 0;
-}
 
-/* Horizontal line from parent to first vertical child */
-.vertical-children:has(.vertical-node)::before {
-    content: '';
-    position: absolute;
-    left: -15px;
-    top: -2px;
-    width: 15px;
-    height: 2px;
-    background-color: #dee2e6;
-    z-index: 0;
-    pointer-events: none;
-}
 
 .horizontal-children {
     display: flex;
@@ -395,7 +380,7 @@
     position: absolute;
     left: 0;
     top: 16px;
-    height: calc(100vh);
+    height: calc(var(--vertical-line-height, 100%));
     width: 2px;
     background-color: #dee2e6;
     z-index: 0;
