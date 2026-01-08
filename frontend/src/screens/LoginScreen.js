@@ -15,11 +15,16 @@ const LoginScreen = () => {
         (state) => state.auth)
 
     const [formData, setFormData] = useState({
-        email: '', 
+        email: '',
         password: '',
       })
-    
+
     const { email, password } = formData
+
+    // Basic validation for button enable/disable
+    const isEmailValid = email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+    const isPasswordValid = password && password.length >= 6
+    const isFormValid = isEmailValid && isPasswordValid
 
 
     useEffect(() => {
@@ -28,15 +33,22 @@ const LoginScreen = () => {
         if (isSuccess || user) {
             navigate('/home')
         }
+    }, [user, isSuccess, dispatch, navigate])
 
-        dispatch(reset())
-    }, [user, isError, isSuccess, message, dispatch, navigate])
+    // Only reset on successful login or when component unmounts
+    useEffect(() => {
+        if (isSuccess) {
+            dispatch(reset())
+        }
+    }, [isSuccess, dispatch])
+    
     const updateField = (field, value) => {
         setFormData(prev => ({
             ...prev,
             [field]: value
         }));
     };
+    
     const onSubmit = (e) => {
         e.preventDefault()
         dispatch(login(formData))
@@ -51,11 +63,11 @@ const LoginScreen = () => {
 
                 {isError && (
                     <div className="auth-error">
-                        {message || 'Login failed. Please try again.'}
+                        {message || 'Invalid credentials'}
                     </div>
                 )}
 
-                <form className="auth-form" onSubmit={onSubmit}>
+                <form className="auth-form" onSubmit={onSubmit} noValidate>
                     <div className="auth-form-group">
                         <input 
                             type="email" 
@@ -74,16 +86,33 @@ const LoginScreen = () => {
                             onChange={(e) => updateField('password', e.target.value)}
                             placeholder="Password"
                             disabled={isLoading}
+                            className="auth-input"
                         />
+                        <div className="password-requirements">
+                            <small>Password must be at least 6 characters</small>
+                        </div>
                     </div>
 
-                    <button 
-                        type="submit" 
-                        className="auth-submit-button"
-                        disabled={isLoading}
-                    >
-                        {isLoading ? 'Signing In...' : 'Sign In'}
-                    </button>
+                    <div className="button-container">
+                        <button
+                            type="submit"
+                            className={`auth-submit-button ${!isFormValid ? 'disabled' : ''}`}
+                            disabled={isLoading || !isFormValid}
+                        >
+                            {isLoading ? 'Signing In...' : 'Sign In'}
+                        </button>
+                        
+                        {!isFormValid && !isLoading && (
+                            <div className="button-tooltip">
+                                {(() => {
+                                    const issues = []
+                                    if (!isEmailValid) issues.push('valid email')
+                                    if (!isPasswordValid) issues.push('password (6+ characters)')
+                                    return issues.length > 0 ? `Please enter: ${issues.join(' and ')}` : ''
+                                })()}
+                            </div>
+                        )}
+                    </div>
                 </form>
 
                 {isLoading && (
