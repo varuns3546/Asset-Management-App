@@ -1,16 +1,28 @@
 .hierarchy-tree {
     background: white;
-    border-radius: 8px;
-    border: 1px solid #dee2e6;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.5);
     overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
     display: grid;
     grid-template-rows: auto auto 1fr; 
     height: 100%;
     width: 100%;
     flex: 1;
     min-height: 0;
-    overscroll-behavior: contain; 
+    overscroll-behavior: contain;
+    position: relative;
+}
+
+.hierarchy-tree::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #1e40af 0%, #3b82f6 100%);
+    z-index: 1;
 }
 
 .tree-controls {
@@ -404,11 +416,11 @@
 }
 
 .expand-button {
-    background: #007bff;
+    background: #1e40af;
     color: white;
     border: none;
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -417,15 +429,17 @@
     font-size: 14px;
     font-weight: bold;
     margin-right: 8px;
-    transition: all 0.2s ease;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     flex-shrink: 0;
     padding: 0;
     line-height: 1;
+    box-shadow: 0 1px 3px rgba(30, 64, 175, 0.2);
 }
 
 .expand-button:hover {
-    background: #0056b3;
+    background: #1e3a8a;
     transform: scale(1.1);
+    box-shadow: 0 2px 6px rgba(30, 64, 175, 0.3);
 }
 
 .expand-button:active {
@@ -436,19 +450,15 @@
     display: flex;
     align-items: center;
     padding: var(--node-padding) calc(var(--node-padding) * 1.5); 
-    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
+    background: white;
+    border: 2px solid #e5e7eb;
+    border-radius: 10px;
     
-    transition-property: background-color, border-color, box-shadow, transform;
-    transition-duration: 0.2s;
-    transition-timing-function: ease;
-    
-    transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease; 
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     justify-content: space-between;
     position: relative;
     z-index: 2;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     gap: 8px;
     box-sizing: border-box; 
 }
@@ -464,11 +474,10 @@
 }
 
 .node-content:hover {
-    background: #e9ecef;
-    border-color: #007bff;
-    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.1);
-    transform: translateY(-1px);
-    transition: all 0.2s ease;
+    background: #f8fafc;
+    border-color: #1e40af;
+    box-shadow: 0 4px 8px rgba(30, 64, 175, 0.12);
+    transform: translateY(-2px);
 }
 
 .node-content:hover .node-title {

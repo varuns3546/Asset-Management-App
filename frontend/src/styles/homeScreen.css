@@ -2,6 +2,7 @@
   padding: 30px;
   max-width: 1400px;
   margin: 0 auto;
+  animation: fadeInUp 0.5s ease-out;
 }
 
 .home-header {
@@ -38,21 +39,22 @@
 }
 
 .refresh-btn {
-  padding: 10px 20px;
-  background: #007bff;
+  padding: 12px 28px;
+  background: #1e40af;
   color: white;
   border: none;
-  border-radius: 6px;
-  font-weight: 500;
+  border-radius: 8px;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   font-size: 0.95rem;
+  box-shadow: 0 2px 8px rgba(30, 64, 175, 0.15);
 }
 
 .refresh-btn:hover:not(:disabled) {
-  background: #0056b3;
+  background: #1e3a8a;
   transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 123, 255, 0.2);
+  box-shadow: 0 4px 12px rgba(30, 64, 175, 0.25);
 }
 
 .refresh-btn:disabled {
@@ -117,15 +119,35 @@
 
 .metrics-section {
   background: white;
-  padding: 25px;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 30px;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.metrics-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #1e40af 0%, #3b82f6 100%);
+}
+
+.metrics-section:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
 }
 
 .metrics-section h2 {
   margin: 0 0 20px 0;
-  color: #333;
-  font-size: 1.4rem;
+  color: #0f172a;
+  font-weight: 700;
+  font-size: 1.5rem;
 }
 
 .section-header {

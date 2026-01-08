@@ -139,11 +139,44 @@ const MapPreview = ({ projectId, projectCoordinates }) => {
   const [layerFeatures, setLayerFeatures] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [mapKey, setMapKey] = useState(0);
+  const mapContainerRef = useRef(null);
 
   // Default position
   const defaultPosition = [40.7128, -74.0060];
   const position = projectCoordinates || defaultPosition;
   const basemap = basemaps.street;
+
+  // Force map remount when projectId changes or on error
+  useEffect(() => {
+    setMapKey(prev => prev + 1);
+    // Reset state when project changes
+    setLayers([]);
+    setLayerFeatures({});
+    setError(null);
+  }, [projectId]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      // Clean up any map instances
+      if (mapContainerRef.current) {
+        const mapElements = mapContainerRef.current.querySelectorAll('.leaflet-container');
+        mapElements.forEach(el => {
+          if (el._leaflet_id) {
+            try {
+              const map = el._leaflet_map;
+              if (map) {
+                map.remove();
+              }
+            } catch (e) {
+              // Silently ignore cleanup errors
+            }
+          }
+        });
+      }
+    };
+  }, []);
 
   // Fetch layers and features
   useEffect(() => {
@@ -250,8 +283,12 @@ const MapPreview = ({ projectId, projectCoordinates }) => {
   };
 
   return (
-    <div style={{ width: '100%', height: '300px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #ddd' }}>
+    <div 
+      ref={mapContainerRef}
+      style={{ width: '100%', height: '300px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #ddd' }}
+    >
       <MapContainer
+        key={`map-${projectId}-${mapKey}`}
         center={position}
         zoom={allFeatures.length > 0 ? 10 : 2}
         style={{ height: '100%', width: '100%' }}

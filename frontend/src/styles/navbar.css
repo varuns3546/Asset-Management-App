@@ -1,17 +1,19 @@
 .container {
     display: flex;
     flex-direction: row;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: center;
     justify-content: center;
 
     width: 100%;
     box-sizing: border-box;
-    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-    border-bottom: 2px solid #e0e0e0;
-    padding: 12px 24px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    gap: 12px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid #e2e8f0;
+    padding: 14px 250px 14px calc(28px + -10vw);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    gap: 8px;
     position: fixed;
     top: 0;
     left: 0;
@@ -20,7 +22,8 @@
 }
 
 .user-dropdown-container {
-    margin-left: 90px;
+    position: absolute;
+    right: -240px;
 }
 
 .dropdown-container {
@@ -42,23 +45,28 @@
 .button {
     background: transparent;
     border: 1px solid transparent;
-    color: #333;
+    color: #0f172a;
     padding: 10px 24px;
-    border-radius: 6px;
+    border-radius: 8px;
     font-size: 19px;
-    font-weight: 500;
+    font-weight: 700;
     cursor: pointer;
-    transition: all 0.2s ease;
-    white-space: nowrap;
     position: relative;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+    letter-spacing: 0.3px;
 }
 
 .button:hover {
-    background: #f8f9fa;
-    border-color: #dee2e6;
-    color: #007bff;
+    background: #1e40af;
+    color: white;
+    border-color: transparent;
     transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 8px rgba(30, 64, 175, 0.2);
+}
+
+.button:active {
+    transform: translateY(0);
 }
 
 .button:active {
@@ -91,7 +99,7 @@
 .options button {
     background: white;
     border: 1px solid #dee2e6;
-    color: #333;
+    color: #0f172a;
     padding: 10px 20px;
     font-size: 19px;
     font-weight: 400;
@@ -102,8 +110,8 @@
 }
 
 .options button:hover {
-    background: #f8f9fa;
-    color: #007bff;
+    background: #f8fafc;
+    color: #1e40af;
     padding-left: 24px;
 }
 
@@ -117,8 +125,12 @@
 
 @media (max-width: 1199px) {
     .container {
-        padding: 10px 22px 10px 147px;
+        padding: 10px 22px 10px calc(22px + 3vw);
         gap: 10px;
+    }
+    
+    .user-dropdown-container {
+        right: calc(22px + 3vw);
     }
     
     .button {
@@ -142,8 +154,16 @@
 
 @media (max-width: 768px) {
     .container {
-        padding: 9px 18px 9px 126px;
+        padding: 9px 18px;
         gap: 8px;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+    }
+    
+    .user-dropdown-container {
+        position: relative;
+        right: auto;
+        margin-left: auto;
     }
     
     .button {
@@ -167,14 +187,21 @@
 
 @media (max-width: 480px) {
     .container {
-        padding: 8px 14px 8px 105px;
+        padding: 8px 14px;
         gap: 6px;
+        flex-wrap: wrap;
         justify-content: flex-start;
+    }
+    
+    .user-dropdown-container {
+        position: relative;
+        right: auto;
+        margin-left: auto;
     }
     
     .button {
         padding: 7px 14px;
-        font-size: 12px;
+        font-size: 13px;
     }
     
     .options {
@@ -193,13 +220,21 @@
 
 @media (max-width: 375px) {
     .container {
-        padding: 6px 10px 6px 84px;
+        padding: 6px 10px;
         gap: 4px;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+    }
+    
+    .user-dropdown-container {
+        position: relative;
+        right: auto;
+        margin-left: auto;
     }
     
     .button {
         padding: 5px 10px;
-        font-size: 11px;
+        font-size: 12px;
     }
     
     .options {
