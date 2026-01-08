@@ -32,7 +32,7 @@ const PullRequestScreen = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <h1 style={{ margin: 0 }}>Pull Requests</h1>
         <button
-          className="btn btn-primary"
+          className="button button-primary"
           onClick={handleCreatePR}
           disabled={!selectedProject || !selectedProject.parent_project_id}
           style={{

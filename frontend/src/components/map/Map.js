@@ -28,6 +28,39 @@ const DefaultIcon = L.icon({
 
 L.Marker.prototype.options.icon = DefaultIcon;
 
+// Helper function to check if map and its DOM elements are still valid
+// This prevents errors when map is destroyed during transitions (e.g., session switches)
+const isMapValid = (map) => {
+  if (!map) return false;
+  try {
+    // Check if map has required methods
+    if (typeof map.getContainer !== 'function' || typeof map.getPane !== 'function') {
+      return false;
+    }
+    
+    // Check if container exists and is still in DOM
+    const container = map.getContainer();
+    if (!container || !container.parentNode || !document.body.contains(container)) {
+      return false;
+    }
+    
+    // Check if map pane exists
+    const mapPane = map.getPane('mapPane');
+    if (!mapPane) return false;
+    
+    // Safely check if map pane has valid position (prevent _leaflet_pos access error)
+    // Only check if the pane element exists in DOM
+    if (!mapPane.parentNode || !document.body.contains(mapPane)) {
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    // Any error means map is invalid (e.g., being destroyed)
+    return false;
+  }
+};
+
 // Basemap configurations
 export const basemaps = {
   street: {
@@ -66,11 +99,8 @@ const MapResizeHandler = ({ panelWidth }) => {
     // Small delay to ensure DOM is ready
     const timer = setTimeout(() => {
       try {
-        if (map && map.getContainer && map.invalidateSize) {
-          const container = map.getContainer();
-          if (container && container.parentNode) {
-            map.invalidateSize({ animate: false });
-          }
+        if (isMapValid(map) && map.invalidateSize) {
+          map.invalidateSize({ animate: false });
         }
       } catch (error) {
         // Map is being destroyed, ignore
@@ -84,11 +114,8 @@ const MapResizeHandler = ({ panelWidth }) => {
   useEffect(() => {
     const timer = setTimeout(() => {
       try {
-        if (map && map.getContainer && map.invalidateSize) {
-          const container = map.getContainer();
-          if (container && container.parentNode) {
-            map.invalidateSize({ animate: false });
-          }
+        if (isMapValid(map) && map.invalidateSize) {
+          map.invalidateSize({ animate: false });
         }
       } catch (error) {
         // Map is being destroyed, ignore
@@ -126,18 +153,7 @@ const MapCenterHandler = ({ center, zoom, shouldUpdate }) => {
         !isNaN(currentCenter[0]) && !isNaN(currentCenter[1]) && map && isMounted) {
       try {
         // Check if map and container still exist and are valid
-        if (!map.getContainer || !map.getPane || !map.setView || !map.getZoom) {
-          return;
-        }
-        
-        const container = map.getContainer();
-        if (!container || !container.parentNode) {
-          // Map container has been removed from DOM
-          return;
-        }
-        
-        const mapPane = map.getPane('mapPane');
-        if (!mapPane) {
+        if (!isMapValid(map)) {
           return;
         }
         
@@ -163,41 +179,49 @@ const MapInteractionHandler = ({ isMapLoading }) => {
   const map = useMap();
 
   useEffect(() => {
-    if (!map) return;
+    if (!isMapValid(map)) return;
 
-    // Update map interaction settings
-    if (isMapLoading) {
-      map.dragging.disable();
-      map.touchZoom.disable();
-      map.doubleClickZoom.disable();
-      map.scrollWheelZoom.disable();
-      map.boxZoom.disable();
-      map.keyboard.disable();
-    } else {
-      map.dragging.enable();
-      map.touchZoom.enable();
-      map.doubleClickZoom.enable();
-      map.scrollWheelZoom.enable();
-      map.boxZoom.enable();
-      map.keyboard.enable();
+    try {
+      // Update map interaction settings
+      if (isMapLoading) {
+        map.dragging.disable();
+        map.touchZoom.disable();
+        map.doubleClickZoom.disable();
+        map.scrollWheelZoom.disable();
+        map.boxZoom.disable();
+        map.keyboard.disable();
+      } else {
+        map.dragging.enable();
+        map.touchZoom.enable();
+        map.doubleClickZoom.enable();
+        map.scrollWheelZoom.enable();
+        map.boxZoom.enable();
+        map.keyboard.enable();
+      }
+    } catch (error) {
+      // Map is being destroyed, ignore
     }
   }, [map, isMapLoading]);
 
   // Separate effect to ensure zoom control exists
   useEffect(() => {
-    if (!map) return;
+    if (!isMapValid(map)) return;
     
-    // Check if zoom control exists by looking for it in the DOM
-    const container = map.getContainer();
-    if (container) {
-      const zoomControlElement = container.querySelector('.leaflet-control-zoom');
-      if (!zoomControlElement) {
-        // Zoom control doesn't exist, add it
-        const zoomControl = L.control.zoom({
-          position: 'topleft'
-        });
-        map.addControl(zoomControl);
+    try {
+      // Check if zoom control exists by looking for it in the DOM
+      const container = map.getContainer();
+      if (container) {
+        const zoomControlElement = container.querySelector('.leaflet-control-zoom');
+        if (!zoomControlElement) {
+          // Zoom control doesn't exist, add it
+          const zoomControl = L.control.zoom({
+            position: 'topleft'
+          });
+          map.addControl(zoomControl);
+        }
       }
+    } catch (error) {
+      // Map is being destroyed, ignore
     }
   }, [map, isMapLoading]); // Re-check when loading state changes
 
@@ -218,7 +242,7 @@ const ZoomToFeatureHandler = ({ feature, shouldZoom }) => {
     previousFeatureRef.current = zoomKey;
 
     try {
-      if (!map) return;
+      if (!isMapValid(map)) return;
 
       // Collect all coordinates from the feature
       const bounds = [];
@@ -246,7 +270,7 @@ const ZoomToFeatureHandler = ({ feature, shouldZoom }) => {
         }
       }
 
-      if (bounds.length > 0) {
+      if (bounds.length > 0 && isMapValid(map)) {
         if (bounds.length === 1) {
           // Single point - use setView with zoom
           map.setView(bounds[0], 16, { animate: true });
@@ -261,7 +285,7 @@ const ZoomToFeatureHandler = ({ feature, shouldZoom }) => {
         }
       }
     } catch (error) {
-      console.error('Error zooming to feature:', error);
+      // Silently catch errors if map is being destroyed
     }
   }, [feature, shouldZoom, map]);
 
@@ -282,7 +306,7 @@ const ZoomToLayerHandler = ({ layer, shouldZoom }) => {
     previousLayerRef.current = zoomKey;
 
     try {
-      if (!map || !map.fitBounds) return;
+      if (!isMapValid(map) || typeof map.fitBounds !== 'function') return;
 
       // Collect all valid coordinates from layer features
       const bounds = [];
@@ -311,7 +335,7 @@ const ZoomToLayerHandler = ({ layer, shouldZoom }) => {
         }
       });
 
-      if (bounds.length > 0) {
+      if (bounds.length > 0 && isMapValid(map)) {
         // Create a Leaflet bounds object
         const latLngBounds = L.latLngBounds(bounds);
         map.fitBounds(latLngBounds, { 
@@ -321,7 +345,7 @@ const ZoomToLayerHandler = ({ layer, shouldZoom }) => {
         });
       }
     } catch (error) {
-      console.error('Error zooming to layer:', error);
+      // Silently catch errors if map is being destroyed
     }
   }, [layer, shouldZoom, map]);
 
@@ -348,18 +372,7 @@ const MapReadyTracker = ({ targetCenter, onMapReady }) => {
 
       // Ensure map and container still exist and are valid
       try {
-        if (!map || !map.getContainer || !map.getPane) {
-          return;
-        }
-        
-        const container = map.getContainer();
-        if (!container || !container.parentNode) {
-          // Map container has been removed from DOM
-          return;
-        }
-
-        const mapPane = map.getPane('mapPane');
-        if (!mapPane) {
+        if (!isMapValid(map)) {
           return;
         }
 
@@ -495,7 +508,12 @@ const FitAllFeaturesHandler = ({ layers, shouldFit, onFitComplete }) => {
     previousFitRef.current = fitKey;
 
     try {
-      if (!map || !map.fitBounds) return;
+      if (!isMapValid(map) || typeof map.fitBounds !== 'function') {
+        if (onFitComplete) {
+          onFitComplete();
+        }
+        return;
+      }
 
       // Collect all valid coordinates from all visible layers
       const bounds = [];
@@ -528,7 +546,7 @@ const FitAllFeaturesHandler = ({ layers, shouldFit, onFitComplete }) => {
         });
       });
 
-      if (bounds.length > 0) {
+      if (bounds.length > 0 && isMapValid(map)) {
         // Create a Leaflet bounds object
         const latLngBounds = L.latLngBounds(bounds);
         
@@ -541,7 +559,13 @@ const FitAllFeaturesHandler = ({ layers, shouldFit, onFitComplete }) => {
         
         // Wait for moveend event to ensure zoom is complete
         const onMoveEnd = () => {
-          map.off('moveend', onMoveEnd);
+          try {
+            if (isMapValid(map) && map.off) {
+              map.off('moveend', onMoveEnd);
+            }
+          } catch (e) {
+            // Map might be destroyed, ignore
+          }
           // Small delay to ensure rendering is complete
           setTimeout(() => {
             if (onFitComplete) {
@@ -550,13 +574,17 @@ const FitAllFeaturesHandler = ({ layers, shouldFit, onFitComplete }) => {
           }, 300);
         };
         
-        map.once('moveend', onMoveEnd);
+        if (isMapValid(map) && map.once) {
+          map.once('moveend', onMoveEnd);
+        } else if (onFitComplete) {
+          onFitComplete();
+        }
       } else if (onFitComplete) {
         // No features, call callback immediately
         onFitComplete();
       }
     } catch (error) {
-      console.error('Error fitting bounds to all features:', error);
+      // Silently catch errors if map is being destroyed
       if (onFitComplete) {
         onFitComplete();
       }
@@ -1000,6 +1028,11 @@ const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, featu
                   Lat: {parseFloat(feature.beginning_latitude).toFixed(6)}<br />
                   Lng: {parseFloat(feature.beginning_longitude).toFixed(6)}
                 </div>
+                {feature.description && (
+                  <div className="popup-description">
+                    Description: {feature.description}
+                  </div>
+                )}
               </div>
             </Popup>
             </Marker>
@@ -1070,11 +1103,15 @@ const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, featu
                     <div className="popup-subtitle">
                       Layer: {layer.name}
                     </div>
-                    {Object.entries(feature.properties || {}).map(([key, value]) => (
-                      <div key={key} className="popup-property">
-                        {key}: {value}
+                    <div className="popup-detail">
+                      Lat: {lat.toFixed(6)}<br />
+                      Lng: {lng.toFixed(6)}
+                    </div>
+                    {(feature.description || feature.properties?.description) && (
+                      <div className="popup-description">
+                        Description: {feature.description || feature.properties?.description}
                       </div>
-                    ))}
+                    )}
                   </div>
                 </Popup>
               </Marker>
@@ -1106,14 +1143,18 @@ const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, featu
                       <div className="popup-subtitle">
                         Layer: {layer.name}
                       </div>
-                      <div className="popup-detail">
-                        Points: {feature.coordinates.length}
-                      </div>
-                      {Object.entries(feature.properties || {}).map(([key, value]) => (
-                        <div key={key} className="popup-property">
-                          {key}: {value}
+                      {feature.coordinates && feature.coordinates.length > 0 && (
+                        <div className="popup-detail">
+                          Coordinates (first point):<br />
+                          Lat: {feature.coordinates[0][0].toFixed(6)}<br />
+                          Lng: {feature.coordinates[0][1].toFixed(6)}
                         </div>
-                      ))}
+                      )}
+                      {(feature.description || feature.properties?.description) && (
+                        <div className="popup-description">
+                          Description: {feature.description || feature.properties?.description}
+                        </div>
+                      )}
                     </div>
                   </Popup>
                 </Polyline>
@@ -1177,14 +1218,18 @@ const Map = ({ panelWidth, selectedBasemap = 'street', projectCoordinates, featu
                       <div className="popup-subtitle">
                         Layer: {layer.name}
                       </div>
-                      <div className="popup-detail">
-                        Points: {ring.length}
-                      </div>
-                      {Object.entries(feature.properties || {}).map(([key, value]) => (
-                        <div key={key} className="popup-property">
-                          {key}: {value}
+                      {ring && ring.length > 0 && (
+                        <div className="popup-detail">
+                          Coordinates (first point):<br />
+                          Lat: {ring[0][0].toFixed(6)}<br />
+                          Lng: {ring[0][1].toFixed(6)}
                         </div>
-                      ))}
+                      )}
+                      {(feature.description || feature.properties?.description) && (
+                        <div className="popup-description">
+                          Description: {feature.description || feature.properties?.description}
+                        </div>
+                      )}
                     </div>
                   </Popup>
                 </Polygon>

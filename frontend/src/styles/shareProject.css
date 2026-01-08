@@ -198,7 +198,7 @@
     font-weight: 500;
 }
 
-.btn-add {
+.button-add {
     padding: 8px 16px;
     background: #0ea5e9;
     color: white;
@@ -210,11 +210,11 @@
     transition: background 0.2s;
 }
 
-.btn-add:hover {
+.button-add:hover {
     background: #0284c7;
 }
 
-.btn-remove {
+.button-remove {
     padding: 8px 16px;
     background: #dc2626;
     color: white;
@@ -226,7 +226,7 @@
     transition: background 0.2s;
 }
 
-.btn-remove:hover {
+.button-remove:hover {
     background: #b91c1c;
 }
 
@@ -255,8 +255,8 @@
         gap: 12px;
     }
 
-    .btn-add,
-    .btn-remove {
+    .button-add,
+    .button-remove {
         width: 100%;
     }
 }

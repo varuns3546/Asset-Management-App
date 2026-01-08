@@ -236,7 +236,7 @@ const HomeScreen = () => {
                     </div>
                     <button
                       onClick={handleEdit}
-                      className="btn btn-secondary"
+                      className="button button-secondary"
                       style={{ marginLeft: '15px' }}
                     >
                       Edit

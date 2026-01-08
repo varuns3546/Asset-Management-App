@@ -91,7 +91,7 @@
   flex-wrap: wrap;
 }
 
-.export-btn, .manage-btn {
+.export-button, .manage-button {
   padding: 10px 20px;
   border: none;
   border-radius: 4px;
@@ -101,24 +101,24 @@
   font-size: 0.95rem;
 }
 
-.export-btn {
+.export-button {
   background: #4a90e2;
   color: white;
 }
 
-.export-btn:hover {
+.export-button:hover {
   background: #357abd;
   transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-.manage-btn {
+.manage-button {
   background: white;
   color: #333;
   border: 2px solid #ddd;
 }
 
-.manage-btn:hover {
+.manage-button:hover {
   border-color: #4a90e2;
   color: #4a90e2;
   transform: translateY(-1px);
@@ -180,8 +180,8 @@
     margin-top: 12px;
   }
   
-  .export-btn,
-  .manage-btn {
+  .export-button,
+  .manage-button {
     padding: 9px 18px;
     font-size: 0.9rem;
   }
@@ -236,8 +236,8 @@
     flex-direction: column;
   }
   
-  .export-btn,
-  .manage-btn {
+  .export-button,
+  .manage-button {
     width: 100%;
     padding: 8px 16px;
     font-size: 0.85rem;

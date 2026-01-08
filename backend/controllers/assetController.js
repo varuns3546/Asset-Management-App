@@ -138,23 +138,91 @@ const addAssetToGisLayer = async (supabase, projectId, layerId, asset) => {
     return null;
   }
   
-  // Check if feature already exists for this asset
-  const { data: existingFeature } = await supabase
+  // Check if feature already exists for this asset (using asset_id column)
+  const { data: existingFeature, error: checkError } = await supabase
     .from('gis_features')
-    .select('id')
-    .eq('layer_id', layerId)
+    .select('id, layer_id, asset_id')
     .eq('asset_id', asset.id)
     .maybeSingle();
   
+  if (checkError) {
+    console.warn(`[addAssetToGisLayer] Error checking for existing feature for asset ${asset.id}:`, checkError);
+  }
+  
   if (existingFeature) {
-    // Feature already exists, skip
+    // Feature already exists with correct asset_id, return it
+    console.log(`[addAssetToGisLayer] Asset ${asset.id} already has feature ${existingFeature.id} in layer ${existingFeature.layer_id}`);
     return existingFeature;
+  }
+  
+  // Also check if a feature exists in this layer with matching coordinates (but no asset_id)
+  // This can happen if feature was created by sync hook before asset_id was set
+  // We'll check features with NULL asset_id and matching geometry
+  const checkLatNum = parseFloat(asset.beginning_latitude);
+  const checkLngNum = parseFloat(asset.beginning_longitude);
+  
+  if (!isNaN(checkLatNum) && !isNaN(checkLngNum)) {
+    // Query features in this layer with NULL asset_id and check their geometry
+    const { data: featuresWithoutAssetId, error: nameCheckError } = await supabase
+      .from('gis_features')
+      .select('id, layer_id, asset_id, name, geometry_geojson')
+      .eq('layer_id', layerId)
+      .is('asset_id', null)
+      .limit(100); // Check up to 100 features without asset_id in this layer
+    
+    if (featuresWithoutAssetId && !nameCheckError && featuresWithoutAssetId.length > 0) {
+      // Check each feature's geometry to see if coordinates match
+      for (const existingFeature of featuresWithoutAssetId) {
+        if (existingFeature.geometry_geojson) {
+          try {
+            const geom = typeof existingFeature.geometry_geojson === 'string' 
+              ? JSON.parse(existingFeature.geometry_geojson) 
+              : existingFeature.geometry_geojson;
+            
+            if (geom && geom.coordinates && geom.type === 'Point') {
+              const [existingLng, existingLat] = geom.coordinates;
+              // Check if coordinates are close (within 0.0001 degrees, ~11 meters)
+              if (Math.abs(existingLat - checkLatNum) < 0.0001 && Math.abs(existingLng - checkLngNum) < 0.0001) {
+                // Found matching feature - update it with asset_id
+                console.log(`[addAssetToGisLayer] Found existing feature ${existingFeature.id} at matching coordinates without asset_id, updating it...`);
+                const { error: updateExistingError } = await supabase
+                  .from('gis_features')
+                  .update({ asset_id: asset.id })
+                  .eq('id', existingFeature.id);
+                
+                if (updateExistingError) {
+                  console.error(`[addAssetToGisLayer] Failed to update existing feature ${existingFeature.id} with asset_id:`, updateExistingError);
+                  continue; // Try next feature
+                }
+                
+                // Verify it was set
+                const { data: verifyExisting } = await supabase
+                  .from('gis_features')
+                  .select('id, asset_id')
+                  .eq('id', existingFeature.id)
+                  .single();
+                
+                if (verifyExisting && verifyExisting.asset_id === asset.id) {
+                  console.log(`[addAssetToGisLayer] ✓ Updated existing feature ${existingFeature.id} with asset_id=${asset.id}`);
+                  return { ...existingFeature, asset_id: asset.id };
+                } else {
+                  console.error(`[addAssetToGisLayer] Verification failed for existing feature update`);
+                }
+              }
+            }
+          } catch (e) {
+            // Invalid geometry, skip
+            continue;
+          }
+        }
+      }
+    }
   }
   
   // Create geometry WKT for point
   const geometryWKT = `POINT(${lngNum} ${latNum})`;
   
-  // Use RPC to insert feature
+  // Use RPC to insert feature (include asset_id in properties for now, will move to column)
   const { data: feature, error } = await supabase
     .rpc('insert_gis_feature', {
       p_layer_id: layerId,
@@ -162,6 +230,7 @@ const addAssetToGisLayer = async (supabase, projectId, layerId, asset) => {
       p_geometry_wkt: geometryWKT,
       p_properties: {
         title: asset.title,
+        asset_id: asset.id, // Include in properties so addFeature can set it in column
         asset_type_id: asset.asset_type_id || null
       }
     });
@@ -171,15 +240,50 @@ const addAssetToGisLayer = async (supabase, projectId, layerId, asset) => {
     return null;
   }
   
-  // Update the feature to set asset_id column
+  // Update the feature to set asset_id column (CRITICAL: must always be set)
   if (feature && feature.id) {
-    const { error: updateError } = await supabase
+    // First, update asset_id
+    const { error: updateError, data: updateData } = await supabase
       .from('gis_features')
       .update({ asset_id: asset.id })
-      .eq('id', feature.id);
+      .eq('id', feature.id)
+      .select('id, asset_id')
+      .single();
     
-    if (!updateError && feature.properties) {
-      // Remove asset_id from properties JSON since it's now in the column
+    if (updateError) {
+      console.error(`[addAssetToGisLayer] CRITICAL: Failed to set asset_id for feature ${feature.id}:`, updateError);
+      console.error(`[addAssetToGisLayer] Update error details:`, JSON.stringify(updateError, null, 2));
+      // Delete the feature if we can't set asset_id (prevents orphaned records)
+      await supabase
+        .from('gis_features')
+        .delete()
+        .eq('id', feature.id);
+      console.error(`[addAssetToGisLayer] Deleted feature ${feature.id} because asset_id couldn't be set`);
+      return null;
+    }
+    
+    // Verify asset_id was actually set
+    const { data: verifyFeature } = await supabase
+      .from('gis_features')
+      .select('id, asset_id')
+      .eq('id', feature.id)
+      .single();
+    
+    if (!verifyFeature || verifyFeature.asset_id !== asset.id) {
+      console.error(`[addAssetToGisLayer] CRITICAL: asset_id verification failed for feature ${feature.id}. Expected: ${asset.id}, Got: ${verifyFeature?.asset_id}`);
+      // Delete the feature if asset_id wasn't set correctly
+      await supabase
+        .from('gis_features')
+        .delete()
+        .eq('id', feature.id);
+      console.error(`[addAssetToGisLayer] Deleted feature ${feature.id} because asset_id verification failed`);
+      return null;
+    }
+    
+    console.log(`[addAssetToGisLayer] ✓ Set asset_id=${asset.id} for feature ${feature.id} (verified)`);
+    
+    // Remove asset_id from properties JSON since it's now in the column
+    if (feature.properties && feature.properties.asset_id) {
       const { asset_id, ...otherProperties } = feature.properties;
       if (Object.keys(otherProperties).length > 0) {
         await supabase
@@ -193,9 +297,164 @@ const addAssetToGisLayer = async (supabase, projectId, layerId, asset) => {
           .eq('id', feature.id);
       }
     }
+    
+    // Return feature with updated asset_id
+    return { ...feature, asset_id: asset.id };
   }
   
   return feature;
+};
+
+// Helper function to update GIS feature geometry when asset coordinates change
+// If feature doesn't exist, it will be recreated
+const updateAssetGisFeature = async (supabase, assetId, asset, userId = null) => {
+  console.log(`[updateAssetGisFeature] Starting update for asset ${assetId}`);
+  
+  // Validate coordinates
+  const lat = asset.beginning_latitude;
+  const lng = asset.beginning_longitude;
+  
+  console.log(`[updateAssetGisFeature] Asset coordinates: lat=${lat}, lng=${lng}`);
+  
+  // If coordinates are null, we might want to remove the geometry, but for now we'll skip
+  if (lat == null || lng == null) {
+    console.log(`[updateAssetGisFeature] Coordinates are null, skipping update`);
+    return null;
+  }
+  
+  const latNum = parseFloat(lat);
+  const lngNum = parseFloat(lng);
+  
+  if (isNaN(latNum) || isNaN(lngNum) || 
+      latNum < -90 || latNum > 90 || 
+      lngNum < -180 || lngNum > 180) {
+    console.warn(`[updateAssetGisFeature] Asset ${assetId} has invalid coordinates: lat=${lat}, lng=${lng}`);
+    return null;
+  }
+  
+  // Find the GIS feature(s) associated with this asset
+  console.log(`[updateAssetGisFeature] Fetching GIS features for asset_id=${assetId}`);
+  const { data: gisFeatures, error: fetchError } = await supabase
+    .from('gis_features')
+    .select('id, layer_id')
+    .eq('asset_id', assetId);
+  
+  if (fetchError) {
+    console.error('[updateAssetGisFeature] Error fetching GIS features for asset:', fetchError);
+    return null;
+  }
+  
+  if (!gisFeatures || gisFeatures.length === 0) {
+    // No GIS feature exists yet - need to recreate it
+    console.log(`[updateAssetGisFeature] No GIS features found for asset ${assetId}, recreating...`);
+    
+    // Get the asset's project_id
+    const { data: assetData, error: assetError } = await supabase
+      .from('assets')
+      .select('project_id, asset_type_id')
+      .eq('id', assetId)
+      .single();
+    
+    if (assetError || !assetData) {
+      console.error('[updateAssetGisFeature] Could not fetch asset data:', assetError);
+      return null;
+    }
+    
+    // Get the asset type data
+    let assetType = null;
+    if (asset.asset_type_id) {
+      const { data: typeData } = await supabase
+        .from('asset_types')
+        .select('id, title, description')
+        .eq('id', asset.asset_type_id)
+        .single();
+      assetType = typeData;
+    }
+    
+    // Get or create the GIS layer for this asset type
+    const layer = await getOrCreateGisLayer(
+      supabase, 
+      assetData.project_id, 
+      userId, 
+      assetType, 
+      asset.asset_type_id || null
+    );
+    
+    if (!layer) {
+      console.error('[updateAssetGisFeature] Could not get or create GIS layer');
+      return null;
+    }
+    
+    // Create the GIS feature using the existing helper
+    const newFeature = await addAssetToGisLayer(supabase, assetData.project_id, layer.id, asset);
+    
+    if (newFeature) {
+      console.log(`[updateAssetGisFeature] Successfully recreated GIS feature ${newFeature.id} for asset ${assetId}`);
+      return [newFeature];
+    } else {
+      console.error('[updateAssetGisFeature] Failed to recreate GIS feature');
+      return null;
+    }
+  }
+  
+  console.log(`[updateAssetGisFeature] Found ${gisFeatures.length} GIS feature(s) to update`);
+  
+  // Create geometry WKT for point
+  const geometryWKT = `POINT(${lngNum} ${latNum})`;
+  console.log(`[updateAssetGisFeature] Geometry WKT: ${geometryWKT}`);
+  
+  // Update all GIS features associated with this asset
+  for (const feature of gisFeatures) {
+    console.log(`[updateAssetGisFeature] Updating feature ${feature.id}`);
+    
+    // Try to use an RPC function to update geometry
+    const { error: updateGeometryError } = await supabase.rpc('update_gis_feature_geometry', {
+      p_feature_id: feature.id,
+      p_geometry_wkt: geometryWKT
+    });
+    
+    if (updateGeometryError) {
+      // RPC function might not exist yet, try using a direct SQL update via a query
+      console.warn(`[updateAssetGisFeature] RPC function failed for feature ${feature.id}:`, updateGeometryError);
+      
+      // Alternative: Use insert_gis_feature pattern - delete and recreate
+      // But first, let's try updating using a workaround with PostgREST
+      // We can't directly update PostGIS geometry via PostgREST, so we need the RPC function
+      console.error(`[updateAssetGisFeature] Cannot update geometry without RPC function. Please run the migration: backend/migrations/update_gis_feature_geometry_function.sql`);
+    } else {
+      console.log(`[updateAssetGisFeature] Successfully updated geometry for feature ${feature.id}`);
+    }
+    
+    // Always update name and properties regardless of geometry update success
+    const updateData = {};
+    
+    if (asset.title) {
+      updateData.name = asset.title.trim() || null;
+    }
+    
+    // Update properties
+    const propertiesUpdate = {
+      title: asset.title || null,
+      asset_type_id: asset.asset_type_id || null
+    };
+    
+    updateData.properties = propertiesUpdate;
+    
+    console.log(`[updateAssetGisFeature] Updating metadata for feature ${feature.id}:`, updateData);
+    const { error: updateError } = await supabase
+      .from('gis_features')
+      .update(updateData)
+      .eq('id', feature.id);
+    
+    if (updateError) {
+      console.error(`[updateAssetGisFeature] Error updating GIS feature ${feature.id} metadata:`, updateError);
+    } else {
+      console.log(`[updateAssetGisFeature] Successfully updated metadata for feature ${feature.id}`);
+    }
+  }
+  
+  console.log(`[updateAssetGisFeature] Completed update for asset ${assetId}`);
+  return gisFeatures;
 };
 
 const getHierarchy = asyncHandler(async (req, res) => {
@@ -1245,6 +1504,27 @@ const updateAsset = asyncHandler(async (req, res) => {
       });
     }
 
+    // Update corresponding GIS feature geometry if coordinates changed
+    // Check if coordinates are being updated (check both request body and updated asset)
+    const coordinatesInRequest = beginning_latitude !== undefined || 
+                                 beginning_longitude !== undefined ||
+                                 end_latitude !== undefined ||
+                                 end_longitude !== undefined;
+    
+    // Always update GIS feature if the asset has coordinates (coordinates might have been set for first time)
+    // This will update existing features or recreate them if they were deleted
+    if (hierarchyFeature && (hierarchyFeature.beginning_latitude != null && hierarchyFeature.beginning_longitude != null)) {
+      console.log(`[updateAsset] Updating/recreating GIS feature for asset ${featureId}. Coordinates in request: ${coordinatesInRequest}`);
+      try {
+        await updateAssetGisFeature(req.supabase, featureId, hierarchyFeature, req.user.id);
+      } catch (gisError) {
+        // Log error but don't fail the asset update
+        console.error('[updateAsset] Error updating GIS feature for asset:', gisError);
+      }
+    } else {
+      console.log(`[updateAsset] Skipping GIS feature update - asset ${featureId} has no coordinates or coordinates are null`);
+    }
+
     res.status(200).json({
       success: true,
       data: hierarchyFeature
@@ -1614,6 +1894,243 @@ const importHierarchyData = asyncHandler(async (req, res) => {
   }
 });
 
+// Regenerate GIS features for assets that are missing them
+const regenerateMissingGisFeatures = asyncHandler(async (req, res) => {
+  const { id: project_id } = req.params;
+
+  if (!project_id) {
+    return res.status(400).json({
+      success: false,
+      error: 'Project ID is required'
+    });
+  }
+
+  // Verify the user has access to the project
+  const { data: projectUser, error: projectUserError } = await req.supabase
+    .from('project_users')
+    .select('id, role')
+    .eq('project_id', project_id)
+    .eq('user_id', req.user.id)
+    .single();
+
+  // If not found in project_users, check if user is the owner directly
+  if (projectUserError || !projectUser) {
+    const { data: project, error: projectError } = await req.supabase
+      .from('projects')
+      .select('id, owner_id')
+      .eq('id', project_id)
+      .eq('owner_id', req.user.id)
+      .single();
+
+    if (projectError || !project) {
+      return res.status(404).json({
+        success: false,
+        error: 'Project not found or access denied'
+      });
+    }
+  }
+
+  try {
+    console.log(`[regenerateMissingGisFeatures] Starting regeneration for project ${project_id}`);
+
+    // Get all assets with coordinates that don't have corresponding GIS features
+    const { data: assets, error: assetsError } = await req.supabase
+      .from('assets')
+      .select('id, title, asset_type_id, beginning_latitude, beginning_longitude')
+      .eq('project_id', project_id)
+      .not('beginning_latitude', 'is', null)
+      .not('beginning_longitude', 'is', null);
+
+    if (assetsError) {
+      console.error('[regenerateMissingGisFeatures] Error fetching assets:', assetsError);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to fetch assets'
+      });
+    }
+
+    if (!assets || assets.length === 0) {
+      return res.status(200).json({
+        success: true,
+        message: 'No assets with coordinates found',
+        created: 0,
+        skipped: 0
+      });
+    }
+
+    console.log(`[regenerateMissingGisFeatures] Found ${assets.length} assets with coordinates`);
+
+    // Check which assets already have GIS features (using asset_id column only)
+    const assetIds = assets.map(a => a.id);
+    console.log(`[regenerateMissingGisFeatures] Checking for existing features for ${assetIds.length} assets`);
+    
+    const { data: existingFeatures, error: featuresError } = await req.supabase
+      .from('gis_features')
+      .select('id, asset_id, layer_id')
+      .in('asset_id', assetIds);
+
+    if (featuresError) {
+      console.error('[regenerateMissingGisFeatures] Error fetching existing features:', featuresError);
+    }
+
+    // Create a set of asset_ids that have features
+    const assetsWithFeatures = new Set(
+      (existingFeatures || [])
+        .filter(f => f && f.asset_id != null)
+        .map(f => f.asset_id)
+    );
+    
+    if (existingFeatures && existingFeatures.length > 0) {
+      console.log(`[regenerateMissingGisFeatures] Found ${existingFeatures.length} existing features:`);
+      existingFeatures.forEach(f => {
+        console.log(`  - Asset ${f.asset_id} has feature ${f.id} in layer ${f.layer_id}`);
+      });
+    }
+    
+    const assetsWithoutFeatures = assets.filter(a => !assetsWithFeatures.has(a.id));
+    
+    // Log which assets are being processed
+    if (assetsWithoutFeatures.length > 0) {
+      console.log(`[regenerateMissingGisFeatures] Assets WITHOUT features (will create):`, 
+        assetsWithoutFeatures.map(a => `${a.id} (${a.title || 'untitled'})`).join(', '));
+    }
+    
+    if (assetsWithFeatures.size > 0) {
+      console.log(`[regenerateMissingGisFeatures] Assets WITH features (will skip):`, 
+        Array.from(assetsWithFeatures).join(', '));
+    }
+
+    console.log(`[regenerateMissingGisFeatures] ${assetsWithFeatures.size} assets already have features, ${assetsWithoutFeatures.length} need features`);
+
+    if (assetsWithoutFeatures.length === 0) {
+      return res.status(200).json({
+        success: true,
+        message: 'All assets already have GIS features',
+        created: 0,
+        skipped: assets.length
+      });
+    }
+
+    // Group assets by type
+    const assetsByType = {};
+    assetsWithoutFeatures.forEach(asset => {
+      const typeId = asset.asset_type_id || 'uncategorized';
+      if (!assetsByType[typeId]) {
+        assetsByType[typeId] = [];
+      }
+      assetsByType[typeId].push(asset);
+    });
+
+    // Get asset types
+    const assetTypeIds = Object.keys(assetsByType)
+      .filter(id => id !== 'uncategorized')
+      .map(id => id);
+
+    const assetTypesMap = {};
+    if (assetTypeIds.length > 0) {
+      const { data: assetTypes } = await req.supabase
+        .from('asset_types')
+        .select('id, title, description')
+        .in('id', assetTypeIds);
+
+      if (assetTypes) {
+        assetTypes.forEach(type => {
+          assetTypesMap[type.id] = type;
+        });
+      }
+    }
+
+    let createdCount = 0;
+    let errorCount = 0;
+
+    // Create features for each type
+    for (const [typeId, typeAssets] of Object.entries(assetsByType)) {
+      const assetType = typeId !== 'uncategorized' ? assetTypesMap[typeId] : null;
+
+      // Get or create the GIS layer for this asset type
+      const layer = await getOrCreateGisLayer(
+        req.supabase,
+        project_id,
+        req.user.id,
+        assetType,
+        typeId !== 'uncategorized' ? typeId : null
+      );
+
+      if (!layer) {
+        console.error(`[regenerateMissingGisFeatures] Could not get/create layer for type ${typeId}`);
+        errorCount += typeAssets.length;
+        continue;
+      }
+
+      // Create features for each asset
+      // Double-check that they don't already have features (in ANY layer) before creating
+      for (const asset of typeAssets) {
+        console.log(`[regenerateMissingGisFeatures] Processing asset ${asset.id} (${asset.title || 'untitled'}) for layer ${layer.id}`);
+        
+        // Final check: verify the asset still doesn't have a feature (using asset_id column)
+        const { data: existingFeature, error: checkError } = await req.supabase
+          .from('gis_features')
+          .select('id, layer_id')
+          .eq('asset_id', asset.id)
+          .maybeSingle();
+        
+        if (checkError) {
+          console.error(`[regenerateMissingGisFeatures] Error checking features for asset ${asset.id}:`, checkError);
+          errorCount++;
+          continue;
+        }
+        
+        if (existingFeature) {
+          // Asset already has a feature, skip
+          console.log(`[regenerateMissingGisFeatures] Asset ${asset.id} already has feature ${existingFeature.id} in layer ${existingFeature.layer_id}, skipping`);
+          continue;
+        }
+        
+        console.log(`[regenerateMissingGisFeatures] All checks passed for asset ${asset.id}, creating feature...`);
+        
+        // Call addAssetToGisLayer - it will also check internally and update existing features
+        const feature = await addAssetToGisLayer(req.supabase, project_id, layer.id, asset);
+        if (feature && feature.id) {
+          // Verify it's actually set correctly
+          const { data: verifyFeature } = await req.supabase
+            .from('gis_features')
+            .select('id, asset_id, layer_id')
+            .eq('id', feature.id)
+            .single();
+          
+          if (verifyFeature && verifyFeature.asset_id === asset.id) {
+            createdCount++;
+            console.log(`[regenerateMissingGisFeatures] ✓ Created/updated feature ${feature.id} for asset ${asset.id} in layer ${layer.id}`);
+          } else {
+            console.error(`[regenerateMissingGisFeatures] CRITICAL: Feature ${feature.id} verification failed. Expected asset_id: ${asset.id}, Got: ${verifyFeature?.asset_id}`);
+            errorCount++;
+          }
+        } else {
+          errorCount++;
+          console.error(`[regenerateMissingGisFeatures] addAssetToGisLayer returned null/undefined for asset ${asset.id}. Check logs above for details.`);
+        }
+      }
+    }
+
+    console.log(`[regenerateMissingGisFeatures] Completed: ${createdCount} created, ${errorCount} errors`);
+
+    res.status(200).json({
+      success: true,
+      message: `Regenerated ${createdCount} GIS features`,
+      created: createdCount,
+      skipped: assetsWithFeatures.size,
+      errors: errorCount
+    });
+
+  } catch (error) {
+    console.error('[regenerateMissingGisFeatures] Error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error while regenerating GIS features'
+    });
+  }
+});
+
 export default {
   getHierarchy,
   deleteHierarchy,
@@ -1625,6 +2142,7 @@ export default {
   updateAssetType,
   deleteAssetType,
   uploadHierarchyFile,
-  importHierarchyData
+  importHierarchyData,
+  regenerateMissingGisFeatures
 };
 

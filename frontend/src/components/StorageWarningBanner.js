@@ -31,11 +31,11 @@ const StorageWarningBanner = ({ metrics, onExport, onManageStorage, onDismiss })
             : 'You are using a significant portion of your free tier storage.'}
         </p>
         <div className="warning-actions">
-          <button onClick={onExport} className="export-btn">
+          <button onClick={onExport} className="export-button">
             📥 Export Project Data
           </button>
           {onManageStorage && (
-            <button onClick={onManageStorage} className="manage-btn">
+            <button onClick={onManageStorage} className="manage-button">
               🗑️ Manage Storage
             </button>
           )}

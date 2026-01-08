@@ -244,6 +244,16 @@ const getSurveyStatistics = async (projectId, token) => {
     return response.data;
 }
 
+const regenerateMissingGisFeatures = async (projectId) => {
+  try {
+    const response = await projectApi.post(`/${projectId}/hierarchy/regenerate-gis-features`);
+    return response.data;
+  } catch (error) {
+    console.error('Error regenerating GIS features:', error);
+    throw error;
+  }
+};
+
 const projectService = {
     getProjects,
     getSharedProjects,
@@ -272,7 +282,8 @@ const projectService = {
     getMasterProjects,
     setProjectAsMaster,
     uploadMapSnapshot,
-    getSurveyStatistics
+    getSurveyStatistics,
+    regenerateMissingGisFeatures
 }
 
 export default projectService;

@@ -92,7 +92,7 @@
   flex-shrink: 0;
 }
 
-.chart-download-btn {
+.chart-download-button {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -107,17 +107,17 @@
   transition: all 0.2s ease;
 }
 
-.chart-download-btn:hover {
+.chart-download-button:hover {
   background: #f0f0f0;
   border-color: #ccc;
   color: #333;
 }
 
-.chart-download-btn:active {
+.chart-download-button:active {
   background: #e8e8e8;
 }
 
-.chart-download-btn svg {
+.chart-download-button svg {
   width: 16px;
   height: 16px;
 }

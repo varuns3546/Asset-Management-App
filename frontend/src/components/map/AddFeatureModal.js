@@ -169,7 +169,7 @@ const AddFeatureModal = ({ isOpen, onClose, layer, onAddFeature }) => {
                 {(layer.geometryType !== 'point' || coordinates.length > 1) && (
                   <button
                     onClick={() => handleRemoveCoordinate(index)}
-                    className="remove-coord-btn"
+                    className="remove-coord-button"
                     title="Remove coordinate"
                     disabled={coordinates.length === 1}
                   >
@@ -180,7 +180,7 @@ const AddFeatureModal = ({ isOpen, onClose, layer, onAddFeature }) => {
             ))}
             
             {layer.geometryType !== 'point' && (
-              <button onClick={handleAddCoordinate} className="add-coord-btn">
+              <button onClick={handleAddCoordinate} className="add-coord-button">
                 + Add Coordinate Point
               </button>
             )}

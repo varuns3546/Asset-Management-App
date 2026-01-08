@@ -34,27 +34,27 @@
   margin: 0;
 }
 
-.import-btn {
+.import-button {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 10px 18px;
-  background: #28a745;
-  color: white;
+  background: #B6EEA6;
+  color: #1f2937;
   border: none;
   border-radius: 6px;
   font-size: 0.95rem;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   transition: background-color 0.2s;
   white-space: nowrap;
 }
 
-.import-btn:hover {
-  background: #218838;
+.import-button:hover {
+  background: #A0E088;
 }
 
-.import-btn svg {
+.import-button svg {
   flex-shrink: 0;
 }
 
@@ -457,7 +457,7 @@
   background: white;
 }
 
-.remove-photo-btn {
+.remove-photo-button {
   position: absolute;
   top: 4px;
   right: 4px;
@@ -478,7 +478,7 @@
   z-index: 1;
 }
 
-.remove-photo-btn:hover {
+.remove-photo-button:hover {
   background: rgba(255, 0, 0, 1);
 }
 
@@ -533,7 +533,7 @@
 
 .submit-button {
   padding: 14px 32px;
-  background: #1e40af;
+  background: #F79256;
   color: white;
   border: none;
   border-radius: 8px;
@@ -541,13 +541,13 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 2px 8px rgba(30, 64, 175, 0.15);
+  box-shadow: 0 2px 8px rgba(247, 146, 86, 0.3);
 }
 
 .submit-button:hover:not(:disabled) {
-  background: #1e3a8a;
+  background: #E88245;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(30, 64, 175, 0.25);
+  box-shadow: 0 4px 12px rgba(247, 146, 86, 0.4);
 }
 
 .submit-button:disabled {
@@ -596,7 +596,7 @@
     font-size: 1.5rem;
   }
 
-  .import-btn {
+  .import-button {
     justify-content: center;
   }
 
@@ -691,7 +691,7 @@
   top: 60px;
   left: 0;
   right: 0;
-  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  background: linear-gradient(135deg, #B6EEA6 0%, #C5F4B1 100%);
   color: white;
   padding: 12px 20px;
   display: flex;
@@ -835,7 +835,7 @@
 }
 
 .progress-fill.complete {
-  background: linear-gradient(90deg, #28a745 0%, #20c997 100%);
+  background: linear-gradient(90deg, #059669 0%, #10b981 100%);
 }
 
 .status-text {
@@ -850,7 +850,7 @@
   width: 100px;
 }
 
-.edit-btn {
+.edit-button {
   padding: 6px 14px;
   background: #4a90e2;
   color: white;
@@ -863,7 +863,7 @@
   white-space: nowrap;
 }
 
-.edit-btn:hover {
+.edit-button:hover {
   background: #357abd;
 }
 
@@ -909,7 +909,7 @@
   gap: 10px;
 }
 
-.nav-btn {
+.nav-button {
   padding: 8px 16px;
   font-size: 0.95rem;
   font-weight: 500;
@@ -922,17 +922,17 @@
   white-space: nowrap;
 }
 
-.nav-btn:hover {
+.nav-button:hover {
   background: #4a90e2;
   color: white;
 }
 
-.nav-btn.close-btn {
+.nav-button.close-button {
   border-color: #dc3545;
   color: #dc3545;
 }
 
-.nav-btn.close-btn:hover {
+.nav-button.close-button:hover {
   background: #dc3545;
   color: white;
 }
@@ -1027,13 +1027,13 @@
     text-align: right;
   }
 
-  .edit-btn {
+  .edit-button {
     width: 100%;
   }
 }
 
 @media (max-width: 480px) {
-  .nav-btn {
+  .nav-button {
     padding: 6px 12px;
     font-size: 0.85rem;
   }
@@ -1058,7 +1058,7 @@
 .breadcrumb-item {
   background: none;
   border: none;
-  color: #007bff;
+  color: #1f2937;
   cursor: pointer;
   padding: 5px 10px;
   border-radius: 4px;
@@ -1129,8 +1129,8 @@
 
 .root-asset-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 16px rgba(30, 64, 175, 0.15);
-  border-color: #1e40af;
+  box-shadow: 0 8px 16px rgba(216, 212, 242, 0.3);
+  border-color: #D8D4F2;
 }
 
 .root-asset-name {
@@ -1141,7 +1141,7 @@
 }
 
 .root-asset-type {
-  color: #1e40af;
+  color: #1f2937;
   font-size: 0.9rem;
   font-weight: 600;
   margin-bottom: 12px;
@@ -1156,7 +1156,7 @@
 }
 
 .root-asset-children {
-  color: #28a745;
+  color: #059669;
   font-weight: 500;
 }
 
@@ -1215,12 +1215,12 @@
 }
 
 /* Back Button */
-.back-btn {
+.back-button {
   background: #6c757d;
   color: white;
 }
 
-.back-btn:hover {
+.back-button:hover {
   background: #5a6268;
 }
 

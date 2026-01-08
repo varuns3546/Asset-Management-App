@@ -18,8 +18,8 @@ const ButtonGroup = ({
   }[align] || 'justify-end';
 
   const getButtonClass = (variant = 'primary') => {
-    const baseClass = 'btn';
-    const variantClass = `btn-${variant}`;
+    const baseClass = 'button';
+    const variantClass = `button-${variant}`;
     return `${baseClass} ${variantClass}`;
   };
 

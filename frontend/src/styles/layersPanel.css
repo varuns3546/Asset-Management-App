@@ -31,7 +31,7 @@
   align-items: center;
 }
 
-.undo-redo-btn {
+.undo-redo-button {
   padding: 4px 10px;
   font-size: 12px;
   border: 1px solid #dee2e6;
@@ -42,12 +42,12 @@
   transition: all 0.2s ease;
 }
 
-.undo-redo-btn:hover:not(:disabled) {
+.undo-redo-button:hover:not(:disabled) {
   background: #f8f9fa;
   border-color: #adb5bd;
 }
 
-.undo-redo-btn:disabled {
+.undo-redo-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
@@ -130,7 +130,7 @@
     margin-top: 10px;
   }
   
-  .layer-action-btn {
+  .layer-action-button {
     padding: 5px 10px;
     font-size: 11px;
   }
@@ -166,7 +166,7 @@
     gap: 6px;
   }
   
-  .layer-expand-btn {
+  .layer-expand-button {
     padding: 3px;
     font-size: 11px;
   }
@@ -183,7 +183,7 @@
     font-size: 9px;
   }
   
-  .layer-visibility-btn {
+  .layer-visibility-button {
     padding: 3px 6px;
     font-size: 16px;
   }
@@ -212,7 +212,7 @@
     flex-direction: column;
   }
   
-  .layer-action-btn {
+  .layer-action-button {
     padding: 5px 8px;
     font-size: 10px;
     width: 100%;
@@ -279,7 +279,7 @@
   min-width: 0;
 }
 
-.layer-expand-btn {
+.layer-expand-button {
   background: none;
   border: none;
   padding: 4px;
@@ -290,7 +290,7 @@
   flex-shrink: 0;
 }
 
-.layer-expand-btn:hover {
+.layer-expand-button:hover {
   color: #212529;
 }
 
@@ -327,7 +327,7 @@
   align-items: center;
 }
 
-.layer-visibility-btn {
+.layer-visibility-button {
   background: none;
   border: none;
   padding: 4px 8px;
@@ -336,11 +336,11 @@
   transition: transform 0.2s ease;
 }
 
-.layer-visibility-btn:hover {
+.layer-visibility-button:hover {
   transform: scale(1.1);
 }
 
-.layer-visibility-btn.hidden {
+.layer-visibility-button.hidden {
   opacity: 0.5;
 }
 
@@ -356,7 +356,7 @@
   margin-top: 12px;
 }
 
-.layer-action-btn {
+.layer-action-button {
   flex: 1;
   padding: 6px 12px;
   border: 1px solid #dee2e6;
@@ -368,38 +368,38 @@
   white-space: nowrap;
 }
 
-.layer-action-btn:hover {
+.layer-action-button:hover {
   background: #e9ecef;
   border-color: #adb5bd;
 }
 
-.layer-action-btn.primary {
+.layer-action-button.primary {
   color: #007bff;
   border-color: #007bff;
   font-weight: 600;
 }
 
-.layer-action-btn.primary:hover {
+.layer-action-button.primary:hover {
   background: #007bff;
   color: #ffffff;
 }
 
-.layer-action-btn.secondary {
+.layer-action-button.secondary {
   color: #6c757d;
   border-color: #6c757d;
 }
 
-.layer-action-btn.secondary:hover {
+.layer-action-button.secondary:hover {
   background: #6c757d;
   color: #ffffff;
 }
 
-.layer-action-btn.danger {
+.layer-action-button.danger {
   color: #dc3545;
   border-color: #dc3545;
 }
 
-.layer-action-btn.danger:hover {
+.layer-action-button.danger:hover {
   background: #dc3545;
   color: #ffffff;
 }
@@ -591,7 +591,7 @@
   justify-content: flex-end;
 }
 
-.confirm-btn {
+.confirm-button {
   padding: 8px 16px;
   border-radius: 4px;
   font-size: 13px;
@@ -600,22 +600,22 @@
   transition: all 0.2s ease;
 }
 
-.confirm-btn.cancel {
+.confirm-button.cancel {
   background: #f8f9fa;
   border: 1px solid #dee2e6;
   color: #495057;
 }
 
-.confirm-btn.cancel:hover {
+.confirm-button.cancel:hover {
   background: #e9ecef;
 }
 
-.confirm-btn.delete {
+.confirm-button.delete {
   background: #dc3545;
   border: 1px solid #dc3545;
   color: #ffffff;
 }
 
-.confirm-btn.delete:hover {
+.confirm-button.delete:hover {
   background: #c82333;
 }

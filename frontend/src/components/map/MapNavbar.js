@@ -53,7 +53,7 @@ const MapNavbar = ({ onOpenUploadModal, onCreateLayer }) => {
           <div className="map-navbar-center">
           <div className="navbar-layer-dropdown-container" ref={viewDropdownRef}>
             <button 
-              className="navbar-btn"
+              className="navbar-button"
               onClick={() => setShowViewDropdown(!showViewDropdown)}
             >
               View
@@ -71,7 +71,7 @@ const MapNavbar = ({ onOpenUploadModal, onCreateLayer }) => {
           </div>
           <div className="navbar-layer-dropdown-container" ref={layerDropdownRef}>
             <button 
-              className="navbar-btn"
+              className="navbar-button"
               onClick={() => setShowLayerDropdown(!showLayerDropdown)}
             >
               Layer

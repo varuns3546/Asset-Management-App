@@ -167,7 +167,7 @@ const PullRequestDetail = () => {
     return (
       <div className="pr-detail-container">
         <ErrorMessage message={message || 'Pull request not found'} />
-        <button onClick={() => navigate('/pull-requests')} className="btn btn-secondary">
+        <button onClick={() => navigate('/pull-requests')} className="button button-secondary">
           Back to Pull Requests
         </button>
       </div>
@@ -221,7 +221,7 @@ const PullRequestDetail = () => {
         {canMerge && (
           <div className="pr-actions">
             <button
-              className="btn btn-primary"
+              className="button button-primary"
               onClick={handleMerge}
               disabled={isSubmitting}
               style={{ backgroundColor: '#28a745', borderColor: '#28a745' }}
@@ -231,14 +231,14 @@ const PullRequestDetail = () => {
             {canReview && (
               <>
                 <button
-                  className="btn btn-secondary"
+                  className="button button-secondary"
                   onClick={() => handleReview('approve')}
                   disabled={isSubmitting}
                 >
                   Approve
                 </button>
                 <button
-                  className="btn btn-secondary"
+                  className="button button-secondary"
                   onClick={() => handleReview('request_changes')}
                   disabled={isSubmitting}
                 >
@@ -247,7 +247,7 @@ const PullRequestDetail = () => {
               </>
             )}
             <button
-              className="btn"
+              className="button"
               onClick={handleReject}
               disabled={isSubmitting}
               style={{ backgroundColor: '#dc3545', color: 'white', borderColor: '#dc3545' }}
@@ -260,7 +260,7 @@ const PullRequestDetail = () => {
         {isCreator && selectedPR.status === 'open' && (
           <div className="pr-actions">
             <button
-              className="btn btn-secondary"
+              className="button button-secondary"
               onClick={handleClose}
               disabled={isSubmitting}
             >
@@ -301,7 +301,7 @@ const PullRequestDetail = () => {
           />
           <div style={{ marginTop: '12px', display: 'flex', gap: '8px' }}>
             <button
-              className="btn btn-primary"
+              className="button button-primary"
               onClick={handleAddComment}
               disabled={isSubmitting || !commentText.trim()}
             >
@@ -310,14 +310,14 @@ const PullRequestDetail = () => {
             {canReview && (
               <>
                 <button
-                  className="btn btn-secondary"
+                  className="button button-secondary"
                   onClick={() => handleReview('approve')}
                   disabled={isSubmitting || !commentText.trim()}
                 >
                   Approve
                 </button>
                 <button
-                  className="btn btn-secondary"
+                  className="button button-secondary"
                   onClick={() => handleReview('request_changes')}
                   disabled={isSubmitting || !commentText.trim()}
                 >

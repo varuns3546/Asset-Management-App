@@ -58,11 +58,11 @@
 }
 
 .button:hover {
-    background: #1e40af;
-    color: white;
+    background: #D8D4F2;
+    color: #1f2937;
     border-color: transparent;
     transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(30, 64, 175, 0.2);
+    box-shadow: 0 4px 12px rgba(216, 212, 242, 0.4);
 }
 
 .button:active {
@@ -76,8 +76,8 @@
 
 .button:focus {
     outline: none;
-    border-color: #007bff;
-    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+    border-color: #D8D4F2;
+    box-shadow: 0 0 0 3px rgba(216, 212, 242, 0.3);
 }
 
 .options {
@@ -110,9 +110,10 @@
 }
 
 .options button:hover {
-    background: #f8fafc;
-    color: #1e40af;
+    background: #F5F3FB;
+    color: #1f2937;
     padding-left: 24px;
+    font-weight: 500;
 }
 
 .options button:active {

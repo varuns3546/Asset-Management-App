@@ -80,7 +80,7 @@ const MapPanel = ({ isExpanded, setIsExpanded, panelWidth, setPanelWidth, layers
       </div>
       
       <button 
-        className={`panel-toggle-btn ${isExpanded ? 'expanded' : 'collapsed'}`}
+        className={`panel-toggle-button ${isExpanded ? 'expanded' : 'collapsed'}`}
         onClick={togglePanel}
         style={{ left: isExpanded ? `${panelWidth}px` : '0' }}
         aria-label={isExpanded ? 'Collapse panel' : 'Expand panel'}

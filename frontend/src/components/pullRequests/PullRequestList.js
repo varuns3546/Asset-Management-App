@@ -40,7 +40,7 @@ const PullRequestList = ({ projectId = null, statusFilter = null }) => {
         <h2 style={{ margin: 0 }}>Pull Requests</h2>
         <div style={{ display: 'flex', gap: '8px' }}>
           <button
-            className={`pr-filter-btn ${localStatusFilter === 'all' ? 'active' : ''}`}
+            className={`pr-filter-button ${localStatusFilter === 'all' ? 'active' : ''}`}
             onClick={() => setLocalStatusFilter('all')}
             style={{
               padding: '6px 12px',
@@ -55,7 +55,7 @@ const PullRequestList = ({ projectId = null, statusFilter = null }) => {
             All
           </button>
           <button
-            className={`pr-filter-btn ${localStatusFilter === 'open' ? 'active' : ''}`}
+            className={`pr-filter-button ${localStatusFilter === 'open' ? 'active' : ''}`}
             onClick={() => setLocalStatusFilter('open')}
             style={{
               padding: '6px 12px',
@@ -70,7 +70,7 @@ const PullRequestList = ({ projectId = null, statusFilter = null }) => {
             Open
           </button>
           <button
-            className={`pr-filter-btn ${localStatusFilter === 'merged' ? 'active' : ''}`}
+            className={`pr-filter-button ${localStatusFilter === 'merged' ? 'active' : ''}`}
             onClick={() => setLocalStatusFilter('merged')}
             style={{
               padding: '6px 12px',
@@ -85,7 +85,7 @@ const PullRequestList = ({ projectId = null, statusFilter = null }) => {
             Merged
           </button>
           <button
-            className={`pr-filter-btn ${localStatusFilter === 'closed' ? 'active' : ''}`}
+            className={`pr-filter-button ${localStatusFilter === 'closed' ? 'active' : ''}`}
             onClick={() => setLocalStatusFilter('closed')}
             style={{
               padding: '6px 12px',

@@ -79,7 +79,7 @@
   gap: 12px;
 }
 
-.geometry-btn {
+.geometry-button {
   flex: 1;
   padding: 12px 20px;
   border: 2px solid #dee2e6;
@@ -93,18 +93,18 @@
   color: #495057;
 }
 
-.geometry-btn:hover {
-  border-color: #007bff;
+.geometry-button:hover {
+  border-color: #00B2CA;
   background: #f8f9fa;
 }
 
-.geometry-btn.selected {
-  border-color: #007bff;
-  background: #007bff;
+.geometry-button.selected {
+  border-color: #00B2CA;
+  background: #00B2CA;
   color: #ffffff;
 }
 
-.geometry-btn input[type="radio"] {
+.geometry-button input[type="radio"] {
   display: none;
 }
 
@@ -136,7 +136,7 @@
 .form-textarea:focus,
 .form-select:focus {
   outline: none;
-  border-color: #007bff;
+  border-color: #00B2CA;
   box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
 }
 
@@ -183,7 +183,7 @@
   white-space: nowrap;
 }
 
-.remove-attr-btn {
+.remove-attr-button {
   width: 32px;
   height: 32px;
   border: 1px solid #dc3545;
@@ -199,14 +199,14 @@
   justify-content: center;
 }
 
-.remove-attr-btn:hover {
-  background: #dc3545;
+.remove-attr-button:hover {
+  background: #F06543;
   color: #ffffff;
 }
 
-.add-attr-btn {
+.add-attr-button {
   padding: 10px 16px;
-  border: 2px dashed #007bff;
+  border: 2px dashed #00B2CA;
   background: transparent;
   color: #007bff;
   border-radius: 4px;
@@ -217,7 +217,7 @@
   width: 100%;
 }
 
-.add-attr-btn:hover {
+.add-attr-button:hover {
   background: #e7f3ff;
   border-style: solid;
 }
@@ -241,8 +241,8 @@
   border-top: 1px solid #e9ecef;
 }
 
-.btn-primary,
-.btn-secondary {
+.button-primary,
+.button-secondary {
   padding: 10px 24px;
   border: none;
   border-radius: 4px;
@@ -252,21 +252,21 @@
   transition: all 0.2s ease;
 }
 
-.btn-primary {
+.button-primary {
   background: #007bff;
   color: #ffffff;
 }
 
-.btn-primary:hover {
+.button-primary:hover {
   background: #0056b3;
 }
 
-.btn-secondary {
+.button-secondary {
   background: #6c757d;
   color: #ffffff;
 }
 
-.btn-secondary:hover {
+.button-secondary:hover {
   background: #5a6268;
 }
 
@@ -341,7 +341,7 @@
     gap: 10px;
   }
   
-  .geometry-btn {
+  .geometry-button {
     padding: 10px 18px;
     font-size: 13px;
   }
@@ -351,7 +351,7 @@
     gap: 8px;
   }
 
-  .remove-attr-btn,
+  .remove-attr-button,
   .primary-key-badge {
     justify-self: start;
   }
@@ -377,8 +377,8 @@
     gap: 10px;
   }
   
-  .btn-primary,
-  .btn-secondary {
+  .button-primary,
+  .button-secondary {
     padding: 9px 20px;
     font-size: 13px;
   }
@@ -423,7 +423,7 @@
     gap: 8px;
   }
   
-  .geometry-btn {
+  .geometry-button {
     padding: 9px 16px;
     font-size: 12px;
   }
@@ -438,7 +438,7 @@
     font-size: 12px;
   }
   
-  .remove-attr-btn {
+  .remove-attr-button {
     width: 28px;
     height: 28px;
     font-size: 18px;
@@ -449,7 +449,7 @@
     font-size: 11px;
   }
   
-  .add-attr-btn {
+  .add-attr-button {
     padding: 8px 14px;
     font-size: 12px;
   }
@@ -483,8 +483,8 @@
     flex-direction: column;
   }
   
-  .btn-primary,
-  .btn-secondary {
+  .button-primary,
+  .button-secondary {
     width: 100%;
     padding: 8px 18px;
     font-size: 12px;

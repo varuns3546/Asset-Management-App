@@ -172,7 +172,7 @@ const CreateLayerModal = ({ isOpen, onClose, projectId, onCreateLayer }) => {
           <div className="form-section">
             <h3>Geometry Type</h3>
             <div className="geometry-type-options">
-              <label className={`geometry-btn ${geometryType === 'point' ? 'selected' : ''}`}>
+              <label className={`geometry-button ${geometryType === 'point' ? 'selected' : ''}`}>
                 <input
                   type="radio"
                   name="geometryType"
@@ -182,7 +182,7 @@ const CreateLayerModal = ({ isOpen, onClose, projectId, onCreateLayer }) => {
                 />
                 Point
               </label>
-              <label className={`geometry-btn ${geometryType === 'line' ? 'selected' : ''}`}>
+              <label className={`geometry-button ${geometryType === 'line' ? 'selected' : ''}`}>
                 <input
                   type="radio"
                   name="geometryType"
@@ -192,7 +192,7 @@ const CreateLayerModal = ({ isOpen, onClose, projectId, onCreateLayer }) => {
                 />
                 Line
               </label>
-              <label className={`geometry-btn ${geometryType === 'polygon' ? 'selected' : ''}`}>
+              <label className={`geometry-button ${geometryType === 'polygon' ? 'selected' : ''}`}>
                 <input
                   type="radio"
                   name="geometryType"
@@ -275,7 +275,7 @@ const CreateLayerModal = ({ isOpen, onClose, projectId, onCreateLayer }) => {
                 {!attr.isPrimary && (
                   <button
                     onClick={() => handleRemoveAttribute(index)}
-                    className="remove-attr-btn"
+                    className="remove-attr-button"
                     title="Remove field"
                   >
                     ×
@@ -283,7 +283,7 @@ const CreateLayerModal = ({ isOpen, onClose, projectId, onCreateLayer }) => {
                 )}
               </div>
             ))}
-            <button onClick={handleAddAttribute} className="add-attr-btn">
+            <button onClick={handleAddAttribute} className="add-attr-button">
               + Add Field
             </button>
           </div>

@@ -30,7 +30,7 @@ const ScatterChart = ({ data, xKey, yKey, title, height = 300 }) => {
         {title && <h3 className="chart-title">{title}</h3>}
         <div className="chart-download-wrapper">
           <button
-            className="chart-download-btn"
+            className="chart-download-button"
             onClick={() => setShowDownloadMenu(!showDownloadMenu)}
             title="Download chart"
           >

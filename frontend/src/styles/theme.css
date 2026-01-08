@@ -1,17 +1,19 @@
 /* Modern Theme Variables & Global Styles */
 
 :root {
-  /* Primary Colors - Professional Blue */
-  --primary-color: #1e40af;
-  --primary-hover: #1e3a8a;
-  --primary-light: #3b82f6;
-  --primary-lighter: #dbeafe;
+  /* Primary Colors - Soft Lavender */
+  --primary-color: #D8D4F2;
+  --primary-hover: #C5BEE8;
+  --primary-light: #E8E5F5;
+  --primary-lighter: #F5F3FB;
   
-  /* Secondary Colors */
-  --secondary-color: #059669;
-  --secondary-hover: #047857;
+  /* Secondary Colors - Mint Green */
+  --secondary-color: #B6EEA6;
+  --secondary-hover: #A0E088;
   
-  /* Accent Colors - Professional Palette */
+  /* Accent Colors - Coral Orange */
+  --accent-orange: #F79256;
+  --accent-orange-hover: #E88245;
   --accent-blue: #0ea5e9;
   --accent-teal: #14b8a6;
   --accent-slate: #475569;
@@ -29,10 +31,10 @@
   --gray-900: #111827;
   
   /* Gradients - Professional */
-  --gradient-primary: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
-  --gradient-success: linear-gradient(135deg, #059669 0%, #10b981 100%);
-  --gradient-professional: linear-gradient(135deg, #0f172a 0%, #1e40af 100%);
-  --gradient-cool: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
+  --gradient-primary: linear-gradient(135deg, #D8D4F2 0%, #E8E5F5 100%);
+  --gradient-success: linear-gradient(135deg, #B6EEA6 0%, #C5F4B1 100%);
+  --gradient-professional: linear-gradient(135deg, #F5F3FB 0%, #D8D4F2 100%);
+  --gradient-cool: linear-gradient(135deg, #D8D4F2 0%, #F79256 100%);
   
   /* Shadows */
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
@@ -177,7 +179,7 @@ body {
 }
 
 /* Modern Button Styles */
-.modern-btn {
+.modern-button {
   position: relative;
   background: var(--primary-color);
   color: white;
@@ -187,12 +189,12 @@ body {
   font-weight: 600;
   cursor: pointer;
   transition: all var(--transition-slow);
-  box-shadow: 0 2px 8px rgba(30, 64, 175, 0.15);
+  box-shadow: 0 2px 8px rgba(216, 212, 242, 0.3);
   overflow: hidden;
   font-size: 0.95rem;
 }
 
-.modern-btn::before {
+.modern-button::before {
   content: '';
   position: absolute;
   top: 0;
@@ -203,21 +205,21 @@ body {
   transition: left 0.5s;
 }
 
-.modern-btn:hover::before {
+.modern-button:hover::before {
   left: 100%;
 }
 
-.modern-btn:hover {
+.modern-button:hover {
   background: var(--primary-hover);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(30, 64, 175, 0.25);
+  box-shadow: 0 4px 12px rgba(216, 212, 242, 0.4);
 }
 
-.modern-btn:active {
+.modern-button:active {
   transform: translateY(0);
 }
 
-.modern-btn:disabled {
+.modern-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
   transform: none;

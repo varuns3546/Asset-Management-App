@@ -275,7 +275,7 @@ const ShareProjectScreen = () => {
                                                     </div>
                                                 </div>
                                                 <button
-                                                    className="btn-add"
+                                                    className="button-add"
                                                     onClick={() => handleAddUser(userResult.id)}
                                                 >
                                                     Add
@@ -327,7 +327,7 @@ const ShareProjectScreen = () => {
                                             </div>
                                             {projectUser.role !== 'owner' && (
                                                 <button
-                                                    className="btn-remove"
+                                                    className="button-remove"
                                                     onClick={() => handleRemoveUser(projectUser.user?.id || projectUser.user_id)}
                                                 >
                                                     Remove

@@ -15,7 +15,8 @@ const TopMapPanel = ({
   setLabelColor,
   labelBackgroundColor,
   setLabelBackgroundColor,
-  onExportClick
+  onExportClick,
+  onRegenerateGisFeatures
 }) => {
   const [isResizing, setIsResizing] = useState(false);
   const [startY, setStartY] = useState(0);
@@ -163,13 +164,13 @@ const TopMapPanel = ({
     <div ref={panelRef} className={panelClass} style={{ height: `${panelHeight}px` }}>
       <div className="top-panel-content">
         <div className="toolbar-actions">    
-          <button className="toolbar-btn">Search</button>
-          <button className="toolbar-btn">Layers</button>
-          <button className="toolbar-btn">Tools</button>
+          <button className="toolbar-button">Search</button>
+          <button className="toolbar-button">Layers</button>
+          <button className="toolbar-button">Tools</button>
 
           <div className="basemap-dropdown-container" ref={dropdownRef}>
             <button 
-              className="toolbar-btn"
+              className="toolbar-button"
               onClick={() => setShowBasemapDropdown(!showBasemapDropdown)}
             >
               Basemap
@@ -190,7 +191,7 @@ const TopMapPanel = ({
           </div>
           <div className="label-control-container" ref={labelModalRef}>
             <button 
-              className={`toolbar-btn ${showLabels ? 'active' : ''}`}
+              className={`toolbar-button ${showLabels ? 'active' : ''}`}
               onClick={handleLabelClick}
             >
               Labels
@@ -267,9 +268,18 @@ const TopMapPanel = ({
               </div>
             )}
           </div>
+          {onRegenerateGisFeatures && (
+            <button 
+              className="toolbar-button"
+              onClick={onRegenerateGisFeatures}
+              title="Regenerate GIS features for assets missing them"
+            >
+              🔄 Regenerate Features
+            </button>
+          )}
           {onExportClick && (
             <button 
-              className="toolbar-btn"
+              className="toolbar-button"
               onClick={onExportClick}
               title="Export layers to GeoPackage"
             >

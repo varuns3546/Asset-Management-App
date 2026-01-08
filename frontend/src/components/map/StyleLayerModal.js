@@ -109,7 +109,7 @@ const StyleLayerModal = ({ isOpen, onClose, layer, onSave }) => {
                   key={option.value}
                   type="button"
                   onClick={() => setSymbol(option.value)}
-                  className={symbol === option.value ? 'symbol-btn selected' : 'symbol-btn'}
+                  className={symbol === option.value ? 'symbol-button selected' : 'symbol-button'}
                   style={{
                     padding: '12px',
                     border: symbol === option.value ? '2px solid #007bff' : '2px solid #ccc',

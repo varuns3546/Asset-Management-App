@@ -186,7 +186,7 @@ const ImportResponsesModal = ({ isOpen, onClose, projectId, token, onImportSucce
             {step === 2 && 'Map Columns'}
             {step === 3 && 'Import Complete'}
           </h2>
-          <button className="import-close-btn" onClick={handleClose}>×</button>
+          <button className="import-close-button" onClick={handleClose}>×</button>
         </div>
 
         <div className="import-modal-body">
@@ -228,7 +228,7 @@ const ImportResponsesModal = ({ isOpen, onClose, projectId, token, onImportSucce
                   <button 
                     onClick={handleDownloadTemplate}
                     disabled={loading}
-                    className="template-download-btn"
+                    className="template-download-button"
                   >
                     {loading ? 'Downloading...' : '📥 Download Template'}
                   </button>
@@ -259,11 +259,11 @@ const ImportResponsesModal = ({ isOpen, onClose, projectId, token, onImportSucce
               </div>
 
               <div className="import-actions">
-                <button onClick={handleClose} className="btn-cancel">Cancel</button>
+                <button onClick={handleClose} className="button-cancel">Cancel</button>
                 <button 
                   onClick={handleUpload} 
                   disabled={!file || loading}
-                  className="btn-primary"
+                  className="button-primary"
                 >
                   {loading ? 'Processing...' : 'Upload & Preview'}
                 </button>
@@ -384,12 +384,12 @@ const ImportResponsesModal = ({ isOpen, onClose, projectId, token, onImportSucce
               </div>
 
               <div className="import-actions">
-                <button onClick={() => setStep(1)} className="btn-back">← Back</button>
-                <button onClick={handleClose} className="btn-cancel">Cancel</button>
+                <button onClick={() => setStep(1)} className="button-back">← Back</button>
+                <button onClick={handleClose} className="button-cancel">Cancel</button>
                 <button 
                   onClick={handleImport}
                   disabled={loading || assetColumn === '' || Object.keys(attributeMappings).length === 0}
-                  className="btn-primary"
+                  className="button-primary"
                 >
                   {loading ? 'Importing...' : `Import ${previewData.totalRows} Rows`}
                 </button>
@@ -443,7 +443,7 @@ const ImportResponsesModal = ({ isOpen, onClose, projectId, token, onImportSucce
               </div>
 
               <div className="import-actions">
-                <button onClick={handleClose} className="btn-primary">Done</button>
+                <button onClick={handleClose} className="button-primary">Done</button>
               </div>
             </div>
           )}

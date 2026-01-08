@@ -199,7 +199,7 @@ const AddLayerModal = ({ isOpen, onClose, onAddLayer }) => {
       <div className="content add-layer-modal" onClick={(e) => e.stopPropagation()}>
         <div className="header">
           <h2 className="title">Add Layer from ArcGIS Online</h2>
-          <button className="close-btn" onClick={handleClose}>×</button>
+          <button className="close-button" onClick={handleClose}>×</button>
         </div>
 
         <div className="body">
@@ -306,7 +306,7 @@ const AddLayerModal = ({ isOpen, onClose, onAddLayer }) => {
                 <button
                   key={index}
                   type="button"
-                  className="btn btn-outline-secondary btn-sm"
+                  className="button button-outline-secondary button-sm"
                   onClick={() => handleUseSample(sample)}
                   disabled={isAdding}
                   style={{ 
@@ -362,7 +362,7 @@ const AddLayerModal = ({ isOpen, onClose, onAddLayer }) => {
                     />
                     <button
                       type="button"
-                      className="btn btn-primary"
+                      className="button button-primary"
                       onClick={handleSearch}
                       disabled={isSearching || !searchQuery.trim()}
                       style={{ whiteSpace: 'nowrap' }}

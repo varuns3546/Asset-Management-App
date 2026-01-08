@@ -552,7 +552,7 @@ const HierarchyTree = ({ hierarchyItems, onRemoveItem, onItemClick, itemTypes = 
                 </div>
                 <div className="undo-redo-controls">
                     <button 
-                        className="undo-redo-btn" 
+                        className="undo-redo-button" 
                         onClick={undo}
                         disabled={!canUndo}
                         title="Undo (Ctrl+Z)"
@@ -560,7 +560,7 @@ const HierarchyTree = ({ hierarchyItems, onRemoveItem, onItemClick, itemTypes = 
                         ↶ Undo
                     </button>
                     <button 
-                        className="undo-redo-btn" 
+                        className="undo-redo-button" 
                         onClick={redo}
                         disabled={!canRedo}
                         title="Redo (Ctrl+Shift+Z)"

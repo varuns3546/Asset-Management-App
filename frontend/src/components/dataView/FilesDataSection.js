@@ -97,7 +97,7 @@ const FilesDataSection = ({ projectId, user }) => {
                                 <td>{formatDate(file.created_at)}</td>
                                 <td>
                                     <button 
-                                        className="btn btn-primary btn-small"
+                                        className="button button-primary button-small"
                                         onClick={() => handleDownload(file)}
                                         disabled={downloading[file.id]}
                                     >

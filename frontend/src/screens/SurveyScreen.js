@@ -550,7 +550,7 @@ const SurveyScreen = () => {
           <p>Select an asset and enter attribute values</p>
         </div>
         <button 
-          className="import-btn"
+          className="import-button"
           onClick={() => setShowImportModal(true)}
           title="Import attribute values from spreadsheet"
         >
@@ -610,7 +610,7 @@ const SurveyScreen = () => {
             <div className="form-navigation">
               <button
                 onClick={handleBack}
-                className="nav-btn back-btn"
+                className="nav-button back-button"
                 title="Go back"
               >
                 ← Back
@@ -700,7 +700,7 @@ const SurveyScreen = () => {
                                             return (
                                               <div key={actualIndex} className="photo-thumbnail photo-new">
                                                 <button
-                                                  className="remove-photo-btn"
+                                                  className="remove-photo-button"
                                                   onClick={() => handleRemovePhoto(attribute.id, actualIndex)}
                                                   title="Remove photo"
                                                 >
@@ -741,7 +741,7 @@ const SurveyScreen = () => {
                                               return (
                                                 <div key={actualIndex} className="photo-thumbnail photo-saved">
                                                   <button
-                                                    className="remove-photo-btn"
+                                                    className="remove-photo-button"
                                                     onClick={() => handleRemovePhoto(attribute.id, actualIndex)}
                                                     title="Remove photo"
                                                   >

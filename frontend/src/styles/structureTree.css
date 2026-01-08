@@ -47,7 +47,7 @@
     align-items: center;
 }
 
-.undo-redo-btn {
+.undo-redo-button {
     padding: 4px 10px;
     font-size: 12px;
     border: 1px solid #dee2e6;
@@ -58,12 +58,12 @@
     transition: all 0.2s ease;
 }
 
-.undo-redo-btn:hover:not(:disabled) {
+.undo-redo-button:hover:not(:disabled) {
     background: #f8f9fa;
     border-color: #adb5bd;
 }
 
-.undo-redo-btn:disabled {
+.undo-redo-button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
 }

@@ -124,8 +124,8 @@
     margin-bottom: 16px;
 }
 
-.generate-report-modal .btn-primary:disabled,
-.generate-report-modal .btn-secondary:disabled {
+.generate-report-modal .button-primary:disabled,
+.generate-report-modal .button-secondary:disabled {
     opacity: 0.6;
     cursor: not-allowed;
 }

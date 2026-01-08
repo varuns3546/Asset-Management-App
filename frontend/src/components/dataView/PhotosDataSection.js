@@ -147,7 +147,7 @@ const PhotosDataSection = ({ projectId, user }) => {
                                 <td>{photo.fileName || 'N/A'}</td>
                                 <td>
                                     <button 
-                                        className="btn btn-primary btn-small"
+                                        className="button button-primary button-small"
                                         onClick={() => handlePhotoClick(photo)}
                                     >
                                         View

@@ -71,7 +71,7 @@
   box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
 }
 
-.remove-coord-btn {
+.remove-coord-button {
   width: 32px;
   height: 32px;
   border: 1px solid #dc3545;
@@ -87,17 +87,17 @@
   justify-content: center;
 }
 
-.remove-coord-btn:hover:not(:disabled) {
+.remove-coord-button:hover:not(:disabled) {
   background: #dc3545;
   color: #ffffff;
 }
 
-.remove-coord-btn:disabled {
+.remove-coord-button:disabled {
   opacity: 0.3;
   cursor: not-allowed;
 }
 
-.add-coord-btn {
+.add-coord-button {
   padding: 10px 16px;
   border: 2px dashed #007bff;
   background: transparent;
@@ -110,7 +110,7 @@
   width: 100%;
 }
 
-.add-coord-btn:hover {
+.add-coord-button:hover {
   background: #e7f3ff;
   border-style: solid;
 }
@@ -204,8 +204,8 @@
   border-top: 1px solid #e9ecef;
 }
 
-.btn-primary,
-.btn-secondary {
+.button-primary,
+.button-secondary {
   padding: 10px 24px;
   border: none;
   border-radius: 4px;
@@ -215,21 +215,21 @@
   transition: all 0.2s ease;
 }
 
-.btn-primary {
+.button-primary {
   background: #007bff;
   color: #ffffff;
 }
 
-.btn-primary:hover {
+.button-primary:hover {
   background: #0056b3;
 }
 
-.btn-secondary {
+.button-secondary {
   background: #6c757d;
   color: #ffffff;
 }
 
-.btn-secondary:hover {
+.button-secondary:hover {
   background: #5a6268;
 }
 
@@ -274,7 +274,7 @@
     font-size: 12px;
   }
 
-  .remove-coord-btn {
+  .remove-coord-button {
     grid-column: 1 / -1;
   }
 
@@ -302,8 +302,8 @@
     gap: 10px;
   }
   
-  .btn-primary,
-  .btn-secondary {
+  .button-primary,
+  .button-secondary {
     padding: 9px 20px;
     font-size: 13px;
   }
@@ -343,13 +343,13 @@
     font-size: 13px;
   }
   
-  .remove-coord-btn {
+  .remove-coord-button {
     width: 28px;
     height: 28px;
     font-size: 18px;
   }
   
-  .add-coord-btn {
+  .add-coord-button {
     padding: 8px 14px;
     font-size: 13px;
   }
@@ -392,8 +392,8 @@
     flex-direction: column;
   }
   
-  .btn-primary,
-  .btn-secondary {
+  .button-primary,
+  .button-secondary {
     width: 100%;
     padding: 8px 18px;
     font-size: 12px;

@@ -301,7 +301,7 @@ const ShareProjectModal = ({ onClose, initialProjectId = '' }) => {
                                                     </div>
                                                 </div>
                                                 <button
-                                                    className="btn btn-primary"
+                                                    className="button button-primary"
                                                     onClick={() => handleAddUser(userResult.id)}
                                                     style={{ fontSize: '14px', padding: '8px 16px' }}
                                                 >
@@ -401,7 +401,7 @@ const ShareProjectModal = ({ onClose, initialProjectId = '' }) => {
                                             </div>
                                             {projectUser.role !== 'owner' && (
                                                 <button
-                                                    className="btn btn-secondary"
+                                                    className="button button-secondary"
                                                     onClick={() => handleRemoveUser(projectUser.user?.id || projectUser.user_id)}
                                                     style={{ 
                                                         fontSize: '14px', 

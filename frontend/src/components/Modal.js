@@ -63,7 +63,7 @@ const Modal = ({ isOpen, onClose, children, title }) => {
             <div className="content" ref={contentRef}>
                 <div className="header">
                     <h2 className="title">{title}</h2>
-                    <button className="close-btn" onClick={onClose}>
+                    <button className="close-button" onClick={onClose}>
                         ×
                     </button>
                 </div>

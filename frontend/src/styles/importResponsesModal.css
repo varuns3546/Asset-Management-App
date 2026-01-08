@@ -41,7 +41,7 @@
   color: #333;
 }
 
-.import-close-btn {
+.import-close-button {
   background: none;
   border: none;
   font-size: 28px;
@@ -52,7 +52,7 @@
   transition: color 0.2s;
 }
 
-.import-close-btn:hover {
+.import-close-button:hover {
   color: #333;
 }
 
@@ -145,7 +145,7 @@
   min-width: 180px;
 }
 
-.template-download-btn {
+.template-download-button {
   padding: 8px 16px;
   background: #4caf50;
   color: white;
@@ -159,11 +159,11 @@
   transition: background 0.2s;
 }
 
-.template-download-btn:hover {
+.template-download-button:hover {
   background: #43a047;
 }
 
-.template-download-btn:disabled {
+.template-download-button:disabled {
   background: #a5d6a7;
   cursor: not-allowed;
 }
@@ -403,7 +403,7 @@
   margin-top: 8px;
 }
 
-.btn-cancel {
+.button-cancel {
   padding: 10px 20px;
   background: white;
   border: 1px solid #ddd;
@@ -414,12 +414,12 @@
   transition: all 0.2s;
 }
 
-.btn-cancel:hover {
+.button-cancel:hover {
   background: #f5f5f5;
   border-color: #ccc;
 }
 
-.btn-back {
+.button-back {
   padding: 10px 20px;
   background: white;
   border: 1px solid #ddd;
@@ -431,12 +431,12 @@
   margin-right: auto;
 }
 
-.btn-back:hover {
+.button-back:hover {
   background: #f5f5f5;
   border-color: #ccc;
 }
 
-.btn-primary {
+.button-primary {
   padding: 10px 24px;
   background: #007bff;
   border: none;
@@ -448,11 +448,11 @@
   transition: background 0.2s;
 }
 
-.btn-primary:hover {
+.button-primary:hover {
   background: #0056b3;
 }
 
-.btn-primary:disabled {
+.button-primary:disabled {
   background: #90caf9;
   cursor: not-allowed;
 }

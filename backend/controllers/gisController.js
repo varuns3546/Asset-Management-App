@@ -283,6 +283,18 @@ const deleteGisLayer = asyncHandler(async (req, res) => {
   }
 
   try {
+    // First, delete all features in this layer to avoid foreign key constraint errors
+    const { error: featuresDeleteError } = await req.supabase
+      .from('gis_features')
+      .delete()
+      .eq('layer_id', layerId);
+
+    if (featuresDeleteError) {
+      console.error('Error deleting features for layer:', featuresDeleteError);
+      // Continue anyway - the layer might have no features or already be deleted
+    }
+
+    // Now delete the layer
     const { error } = await req.supabase
       .from('gis_layers')
       .delete()
@@ -528,6 +540,8 @@ const addFeature = asyncHandler(async (req, res) => {
 
     // Update the feature to set asset_id column if it exists in properties
     // This creates a proper foreign key relationship instead of storing it in JSON
+    // Note: Only set asset_id if it was provided in properties (i.e., feature came from an asset)
+    // Manually created features won't have asset_id in properties, so asset_id stays NULL (correct)
     if (assetId && feature && feature.id) {
       const { error: updateError } = await req.supabase
         .from('gis_features')
@@ -535,26 +549,42 @@ const addFeature = asyncHandler(async (req, res) => {
         .eq('id', feature.id);
 
       if (updateError) {
-        console.warn('Warning: Could not set asset_id column on feature:', updateError);
-        // Continue anyway - asset_id is still in properties JSON as fallback
+        console.error('[addFeature] CRITICAL: Failed to set asset_id column on feature:', updateError);
+        console.error('[addFeature] Update error details:', JSON.stringify(updateError, null, 2));
+        // Log error but continue - feature was created, just without asset_id
       } else {
-        // Remove asset_id from properties JSON since it's now in the column
-        // Keep other properties intact
-        if (properties && properties.asset_id) {
-          const { asset_id, ...otherProperties } = properties;
-          if (Object.keys(otherProperties).length > 0) {
-            await req.supabase
-              .from('gis_features')
-              .update({ properties: otherProperties })
-              .eq('id', feature.id);
-          } else {
-            await req.supabase
-              .from('gis_features')
-              .update({ properties: null })
-              .eq('id', feature.id);
+        // Verify asset_id was set
+        const { data: verifyFeature } = await req.supabase
+          .from('gis_features')
+          .select('id, asset_id')
+          .eq('id', feature.id)
+          .single();
+        
+        if (verifyFeature && verifyFeature.asset_id === assetId) {
+          console.log(`[addFeature] ✓ Set asset_id=${assetId} for feature ${feature.id} (verified)`);
+          
+          // Remove asset_id from properties JSON since it's now in the column
+          if (properties && properties.asset_id) {
+            const { asset_id, ...otherProperties } = properties;
+            if (Object.keys(otherProperties).length > 0) {
+              await req.supabase
+                .from('gis_features')
+                .update({ properties: otherProperties })
+                .eq('id', feature.id);
+            } else {
+              await req.supabase
+                .from('gis_features')
+                .update({ properties: null })
+                .eq('id', feature.id);
+            }
           }
+        } else {
+          console.error(`[addFeature] CRITICAL: asset_id verification failed. Expected: ${assetId}, Got: ${verifyFeature?.asset_id}`);
         }
       }
+    } else if (!assetId) {
+      // This is a manually created feature (no asset_id in properties) - this is correct
+      console.log(`[addFeature] Feature ${feature?.id} created without asset_id (manually created)`);
     }
 
     res.status(201).json({

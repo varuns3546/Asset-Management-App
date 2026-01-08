@@ -38,9 +38,9 @@
   font-size: 1.1rem;
 }
 
-.refresh-btn {
+.refresh-button {
   padding: 12px 28px;
-  background: #1e40af;
+  background: #F79256;
   color: white;
   border: none;
   border-radius: 8px;
@@ -48,16 +48,16 @@
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   font-size: 0.95rem;
-  box-shadow: 0 2px 8px rgba(30, 64, 175, 0.15);
+  box-shadow: 0 2px 8px rgba(247, 146, 86, 0.3);
 }
 
-.refresh-btn:hover:not(:disabled) {
-  background: #1e3a8a;
+.refresh-button:hover:not(:disabled) {
+  background: #E88245;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(30, 64, 175, 0.25);
+  box-shadow: 0 4px 12px rgba(247, 146, 86, 0.4);
 }
 
-.refresh-btn:disabled {
+.refresh-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
@@ -75,7 +75,7 @@
 .info-icon {
   font-size: 1.2rem;
   font-weight: bold;
-  color: #007bff;
+  color: #6f42c1;
 }
 
 .info-text {
@@ -96,7 +96,7 @@
   width: 50px;
   height: 50px;
   border: 4px solid #f3f3f3;
-  border-top: 4px solid #007bff;
+  border-top: 4px solid #6f42c1;
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin: 0 auto 20px;
@@ -135,7 +135,7 @@
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(90deg, #1e40af 0%, #3b82f6 100%);
+  background: linear-gradient(90deg, #6f42c1 0%, #8b5cf6 100%);
 }
 
 .metrics-section:hover {
@@ -163,7 +163,7 @@
 
 .project-count-badge {
   padding: 6px 14px;
-  background: #007bff;
+  background: #6f42c1;
   color: white;
   border-radius: 20px;
   font-size: 0.85rem;
@@ -237,7 +237,7 @@
 
 .progress-fill {
   height: 100%;
-  background: #007bff;
+  background: #6f42c1;
   transition: width 0.3s ease;
 }
 
@@ -268,7 +268,7 @@
 
 .official-badge {
   font-size: 0.8rem;
-  background: #007bff;
+  background: #6f42c1;
   color: white;
   padding: 2px 6px;
   border-radius: 10px;
@@ -284,7 +284,7 @@
 
 .official-note {
   font-size: 0.8rem;
-  color: #007bff;
+  color: #6f42c1;
   font-weight: 500;
 }
 
@@ -309,7 +309,7 @@
 .stat-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
-  border-color: #007bff;
+  border-color: #6f42c1;
 }
 
 .stat-card.storage-card {
@@ -320,7 +320,7 @@
 .stat-icon {
   font-size: 2.5rem;
   opacity: 0.7;
-  color: #007bff;
+  color: #6f42c1;
 }
 
 .stat-content {
@@ -359,7 +359,7 @@
 }
 
 .action-card:hover {
-  border-color: #007bff;
+  border-color: #6f42c1;
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(0, 123, 255, 0.15);
 }
@@ -379,7 +379,7 @@
 
 .action-card.export-action:hover:not(:disabled) {
   background: #f8f9fa;
-  border-color: #007bff;
+  border-color: #6f42c1;
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(0, 123, 255, 0.15);
 }
@@ -438,9 +438,9 @@
   margin-bottom: 20px;
 }
 
-.retry-btn {
+.retry-button {
   padding: 12px 24px;
-  background: #007bff;
+  background: #6f42c1;
   color: white;
   border: none;
   border-radius: 6px;
@@ -449,7 +449,7 @@
   transition: all 0.2s;
 }
 
-.retry-btn:hover {
+.retry-button:hover {
   background: #0056b3;
   transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(0, 123, 255, 0.2);
@@ -481,7 +481,7 @@
 
 .summary-icon {
   font-size: 1.2rem;
-  color: #007bff;
+  color: #6f42c1;
 }
 
 .summary-text {
@@ -509,7 +509,7 @@
 }
 
 .official-account-banner .info-icon {
-  color: #007bff;
+  color: #6f42c1;
 }
 
 .official-account-banner .info-text {
@@ -552,7 +552,7 @@
     font-size: 1rem;
   }
   
-  .refresh-btn {
+  .refresh-button {
     padding: 9px 18px;
     font-size: 0.9rem;
   }
@@ -590,7 +590,7 @@
     padding: 20px;
   }
   
-  .refresh-btn {
+  .refresh-button {
     width: 100%;
     padding: 10px 20px;
   }
@@ -624,7 +624,7 @@
     font-size: 0.9rem;
   }
   
-  .refresh-btn {
+  .refresh-button {
     padding: 8px 16px;
     font-size: 0.85rem;
   }

@@ -519,7 +519,7 @@ const HierarchyImportPreview = ({
                                     {previewSheet === name && <span className="preview-badge">Previewing</span>}
                                     <button
                                         type="button"
-                                        className="preview-sheet-btn"
+                                        className="preview-sheet-button"
                                         onClick={() => setPreviewSheet(name)}
                                         disabled={previewSheet === name}
                                     >

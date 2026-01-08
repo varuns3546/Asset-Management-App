@@ -283,7 +283,7 @@ const FileUploadModal = ({ isOpen, onClose, onFileSelect, projectId }) => {
                                     disabled={uploading || uploadingToCloud}
                                 />
                                 <button
-                                    className="browse-btn"
+                                    className="browse-button"
                                     onClick={handleBrowseClick}
                                     disabled={uploading || uploadingToCloud}
                                     type="button"
@@ -303,7 +303,7 @@ const FileUploadModal = ({ isOpen, onClose, onFileSelect, projectId }) => {
                                             </span>
                                             {!uploading && !uploadingToCloud && (
                                                 <button
-                                                    className="remove-file-btn-small"
+                                                    className="remove-file-button-small"
                                                     onClick={() => removeFile(index)}
                                                     type="button"
                                                 >
@@ -330,7 +330,7 @@ const FileUploadModal = ({ isOpen, onClose, onFileSelect, projectId }) => {
 
                         <div className="upload-actions">
                             <button
-                                className="btn btn-secondary"
+                                className="button button-secondary"
                                 onClick={handleClose}
                                 disabled={uploading || uploadingToCloud}
                             >
@@ -338,7 +338,7 @@ const FileUploadModal = ({ isOpen, onClose, onFileSelect, projectId }) => {
                             </button>
                             {projectId && selectedFiles.length > 0 && (
                                 <button
-                                    className="btn btn-outline"
+                                    className="button button-outline"
                                     onClick={handleUploadToCloud}
                                     disabled={selectedFiles.length === 0 || uploadingToCloud || uploading}
                                 >
@@ -346,7 +346,7 @@ const FileUploadModal = ({ isOpen, onClose, onFileSelect, projectId }) => {
                                 </button>
                             )}
                             <button
-                                className="btn btn-primary"
+                                className="button button-primary"
                                 onClick={handleContinueWithLocal}
                                 disabled={selectedFiles.length === 0 || uploading || uploadingToCloud}
                             >
@@ -407,14 +407,14 @@ const FileUploadModal = ({ isOpen, onClose, onFileSelect, projectId }) => {
 
                         <div className="upload-actions">
                             <button
-                                className="btn btn-secondary"
+                                className="button button-secondary"
                                 onClick={handleClose}
                                 disabled={uploading}
                             >
                                 Cancel
                             </button>
                             <button
-                                className="btn btn-primary"
+                                className="button button-primary"
                                 onClick={handleContinueWithCloud}
                                 disabled={!selectedCloudFile || uploading}
                             >

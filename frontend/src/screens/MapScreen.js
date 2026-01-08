@@ -13,6 +13,7 @@ import { getHierarchy, getFeatureTypes, updateFeatureType, getProject } from '..
 import * as gisLayerService from '../services/gisLayerService';
 import { getRandomUnusedStyle } from '../constants/itemTypeIcons';
 import '../styles/map.css';
+import '../styles/survey.css';
 import { useRouteMount } from '../contexts/RouteMountContext';
 import useProjectData from '../hooks/useProjectData';
 import useDebouncedAsync from '../hooks/useDebouncedAsync';
@@ -34,12 +35,15 @@ const MapScreen = () => {
   const [labelBackgroundColor, setLabelBackgroundColor] = useState('rgba(255, 255, 255, 0.6)');
   const [layers, setLayers] = useState([]);
   const [assetTypeLayerVisibility, setAssetTypeLayerVisibility] = useState({}); // Track visibility of asset type layers
+  // Track deleted asset type layer names to prevent auto-regeneration (persisted in localStorage)
+  const [deletedAssetTypeLayers, setDeletedAssetTypeLayers] = useState(new Set());
   const [showAddFeatureModal, setShowAddFeatureModal] = useState(false);
   const [selectedLayerForFeature, setSelectedLayerForFeature] = useState(null);
   const [showStyleLayerModal, setShowStyleLayerModal] = useState(false);
   const [selectedLayerForStyle, setSelectedLayerForStyle] = useState(null);
   const [showExportModal, setShowExportModal] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [zoomToFeature, setZoomToFeature] = useState(null);
   const [zoomToLayer, setZoomToLayer] = useState(null);
   const [isMapLoading, setIsMapLoading] = useState(true);
@@ -138,6 +142,20 @@ const MapScreen = () => {
     });
   }, []);
 
+  // Load deleted asset type layers from localStorage when project changes
+  useEffect(() => {
+    if (selectedProject?.id) {
+      const key = `deletedAssetTypeLayers_${selectedProject.id}`;
+      const saved = localStorage.getItem(key);
+      if (saved) {
+        const savedSet = new Set(JSON.parse(saved));
+        setDeletedAssetTypeLayers(savedSet);
+        console.log(`[MapScreen] Loaded ${savedSet.size} deleted asset type layers from localStorage for project ${selectedProject.id}:`, [...savedSet]);
+      } else {
+        setDeletedAssetTypeLayers(new Set());
+      }
+    }
+  }, [selectedProject?.id]);
 
   // Load layers from database (needs to be accessible in sync function)
   const loadLayersFromDatabase = async (showLoading = true) => {
@@ -462,6 +480,11 @@ const MapScreen = () => {
       const existingLayersResponse = await gisLayerService.getGisLayers(selectedProject.id);
       const existingLayers = existingLayersResponse.success ? existingLayersResponse.data : [];
 
+      // Reload deleted layers from localStorage to ensure we have the latest state
+      const key = `deletedAssetTypeLayers_${selectedProject.id}`;
+      const savedDeleted = localStorage.getItem(key);
+      const currentDeletedLayers = savedDeleted ? new Set(JSON.parse(savedDeleted)) : deletedAssetTypeLayers;
+
       // Process each asset type
       for (const [typeId, assets] of Object.entries(assetsByType)) {
         if (assets.length === 0) continue;
@@ -479,8 +502,21 @@ const MapScreen = () => {
           layerDescription = assetType.description || `Layer for ${assetType.title} assets`;
         }
 
+        // Check if this layer was deleted by the user (prevent auto-regeneration)
+        // Check both state and localStorage to be safe
+        if (currentDeletedLayers.has(layerName) || deletedAssetTypeLayers.has(layerName)) {
+          console.log(`[Sync] Skipping layer "${layerName}" (typeId: ${typeId}) - it was deleted by the user`);
+          continue;
+        }
+
         // Check if layer already exists (by name)
         let existingLayer = existingLayers.find(l => l.name === layerName);
+        
+        // Double-check: if layer exists but was marked as deleted, skip it
+        if (existingLayer && (currentDeletedLayers.has(existingLayer.name) || deletedAssetTypeLayers.has(existingLayer.name))) {
+          console.log(`[Sync] Skipping existing layer "${existingLayer.name}" - it was deleted by the user`);
+          continue;
+        }
         
         if (!existingLayer) {
           // Get random unused style for the new layer
@@ -509,6 +545,12 @@ const MapScreen = () => {
           }
         }
 
+        // Final check: make sure this layer wasn't marked as deleted
+        if (currentDeletedLayers.has(existingLayer.name) || deletedAssetTypeLayers.has(existingLayer.name)) {
+          console.log(`[Sync] Skipping feature creation for layer "${existingLayer.name}" - it was deleted by the user`);
+          continue;
+        }
+
         // Now add/update features for this layer
         // First, get existing features
         const featuresResponse = await gisLayerService.getLayerFeatures(
@@ -516,11 +558,15 @@ const MapScreen = () => {
           existingLayer.id
         );
         const existingFeatures = featuresResponse.success ? featuresResponse.data : [];
+        
+        // Check asset_id column only
         const existingAssetIds = new Set(
           existingFeatures
-            .map(f => f.properties?.asset_id)
-            .filter(id => id != null)
+            .filter(f => f.asset_id != null)
+            .map(f => f.asset_id)
         );
+        
+        console.log(`[Sync] Layer "${layerName}": Found ${existingFeatures.length} existing features, ${existingAssetIds.size} unique asset_ids:`, Array.from(existingAssetIds));
 
         // Add features for assets that don't exist yet (batch processing for better performance)
         const assetsToAdd = assets.filter(asset => {
@@ -661,7 +707,7 @@ const MapScreen = () => {
         syncInProgressRef.current = false;
       }
     },
-    [currentHierarchy, currentFeatureTypes, selectedProject?.id, user],
+    [currentHierarchy, currentFeatureTypes, selectedProject?.id, user, deletedAssetTypeLayers],
     {
       delay: 800, // Increased delay to ensure database operations complete
       shouldRun: (deps) => {
@@ -838,6 +884,26 @@ const MapScreen = () => {
     setError('');
 
     try {
+      // Check if this is an asset type layer (by checking if it matches an asset type name)
+      const layer = layers.find(l => l.id === layerId);
+      if (layer) {
+        // Check if this layer corresponds to an asset type
+        const isAssetTypeLayer = currentFeatureTypes.some(type => type.title === layer.name) || 
+                                 layer.name === 'Uncategorized Assets';
+        
+        if (isAssetTypeLayer) {
+          // Mark this layer name as deleted to prevent auto-regeneration
+          setDeletedAssetTypeLayers(prev => {
+            const newSet = new Set([...prev, layer.name]);
+            // Persist to localStorage
+            const key = `deletedAssetTypeLayers_${selectedProject.id}`;
+            localStorage.setItem(key, JSON.stringify([...newSet]));
+            console.log(`[handleRemoveLayer] Marking asset type layer "${layer.name}" as deleted to prevent auto-regeneration. Deleted layers:`, [...newSet]);
+            return newSet;
+          });
+        }
+      }
+
       await gisLayerService.deleteGisLayer(selectedProject.id, layerId);
       if (isRouteMounted()) {
         setLayers(prev => prev.filter(layer => layer.id !== layerId));
@@ -1162,7 +1228,15 @@ const MapScreen = () => {
                                                     return (
     
     <div ref={containerRef} className="leaflet-screen-container">
-      <ErrorMessage message={error} style={{ position: 'fixed', top: '80px', left: '50%', transform: 'translateX(-50%)', zIndex: 10000, maxWidth: '500px' }} />
+      {error && (
+        <ErrorMessage message={error} style={{ position: 'fixed', top: '80px', left: '50%', transform: 'translateX(-50%)', zIndex: 10000, maxWidth: '500px' }} />
+      )}
+      {successMessage && (
+        <div className="save-success-bar">
+          <span className="success-icon">✓</span>
+          {successMessage}
+        </div>
+      )}
       <MapNavbar 
         onOpenUploadModal={() => setIsUploadModalOpen(true)}
         onCreateLayer={handleCreateLayer}
@@ -1181,6 +1255,34 @@ const MapScreen = () => {
         labelBackgroundColor={labelBackgroundColor}
         setLabelBackgroundColor={handleLabelBackgroundColorChange}
         onExportClick={() => setShowExportModal(true)}
+        onRegenerateGisFeatures={async () => {
+          if (!selectedProject?.id) return;
+          
+          try {
+            setIsLoadingLayers(true);
+            setError('');
+            const response = await projectService.regenerateMissingGisFeatures(selectedProject.id);
+            
+            if (response.success) {
+              // Reload layers after regeneration
+              await loadLayersFromDatabase(false);
+              const createdCount = response.created || 0;
+              setSuccessMessage(
+                createdCount === 0 
+                  ? 'No features regenerated' 
+                  : `Successfully regenerated ${createdCount} GIS feature${createdCount !== 1 ? 's' : ''}`
+              );
+              setTimeout(() => setSuccessMessage(''), 5000);
+            } else {
+              setError(response.error || 'Failed to regenerate GIS features');
+            }
+          } catch (err) {
+            console.error('Error regenerating GIS features:', err);
+            setError(err.response?.data?.error || 'Failed to regenerate GIS features');
+          } finally {
+            setIsLoadingLayers(false);
+          }
+        }}
       />
       <div className="map-content-container">
         <LeftMapPanel 

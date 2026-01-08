@@ -47,7 +47,7 @@
   position: relative;
 }
 
-.navbar-btn {
+.navbar-button {
   padding: 8px 20px;
   background: transparent;
   border: none;
@@ -59,7 +59,7 @@
   font-weight: 500;
 }
 
-.navbar-btn:hover {
+.navbar-button:hover {
   background: #dee2e6;
 }
 
@@ -199,7 +199,7 @@
   justify-content: center;
 }
 
-.panel-toggle-btn {
+.panel-toggle-button {
   position: fixed;
   top: 50%;
   transform: translateY(-50%);
@@ -215,11 +215,11 @@
   transition: background 0.2s ease;
 }
 
-.panel-toggle-btn:hover {
+.panel-toggle-button:hover {
   background: #f8f9fa;
 }
 
-.panel-toggle-btn.collapsed {
+.panel-toggle-button.collapsed {
   left: 0;
 }
 
@@ -281,7 +281,7 @@
   gap: 5px;
 }
 
-.toolbar-btn {
+.toolbar-button {
   padding: 8px 16px;
   background: #f8f9fa;
   border: 1px solid #dee2e6;
@@ -298,23 +298,23 @@
   max-width: 100%;
 }
 
-.top-panel.panel-small .toolbar-btn {
+.top-panel.panel-small .toolbar-button {
   padding: 5.6px 11.2px; 
   font-size: 9.8px; 
   min-height: 25.2px; 
 }
 
-.toolbar-btn:hover {
+.toolbar-button:hover {
   background: #e9ecef;
 }
 
-.toolbar-btn.active {
+.toolbar-button.active {
   background: #007bff;
   color: #ffffff;
   border-color: #007bff;
 }
 
-.toolbar-btn.active:hover {
+.toolbar-button.active:hover {
   background: #0056b3;
   border-color: #0056b3;
 }
@@ -572,7 +572,7 @@
     flex-wrap: wrap;
   }
   
-  .navbar-btn {
+  .navbar-button {
     padding: 6px 12px;
     font-size: 11px;
   }
@@ -594,7 +594,7 @@
     gap: 6px;
   }
   
-  .toolbar-btn {
+  .toolbar-button {
     padding: 6px 12px;
     font-size: 11px;
     flex: 1 1 auto;
@@ -634,7 +634,7 @@
     flex-wrap: wrap;
   }
   
-  .navbar-btn {
+  .navbar-button {
     padding: 6px 14px;
     font-size: 12px;
   }
@@ -643,7 +643,7 @@
     padding: 10px 14px;
   }
   
-  .toolbar-btn {
+  .toolbar-button {
     padding: 6px 12px;
     font-size: 12px;
   }
@@ -664,7 +664,7 @@
     flex-wrap: wrap;
   }
   
-  .navbar-btn {
+  .navbar-button {
     padding: 7px 16px;
     font-size: 13px;
   }
@@ -677,7 +677,7 @@
     padding: 12px 16px;
   }
   
-  .toolbar-btn {
+  .toolbar-button {
     padding: 7px 14px;
     font-size: 13px;
   }
@@ -693,7 +693,7 @@
     gap: 12px;
   }
   
-  .navbar-btn {
+  .navbar-button {
     padding: 7px 18px;
     font-size: 13px;
   }
@@ -709,7 +709,7 @@
     gap: 14px;
   }
   
-  .navbar-btn {
+  .navbar-button {
     padding: 8px 19px;
     font-size: 13.5px;
   }

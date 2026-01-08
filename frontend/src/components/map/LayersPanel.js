@@ -333,7 +333,7 @@ const LayersPanel = ({ layers = [], isLoadingLayers = false, onToggleLayer, onRe
         <span className="layer-count">{layers.length}</span>
         <div className="undo-redo-buttons">
           <button 
-            className="undo-redo-btn" 
+            className="undo-redo-button" 
             onClick={(e) => { e.stopPropagation(); undo(); }}
             disabled={!canUndo}
             title="Undo (Ctrl+Z)"
@@ -341,7 +341,7 @@ const LayersPanel = ({ layers = [], isLoadingLayers = false, onToggleLayer, onRe
             ↶ Undo
           </button>
           <button 
-            className="undo-redo-btn" 
+            className="undo-redo-button" 
             onClick={(e) => { e.stopPropagation(); redo(); }}
             disabled={!canRedo}
             title="Redo (Ctrl+Shift+Z)"
@@ -364,7 +364,7 @@ const LayersPanel = ({ layers = [], isLoadingLayers = false, onToggleLayer, onRe
             <div className="layer-header">
               <div className="layer-left">
                 <button
-                  className="layer-expand-btn"
+                  className="layer-expand-button"
                   onClick={(e) => {
                     e.stopPropagation();
                     toggleExpand(layer.id);
@@ -391,7 +391,7 @@ const LayersPanel = ({ layers = [], isLoadingLayers = false, onToggleLayer, onRe
               </div>
               <div className="layer-actions">
                 <button
-                  className={`layer-visibility-btn ${layer.visible ? 'visible' : 'hidden'}`}
+                  className={`layer-visibility-button ${layer.visible ? 'visible' : 'hidden'}`}
                   onClick={(e) => {
                     e.stopPropagation();
                     onToggleLayer(layer.id);
@@ -434,21 +434,21 @@ const LayersPanel = ({ layers = [], isLoadingLayers = false, onToggleLayer, onRe
                 
                 <div className="layer-action-buttons" onClick={(e) => e.stopPropagation()}>
                   <button
-                    className="layer-action-btn primary"
+                    className="layer-action-button primary"
                     onClick={() => onAddFeature(layer)}
                     title="Add features"
                   >
                     ➕ Add
                   </button>
                   <button
-                    className="layer-action-btn secondary"
+                    className="layer-action-button secondary"
                     onClick={() => onStyleLayer(layer.id)}
                     title="Style layer"
                   >
                     🎨 Style
                   </button>
                   <button
-                    className="layer-action-btn danger"
+                    className="layer-action-button danger"
                     onClick={() => onRemoveLayer(layer.id)}
                     title="Remove layer"
                   >

@@ -38,7 +38,7 @@
     font-size: 2.25rem;
 }
 
-.content:has(.create-project-modal) .close-btn {
+.content:has(.create-project-modal) .close-button {
     font-size: 2.25rem;
 }
 
@@ -58,7 +58,7 @@
     font-size: 2.25rem;
 }
 
-.content:has(.open-project-modal) .close-btn {
+.content:has(.open-project-modal) .close-button {
     font-size: 2.25rem;
 }
 
@@ -78,7 +78,7 @@
     font-size: 1.75rem;
 }
 
-.content:has(.add-layer-modal) .close-btn {
+.content:has(.add-layer-modal) .close-button {
     font-size: 2rem;
 }
 
@@ -100,7 +100,7 @@
     font-size: 1.5rem;
 }
 
-.content:has(.style-layer-modal) .close-btn {
+.content:has(.style-layer-modal) .close-button {
     font-size: 1.75rem;
 }
 
@@ -108,16 +108,16 @@
     padding: 24px;
 }
 
-.symbol-btn {
+.symbol-button {
     border: 2px solid #ccc !important;
 }
 
-.symbol-btn:hover {
+.symbol-button:hover {
     border-color: #007bff !important;
     background-color: #f0f8ff !important;
 }
 
-.symbol-btn.selected {
+.symbol-button.selected {
     border-color: #007bff !important;
     background-color: #e7f3ff !important;
 }
@@ -164,7 +164,7 @@
     color: #1f2937;
 }
 
-.close-btn {
+.close-button {
     background: none;
     border: none;
     font-size: 2.25rem;
@@ -175,7 +175,7 @@
     transition: background-color 0.2s;
 }
 
-.close-btn:hover {
+.close-button:hover {
     background-color: #f3f4f6;
     color: #374151;
 }
@@ -233,7 +233,7 @@
     border-color: #3b82f6;
 }
 
-.browse-btn {
+.browse-button {
     padding: 12px 24px;
     background-color: #3b82f6;
     color: white;
@@ -246,11 +246,11 @@
     min-width: 60px;
 }
 
-.browse-btn:hover:not(:disabled) {
+.browse-button:hover:not(:disabled) {
     background-color: #2563eb;
 }
 
-.browse-btn:disabled {
+.browse-button:disabled {
     background-color: #94a3b8;
     cursor: not-allowed;
 }
@@ -292,7 +292,7 @@
     white-space: nowrap;
 }
 
-.remove-file-btn-small {
+.remove-file-button-small {
     background: none;
     border: none;
     color: #ef4444;
@@ -304,7 +304,7 @@
     transition: color 0.2s ease;
 }
 
-.remove-file-btn-small:hover {
+.remove-file-button-small:hover {
     color: #dc2626;
 }
 
@@ -378,13 +378,13 @@
     text-align: center;
 }
 
-.btn-outline {
+.button-outline {
     background-color: transparent;
     color: #3b82f6;
     border: 2px solid #3b82f6;
 }
 
-.btn-outline:hover:not(:disabled) {
+.button-outline:hover:not(:disabled) {
     background-color: #eff6ff;
 }
 
@@ -539,7 +539,7 @@
     padding-top: 18px;
 }
 
-.btn {
+.button {
     padding: 15px 30px;
     border-radius: 9px;
     font-size: 21px;
@@ -549,32 +549,32 @@
     border: none;
 }
 
-.btn:disabled {
+.button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
 }
 
-.btn-secondary {
+.button-secondary {
     background-color: #f3f4f6;
     color: #374151;
 }
 
-.btn-secondary:hover:not(:disabled) {
+.button-secondary:hover:not(:disabled) {
     background-color: #e5e7eb;
 }
 
-.btn-primary {
+.button-primary {
     background-color: #3b82f6;
     color: white;
 }
 
-.btn-primary:hover:not(:disabled) {
+.button-primary:hover:not(:disabled) {
     background-color: #2563eb;
     transform: translateY(-1px);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.btn-primary:active:not(:disabled) {
+.button-primary:active:not(:disabled) {
     transform: translateY(0);
 }
 
@@ -664,7 +664,7 @@
     font-weight: 500;
 }
 
-.preview-sheet-btn {
+.preview-sheet-button {
     padding: 6px 18px;
     font-size: 18px;
     background-color: #e0f2fe;
@@ -675,11 +675,11 @@
     transition: all 0.2s;
 }
 
-.preview-sheet-btn:hover:not(:disabled) {
+.preview-sheet-button:hover:not(:disabled) {
     background-color: #bae6fd;
 }
 
-.preview-sheet-btn:disabled {
+.preview-sheet-button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
 }
@@ -953,7 +953,7 @@
         font-size: 2rem;
     }
     
-    .close-btn {
+    .close-button {
         font-size: 2rem;
     }
     
@@ -974,7 +974,7 @@
         font-size: 19px;
     }
     
-    .btn {
+    .button {
         padding: 13px 26px;
         font-size: 19px;
     }
@@ -1005,7 +1005,7 @@
         font-size: 1.75rem;
     }
     
-    .close-btn {
+    .close-button {
         font-size: 1.75rem;
     }
     
@@ -1034,7 +1034,7 @@
         padding: 14px 18px;
     }
     
-    .btn {
+    .button {
         padding: 12px 22px;
         font-size: 17px;
     }
@@ -1147,7 +1147,7 @@
         font-size: 1.4rem;
     }
     
-    .close-btn {
+    .close-button {
         font-size: 1.4rem;
         padding: 4px;
     }
@@ -1188,7 +1188,7 @@
         flex-direction: column;
     }
     
-    .btn {
+    .button {
         padding: 10px 18px;
         font-size: 14px;
         width: 100%;
@@ -1241,7 +1241,7 @@
         padding: 2px 8px;
     }
     
-    .preview-sheet-btn {
+    .preview-sheet-button {
         padding: 4px 12px;
         font-size: 12px;
     }
@@ -1374,7 +1374,7 @@
         font-size: 1.2rem;
     }
     
-    .close-btn {
+    .close-button {
         font-size: 1.2rem;
     }
     
@@ -1386,7 +1386,7 @@
         padding: 16px;
     }
     
-    .btn {
+    .button {
         padding: 8px 14px;
         font-size: 13px;
     }

@@ -30,13 +30,14 @@
 }
 
 .upload-button {
-    background: #28a745;
-    color: white;
-    border: 1px solid #28a745;
+    background: #B6EEA6;
+    color: #1f2937;
+    border: 1px solid #B6EEA6;
     padding: 10px 20px;
     border-radius: 6px;
     cursor: pointer;
     font-size: 14px;
+    font-weight: 600;
     font-weight: 500;
     white-space: nowrap;
     transition: all 0.2s ease;
@@ -44,8 +45,8 @@
 }
 
 .upload-button:hover {
-    background: #218838;
-    border-color: #218838;
+    background: #047857;
+    border-color: #047857;
     transform: translateY(-1px);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
@@ -101,7 +102,7 @@
     left: 0;
     right: 0;
     height: 3px;
-    background: linear-gradient(90deg, #1e40af 0%, #3b82f6 100%);
+    background: linear-gradient(90deg, #D8D4F2 0%, #E8E5F5 100%);
 }
 
 .form-group {
@@ -157,7 +158,7 @@
 
 .form-input:focus, .form-textarea:focus {
     outline: none;
-    border-color: #007bff;
+    border-color: #D8D4F2;
     box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
 }
 
@@ -393,7 +394,7 @@
 }
 
 .add-button {
-    background: #1e40af;
+    background: #D8D4F2;
     color: white;
     border: none;
     padding: 12px 20px;
@@ -403,13 +404,13 @@
     font-weight: 600;
     white-space: nowrap;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 2px 8px rgba(30, 64, 175, 0.15);
+    box-shadow: 0 2px 8px rgba(216, 212, 242, 0.3);
 }
 
 .add-button:hover {
-    background: #1e3a8a;
+    background: #C5BEE8;
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(30, 64, 175, 0.25);
+    box-shadow: 0 4px 12px rgba(216, 212, 242, 0.4);
 }
 
 .add-button:active {
@@ -428,7 +429,7 @@
 
 .form-select:focus {
     outline: none;
-    border-color: #007bff;
+    border-color: #D8D4F2;
     box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
 }
 
@@ -495,7 +496,7 @@
 
 .parent-dropdown:focus {
     outline: none;
-    border-color: #007bff;
+    border-color: #D8D4F2;
     box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
 }
 
@@ -528,7 +529,7 @@
 }
 
 .add-parent-button {
-    background: #28a745;
+    background: #059669;
     color: white;
     border: none;
     padding: 8px 16px;
@@ -541,7 +542,7 @@
 }
 
 .add-parent-button:hover {
-    background: #218838;
+    background: #047857;
     transform: translateY(-1px);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }

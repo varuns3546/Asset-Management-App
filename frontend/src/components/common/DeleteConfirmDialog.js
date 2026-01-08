@@ -21,10 +21,10 @@ const DeleteConfirmDialog = ({ deleteConfirm, onConfirm, onCancel, getItemName, 
           }
         </p>
         <div className="confirm-actions">
-          <button className="confirm-btn cancel" onClick={onCancel}>
+          <button className="confirm-button cancel" onClick={onCancel}>
             Cancel
           </button>
-          <button className="confirm-btn delete" onClick={onConfirm}>
+          <button className="confirm-button delete" onClick={onConfirm}>
             Delete
           </button>
         </div>

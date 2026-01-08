@@ -33,7 +33,8 @@ const {
   updateAssetType,
   deleteAssetType,
   uploadHierarchyFile,
-  importHierarchyData
+  importHierarchyData,
+  regenerateMissingGisFeatures
 } = assetController;
 const { authenticateUser } = supabaseClient;
 const router = express.Router();
@@ -69,6 +70,7 @@ router.delete('/:id/hierarchy', deleteHierarchy);
 // Hierarchy file upload routes
 router.post('/:id/hierarchy/upload', uploadHierarchyFile);
 router.post('/:id/hierarchy/import', importHierarchyData);
+router.post('/:id/hierarchy/regenerate-gis-features', regenerateMissingGisFeatures);
 
 // Individual asset routes
 router.post('/:id/hierarchy/features', createAsset);

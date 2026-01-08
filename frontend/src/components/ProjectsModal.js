@@ -278,11 +278,11 @@ const ProjectsModal = ({ onClose, initialTab = 'myProjects' }) => {
                 </div>
                 
                 <div className="button-group">
-                    <button className="btn btn-secondary" onClick={handleCancel}>
+                    <button className="button button-secondary" onClick={handleCancel}>
                         Cancel
                     </button>
                     <button 
-                        className="btn btn-primary" 
+                        className="button button-primary" 
                         onClick={handleRetry}
                         style={{ marginRight: '12px' }}
                     >
@@ -472,7 +472,7 @@ const ProjectsModal = ({ onClose, initialTab = 'myProjects' }) => {
                         {/* Clone Button */}
                         <div style={{ marginBottom: '16px' }}>
                             <button
-                                className="btn btn-primary"
+                                className="button button-primary"
                                 onClick={handleCloneClick}
                                 style={{ width: '100%', marginBottom: '12px' }}
                             >
@@ -613,7 +613,7 @@ const ProjectsModal = ({ onClose, initialTab = 'myProjects' }) => {
                                                         marginLeft: '12px'
                                                     }}>
                                                         <button
-                                                            className="btn btn-primary"
+                                                            className="button button-primary"
                                                             onClick={(e) => {
                                                                 e.stopPropagation()
                                                                 handleOpenProject(projectId)
@@ -623,7 +623,7 @@ const ProjectsModal = ({ onClose, initialTab = 'myProjects' }) => {
                                                             Open
                                                         </button>
                                                         <button
-                                                            className="btn"
+                                                            className="button"
                                                             onClick={(e) => {
                                                                 e.stopPropagation()
                                                                 handleShareClick(projectId)
@@ -639,7 +639,7 @@ const ProjectsModal = ({ onClose, initialTab = 'myProjects' }) => {
                                                             Share
                                                         </button>
                                                         <button
-                                                            className="btn"
+                                                            className="button"
                                                             onClick={(e) => {
                                                                 e.stopPropagation()
                                                                 handleDeleteClick(project)
@@ -838,7 +838,7 @@ const ProjectsModal = ({ onClose, initialTab = 'myProjects' }) => {
                                                         marginLeft: '12px'
                                                     }}>
                                                         <button
-                                                            className="btn btn-primary"
+                                                            className="button button-primary"
                                                             onClick={(e) => {
                                                                 e.stopPropagation()
                                                                 handleOpenProject(projectId)

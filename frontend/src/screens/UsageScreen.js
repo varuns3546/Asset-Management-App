@@ -120,7 +120,7 @@ const UsageScreen = () => {
         </div>
         <button 
           onClick={handleRefreshMetrics}
-          className="refresh-btn"
+          className="refresh-button"
           disabled={loading}
           title="Refresh metrics"
         >
@@ -317,7 +317,7 @@ const UsageScreen = () => {
       ) : (
         <div className="no-metrics">
           <p>Unable to load project metrics.</p>
-          <button onClick={handleRefreshMetrics} className="retry-btn">
+          <button onClick={handleRefreshMetrics} className="retry-button">
             Try Again
           </button>
         </div>
