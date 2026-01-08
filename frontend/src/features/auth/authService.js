@@ -30,15 +30,18 @@ const register = async (userData) => {
 
 // Login user
 const login = async (userData) => {
+  try {
+    const response = await authApi.post('login', userData)
 
-  const response = await authApi.post('login', userData)
-
-  if (response.data) {
-    await localStorage.setItem('user', JSON.stringify(response.data))
-    // Start token refresh timer
-    scheduleTokenRefresh(response.data)
+    if (response.data) {
+      await localStorage.setItem('user', JSON.stringify(response.data))
+      // Start token refresh timer
+      scheduleTokenRefresh(response.data)
+    }
+    return response.data
+  } catch (error) {
+    throw error
   }
-  return response.data
 }
 
 // Refresh token

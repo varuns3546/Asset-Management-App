@@ -73,8 +73,43 @@
     box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
 }
 
+.auth-input.error {
+    border-color: #dc3545;
+    background-color: #fff5f5;
+}
+
+.auth-input.error:focus {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
+}
+
 .auth-input::placeholder {
     color: #999;
+}
+
+.field-error {
+    color: #dc3545;
+    font-size: 13px;
+    margin-top: 4px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 500;
+}
+
+.field-error::before {
+    content: "⚠";
+    font-size: 14px;
+}
+
+.password-requirements {
+    margin-top: 4px;
+}
+
+.password-requirements small {
+    color: #666;
+    font-size: 12px;
+    line-height: 1.4;
 }
 
 .auth-password-container {
@@ -99,6 +134,56 @@
     color: #007bff;
 }
 
+.button-container {
+    position: relative;
+    display: block;
+    width: 100%;
+}
+
+.button-tooltip {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 12px;
+    background: linear-gradient(135deg, #fff5f5 0%, #ffe8e8 100%);
+    color: #d32f2f;
+    padding: 10px 16px;
+    border-radius: 8px;
+    border: 1px solid #ffcdd2;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
+    pointer-events: none;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(211, 47, 47, 0.15);
+}
+
+.button-container:hover .button-tooltip {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(2px);
+}
+
+.button-tooltip::before {
+    content: '⚠';
+    margin-right: 6px;
+    font-size: 14px;
+}
+
+.button-tooltip::after {
+    content: '';
+    position: absolute;
+    bottom: calc(100% - 1px);
+    left: 50%;
+    transform: translateX(-50%);
+    border: 8px solid transparent;
+    border-bottom-color: #ffcdd2;
+}
+
 .auth-submit-button {
     background: #007bff;
     color: white;
@@ -110,6 +195,7 @@
     cursor: pointer;
     transition: all 0.2s ease;
     margin-top: 11px;
+    width: 100%;
 }
 
 .auth-submit-button:hover:not(:disabled) {
@@ -125,6 +211,23 @@
     cursor: not-allowed;
     transform: none;
     box-shadow: none;
+}
+
+.auth-submit-button.disabled {
+    background: #e9ecef;
+    border: 1px solid #e9ecef;
+    color: #6c757d;
+    transform: none;
+    box-shadow: none;
+    outline: none;
+    cursor: not-allowed;
+}
+
+.auth-submit-button.disabled:hover:not(:disabled) {
+    background: #e9ecef;
+    border-color: #adb5bd;
+    color: #6c757d;
+    transform: none;
 }
 
 .auth-loading {
