@@ -87,7 +87,7 @@
     justify-content: flex-end;
 }
 
-.button {
+.btn {
     padding: 12px 24px;
     border-radius: 10px;
     cursor: pointer;
@@ -96,29 +96,29 @@
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.button-secondary {
+.btn-secondary {
     border: 2px solid #e5e7eb;
     background: white;
     color: #374151;
 }
 
-.button-secondary:hover {
+.btn-secondary:hover {
     background-color: #f8fafc;
     color: #0f172a;
     border-color: #D8D4F2;
 }
 
-.button-primary {
+.btn-primary {
     border: none;
-    background: #F79256;
+    background: #3b82f6;
     color: white;
-    box-shadow: 0 2px 8px rgba(247, 146, 86, 0.3);
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
 }
 
-.button-primary:hover {
-    background: #E88245;
+.btn-primary:hover {
+    background: #2563eb;
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(247, 146, 86, 0.4);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
 }
 
 /* Responsive styles */
@@ -139,7 +139,7 @@
         font-size: 15px;
     }
     
-    .button {
+    .btn {
         padding: 8px 16px;
         font-size: 15px;
     }
@@ -171,7 +171,7 @@
         gap: 11px;
     }
     
-    .button {
+    .btn {
         padding: 7px 14px;
         font-size: 14px;
     }
@@ -204,7 +204,7 @@
         flex-direction: column;
     }
     
-    .button {
+    .btn {
         padding: 6px 13px;
         font-size: 12px;
         width: 100%;

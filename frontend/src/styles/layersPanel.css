@@ -601,21 +601,21 @@
 }
 
 .confirm-button.cancel {
-  background: #f8f9fa;
-  border: 1px solid #dee2e6;
-  color: #495057;
+  background: #ef4444;
+  border: 1px solid #ef4444;
+  color: #ffffff;
 }
 
 .confirm-button.cancel:hover {
-  background: #e9ecef;
+  background: #dc2626;
 }
 
 .confirm-button.delete {
-  background: #dc3545;
-  border: 1px solid #dc3545;
+  background: #ef4444;
+  border: 1px solid #ef4444;
   color: #ffffff;
 }
 
 .confirm-button.delete:hover {
-  background: #c82333;
+  background: #dc2626;
 }

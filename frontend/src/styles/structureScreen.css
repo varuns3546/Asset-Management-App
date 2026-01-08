@@ -30,25 +30,24 @@
 }
 
 .upload-button {
-    background: #B6EEA6;
-    color: #1f2937;
-    border: 1px solid #B6EEA6;
+    background: #3b82f6;
+    color: white;
+    border: 1px solid #3b82f6;
     padding: 10px 20px;
     border-radius: 6px;
     cursor: pointer;
     font-size: 14px;
     font-weight: 600;
-    font-weight: 500;
     white-space: nowrap;
     transition: all 0.2s ease;
     margin-left: auto;
 }
 
 .upload-button:hover {
-    background: #047857;
-    border-color: #047857;
+    background: #2563eb;
+    border-color: #2563eb;
     transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
 }
 
 .upload-button:active {
@@ -394,7 +393,7 @@
 }
 
 .add-button {
-    background: #D8D4F2;
+    background: #3b82f6;
     color: white;
     border: none;
     padding: 12px 20px;
@@ -404,13 +403,13 @@
     font-weight: 600;
     white-space: nowrap;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 2px 8px rgba(216, 212, 242, 0.3);
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
 }
 
 .add-button:hover {
-    background: #C5BEE8;
+    background: #2563eb;
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(216, 212, 242, 0.4);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
 }
 
 .add-button:active {
@@ -501,7 +500,7 @@
 }
 
 .remove-parent-button {
-    background: #dc3545;
+    background: #ef4444;
     color: white;
     border: none;
     border-radius: 4px;
@@ -518,7 +517,7 @@
 }
 
 .remove-parent-button:hover {
-    background: #c82333;
+    background: #dc2626;
     transform: scale(1.1);
 }
 
@@ -529,7 +528,7 @@
 }
 
 .add-parent-button {
-    background: #059669;
+    background: #3b82f6;
     color: white;
     border: none;
     padding: 8px 16px;
@@ -542,9 +541,9 @@
 }
 
 .add-parent-button:hover {
-    background: #047857;
+    background: #2563eb;
     transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
 }
 
 .add-parent-button:disabled {

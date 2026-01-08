@@ -11,7 +11,13 @@
   --secondary-color: #B6EEA6;
   --secondary-hover: #A0E088;
   
-  /* Accent Colors - Coral Orange */
+  /* Button Colors - Professional */
+  --btn-blue: #3b82f6;
+  --btn-blue-hover: #2563eb;
+  --btn-green: #10b981;
+  --btn-green-hover: #059669;
+  --btn-red: #ef4444;
+  --btn-red-hover: #dc2626;
   --accent-orange: #F79256;
   --accent-orange-hover: #E88245;
   --accent-blue: #0ea5e9;
@@ -179,7 +185,7 @@ body {
 }
 
 /* Modern Button Styles */
-.modern-button {
+.modern-btn {
   position: relative;
   background: var(--primary-color);
   color: white;
@@ -194,7 +200,7 @@ body {
   font-size: 0.95rem;
 }
 
-.modern-button::before {
+.modern-btn::before {
   content: '';
   position: absolute;
   top: 0;
@@ -205,21 +211,21 @@ body {
   transition: left 0.5s;
 }
 
-.modern-button:hover::before {
+.modern-btn:hover::before {
   left: 100%;
 }
 
-.modern-button:hover {
+.modern-btn:hover {
   background: var(--primary-hover);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(216, 212, 242, 0.4);
 }
 
-.modern-button:active {
+.modern-btn:active {
   transform: translateY(0);
 }
 
-.modern-button:disabled {
+.modern-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
   transform: none;

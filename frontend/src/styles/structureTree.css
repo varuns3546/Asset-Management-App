@@ -47,7 +47,7 @@
     align-items: center;
 }
 
-.undo-redo-button {
+.undo-redo-btn {
     padding: 4px 10px;
     font-size: 12px;
     border: 1px solid #dee2e6;
@@ -58,12 +58,12 @@
     transition: all 0.2s ease;
 }
 
-.undo-redo-button:hover:not(:disabled) {
+.undo-redo-btn:hover:not(:disabled) {
     background: #f8f9fa;
     border-color: #adb5bd;
 }
 
-.undo-redo-button:disabled {
+.undo-redo-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
 }
@@ -281,7 +281,8 @@
 
 .vertical-node {
     position: relative;
-    margin-bottom: 0; 
+    margin-bottom: 0;
+    min-height: fit-content;
 }
 
 .tree-content > .vertical-node.item-type-node:not(:last-child),
@@ -295,20 +296,11 @@
     align-items: flex-start;
     position: relative;
     flex-wrap: nowrap;
+    min-height: fit-content;
+    width: 100%;
 }
 
-.node-row:has(.horizontal-children .vertical-node)::after {
-    content: '';
-    position: absolute;
-    left: calc(100% + 0px); 
-    top: 50%;
-    width: 50px; 
-    height: 2px;
-    background-color: #dee2e6;
-    transform: translateY(-50%);
-    z-index: 1;
-    pointer-events: none;
-}
+/* Removed complex line styling - using simpler approach */
 
 .vertical-children {
     display: flex;
@@ -320,48 +312,36 @@
     gap: 0; 
 }
 
-.vertical-node:has(.vertical-children .vertical-node) .node-row::after {
+/* Simple line from parent to first child (for vertical children below) */
+.vertical-children > .vertical-node:first-child::before {
     content: '';
     position: absolute;
-    left: 15px; 
-    bottom: -8px;
+    left: -15px;
+    top: 0;
     width: 2px;
-    height: 8px;
+    height: 16px;
     background-color: #dee2e6;
-    z-index: 1;
+    z-index: 0;
     pointer-events: none;
 }
 
+/* Vertical line connecting multiple children */
 .vertical-children:has(.vertical-node:nth-child(2)) {
     border-left: 2px solid #dee2e6;
-    padding-left: 0; 
+    padding-left: 0;
 }
 
+/* Horizontal line from parent to first vertical child */
 .vertical-children:has(.vertical-node)::before {
     content: '';
     position: absolute;
-    left: 0; 
-    top: -8px;
-    width: 0; 
-    height: 8px;
-    border-bottom: 2px solid #dee2e6;
-    border-bottom-left-radius: 0; 
-}
-
-.vertical-children:empty::before {
-    display: none;
-}
-
-.vertical-children > .vertical-node::before {
-    display: none; 
-}
-
-.vertical-children > .vertical-node:first-child::before {
-    display: none;
-}
-
-.vertical-children:has(.vertical-node:only-child) > .vertical-node::before {
-    display: none;
+    left: -15px;
+    top: -2px;
+    width: 15px;
+    height: 2px;
+    background-color: #dee2e6;
+    z-index: 0;
+    pointer-events: none;
 }
 
 .horizontal-children {
@@ -374,44 +354,70 @@
     gap: 18px;
 }
 
-.horizontal-children:has(.vertical-node:nth-child(2)) {
-    border-left: 2px solid #dee2e6;
-    margin-left: 0; 
-    padding-left: 20px;
+.horizontal-children.vertical-stack {
+    flex-direction: column;
+    gap: 0;
+    margin-left: 30px;
+    padding-left: 0;
+    position: relative;
+    display: flex;
+    align-items: stretch;
 }
 
-.horizontal-children:has(.vertical-node)::before {
+/* Horizontal line from parent's right edge */
+/* Goes from left: -30px (parent edge) to left: 0 (branch point) */
+.horizontal-children.vertical-stack::before {
     content: '';
     position: absolute;
-    left: -30px; 
-    top: 50%;
-    width: 50px;
+    left: -30px;
+    top: 16px;
+    width: 30px;
     height: 2px;
     background-color: #dee2e6;
-    transform: translateY(-50%);
+    z-index: 0;
+    pointer-events: none;
+}
+
+/* Each child node needs relative positioning for its line */
+.horizontal-children.vertical-stack > .vertical-node {
+    position: relative;
+    padding-left: 30px;
+    flex-shrink: 0;
+    width: 100%;
+    min-height: fit-content;
+}
+
+/* Vertical line segment using ::before on the last child only */
+/* Last child: vertical line extends upward all the way to parent's y position (branch point at 18px) */
+/* Positioned at the horizontal connection point and extends upward to reach the branch */
+.horizontal-children.vertical-stack > .vertical-node:last-child:not(:only-child)::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 16px;
+    height: calc(100vh);
+    width: 2px;
+    background-color: #dee2e6;
+    z-index: 0;
+    pointer-events: none;
+    transform: translateY(-100%);
+}
+
+/* Horizontal line from vertical branch to each child - using ::after */
+.horizontal-children.vertical-stack > .vertical-node::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 16px;
+    width: 30px;
+    height: 2px;
+    background-color: #dee2e6;
     z-index: 1;
     pointer-events: none;
 }
 
-.horizontal-children:empty::before {
-    display: none;
-}
-
-.horizontal-children > .vertical-node::before {
-    content: '';
-    position: absolute;
-    left: -50px; 
-    top: 16px;
-    width: 2px;
-    height: 20px;
-    background-color: #dee2e6;
-}
-
-.horizontal-children > .vertical-node:first-child::before {
-    display: none;
-}
-
-.horizontal-children:has(.vertical-node:only-child) > .vertical-node::before {
+/* For single child: hide vertical branch, keep horizontal line */
+.horizontal-children.vertical-stack:has(.vertical-node:only-child)::after {
     display: none;
 }
 

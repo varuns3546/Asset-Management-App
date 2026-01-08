@@ -438,7 +438,7 @@
 
 .button-primary {
   padding: 10px 24px;
-  background: #007bff;
+  background: #3b82f6;
   border: none;
   border-radius: 6px;
   color: white;
@@ -449,7 +449,7 @@
 }
 
 .button-primary:hover {
-  background: #0056b3;
+  background: #2563eb;
 }
 
 .button-primary:disabled {

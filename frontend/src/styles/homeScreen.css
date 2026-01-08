@@ -38,9 +38,9 @@
   font-size: 1.1rem;
 }
 
-.refresh-button {
+.refresh-btn {
   padding: 12px 28px;
-  background: #F79256;
+  background: #3b82f6;
   color: white;
   border: none;
   border-radius: 8px;
@@ -48,16 +48,16 @@
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   font-size: 0.95rem;
-  box-shadow: 0 2px 8px rgba(247, 146, 86, 0.3);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
 }
 
-.refresh-button:hover:not(:disabled) {
-  background: #E88245;
+.refresh-btn:hover:not(:disabled) {
+  background: #2563eb;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(247, 146, 86, 0.4);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
 }
 
-.refresh-button:disabled {
+.refresh-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
@@ -438,7 +438,7 @@
   margin-bottom: 20px;
 }
 
-.retry-button {
+.retry-btn {
   padding: 12px 24px;
   background: #6f42c1;
   color: white;
@@ -449,7 +449,7 @@
   transition: all 0.2s;
 }
 
-.retry-button:hover {
+.retry-btn:hover {
   background: #0056b3;
   transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(0, 123, 255, 0.2);
@@ -552,7 +552,7 @@
     font-size: 1rem;
   }
   
-  .refresh-button {
+  .refresh-btn {
     padding: 9px 18px;
     font-size: 0.9rem;
   }
@@ -590,7 +590,7 @@
     padding: 20px;
   }
   
-  .refresh-button {
+  .refresh-btn {
     width: 100%;
     padding: 10px 20px;
   }
@@ -624,7 +624,7 @@
     font-size: 0.9rem;
   }
   
-  .refresh-button {
+  .refresh-btn {
     padding: 8px 16px;
     font-size: 0.85rem;
   }

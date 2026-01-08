@@ -37,12 +37,12 @@
 }
 
 .layer-type-card:hover {
-  border-color: #007bff;
+  border-color: #00B2CA;
   background: #f8f9fa;
 }
 
 .layer-type-card.selected {
-  border-color: #007bff;
+  border-color: #00B2CA;
   background: #e7f3ff;
 }
 
@@ -175,8 +175,8 @@
 
 .primary-key-badge {
   padding: 4px 10px;
-  background: #ffc107;
-  color: #000;
+  background: #F79256;
+  color: #ffffff;
   border-radius: 4px;
   font-size: 12px;
   font-weight: 600;
@@ -186,9 +186,9 @@
 .remove-attr-button {
   width: 32px;
   height: 32px;
-  border: 1px solid #dc3545;
+  border: 1px solid #ef4444;
   background: #ffffff;
-  color: #dc3545;
+  color: #ef4444;
   border-radius: 4px;
   font-size: 20px;
   line-height: 1;
@@ -200,15 +200,15 @@
 }
 
 .remove-attr-button:hover {
-  background: #F06543;
+  background: #ef4444;
   color: #ffffff;
 }
 
 .add-attr-button {
   padding: 10px 16px;
-  border: 2px dashed #00B2CA;
+  border: 2px dashed #3b82f6;
   background: transparent;
-  color: #007bff;
+  color: #3b82f6;
   border-radius: 4px;
   font-size: 14px;
   font-weight: 500;
@@ -227,7 +227,7 @@
   background: #f8d7da;
   border: 1px solid #f5c2c7;
   border-radius: 4px;
-  color: #842029;
+  color: #F06543;
   font-size: 14px;
   margin-bottom: 20px;
 }
@@ -253,12 +253,12 @@
 }
 
 .button-primary {
-  background: #007bff;
+  background: #3b82f6;
   color: #ffffff;
 }
 
 .button-primary:hover {
-  background: #0056b3;
+  background: #2563eb;
 }
 
 .button-secondary {

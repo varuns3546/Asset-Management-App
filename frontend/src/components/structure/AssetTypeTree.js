@@ -93,10 +93,10 @@ const TreeNode = ({
                     </div>
                 </div>
                 
-                {/* Children types appear horizontally to the right of the node content */}
+                {/* Children types appear horizontally to the right of the node content, but stack vertically if multiple */}
                 {hasChildren && isExpanded && (
                     <div 
-                        className="children horizontal-children" 
+                        className="children horizontal-children vertical-stack" 
                         onClick={(e) => e.stopPropagation()}
                     >
                         {node.children.map(child => {

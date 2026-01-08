@@ -34,13 +34,13 @@
   margin: 0;
 }
 
-.import-button {
+.import-btn {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 10px 18px;
-  background: #B6EEA6;
-  color: #1f2937;
+  background: #3b82f6;
+  color: white;
   border: none;
   border-radius: 6px;
   font-size: 0.95rem;
@@ -50,11 +50,11 @@
   white-space: nowrap;
 }
 
-.import-button:hover {
-  background: #A0E088;
+.import-btn:hover {
+  background: #2563eb;
 }
 
-.import-button svg {
+.import-btn svg {
   flex-shrink: 0;
 }
 
@@ -457,13 +457,13 @@
   background: white;
 }
 
-.remove-photo-button {
+.remove-photo-btn {
   position: absolute;
   top: 4px;
   right: 4px;
   width: 24px;
   height: 24px;
-  background: rgba(255, 0, 0, 0.8);
+  background: #ef4444;
   color: white;
   border: none;
   border-radius: 50%;
@@ -478,8 +478,8 @@
   z-index: 1;
 }
 
-.remove-photo-button:hover {
-  background: rgba(255, 0, 0, 1);
+.remove-photo-btn:hover {
+  background: #dc2626;
 }
 
 .photo-thumbnail img {
@@ -533,7 +533,7 @@
 
 .submit-button {
   padding: 14px 32px;
-  background: #F79256;
+  background: #10b981;
   color: white;
   border: none;
   border-radius: 8px;
@@ -541,13 +541,13 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 2px 8px rgba(247, 146, 86, 0.3);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
 }
 
 .submit-button:hover:not(:disabled) {
-  background: #E88245;
+  background: #059669;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(247, 146, 86, 0.4);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
 }
 
 .submit-button:disabled {
@@ -596,7 +596,7 @@
     font-size: 1.5rem;
   }
 
-  .import-button {
+  .import-btn {
     justify-content: center;
   }
 
@@ -850,7 +850,7 @@
   width: 100px;
 }
 
-.edit-button {
+.edit-btn {
   padding: 6px 14px;
   background: #4a90e2;
   color: white;
@@ -863,7 +863,7 @@
   white-space: nowrap;
 }
 
-.edit-button:hover {
+.edit-btn:hover {
   background: #357abd;
 }
 
@@ -909,11 +909,10 @@
   gap: 10px;
 }
 
-.nav-button {
+.nav-btn {
   padding: 8px 16px;
   font-size: 0.95rem;
   font-weight: 500;
-  border: 2px solid #4a90e2;
   border-radius: 4px;
   background: white;
   color: #4a90e2;
@@ -922,17 +921,17 @@
   white-space: nowrap;
 }
 
-.nav-button:hover {
+.nav-btn:hover {
   background: #4a90e2;
   color: white;
 }
 
-.nav-button.close-button {
+.nav-btn.close-btn {
   border-color: #dc3545;
   color: #dc3545;
 }
 
-.nav-button.close-button:hover {
+.nav-btn.close-btn:hover {
   background: #dc3545;
   color: white;
 }
@@ -1027,13 +1026,13 @@
     text-align: right;
   }
 
-  .edit-button {
+  .edit-btn {
     width: 100%;
   }
 }
 
 @media (max-width: 480px) {
-  .nav-button {
+  .nav-btn {
     padding: 6px 12px;
     font-size: 0.85rem;
   }
@@ -1162,15 +1161,58 @@
 
 /* Children Assets Section */
 .children-assets-section {
-  margin-top: 40px;
-  padding-top: 30px;
-  border-top: 2px solid #e9ecef;
+  margin-top: 24px;
+  margin-bottom: 32px;
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.children-assets-section.collapsible {
+  padding: 0;
+  background: white;
+}
+
+.children-assets-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  cursor: pointer;
+  user-select: none;
+  background: #f9fafb;
+  border-radius: 8px;
+  transition: background-color 0.2s;
+}
+
+.children-assets-header:hover {
+  background: #f3f4f6;
 }
 
 .children-assets-section h3 {
   color: #333;
   margin-bottom: 20px;
   font-size: 1.3rem;
+}
+
+.children-assets-header h3 {
+  margin: 0;
+  color: #1f2937;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.children-assets-header .collapse-icon {
+  font-size: 0.9rem;
+  color: #6b7280;
+  transition: transform 0.2s;
+  margin-left: 12px;
+}
+
+.children-assets-section.collapsible .children-assets-grid {
+  padding: 16px;
+  padding-top: 0;
 }
 
 .children-assets-grid {
@@ -1215,12 +1257,12 @@
 }
 
 /* Back Button */
-.back-button {
+.back-btn {
   background: #6c757d;
   color: white;
 }
 
-.back-button:hover {
+.back-btn:hover {
   background: #5a6268;
 }
 

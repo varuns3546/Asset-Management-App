@@ -21,6 +21,7 @@ const SurveyScreen = () => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [collapsedSections, setCollapsedSections] = useState({});
+  const [isChildrenCollapsed, setIsChildrenCollapsed] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showSaveSuccess, setShowSaveSuccess] = useState(false);
   const [navigationHistory, setNavigationHistory] = useState([]);
@@ -143,7 +144,7 @@ const SurveyScreen = () => {
 
 
   // Load survey when asset is selected
-  const handleAssetSelect = async (asset) => {
+  const handleAssetSelect = async (asset, skipHistoryUpdate = false) => {
     if (!asset || !selectedProject) {
       if (isRouteMounted()) {
         setSelectedAsset(null);
@@ -154,8 +155,10 @@ const SurveyScreen = () => {
       return;
     }
     
-    // Add current asset to navigation history
-    setNavigationHistory(prev => [...prev, asset]);
+    // Add current asset to navigation history only if not skipping
+    if (!skipHistoryUpdate) {
+      setNavigationHistory(prev => [...prev, asset]);
+    }
     
     if (isRouteMounted()) {
       setLoading(true);
@@ -481,7 +484,7 @@ const SurveyScreen = () => {
       const targetAsset = navigationHistory[index];
       const newHistory = navigationHistory.slice(0, index + 1);
       setNavigationHistory(newHistory);
-      handleAssetSelect(targetAsset);
+      handleAssetSelect(targetAsset, true); // Skip history update since we just set it
     }
   };
 
@@ -491,9 +494,15 @@ const SurveyScreen = () => {
       const newHistory = navigationHistory.slice(0, -1);
       const previousAsset = newHistory[newHistory.length - 1];
       setNavigationHistory(newHistory);
-      handleAssetSelect(previousAsset);
+      handleAssetSelect(previousAsset, true); // Skip history update since we just set it
+    } else if (navigationHistory.length === 1) {
+      // Back to root from first level
+      setSelectedAsset(null);
+      setSurveyData(null);
+      setResponses({});
+      setNavigationHistory([]);
     } else {
-      // Back to root
+      // Already at root
       setSelectedAsset(null);
       setSurveyData(null);
       setResponses({});
@@ -550,7 +559,7 @@ const SurveyScreen = () => {
           <p>Select an asset and enter attribute values</p>
         </div>
         <button 
-          className="import-button"
+          className="import-btn"
           onClick={() => setShowImportModal(true)}
           title="Import attribute values from spreadsheet"
         >
@@ -610,7 +619,7 @@ const SurveyScreen = () => {
             <div className="form-navigation">
               <button
                 onClick={handleBack}
-                className="nav-button back-button"
+                className="nav-btn back-btn"
                 title="Go back"
               >
                 ← Back
@@ -620,6 +629,43 @@ const SurveyScreen = () => {
                 <span className="form-asset-type">{surveyData.assetType?.title || 'No Type'}</span>
               </div>
             </div>
+
+            {/* Children Assets Section - Above Questions */}
+            {currentLevelAssets.length > 0 && (
+              <div className="children-assets-section collapsible">
+                <div 
+                  className="children-assets-header"
+                  onClick={() => setIsChildrenCollapsed(!isChildrenCollapsed)}
+                >
+                  <h3>Child Assets ({currentLevelAssets.length})</h3>
+                  <span className="collapse-icon">
+                    {isChildrenCollapsed ? '▼' : '▲'}
+                  </span>
+                </div>
+                {!isChildrenCollapsed && (
+                  <div className="children-assets-grid">
+                    {currentLevelAssets.map(asset => {
+                      const assetType = assetTypes.find(type => type.id === asset.asset_type_id);
+                      const attributeCount = assetType?.attributes?.length || 0;
+                      
+                      return (
+                        <div 
+                          key={asset.id}
+                          className="child-asset-card"
+                          onClick={() => handleAssetSelect(asset)}
+                        >
+                          <div className="child-asset-name">{asset.title}</div>
+                          <div className="child-asset-type">{assetType?.title || 'No Type'}</div>
+                          <div className="child-asset-attributes">
+                            {attributeCount} attribute{attributeCount !== 1 ? 's' : ''}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
 
             {surveyData.attributes.length === 0 ? (
               <div className="no-attributes">
@@ -700,7 +746,7 @@ const SurveyScreen = () => {
                                             return (
                                               <div key={actualIndex} className="photo-thumbnail photo-new">
                                                 <button
-                                                  className="remove-photo-button"
+                                                  className="remove-photo-btn"
                                                   onClick={() => handleRemovePhoto(attribute.id, actualIndex)}
                                                   title="Remove photo"
                                                 >
@@ -741,7 +787,7 @@ const SurveyScreen = () => {
                                               return (
                                                 <div key={actualIndex} className="photo-thumbnail photo-saved">
                                                   <button
-                                                    className="remove-photo-button"
+                                                    className="remove-photo-btn"
                                                     onClick={() => handleRemovePhoto(attribute.id, actualIndex)}
                                                     title="Remove photo"
                                                   >
@@ -797,33 +843,6 @@ const SurveyScreen = () => {
                 >
                   {saving ? 'Saving...' : 'Save Responses'}
                 </button>
-              </div>
-            )}
-
-            {/* Children Assets Section */}
-            {currentLevelAssets.length > 0 && (
-              <div className="children-assets-section">
-                <h3>Child Assets</h3>
-                <div className="children-assets-grid">
-                  {currentLevelAssets.map(asset => {
-                    const assetType = assetTypes.find(type => type.id === asset.asset_type_id);
-                    const attributeCount = assetType?.attributes?.length || 0;
-                    
-                    return (
-                      <div 
-                        key={asset.id}
-                        className="child-asset-card"
-                        onClick={() => handleAssetSelect(asset)}
-                      >
-                        <div className="child-asset-name">{asset.title}</div>
-                        <div className="child-asset-type">{assetType?.title || 'No Type'}</div>
-                        <div className="child-asset-attributes">
-                          {attributeCount} attribute{attributeCount !== 1 ? 's' : ''}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
               </div>
             )}
           </div>
