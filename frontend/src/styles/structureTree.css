@@ -281,13 +281,13 @@
 
 .vertical-node {
     position: relative;
-    margin-bottom: 0;
+    margin-bottom: 2px;
     min-height: fit-content;
 }
 
 .tree-content > .vertical-node.item-type-node:not(:last-child),
 .filtered-tree-content > .vertical-node.item-type-node:not(:last-child) {
-    margin-bottom: 12px; 
+    margin-bottom: 8px; 
 }
 
 .node-row {
@@ -319,11 +319,16 @@
     gap: 0; 
 }
 
-/* Each subtype node - no connecting lines, slightly indented, no vertical gaps */
+/* Each subtype node - no connecting lines, slightly indented, with small vertical gaps */
 .vertical-children > .vertical-node {
     position: relative;
     flex-shrink: 0;
     margin-left: 20px;
+    margin-top: 1px;
+}
+
+/* First subtype has no top margin to stay close to parent */
+.vertical-children > .vertical-node:first-child {
     margin-top: 0;
 }
 
@@ -370,6 +375,12 @@
     flex-shrink: 0;
     width: 100%;
     min-height: fit-content;
+    margin-top: 1px;
+}
+
+/* First child has no top margin */
+.horizontal-children.vertical-stack > .vertical-node:first-child {
+    margin-top: 0;
 }
 
 /* Vertical line segment using ::before on the last child only */
@@ -444,7 +455,6 @@
     background: white;
     border: 2px solid #e5e7eb;
     border-radius: 10px;
-    
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     justify-content: space-between;
     position: relative;
