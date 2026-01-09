@@ -686,13 +686,14 @@ const getAssetTypes = asyncHandler(async (req, res) => {
 });
 
 const createAssetType = asyncHandler(async (req, res) => {
-  const { name, description, parent_ids, subtype_of_id, attributes, has_coordinates } = req.body;
+  const { name, description, parent_ids, subtype_of_id, attributes, has_coordinates, color } = req.body;
   const { id: project_id } = req.params;
 
   console.log('[createAssetType] Request body:', { 
     name, 
     subtype_of_id, 
     has_coordinates, 
+    color,
     attributes_count: attributes?.length || 0 
   });
 
@@ -736,22 +737,24 @@ const createAssetType = asyncHandler(async (req, res) => {
   }
 
   try {
-    // If this is a sub-type, inherit attributes and has_coordinates from parent
+    // If this is a sub-type, inherit attributes, has_coordinates, and color from parent
     let inheritedAttributes = attributes || [];
     let inheritedHasCoordinates = has_coordinates || false;
+    let inheritedColor = color || null;
     
     if (subtype_of_id) {
       console.log(`[createAssetType] Detected sub-type creation for "${name}", parent ID: ${subtype_of_id}`);
       // Fetch parent asset type
       const { data: parentType, error: parentError } = await req.supabase
         .from('asset_types')
-        .select('has_coordinates, id')
+        .select('has_coordinates, color, id')
         .eq('id', subtype_of_id)
         .single();
       
       if (!parentError && parentType) {
-        // Inherit has_coordinates from parent
+        // Inherit has_coordinates and color from parent
         inheritedHasCoordinates = parentType.has_coordinates || false;
+        inheritedColor = parentType.color || null;
         
         // Fetch parent's attributes
         const { data: parentAttributes, error: parentAttrError } = await req.supabase
@@ -778,7 +781,9 @@ const createAssetType = asyncHandler(async (req, res) => {
         console.log(`Sub-type "${name}" inherited from parent:`, {
           parent_id: subtype_of_id,
           parent_has_coordinates: parentType.has_coordinates,
+          parent_color: parentType.color,
           inherited_has_coordinates: inheritedHasCoordinates,
+          inherited_color: inheritedColor,
           parent_attributes_count: parentAttributes?.length || 0,
           inherited_attributes_count: inheritedAttributes.length,
           inherited_attributes: inheritedAttributes.map(a => a.title || a)
@@ -796,7 +801,8 @@ const createAssetType = asyncHandler(async (req, res) => {
         project_id: project_id,
         parent_ids: parent_ids || null,
         subtype_of_id: subtype_of_id || null,
-        has_coordinates: inheritedHasCoordinates
+        has_coordinates: inheritedHasCoordinates,
+        color: inheritedColor
       })
       .select()
       .single();
@@ -901,10 +907,10 @@ const deleteAssetType = asyncHandler(async (req, res) => {
   }
 
   try {
-    // First, get all asset types that might reference this asset type as a parent
+    // First, get all asset types that might reference this asset type as a parent or have it as subtype_of_id
     const { data: allAssetTypes, error: fetchError } = await req.supabase
       .from('asset_types')
-      .select('id, parent_ids')
+      .select('id, parent_ids, subtype_of_id')
       .eq('project_id', project_id);
 
     if (fetchError) {
@@ -915,9 +921,10 @@ const deleteAssetType = asyncHandler(async (req, res) => {
       });
     }
 
-    // Update all asset types that have this asset type in their parent_ids
+    // Update all asset types that have this asset type in their parent_ids or subtype_of_id
     const updatePromises = [];
     for (const assetType of allAssetTypes) {
+      // Handle parent_ids cleanup
       if (assetType.parent_ids && Array.isArray(assetType.parent_ids) && assetType.parent_ids.includes(featureTypeId)) {
         // Remove the deleted asset type ID from parent_ids
         const updatedParentIds = assetType.parent_ids.filter(id => id !== featureTypeId);
@@ -929,15 +936,25 @@ const deleteAssetType = asyncHandler(async (req, res) => {
         
         updatePromises.push(updatePromise);
       }
+      
+      // Handle subtype_of_id cleanup
+      if (assetType.subtype_of_id === featureTypeId) {
+        const updatePromise = req.supabase
+          .from('asset_types')
+          .update({ subtype_of_id: null })
+          .eq('id', assetType.id);
+        
+        updatePromises.push(updatePromise);
+      }
     }
 
-    // Execute all parent_ids updates
+    // Execute all updates
     if (updatePromises.length > 0) {
       const updateResults = await Promise.all(updatePromises);
       const updateErrors = updateResults.filter(result => result.error);
       
       if (updateErrors.length > 0) {
-        console.error('Error updating parent_ids during cleanup:', updateErrors);
+        console.error('Error updating references during cleanup:', updateErrors);
         // Continue with deletion even if cleanup fails
       }
     }
@@ -959,7 +976,7 @@ const deleteAssetType = asyncHandler(async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Asset type deleted successfully and parent references cleaned up',
+      message: 'Asset type deleted successfully and references cleaned up',
       id: featureTypeId
     });
 
@@ -1215,7 +1232,7 @@ const deleteAsset = asyncHandler(async (req, res) => {
 });
 
 const updateAssetType = asyncHandler(async (req, res) => {
-  const { name, description, parent_ids, subtype_of_id, attributes, has_coordinates } = req.body;
+  const { name, description, parent_ids, subtype_of_id, attributes, has_coordinates, color } = req.body;
   const { id: project_id, featureTypeId } = req.params;
 
   console.log('[updateAssetType] Received request:');
@@ -1225,6 +1242,7 @@ const updateAssetType = asyncHandler(async (req, res) => {
   console.log('  subtype_of_id:', subtype_of_id);
   console.log('  parent_ids:', parent_ids);
   console.log('  has_coordinates:', has_coordinates);
+  console.log('  color:', color);
   console.log('  Full body:', JSON.stringify(req.body, null, 2));
 
   if (!project_id) {
@@ -1274,21 +1292,23 @@ const updateAssetType = asyncHandler(async (req, res) => {
   }
 
   try {
-    // If this is a sub-type, inherit attributes and has_coordinates from parent
+    // If this is a sub-type, inherit attributes, has_coordinates, and color from parent
     let inheritedAttributes = attributes || [];
     let inheritedHasCoordinates = has_coordinates || false;
+    let inheritedColor = color || null;
     
     if (subtype_of_id) {
       // Fetch parent asset type
-      const { data: parentType, error: parentError } = await req.supabase
+      const { data: parentType, error: parentError} = await req.supabase
         .from('asset_types')
-        .select('has_coordinates, id')
+        .select('has_coordinates, color, id')
         .eq('id', subtype_of_id)
         .single();
       
       if (!parentError && parentType) {
-        // Inherit has_coordinates from parent
+        // Inherit has_coordinates and color from parent
         inheritedHasCoordinates = parentType.has_coordinates || false;
+        inheritedColor = parentType.color || null;
         
         // Fetch parent's attributes
         const { data: parentAttributes, error: parentAttrError } = await req.supabase
@@ -1315,7 +1335,9 @@ const updateAssetType = asyncHandler(async (req, res) => {
         console.log(`Sub-type "${name}" inherited from parent:`, {
           parent_id: subtype_of_id,
           parent_has_coordinates: parentType.has_coordinates,
+          parent_color: parentType.color,
           inherited_has_coordinates: inheritedHasCoordinates,
+          inherited_color: inheritedColor,
           parent_attributes_count: parentAttributes?.length || 0,
           inherited_attributes_count: inheritedAttributes.length,
           inherited_attributes: inheritedAttributes.map(a => a.title || a)
@@ -1331,7 +1353,8 @@ const updateAssetType = asyncHandler(async (req, res) => {
       description: description || null,
       parent_ids: parent_ids || null,
       subtype_of_id: subtype_of_id || null,
-      has_coordinates: inheritedHasCoordinates
+      has_coordinates: inheritedHasCoordinates,
+      color: inheritedColor
     };
     
     console.log('[updateAssetType] Sending update to database:', JSON.stringify(updateData, null, 2));

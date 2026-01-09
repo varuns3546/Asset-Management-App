@@ -4,6 +4,62 @@ import { createFeatureType, updateFeatureType, getFeatureTypes } from '../../fea
 import FormField from '../forms/FormField';
 import '../../styles/structureScreen.css'
 
+// Utility function to convert hex to RGB
+const hexToRgb = (hex) => {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+    } : null;
+};
+
+// Calculate color difference using Euclidean distance in RGB space
+const colorDistance = (color1, color2) => {
+    const rgb1 = hexToRgb(color1);
+    const rgb2 = hexToRgb(color2);
+    if (!rgb1 || !rgb2) return 0;
+    
+    return Math.sqrt(
+        Math.pow(rgb1.r - rgb2.r, 2) +
+        Math.pow(rgb1.g - rgb2.g, 2) +
+        Math.pow(rgb1.b - rgb2.b, 2)
+    );
+};
+
+// Generate a random color that's sufficiently different from existing colors
+const generateUniqueColor = (existingColors, minDistance = 150) => {
+    const maxAttempts = 50;
+    
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        // Generate vibrant color by ensuring at least one channel is high
+        const r = Math.floor(Math.random() * 256);
+        const g = Math.floor(Math.random() * 256);
+        const b = Math.floor(Math.random() * 256);
+        
+        // Ensure the color is not too dark or too light
+        const brightness = (r + g + b) / 3;
+        if (brightness < 50 || brightness > 220) continue;
+        
+        const newColor = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+        
+        // Check if this color is sufficiently different from all existing colors
+        const isSuffcientlyDifferent = existingColors.every(existingColor => 
+            colorDistance(newColor, existingColor) >= minDistance
+        );
+        
+        if (isSuffcientlyDifferent) {
+            return newColor;
+        }
+    }
+    
+    // Fallback: if we couldn't find a unique color, generate a random one anyway
+    const r = Math.floor(Math.random() * 200 + 55); // 55-255
+    const g = Math.floor(Math.random() * 200 + 55);
+    const b = Math.floor(Math.random() * 200 + 55);
+    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+};
+
 const AssetTypeForm = ({ 
     assetTypes,
     selectedAsset = null,
@@ -22,8 +78,10 @@ const AssetTypeForm = ({
     const [attributes, setAttributes] = useState([{ id: 1, value: '', type: 'text' }]);
     const [subTypes, setSubTypes] = useState([{ id: 1, value: '', existingId: null }]);
     const [selectedExistingSubTypes, setSelectedExistingSubTypes] = useState([]);
+    const [originalSubTypes, setOriginalSubTypes] = useState([]); // Track original subtypes for removal detection
     const [existingSubTypeDropdown, setExistingSubTypeDropdown] = useState({ id: 1, value: '' });
     const [hasCoordinates, setHasCoordinates] = useState(false);
+    const [color, setColor] = useState('#3b82f6'); // Default blue color
     const [isEditing, setIsEditing] = useState(false);
 
     // Update form when selectedItem changes
@@ -66,7 +124,9 @@ const AssetTypeForm = ({
             );
             
             // Set selected existing sub-types (for the dropdown display)
-            setSelectedExistingSubTypes(existingSubTypes.map(st => st.id));
+            const existingSubTypeIds = existingSubTypes.map(st => st.id);
+            setSelectedExistingSubTypes(existingSubTypeIds);
+            setOriginalSubTypes(existingSubTypeIds); // Store original for comparison
             setExistingSubTypeDropdown({ id: 1, value: '' }); // Reset dropdown
             
             // Don't populate subTypes array with existing ones - they're shown via selectedExistingSubTypes
@@ -74,6 +134,7 @@ const AssetTypeForm = ({
             setSubTypes([{ id: 1, value: '', existingId: null }]);
             
             setHasCoordinates(selectedAsset.has_coordinates || false);
+            setColor(selectedAsset.color || '#3b82f6');
             setIsEditing(true);
         } else {
             setNewAssetType({
@@ -86,8 +147,18 @@ const AssetTypeForm = ({
             setAttributes([{ id: 1, value: '', type: 'text' }]);
             setSubTypes([{ id: 1, value: '', existingId: null }]);
             setSelectedExistingSubTypes([]);
+            setOriginalSubTypes([]);
             setExistingSubTypeDropdown({ id: 1, value: '' });
             setHasCoordinates(false);
+            
+            // Generate a random color for new types (excluding subtype colors)
+            const existingColors = (assetTypes || [])
+                .filter(at => !at.subtype_of_id) // Only check main types, not subtypes
+                .map(at => at.color)
+                .filter(Boolean);
+            const randomColor = generateUniqueColor(existingColors);
+            setColor(randomColor);
+            
             setIsEditing(false);
         }
     }, [selectedAsset, assetTypes]);
@@ -230,6 +301,12 @@ const AssetTypeForm = ({
             return false;
         }
         
+        // Can't select if it already has subtypes
+        const hasSubtypes = assetTypes.some(at => at.subtype_of_id === typeId);
+        if (hasSubtypes) {
+            return false;
+        }
+        
         return true;
     }
 
@@ -277,10 +354,14 @@ const AssetTypeForm = ({
             name: newAssetType.title,
             description: newAssetType.description,
             parent_ids: selectedParentIds,
-            subtype_of_id: null, // Sub-types are created separately, not set here
+            subtype_of_id: isEditing && selectedAsset ? (selectedAsset.subtype_of_id || null) : null, // Preserve existing subtype relationship
             attributes: attributeValues,
-            has_coordinates: hasCoordinates
+            has_coordinates: hasCoordinates,
+            color: color
         };
+        
+        console.log('[handleAddAssetType] Saving main type with color:', color);
+        console.log('[handleAddAssetType] Full assetTypeData:', assetTypeData);
 
         // Clear form fields IMMEDIATELY for better UX
         setNewAssetType({
@@ -296,6 +377,7 @@ const AssetTypeForm = ({
         // Reset attributes to single empty attribute
         setAttributes([{ id: 1, value: '', type: 'text' }]);
         setHasCoordinates(false);
+        setColor('#3b82f6');
         
         // Store the current asset type ID for creating sub-types
         let currentAssetTypeId = null;
@@ -310,10 +392,15 @@ const AssetTypeForm = ({
                     featureTypeData: assetTypeData
                 })).unwrap();
                 
+                console.log('[handleAddAssetType] Update result:', result);
+                console.log('[handleAddAssetType] Updated main type color:', result?.data?.color);
+                
                 currentAssetTypeId = selectedAsset.id;
                 
                 // Refresh the feature types list to get updated data
-                await dispatch(getFeatureTypes(selectedProject.id));
+                const refreshResult = await dispatch(getFeatureTypes(selectedProject.id)).unwrap();
+                console.log('[handleAddAssetType] After refresh, main type color:', 
+                    refreshResult?.data?.find(t => t.id === currentAssetTypeId)?.color);
                 
                 // Wait a moment for state to update before clearing selection
                 await new Promise(resolve => setTimeout(resolve, 100));
@@ -330,6 +417,61 @@ const AssetTypeForm = ({
                 await dispatch(getFeatureTypes(selectedProject.id));
             }
             
+            // Detect removed subtypes (only when editing)
+            let removedSubTypes = [];
+            if (isEditing && currentAssetTypeId) {
+                removedSubTypes = originalSubTypes.filter(id => !selectedExistingSubTypes.includes(id));
+                
+                if (removedSubTypes.length > 0) {
+                    // Refetch current feature types to ensure we have fresh data
+                    const refreshedTypesResult = await dispatch(getFeatureTypes(selectedProject.id)).unwrap();
+                    const freshTypes = refreshedTypesResult?.data || currentFeatureTypes || [];
+                    
+                    // Get existing colors for new color generation
+                    const existingColors = freshTypes
+                        .filter(at => !at.subtype_of_id) // Only check main types
+                        .map(at => at.color)
+                        .filter(Boolean);
+                    
+                    for (const removedTypeId of removedSubTypes) {
+                        try {
+                            const removedType = freshTypes.find(at => at.id === removedTypeId);
+                            if (removedType) {
+                                // Generate a new unique color for the removed subtype
+                                const newColor = generateUniqueColor(existingColors);
+                                existingColors.push(newColor); // Add to list to avoid duplicates in this batch
+                                
+                                const updatePayload = {
+                                    name: removedType.title,
+                                    description: removedType.description || '',
+                                    parent_ids: removedType.parent_ids || [],
+                                    subtype_of_id: null, // Remove subtype relationship
+                                    attributes: removedType.attributes || [],
+                                    has_coordinates: removedType.has_coordinates,
+                                    color: newColor // Assign new random color
+                                };
+                                
+                                const removeResult = await dispatch(updateFeatureType({
+                                    projectId: selectedProject.id,
+                                    featureTypeId: removedTypeId,
+                                    featureTypeData: updatePayload
+                                })).unwrap();
+                                
+                                console.log('[handleAddAssetType] Removed subtype, new color:', newColor);
+                                console.log('[handleAddAssetType] Remove result:', removeResult);
+                            }
+                        } catch (error) {
+                            console.error(`Error removing subtype relationship:`, error);
+                        }
+                    }
+                    
+                    // Check main type color after removing subtypes
+                    const afterRemovalCheck = await dispatch(getFeatureTypes(selectedProject.id)).unwrap();
+                    console.log('[handleAddAssetType] After removing subtypes, main type color:', 
+                        afterRemovalCheck?.data?.find(t => t.id === currentAssetTypeId)?.color);
+                }
+            }
+            
             // Update selected existing types to be sub-types
             // Include both the selected ones AND the current dropdown value
             const allSelectedSubTypes = [...selectedExistingSubTypes];
@@ -342,6 +484,10 @@ const AssetTypeForm = ({
                 const refreshedTypesResult = await dispatch(getFeatureTypes(selectedProject.id)).unwrap();
                 const freshTypes = refreshedTypesResult?.data || currentFeatureTypes || [];
                 
+                // Get the parent type's color (the current type being edited/created)
+                const parentType = freshTypes.find(at => at.id === currentAssetTypeId);
+                const parentColor = parentType?.color || color; // Use parent's color or the form's color
+                
                 for (const existingTypeId of allSelectedSubTypes) {
                     try {
                         const existingType = freshTypes.find(at => at.id === existingTypeId);
@@ -352,7 +498,8 @@ const AssetTypeForm = ({
                                 parent_ids: existingType.parent_ids || [],
                                 subtype_of_id: currentAssetTypeId, // Set as sub-type
                                 attributes: existingType.attributes || [], // Keep existing attributes, backend will merge with parent
-                                has_coordinates: existingType.has_coordinates // Keep existing setting
+                                has_coordinates: existingType.has_coordinates, // Keep existing setting
+                                color: parentColor // Inherit parent's color
                             };
                             
                             console.log(`[SUBTYPE UPDATE] Updating type "${existingType.title}" (ID: ${existingTypeId})`);
@@ -389,7 +536,8 @@ const AssetTypeForm = ({
                                 name: subTypeName,
                                 description: '',
                                 parent_ids: [],
-                                subtype_of_id: currentAssetTypeId // Backend will inherit attributes and has_coordinates from parent
+                                subtype_of_id: currentAssetTypeId, // Backend will inherit attributes and has_coordinates from parent
+                                color: color // Inherit parent's color
                                 // Note: Don't send attributes or has_coordinates - let backend inherit them
                             }
                         })).unwrap();
@@ -399,9 +547,11 @@ const AssetTypeForm = ({
                 }
             }
             
-            // Refresh again to show the updated sub-types
-            if ((selectedExistingSubTypes.length > 0 || newSubTypes.length > 0) && currentAssetTypeId) {
-                await dispatch(getFeatureTypes(selectedProject.id));
+            // Refresh again to show the updated sub-types (including removed ones)
+            if ((allSelectedSubTypes.length > 0 || newSubTypes.length > 0 || removedSubTypes.length > 0) && currentAssetTypeId) {
+                const finalRefresh = await dispatch(getFeatureTypes(selectedProject.id)).unwrap();
+                console.log('[handleAddAssetType] Final refresh, main type color:', 
+                    finalRefresh?.data?.find(t => t.id === currentAssetTypeId)?.color);
             }
             
             setIsEditing(false);
@@ -409,6 +559,7 @@ const AssetTypeForm = ({
             // Reset sub-types after successful save
             setSubTypes([{ id: 1, value: '', existingId: null }]);
             setSelectedExistingSubTypes([]);
+            setOriginalSubTypes([]);
             setExistingSubTypeDropdown({ id: 1, value: '' });
             
             // Clear selection if updating
@@ -440,7 +591,19 @@ const AssetTypeForm = ({
         setParentDropdowns([{ id: 1, value: '' }]);
         setAttributes([{ id: 1, value: '', type: 'text' }]);
         setSubTypes([{ id: 1, value: '', existingId: null }]);
+        setSelectedExistingSubTypes([]);
+        setOriginalSubTypes([]);
+        setExistingSubTypeDropdown({ id: 1, value: '' });
         setHasCoordinates(false);
+        
+        // Generate a random color for new types
+        const existingColors = (assetTypes || [])
+            .filter(at => !at.subtype_of_id) // Only check main types
+            .map(at => at.color)
+            .filter(Boolean);
+        const randomColor = generateUniqueColor(existingColors);
+        setColor(randomColor);
+        
         setIsEditing(false);
         if (onAssetSelect) {
             onAssetSelect(null);
@@ -562,6 +725,34 @@ const AssetTypeForm = ({
                     <label className="checkbox-label">Has coordinates</label>
                 </div>
                 
+                {/* Color Picker Section */}
+                <div className="form-group">
+                    <label className="form-label">Color:</label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <input
+                            type="color"
+                            value={color}
+                            onChange={(e) => setColor(e.target.value)}
+                            className="form-input"
+                            style={{ 
+                                width: '60px', 
+                                height: '40px', 
+                                cursor: isEditing && selectedAsset?.subtype_of_id ? 'not-allowed' : 'pointer',
+                                opacity: isEditing && selectedAsset?.subtype_of_id ? 0.6 : 1
+                            }}
+                            disabled={isEditing && selectedAsset?.subtype_of_id}
+                            title={isEditing && selectedAsset?.subtype_of_id ? 'Subtypes inherit their parent type\'s color' : 'Select a color for this type'}
+                        />
+                        <span style={{ fontSize: '14px', color: '#6c757d' }}>
+                            {color}
+                        </span>
+                        <span style={{ fontSize: '12px', color: '#999', fontStyle: 'italic' }}>
+                            {isEditing && selectedAsset?.subtype_of_id && '(Inherited from parent - cannot be changed)'}
+                            {!isEditing && '(Randomly generated - you can change it)'}
+                        </span>
+                    </div>
+                </div>
+                
                 {/* Attributes Section */}
                 <div className="form-group">
                     <label className="form-label">Attributes:</label>
@@ -659,37 +850,10 @@ const AssetTypeForm = ({
                         <label className="form-label" style={{ fontSize: '13px', marginBottom: '5px', display: 'block' }}>
                             Or Select Existing Type as Sub-Type:
                         </label>
-                        <div className="parent-dropdown-row">
-                            <select
-                                value={existingSubTypeDropdown.value}
-                                onChange={(e) => handleExistingSubTypeDropdownChange(existingSubTypeDropdown.id, e.target.value)}
-                                className="form-select parent-dropdown"
-                            >
-                                <option value="">-- Select an existing type --</option>
-                                {(assetTypes || []).filter(assetType => {
-                                    // Filter out invalid types and already selected types
-                                    return canBeSubType(assetType.id) && !selectedExistingSubTypes.includes(assetType.id);
-                                }).map(assetType => (
-                                    <option key={assetType.id} value={assetType.id}>
-                                        {assetType.title}
-                                        {assetType.subtype_of_id && (
-                                            ` (currently sub-type of ${assetTypes.find(at => at.id === assetType.subtype_of_id)?.title || 'Unknown'})`
-                                        )}
-                                    </option>
-                                ))}
-                            </select>
-                            <button
-                                type="button"
-                                onClick={addExistingSubType}
-                                className="add-parent-button"
-                                disabled={!existingSubTypeDropdown.value}
-                                title="Add this type to the list for multiple sub-types"
-                            >
-                                + Add More
-                            </button>
-                        </div>
+                        
+                        {/* Show selected subtypes above the dropdown */}
                         {selectedExistingSubTypes.length > 0 && (
-                            <div style={{ marginTop: '10px' }}>
+                            <div style={{ marginBottom: '10px' }}>
                                 {selectedExistingSubTypes.map(typeId => {
                                     const type = assetTypes?.find(at => at.id === typeId);
                                     return type ? (
@@ -710,13 +874,47 @@ const AssetTypeForm = ({
                                 })}
                             </div>
                         )}
+                        
+                        {/* Dropdown */}
+                        <select
+                            value={existingSubTypeDropdown.value}
+                            onChange={(e) => handleExistingSubTypeDropdownChange(existingSubTypeDropdown.id, e.target.value)}
+                            className="form-select parent-dropdown"
+                        >
+                            <option value="">-- Select an existing type --</option>
+                            {(assetTypes || []).filter(assetType => {
+                                // Filter out invalid types and already selected types
+                                return canBeSubType(assetType.id) && !selectedExistingSubTypes.includes(assetType.id);
+                            }).map(assetType => (
+                                <option key={assetType.id} value={assetType.id}>
+                                    {assetType.title}
+                                    {assetType.subtype_of_id && (
+                                        ` (currently sub-type of ${assetTypes.find(at => at.id === assetType.subtype_of_id)?.title || 'Unknown'})`
+                                    )}
+                                </option>
+                            ))}
+                        </select>
+                        
+                        {/* Button underneath the dropdown */}
+                        <button
+                            type="button"
+                            onClick={addExistingSubType}
+                            className="add-parent-button"
+                            disabled={!existingSubTypeDropdown.value}
+                            title="Add this type to the list for multiple sub-types"
+                            style={{ 
+                                marginTop: '8px'
+                            }}
+                        >
+                            + Add Subtype
+                        </button>
                         <p style={{ fontSize: '11px', color: '#666', marginTop: '5px' }}>
                             {existingSubTypeDropdown.value ? (
                                 <span style={{ color: '#28a745', fontWeight: '500' }}>
-                                    Selected type will be set as a sub-type when you save. Click "+ Add More" to select additional sub-types.
+                                    Selected type will be set as a sub-type when you save. Click "+ Add Subtype" to select additional sub-types.
                                 </span>
                             ) : (
-                                'Invalid types (self, circular references, already sub-types) are filtered out.'
+                                'Invalid types (self, circular references, already sub-types, types with subtypes) are filtered out.'
                             )}
                         </p>
                     </div>
@@ -726,32 +924,30 @@ const AssetTypeForm = ({
                     <button onClick={handleAddAssetType} className="add-button">
                         {isEditing ? 'Update Asset Type' : 'Add Asset Type'}
                     </button>
-                    {isEditing && (
-                        <button 
-                            onClick={handleCancelEdit} 
-                            style={{
-                                backgroundColor: '#6c757d',
-                                color: '#ffffff',
-                                border: '1px solid #6c757d',
-                                padding: '10px 20px',
-                                borderRadius: '6px',
-                                cursor: 'pointer',
-                                fontSize: '14px',
-                                fontWeight: '500',
-                                transition: 'all 0.2s ease'
-                            }}
-                            onMouseEnter={(e) => {
-                                e.target.style.backgroundColor = '#5a6268';
-                                e.target.style.borderColor = '#5a6268';
-                            }}
-                            onMouseLeave={(e) => {
-                                e.target.style.backgroundColor = '#6c757d';
-                                e.target.style.borderColor = '#6c757d';
-                            }}
-                        >
-                            Cancel
-                        </button>
-                    )}
+                    <button 
+                        onClick={handleCancelEdit} 
+                        style={{
+                            backgroundColor: '#6c757d',
+                            color: '#ffffff',
+                            border: '1px solid #6c757d',
+                            padding: '10px 20px',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            fontWeight: '500',
+                            transition: 'all 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                            e.target.style.backgroundColor = '#5a6268';
+                            e.target.style.borderColor = '#5a6268';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.target.style.backgroundColor = '#6c757d';
+                            e.target.style.borderColor = '#6c757d';
+                        }}
+                    >
+                        {isEditing ? 'Cancel' : 'Clear'}
+                    </button>
                 </div>
             </div>
         </div>

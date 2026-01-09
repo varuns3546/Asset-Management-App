@@ -293,7 +293,7 @@
 .node-row {
     display: flex;
     flex-direction: row;
-    align-items: flex-start;
+    align-items: center;
     position: relative;
     flex-wrap: nowrap;
     min-height: fit-content;
@@ -307,6 +307,37 @@
     display: flex;
     flex-direction: column;
     position: relative;
+    width: fit-content;
+}
+
+.horizontal-children.vertical-stack {
+    flex-direction: column;
+    gap: 0;
+    margin-left: 30px;
+    padding-left: 0;
+    position: relative;
+    display: flex;
+    align-items: stretch;
+}
+
+/* Subtypes' children should align with main type children - compensate for 20px indent */
+.vertical-children > .vertical-node .horizontal-children.vertical-stack {
+    margin-left: 10px;
+}
+
+/* Adjust the connecting line for subtype children */
+.vertical-children > .vertical-node .horizontal-children.vertical-stack::before {
+    left: -10px;
+    width: 10px;
+}
+
+/* Adjust individual child lines for subtypes */
+.vertical-children > .vertical-node .horizontal-children.vertical-stack > .vertical-node {
+    padding-left: 10px;
+}
+
+.vertical-children > .vertical-node .horizontal-children.vertical-stack > .vertical-node::before {
+    width: 10px;
 }
 
 .vertical-children {
@@ -344,28 +375,26 @@
     gap: 18px;
 }
 
-.horizontal-children.vertical-stack {
-    flex-direction: column;
-    gap: 0;
-    margin-left: 30px;
-    padding-left: 0;
-    position: relative;
-    display: flex;
-    align-items: stretch;
-}
 
 /* Horizontal line from parent's right edge */
 /* Goes from left: -30px (parent edge) to left: 0 (branch point) */
+/* Position is calculated via JS and set as --horizontal-line-top CSS variable */
 .horizontal-children.vertical-stack::before {
     content: '';
     position: absolute;
     left: -30px;
-    top: 16px;
+    top: var(--horizontal-line-top, 16px);
     width: 30px;
     height: 2px;
     background-color: #dee2e6;
     z-index: 0;
     pointer-events: none;
+}
+
+/* When parent has subtypes, extend the horizontal line to reach the parent node-content */
+.node-with-subtypes:has(.vertical-children) ~ .horizontal-children.vertical-stack::before {
+    left: calc(-30px - 20px);
+    width: calc(30px + 20px);
 }
 
 /* Each child node needs relative positioning for its line */
@@ -383,28 +412,27 @@
     margin-top: 0;
 }
 
-/* Vertical line segment using ::before on the last child only */
-/* Last child: vertical line extends upward all the way to parent's y position (branch point at 18px) */
-/* Positioned at the horizontal connection point and extends upward to reach the branch */
-.horizontal-children.vertical-stack > .vertical-node:last-child:not(:only-child)::before {
+/* Vertical line connecting all children - from first child center to last child center */
+/* Position and height are calculated via JS and set as CSS variables */
+.horizontal-children.vertical-stack::after {
     content: '';
     position: absolute;
     left: 0;
-    top: 16px;
-    height: calc(var(--vertical-line-height, 100%));
+    top: var(--vertical-line-top, 16px);
+    height: var(--vertical-line-height, 0px);
     width: 2px;
     background-color: #dee2e6;
     z-index: 0;
     pointer-events: none;
-    transform: translateY(-100%);
 }
 
-/* Horizontal line from vertical branch to each child - using ::after */
-.horizontal-children.vertical-stack > .vertical-node::after {
+/* Horizontal line from vertical branch to each child - using ::before */
+/* Position is calculated via JS and set as --node-center CSS variable */
+.horizontal-children.vertical-stack > .vertical-node::before {
     content: '';
     position: absolute;
     left: 0;
-    top: 16px;
+    top: var(--node-center, 16px);
     width: 30px;
     height: 2px;
     background-color: #dee2e6;
@@ -412,8 +440,9 @@
     pointer-events: none;
 }
 
-/* For single child: hide vertical branch, keep horizontal line */
-.horizontal-children.vertical-stack:has(.vertical-node:only-child)::after {
+/* For single child: hide vertical branch */
+/* Use > to only check direct children */
+.horizontal-children.vertical-stack:has(> .vertical-node:only-child)::after {
     display: none;
 }
 
@@ -451,9 +480,8 @@
 .node-content {
     display: flex;
     align-items: center;
-    padding: var(--node-padding) calc(var(--node-padding) * 1.5); 
-    background: white;
-    border: 2px solid #e5e7eb;
+    padding: var(--node-padding);
+    border: 3px solid #e5e7eb;
     border-radius: 10px;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     justify-content: space-between;
@@ -461,12 +489,17 @@
     z-index: 2;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     gap: 8px;
-    box-sizing: border-box; 
+    box-sizing: border-box;
+    width: 180px;
+}
+
+/* Subtypes have a shorter width */
+.vertical-children .node-content {
+    width: 150px;
 }
 
 .node-content.selected {
-    background-color: #e7f1ff !important;
-    border-color: #007bff !important;
+    border: 3px solid #007bff !important;
 }
 
 .node-content.selected .node-title {
@@ -475,10 +508,9 @@
 }
 
 .node-content:hover {
-    background: #f8fafc;
-    border-color: #1e40af;
+    border-width: 3px;
     box-shadow: 0 4px 8px rgba(30, 64, 175, 0.12);
-    transform: translateY(-2px);
+    filter: brightness(1.05);
 }
 
 .node-content:hover .node-title {
@@ -490,9 +522,9 @@
     color: #333;
     font-size: var(--node-font-size); 
     flex: 1;
-    white-space: normal; 
-    word-wrap: break-word; 
-    overflow-wrap: break-word; 
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .node-indicators {
@@ -609,6 +641,11 @@
     
     .node-content {
         padding: 6px 10px;
+        width: 150px;
+    }
+    
+    .vertical-children .node-content {
+        width: 120px;
     }
     
     .node-title {
@@ -703,6 +740,11 @@
     
     .node-content {
         padding: 5px 8px;
+        width: 120px;
+    }
+    
+    .vertical-children .node-content {
+        width: 96px;
     }
     
     .node-title {
@@ -779,6 +821,14 @@
     .tree-toggle-button {
         padding: 5px 6px;
         font-size: 11px;
+    }
+    
+    .node-content {
+        width: 108px;
+    }
+    
+    .vertical-children .node-content {
+        width: 84px;
     }
     
     .node-title {
