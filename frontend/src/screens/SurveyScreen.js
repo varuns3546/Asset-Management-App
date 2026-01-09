@@ -601,7 +601,7 @@ const SurveyScreen = () => {
                 </button>
               </React.Fragment>
             ))}
-          </div>
+            </div>
         )}
 
         {/* Loading State */}
@@ -645,27 +645,27 @@ const SurveyScreen = () => {
                 {!isChildrenCollapsed && (
                   <div className="children-assets-grid">
                     {currentLevelAssets.map(asset => {
-                      const assetType = assetTypes.find(type => type.id === asset.asset_type_id);
+                    const assetType = assetTypes.find(type => type.id === asset.asset_type_id);
                       const attributeCount = assetType?.attributes?.length || 0;
                       
-                      return (
-                        <div 
-                          key={asset.id}
+                    return (
+                      <div
+                        key={asset.id}
                           className="child-asset-card"
                           onClick={() => handleAssetSelect(asset)}
-                        >
+                      >
                           <div className="child-asset-name">{asset.title}</div>
                           <div className="child-asset-type">{assetType?.title || 'No Type'}</div>
                           <div className="child-asset-attributes">
                             {attributeCount} attribute{attributeCount !== 1 ? 's' : ''}
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+                </div>
+              )}
 
             {surveyData.attributes.length === 0 ? (
               <div className="no-attributes">

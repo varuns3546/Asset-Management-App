@@ -318,6 +318,7 @@
     position: relative;
     display: flex;
     align-items: stretch;
+    transform: translateY(var(--children-offset, 0px));
 }
 
 /* Subtypes' children should align with main type children - compensate for 20px indent */
@@ -350,17 +351,18 @@
     gap: 0; 
 }
 
-/* Each subtype node - no connecting lines, slightly indented, with small vertical gaps */
+/* Each subtype node - same spacing as main types (8px, matching main type spacing) */
 .vertical-children > .vertical-node {
     position: relative;
     flex-shrink: 0;
-    margin-left: 20px;
-    margin-top: 1px;
+    margin-left: 0;
+    margin-top: 8px;
+    margin-bottom: 0;
 }
 
-/* First subtype has no top margin to stay close to parent */
+/* First subtype should have top margin to space it from parent */
 .vertical-children > .vertical-node:first-child {
-    margin-top: 0;
+    margin-top: 8px;
 }
 
 
@@ -377,24 +379,20 @@
 
 
 /* Horizontal line from parent's right edge */
-/* Goes from left: -30px (parent edge) to left: 0 (branch point) */
-/* Position is calculated via JS and set as --horizontal-line-top CSS variable */
+/* Position, width, and top are calculated via JS and set as CSS variables */
+/* --horizontal-line-left: left offset from stack's left edge (usually negative) */
+/* --horizontal-line-width: width of the line from parent right to branch point */
+/* --horizontal-line-top: vertical position (center of parent node-content) */
 .horizontal-children.vertical-stack::before {
     content: '';
     position: absolute;
-    left: -30px;
+    left: var(--horizontal-line-left, -30px);
     top: var(--horizontal-line-top, 16px);
-    width: 30px;
+    width: var(--horizontal-line-width, 30px);
     height: 2px;
     background-color: #dee2e6;
     z-index: 0;
     pointer-events: none;
-}
-
-/* When parent has subtypes, extend the horizontal line to reach the parent node-content */
-.node-with-subtypes:has(.vertical-children) ~ .horizontal-children.vertical-stack::before {
-    left: calc(-30px - 20px);
-    width: calc(30px + 20px);
 }
 
 /* Each child node needs relative positioning for its line */
@@ -459,12 +457,20 @@
     cursor: pointer;
     font-size: 14px;
     font-weight: bold;
-    margin-right: 8px;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     flex-shrink: 0;
     padding: 0;
     line-height: 1;
     box-shadow: 0 1px 3px rgba(30, 64, 175, 0.2);
+}
+
+.expand-button-left {
+    margin-right: 8px;
+}
+
+.expand-button-right {
+    margin-left: 8px;
+    margin-right: 0;
 }
 
 .expand-button:hover {
@@ -493,9 +499,9 @@
     width: 180px;
 }
 
-/* Subtypes have a shorter width */
-.vertical-children .node-content {
-    width: 150px;
+/* Subtypes have the same width as main nodes */
+.is-subtype .node-content {
+    width: 180px;
 }
 
 .node-content.selected {

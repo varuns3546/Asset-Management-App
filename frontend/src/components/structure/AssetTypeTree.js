@@ -23,6 +23,7 @@ const TreeNode = ({
     onAssetClick, 
     isTopLevel = false, 
     assetTypes = [],
+    treeData = [],
     isSelected = false,
     onItemSelect,
     onContextMenu,
@@ -31,10 +32,10 @@ const TreeNode = ({
     checkNodeSelected,
     getNodeIndex
 }) => {
-    // Only children types are collapsible, subtypes are always visible
     const [isChildrenExpanded, setIsChildrenExpanded] = React.useState(true)
-    const hasSubTypes = node.subTypes && node.subTypes.length > 0
+    const [isSubtypesExpanded, setIsSubtypesExpanded] = React.useState(true)
     const hasChildren = node.children && node.children.length > 0
+    const hasSubTypes = node.subTypes && node.subTypes.length > 0
     const hasMultipleParents = node.parent_ids && node.parent_ids.length > 1
     
     // Determine node color: use own color, or inherit from parent if it's a subtype
@@ -76,6 +77,12 @@ const TreeNode = ({
         setIsChildrenExpanded(!isChildrenExpanded)
     }
 
+    const handleToggleSubtypes = (e) => {
+        e.stopPropagation()
+        setIsSubtypesExpanded(!isSubtypesExpanded)
+    }
+
+
     const isSubtype = node.subtype_of_id ? true : false
     
     return (
@@ -97,13 +104,14 @@ const TreeNode = ({
                         }}
                         title="Click to edit, right-click for menu"
                     >
-                        {hasChildren && (
+                        {/* Subtypes expand button on the left */}
+                        {hasSubTypes && (
                             <button 
-                                className="expand-button"
-                                onClick={handleToggleChildren}
-                                title={isChildrenExpanded ? 'Collapse Children' : 'Expand Children'}
+                                className="expand-button expand-button-left"
+                                onClick={handleToggleSubtypes}
+                                title={isSubtypesExpanded ? 'Collapse Subtypes' : 'Expand Subtypes'}
                             >
-                                {isChildrenExpanded ? '−' : '+'}
+                                {isSubtypesExpanded ? '▼' : '▶'}
                             </button>
                         )}
                         <span className="node-title" title={node.title}>
@@ -120,11 +128,21 @@ const TreeNode = ({
                         </span>
                         <div className="node-indicators">
                             {hasMultipleParents && <span className="multiple-parents-indicator" title="Has multiple parents">🔗</span>}
+                            {/* Children expand button on the right */}
+                            {hasChildren && (
+                                <button 
+                                    className="expand-button expand-button-right"
+                                    onClick={handleToggleChildren}
+                                    title={isChildrenExpanded ? 'Collapse Children' : 'Expand Children'}
+                                >
+                                    {isChildrenExpanded ? '−' : '+'}
+                                </button>
+                            )}
                         </div>
                     </div>
                     
-                    {/* Sub-types appear vertically below parent, touching the bottom - always visible */}
-                    {hasSubTypes && (
+                    {/* Sub-types appear below parent with same spacing as main types (8px) - collapsible */}
+                    {hasSubTypes && isSubtypesExpanded && (
                         <div 
                             className="children vertical-children" 
                             onClick={(e) => e.stopPropagation()}
@@ -141,6 +159,7 @@ const TreeNode = ({
                                         onAssetClick={onAssetClick}
                                         isTopLevel={false}
                                         assetTypes={assetTypes}
+                                        treeData={treeData}
                                         isSelected={subTypeIsSelected}
                                         onItemSelect={onItemSelect}
                                         onContextMenu={onContextMenu}
@@ -155,7 +174,7 @@ const TreeNode = ({
                     )}
                 </div>
                 
-                {/* Children types appear horizontally to the right of the node+subtypes, stack vertically if multiple */}
+                {/* Children types appear horizontally to the right, stack vertically if multiple */}
                 {hasChildren && isChildrenExpanded && (
                     <div 
                         className="children horizontal-children vertical-stack" 
@@ -173,6 +192,7 @@ const TreeNode = ({
                                     onAssetClick={onAssetClick}
                                     isTopLevel={false}
                                     assetTypes={assetTypes}
+                                    treeData={treeData}
                                     isSelected={childIsSelected}
                                     onItemSelect={onItemSelect}
                                     onContextMenu={onContextMenu}
@@ -256,7 +276,7 @@ const AssetTypeTree = ({ assetTypes = [], onRemoveAssetType, onAssetClick }) => 
             items.forEach(item => {
                 const itemId = String(item.id)
                 
-                // Handle sub-types (subtype_of_id relationship) - takes precedence
+                // Handle sub-types (subtype_of_id relationship) - nested below parent
                 if (item.subtype_of_id) {
                     const parentIdStr = String(item.subtype_of_id)
                     const parent = itemMap.get(parentIdStr)
@@ -371,91 +391,211 @@ const AssetTypeTree = ({ assetTypes = [], onRemoveAssetType, onAssetClick }) => 
                     const lastNodeContent = lastChild.querySelector(':scope > .node-row > .node-with-subtypes > .node-content');
                     
                     if (firstNodeContent && lastNodeContent) {
-                        const firstContentRect = firstNodeContent.getBoundingClientRect();
-                        const lastContentRect = lastNodeContent.getBoundingClientRect();
                         
-                        // Calculate the vertical center of each node-content relative to the stack
-                        // Round to whole pixels to prevent sub-pixel rendering issues
-                        const firstCenter = Math.round((firstContentRect.top - stackRect.top) + (firstContentRect.height / 2));
-                        const lastCenter = Math.round((lastContentRect.top - stackRect.top) + (lastContentRect.height / 2));
+                        // Find the parent node to get its center for alignment
+                        const nodeRow = stack.closest('.node-row');
+                        let parentNodeContent = null;
                         
-                        // Set vertical line position (from first to last node center)
-                        stack.style.setProperty('--vertical-line-top', `${firstCenter}px`);
-                        stack.style.setProperty('--vertical-line-height', `${lastCenter - firstCenter}px`);
+                        if (!nodeRow) return;
+                        
+                        // Find ONLY the parent node-content element (not node-with-subtypes, not subtypes)
+                        parentNodeContent = nodeRow.querySelector(':scope > .node-with-subtypes > .node-content:first-child');
+                        
+                        if (!parentNodeContent) return;
+                        
+                        // Get current offset to check if we need to update
+                        const currentOffset = parseFloat(getComputedStyle(stack).getPropertyValue('--children-offset') || '0');
+                        
+                        // Temporarily set offset to 0 to measure natural (untransformed) positions
+                        stack.style.setProperty('--children-offset', '0px');
+                        
+                        // Force layout recalculation
+                        void stack.offsetHeight;
+                        
+                        // Get natural (untransformed) positions relative to fixed reference (node-row)
+                        const nodeRowRect = nodeRow.getBoundingClientRect();
+                        const firstChildRectNatural = firstChild.getBoundingClientRect();
+                        const lastChildRectNatural = lastChild.getBoundingClientRect();
+                        const stackRectNatural = stack.getBoundingClientRect();
+                        const parentRectNatural = parentNodeContent.getBoundingClientRect();
+                        const firstContentRectNatural = firstNodeContent.getBoundingClientRect();
+                        const lastContentRectNatural = lastNodeContent.getBoundingClientRect();
+                        
+                        // Calculate positions relative to node-row (fixed reference that doesn't change with transform)
+                        const stackTopInRow = stackRectNatural.top - nodeRowRect.top;
+                        const parentTopInRow = parentRectNatural.top - nodeRowRect.top;
+                        const firstChildTopInRow = firstChildRectNatural.top - nodeRowRect.top;
+                        const lastChildBottomInRow = lastChildRectNatural.bottom - nodeRowRect.top;
+                        
+                        // Calculate parent center relative to node-row (fixed reference)
+                        const parentCenterInRow = parentTopInRow + (parentRectNatural.height / 2);
+                        
+                        // Calculate children bounds and center relative to node-row
+                        const childrenTotalHeight = lastChildBottomInRow - firstChildTopInRow;
+                        const childrenCenterInRow = firstChildTopInRow + (childrenTotalHeight / 2);
+                        
+                        // Calculate offset needed: how much to shift children to align their center with parent center
+                        // This offset is relative to the stack's natural position
+                        const offset = parentCenterInRow - childrenCenterInRow;
+                        
+                        // Only update if offset changed significantly (prevent oscillation)
+                        const shouldUpdate = Math.abs(offset - currentOffset) > 0.01;
+                        
+                        if (shouldUpdate) {
+                            // Apply transform via CSS variable
+                            stack.style.setProperty('--children-offset', `${offset}px`);
+                            
+                            // Force reflow to apply transform
+                            void stack.offsetHeight;
+                        } else {
+                            // Restore original offset
+                            stack.style.setProperty('--children-offset', `${currentOffset}px`);
+                        }
+                        
+                        // Now recalculate positions with the correct offset applied for line drawing
+                        // Force a layout recalculation
+                        void stack.offsetHeight;
+                        
+                        // Get final positions with transform applied
+                        const firstContentRectFinal = firstNodeContent.getBoundingClientRect();
+                        const lastContentRectFinal = lastNodeContent.getBoundingClientRect();
+                        const stackRectFinal = stack.getBoundingClientRect();
+                        
+                        // Calculate child centers relative to transformed stack
+                        const firstCenterFinal = (firstContentRectFinal.top - stackRectFinal.top) + (firstContentRectFinal.height / 2);
+                        const lastCenterFinal = (lastContentRectFinal.top - stackRectFinal.top) + (lastContentRectFinal.height / 2);
+                        
+                        // Calculate the vertical line height (distance from first to last child center)
+                        const verticalLineHeight = lastCenterFinal - firstCenterFinal;
+                        
+                        // Position the vertical line such that its center aligns with the parent center
+                        // Parent center relative to transformed stack (should equal children center now)
+                        const parentRectFinal = parentNodeContent.getBoundingClientRect();
+                        const parentCenterFinal = (parentRectFinal.top - stackRectFinal.top) + (parentRectFinal.height / 2);
+                        const verticalLineTop = parentCenterFinal - (verticalLineHeight / 2);
+                        
+                        // Set vertical line position (centered on parent center)
+                        stack.style.setProperty('--vertical-line-top', `${verticalLineTop}px`);
+                        stack.style.setProperty('--vertical-line-height', `${verticalLineHeight}px`);
                         
                         // Set the connection point for each child's horizontal line
+                        // These are relative to each child node (transform doesn't affect relative positions within child)
                         children.forEach(child => {
                             const nodeContent = child.querySelector(':scope > .node-row > .node-with-subtypes > .node-content');
                             if (nodeContent) {
-                                const contentRect = nodeContent.getBoundingClientRect();
+                                const nodeContentRect = nodeContent.getBoundingClientRect();
                                 const childRect = child.getBoundingClientRect();
-                                const nodeCenter = Math.round((contentRect.top - childRect.top) + (contentRect.height / 2));
+                                const nodeCenter = (nodeContentRect.top - childRect.top) + (nodeContentRect.height / 2);
                                 child.style.setProperty('--node-center', `${nodeCenter}px`);
                             }
                         });
                         
-                        // Set horizontal line from parent at the center of all children
-                        if (children.length > 1) {
-                            let centerPoint;
-                            if (children.length % 2 === 1) {
-                                // Odd number of children - align with the middle child's center
-                                const middleIndex = Math.floor(children.length / 2);
-                                const middleChild = children[middleIndex];
-                                const middleNodeContent = middleChild.querySelector(':scope > .node-row > .node-with-subtypes > .node-content');
-                                if (middleNodeContent) {
-                                    const middleContentRect = middleNodeContent.getBoundingClientRect();
-                                    centerPoint = Math.round((middleContentRect.top - stackRect.top) + (middleContentRect.height / 2));
-                                } else {
-                                    centerPoint = Math.round((firstCenter + lastCenter) / 2);
-                                }
-                            } else {
-                                // Even number of children - use midpoint between first and last
-                                centerPoint = Math.round((firstCenter + lastCenter) / 2);
-                            }
-                            stack.style.setProperty('--horizontal-line-top', `${centerPoint}px`);
-                        } else {
-                            // Single child - connect at the child's center
-                            stack.style.setProperty('--horizontal-line-top', `${firstCenter}px`);
-                        }
+                        // Calculate horizontal line position and width
+                        let horizontalLineLeft = -30; // Default fallback
+                        let horizontalLineWidth = 30; // Default fallback
+                        
+                        // Get final parent position for horizontal line
+                        const parentRectFinalForLine = parentNodeContent.getBoundingClientRect();
+                        const stackRectFinalForLine = stack.getBoundingClientRect();
+                        const stackLeftFinal = stackRectFinalForLine.left;
+                        const parentRightFinal = parentRectFinalForLine.right;
+                        
+                        // Calculate distance from parent's right edge to branch point (left: 0 of stack)
+                        const distanceFromParentRight = stackLeftFinal - parentRightFinal;
+                        
+                        // Calculate horizontal line width (distance from parent right to branch point)
+                        horizontalLineWidth = Math.max(0, distanceFromParentRight);
+                        
+                        // Set horizontal line position (left offset from stack's left edge)
+                        // This should be negative to extend to the left
+                        horizontalLineLeft = -horizontalLineWidth;
+                        
+                        stack.style.setProperty('--horizontal-line-left', `${horizontalLineLeft}px`);
+                        stack.style.setProperty('--horizontal-line-width', `${horizontalLineWidth}px`);
+                        
+                        // Set horizontal line vertical position to parent center (which aligns with children center)
+                        stack.style.setProperty('--horizontal-line-top', `${parentCenterFinal}px`);
                     }
                 }
             });
         };
 
+        // Flag to prevent recursive updates
+        let isUpdating = false;
+        
         // Run after render and when tree changes
         updateLinePositions();
         
         // Debounced update function to avoid too many recalculations
         let updateTimeout = null;
         const debouncedUpdate = () => {
+            if (isUpdating) return; // Prevent recursive updates
             if (updateTimeout) clearTimeout(updateTimeout);
             updateTimeout = setTimeout(() => {
                 requestAnimationFrame(() => {
-                    requestAnimationFrame(updateLinePositions);
+                    requestAnimationFrame(() => {
+                        isUpdating = true;
+                        updateLinePositions();
+                        // Allow updates again after a short delay
+                        setTimeout(() => {
+                            isUpdating = false;
+                        }, 50);
+                    });
                 });
             }, 10);
         };
         
         // Use MutationObserver to detect DOM changes (like expand/collapse)
-        const mutationObserver = new MutationObserver(debouncedUpdate);
+        // Only watch for structural changes, not style changes (to avoid loops)
+        const mutationObserver = new MutationObserver((mutations) => {
+            // Only trigger update if it's not a style attribute change on our elements
+            const shouldUpdate = mutations.some(mutation => {
+                if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+                    // Skip if it's just our CSS variable updates
+                    const target = mutation.target;
+                    if (target.classList?.contains('horizontal-children')) {
+                        return false; // Skip style changes on our containers
+                    }
+                }
+                return true;
+            });
+            if (shouldUpdate) {
+                debouncedUpdate();
+            }
+        });
         
         mutationObserver.observe(treeContentRef.current, {
             childList: true,
             subtree: true,
             attributes: true,
-            attributeFilter: ['class', 'style']
+            attributeFilter: ['class'] // Only watch class changes, not style
         });
         
-        // Also use ResizeObserver for size changes
-        const resizeObserver = new ResizeObserver(debouncedUpdate);
+        // Also use ResizeObserver for size changes, but debounce heavily
+        let resizeTimeout = null;
+        const debouncedResizeUpdate = () => {
+            if (isUpdating) return;
+            if (resizeTimeout) clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                requestAnimationFrame(() => {
+                    isUpdating = true;
+                    updateLinePositions();
+                    setTimeout(() => {
+                        isUpdating = false;
+                    }, 50);
+                });
+            }, 100); // Longer debounce for resize
+        };
         
-        // Observe the main container and all horizontal-children containers
+        const resizeObserver = new ResizeObserver(debouncedResizeUpdate);
+        
+        // Observe the main container, but be careful about watching the stacks themselves
         resizeObserver.observe(treeContentRef.current);
-        const allStacks = treeContentRef.current.querySelectorAll('.horizontal-children.vertical-stack');
-        allStacks.forEach(stack => resizeObserver.observe(stack));
+        // Don't observe the stacks themselves as the transform causes resize loops
 
         return () => {
             if (updateTimeout) clearTimeout(updateTimeout);
+            if (resizeTimeout) clearTimeout(resizeTimeout);
             mutationObserver.disconnect();
             resizeObserver.disconnect();
         };
@@ -575,6 +715,7 @@ const AssetTypeTree = ({ assetTypes = [], onRemoveAssetType, onAssetClick }) => 
                                     onAssetClick={onAssetClick}
                                     isTopLevel={true}
                                     assetTypes={safeAssetTypes}
+                                    treeData={treeData}
                                     isSelected={rootIsSelected}
                                     onItemSelect={handleSelectionClick}
                                     onContextMenu={handleContextMenu}
