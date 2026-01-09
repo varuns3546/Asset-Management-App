@@ -152,7 +152,7 @@ export const calculateDiff = async (supabase, sourceProjectId, targetProjectId) 
         });
       } else if (
         sourceType.description !== matching.description ||
-        sourceType.has_coordinates !== matching.has_coordinates
+        sourceType.geometry_type !== matching.geometry_type
       ) {
         changes.assetTypes.push({
           changeType: 'modified',
@@ -439,7 +439,7 @@ export const mergeAssetTypes = async (supabase, sourceProjectId, targetProjectId
         .insert({
           title: sourceType.title,
           description: sourceType.description,
-          has_coordinates: sourceType.has_coordinates,
+          geometry_type: sourceType.geometry_type || 'point',
           project_id: targetProjectId
         })
         .select()
@@ -468,7 +468,7 @@ export const mergeAssetTypes = async (supabase, sourceProjectId, targetProjectId
         .from('asset_types')
         .update({
           description: sourceType.description,
-          has_coordinates: sourceType.has_coordinates
+          geometry_type: sourceType.geometry_type || 'point'
         })
         .eq('id', matching.id);
     }

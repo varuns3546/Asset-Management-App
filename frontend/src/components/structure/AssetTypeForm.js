@@ -75,13 +75,15 @@ const AssetTypeForm = ({
     });
 
     const [parentDropdowns, setParentDropdowns] = useState([{ id: 1, value: '' }]);
+    const [childrenDropdowns, setChildrenDropdowns] = useState([{ id: 1, value: '' }]); // For children_ids
     const [attributes, setAttributes] = useState([{ id: 1, value: '', type: 'text' }]);
-    const [subTypes, setSubTypes] = useState([{ id: 1, value: '', existingId: null }]);
-    const [selectedExistingSubTypes, setSelectedExistingSubTypes] = useState([]);
-    const [originalSubTypes, setOriginalSubTypes] = useState([]); // Track original subtypes for removal detection
-    const [existingSubTypeDropdown, setExistingSubTypeDropdown] = useState({ id: 1, value: '' });
-    const [hasCoordinates, setHasCoordinates] = useState(false);
+    const [newTypesInCategory, setNewTypesInCategory] = useState([{ id: 1, value: '', existingId: null }]);
+    const [selectedTypesInCategory, setSelectedTypesInCategory] = useState([]);
+    const [originalTypesInCategory, setOriginalTypesInCategory] = useState([]); // Track original types for removal detection
+    const [typeSelectorDropdown, setTypeSelectorDropdown] = useState({ id: 1, value: '' });
+    const [geometryType, setGeometryType] = useState('point'); // Options: point, line, polygon, no_geometry
     const [color, setColor] = useState('#3b82f6'); // Default blue color
+    const [isCategorySectionExpanded, setIsCategorySectionExpanded] = useState(false); // Collapsed by default
     const [isEditing, setIsEditing] = useState(false);
 
     // Update form when selectedItem changes
@@ -105,6 +107,17 @@ const AssetTypeForm = ({
                 setParentDropdowns([{ id: 1, value: '' }]);
             }
             
+            // Set up children dropdowns
+            if (selectedAsset.children_ids && selectedAsset.children_ids.length > 0) {
+                const childrenDropdownsData = selectedAsset.children_ids.map((childId, index) => ({
+                    id: index + 1,
+                    value: childId
+                }));
+                setChildrenDropdowns(childrenDropdownsData);
+            } else {
+                setChildrenDropdowns([{ id: 1, value: '' }]);
+            }
+            
             
             // Load existing attributes for this item type
             if (selectedAsset.attributes && selectedAsset.attributes.length > 0) {
@@ -118,22 +131,22 @@ const AssetTypeForm = ({
                 setAttributes([{ id: 1, value: '', type: 'text' }]);
             }
             
-            // Load existing sub-types for this asset type (using subtype_of_id)
+            // Load existing sub-types for this asset type (using category_id)
             const existingSubTypes = assetTypes.filter(at => 
-                at.subtype_of_id === selectedAsset.id
+                at.category_id === selectedAsset.id
             );
             
             // Set selected existing sub-types (for the dropdown display)
             const existingSubTypeIds = existingSubTypes.map(st => st.id);
-            setSelectedExistingSubTypes(existingSubTypeIds);
-            setOriginalSubTypes(existingSubTypeIds); // Store original for comparison
-            setExistingSubTypeDropdown({ id: 1, value: '' }); // Reset dropdown
+            setSelectedTypesInCategory(existingSubTypeIds);
+            setOriginalTypesInCategory(existingSubTypeIds); // Store original for comparison
+            setTypeSelectorDropdown({ id: 1, value: '' }); // Reset dropdown
             
-            // Don't populate subTypes array with existing ones - they're shown via selectedExistingSubTypes
+            // Don't populate newTypesInCategory array with existing ones - they're shown via selectedTypesInCategory
             // Only reset to empty input for creating NEW sub-types
-            setSubTypes([{ id: 1, value: '', existingId: null }]);
+            setNewTypesInCategory([{ id: 1, value: '', existingId: null }]);
             
-            setHasCoordinates(selectedAsset.has_coordinates || false);
+            setGeometryType(selectedAsset.geometry_type || 'no_geometry');
             setColor(selectedAsset.color || '#3b82f6');
             setIsEditing(true);
         } else {
@@ -144,16 +157,17 @@ const AssetTypeForm = ({
                 attributes: []
             });
             setParentDropdowns([{ id: 1, value: '' }]);
+            setChildrenDropdowns([{ id: 1, value: '' }]);
             setAttributes([{ id: 1, value: '', type: 'text' }]);
-            setSubTypes([{ id: 1, value: '', existingId: null }]);
-            setSelectedExistingSubTypes([]);
-            setOriginalSubTypes([]);
-            setExistingSubTypeDropdown({ id: 1, value: '' });
-            setHasCoordinates(false);
+            setNewTypesInCategory([{ id: 1, value: '', existingId: null }]);
+            setSelectedTypesInCategory([]);
+            setOriginalTypesInCategory([]);
+            setTypeSelectorDropdown({ id: 1, value: '' });
+            setGeometryType('point');
             
             // Generate a random color for new types (excluding subtype colors)
             const existingColors = (assetTypes || [])
-                .filter(at => !at.subtype_of_id) // Only check main types, not subtypes
+                .filter(at => !at.category_id) // Only check main types, not subtypes
                 .map(at => at.color)
                 .filter(Boolean);
             const randomColor = generateUniqueColor(existingColors);
@@ -236,6 +250,36 @@ const AssetTypeForm = ({
         }
     }
 
+    // Children dropdown handlers
+    const handleChildrenDropdownChange = (dropdownId, selectedValue) => {
+        // Validate that this selection won't create a circular reference
+        if (selectedValue && selectedAsset) {
+            if (wouldCreateCircularReference(selectedAsset.id, selectedValue)) {
+                alert('Cannot select this child as it would create a circular reference.');
+                return;
+            }
+        }
+        
+        setChildrenDropdowns(prev => 
+            prev.map(dropdown => 
+                dropdown.id === dropdownId 
+                    ? { ...dropdown, value: selectedValue }
+                    : dropdown
+            )
+        );
+    }
+
+    const addAnotherChild = () => {
+        const newId = Math.max(...childrenDropdowns.map(d => d.id)) + 1;
+        setChildrenDropdowns(prev => [...prev, { id: newId, value: '' }]);
+    }
+
+    const removeChildrenDropdown = (dropdownId) => {
+        if (childrenDropdowns.length > 1) {
+            setChildrenDropdowns(prev => prev.filter(dropdown => dropdown.id !== dropdownId));
+        }
+    }
+
     const handleAttributeChange = (attributeId, field, value) => {
         setAttributes(prev => 
             prev.map(attr => 
@@ -257,8 +301,8 @@ const AssetTypeForm = ({
         }
     }
 
-    const handleSubTypeChange = (subTypeId, value) => {
-        setSubTypes(prev => 
+    const handleNewTypeInCategoryChange = (subTypeId, value) => {
+        setNewTypesInCategory(prev => 
             prev.map(st => 
                 st.id === subTypeId 
                     ? { ...st, value: value }
@@ -267,22 +311,22 @@ const AssetTypeForm = ({
         );
     }
 
-    const addAnotherSubType = () => {
-        const newId = Math.max(...subTypes.map(st => st.id), 0) + 1;
-        setSubTypes(prev => [...prev, { id: newId, value: '', existingId: null }]);
+    const addAnotherTypeInCategory = () => {
+        const newId = Math.max(...newTypesInCategory.map(st => st.id), 0) + 1;
+        setNewTypesInCategory(prev => [...prev, { id: newId, value: '', existingId: null }]);
     }
 
-    const removeSubType = (subTypeId) => {
-        const subType = subTypes.find(st => st.id === subTypeId);
+    const removeNewTypeInCategory = (subTypeId) => {
+        const subType = newTypesInCategory.find(st => st.id === subTypeId);
         // If it's an existing sub-type, we might want to delete it, but for now just remove from list
         // The user can manually delete it from the tree if needed
-        if (subTypes.length > 1) {
-            setSubTypes(prev => prev.filter(st => st.id !== subTypeId));
+        if (newTypesInCategory.length > 1) {
+            setNewTypesInCategory(prev => prev.filter(st => st.id !== subTypeId));
         }
     }
 
     // Check if a type can be selected as a sub-type (not invalid)
-    const canBeSubType = (typeId) => {
+    const canBeAddedToCategory = (typeId) => {
         if (!typeId || !assetTypes) return false;
         
         // Can't select self
@@ -297,12 +341,12 @@ const AssetTypeForm = ({
         
         // Can't select if it's already a sub-type of another type (unless editing that type)
         const type = assetTypes.find(at => at.id === typeId);
-        if (type && type.subtype_of_id && (!selectedAsset || type.subtype_of_id !== selectedAsset.id)) {
+        if (type && type.category_id && (!selectedAsset || type.category_id !== selectedAsset.id)) {
             return false;
         }
         
         // Can't select if it already has subtypes
-        const hasSubtypes = assetTypes.some(at => at.subtype_of_id === typeId);
+        const hasSubtypes = assetTypes.some(at => at.category_id === typeId);
         if (hasSubtypes) {
             return false;
         }
@@ -310,19 +354,19 @@ const AssetTypeForm = ({
         return true;
     }
 
-    const handleExistingSubTypeDropdownChange = (dropdownId, selectedValue) => {
-        setExistingSubTypeDropdown(prev => ({ ...prev, value: selectedValue }));
+    const handleTypeSelectorChange = (dropdownId, selectedValue) => {
+        setTypeSelectorDropdown(prev => ({ ...prev, value: selectedValue }));
     }
 
-    const addExistingSubType = () => {
-        if (existingSubTypeDropdown.value && !selectedExistingSubTypes.includes(existingSubTypeDropdown.value)) {
-            setSelectedExistingSubTypes(prev => [...prev, existingSubTypeDropdown.value]);
-            setExistingSubTypeDropdown(prev => ({ ...prev, value: '' })); // Reset dropdown
+    const addTypeToCategory = () => {
+        if (typeSelectorDropdown.value && !selectedTypesInCategory.includes(typeSelectorDropdown.value)) {
+            setSelectedTypesInCategory(prev => [...prev, typeSelectorDropdown.value]);
+            setTypeSelectorDropdown(prev => ({ ...prev, value: '' })); // Reset dropdown
         }
     }
 
-    const removeExistingSubType = (typeId) => {
-        setSelectedExistingSubTypes(prev => prev.filter(id => id !== typeId));
+    const removeTypeFromCategory = (typeId) => {
+        setSelectedTypesInCategory(prev => prev.filter(id => id !== typeId));
     }
 
     const handleAddAssetType = async () => {
@@ -336,6 +380,11 @@ const AssetTypeForm = ({
             .map(dropdown => dropdown.value)
             .filter(value => value !== '');
 
+        // Collect selected children IDs from dropdowns
+        const selectedChildrenIds = childrenDropdowns
+            .map(dropdown => dropdown.value)
+            .filter(value => value !== '');
+
         // Collect attribute values with types
         const attributeValues = attributes
             .filter(attr => attr.value.trim() !== '')
@@ -345,7 +394,7 @@ const AssetTypeForm = ({
             }));
 
         // Collect sub-type values (new ones to create)
-        const newSubTypes = subTypes
+        const newSubTypes = newTypesInCategory
             .filter(st => st.value.trim() !== '' && !st.existingId)
             .map(st => st.value.trim());
 
@@ -354,9 +403,10 @@ const AssetTypeForm = ({
             name: newAssetType.title,
             description: newAssetType.description,
             parent_ids: selectedParentIds,
-            subtype_of_id: isEditing && selectedAsset ? (selectedAsset.subtype_of_id || null) : null, // Preserve existing subtype relationship
+            children_ids: selectedChildrenIds,
+            category_id: isEditing && selectedAsset ? (selectedAsset.category_id || null) : null, // Preserve existing subtype relationship
             attributes: attributeValues,
-            has_coordinates: hasCoordinates,
+            geometry_type: geometryType,
             color: color
         };
         
@@ -374,9 +424,12 @@ const AssetTypeForm = ({
         // Reset parent dropdowns to single empty dropdown
         setParentDropdowns([{ id: 1, value: '' }]);
         
+        // Reset children dropdowns to single empty dropdown
+        setChildrenDropdowns([{ id: 1, value: '' }]);
+        
         // Reset attributes to single empty attribute
         setAttributes([{ id: 1, value: '', type: 'text' }]);
-        setHasCoordinates(false);
+        setGeometryType('point');
         setColor('#3b82f6');
         
         // Store the current asset type ID for creating sub-types
@@ -420,7 +473,7 @@ const AssetTypeForm = ({
             // Detect removed subtypes (only when editing)
             let removedSubTypes = [];
             if (isEditing && currentAssetTypeId) {
-                removedSubTypes = originalSubTypes.filter(id => !selectedExistingSubTypes.includes(id));
+                removedSubTypes = originalTypesInCategory.filter(id => !selectedTypesInCategory.includes(id));
                 
                 if (removedSubTypes.length > 0) {
                     // Refetch current feature types to ensure we have fresh data
@@ -429,7 +482,7 @@ const AssetTypeForm = ({
                     
                     // Get existing colors for new color generation
                     const existingColors = freshTypes
-                        .filter(at => !at.subtype_of_id) // Only check main types
+                        .filter(at => !at.category_id) // Only check main types
                         .map(at => at.color)
                         .filter(Boolean);
                     
@@ -445,9 +498,9 @@ const AssetTypeForm = ({
                                     name: removedType.title,
                                     description: removedType.description || '',
                                     parent_ids: removedType.parent_ids || [],
-                                    subtype_of_id: null, // Remove subtype relationship
+                                    category_id: null, // Remove subtype relationship
                                     attributes: removedType.attributes || [],
-                                    has_coordinates: removedType.has_coordinates,
+                                    geometry_type: removedType.geometry_type || 'no_geometry',
                                     color: newColor // Assign new random color
                                 };
                                 
@@ -474,9 +527,9 @@ const AssetTypeForm = ({
             
             // Update selected existing types to be sub-types
             // Include both the selected ones AND the current dropdown value
-            const allSelectedSubTypes = [...selectedExistingSubTypes];
-            if (existingSubTypeDropdown.value && !allSelectedSubTypes.includes(existingSubTypeDropdown.value)) {
-                allSelectedSubTypes.push(existingSubTypeDropdown.value);
+            const allSelectedSubTypes = [...selectedTypesInCategory];
+            if (typeSelectorDropdown.value && !allSelectedSubTypes.includes(typeSelectorDropdown.value)) {
+                allSelectedSubTypes.push(typeSelectorDropdown.value);
             }
             
             if (allSelectedSubTypes.length > 0 && currentAssetTypeId) {
@@ -496,15 +549,15 @@ const AssetTypeForm = ({
                                 name: existingType.title,
                                 description: existingType.description || '',
                                 parent_ids: existingType.parent_ids || [],
-                                subtype_of_id: currentAssetTypeId, // Set as sub-type
+                                category_id: currentAssetTypeId, // Set as sub-type
                                 attributes: existingType.attributes || [], // Keep existing attributes, backend will merge with parent
-                                has_coordinates: existingType.has_coordinates, // Keep existing setting
+                                geometry_type: existingType.geometry_type || 'no_geometry', // Keep existing setting
                                 color: parentColor // Inherit parent's color
                             };
                             
-                            console.log(`[SUBTYPE UPDATE] Updating type "${existingType.title}" (ID: ${existingTypeId})`);
-                            console.log(`[SUBTYPE UPDATE] Setting subtype_of_id to: ${currentAssetTypeId}`);
-                            console.log(`[SUBTYPE UPDATE] Full payload:`, JSON.stringify(updatePayload, null, 2));
+                            console.log(`[CATEGORY UPDATE] Updating type "${existingType.title}" (ID: ${existingTypeId})`);
+                            console.log(`[CATEGORY UPDATE] Setting category_id to: ${currentAssetTypeId}`);
+                            console.log(`[CATEGORY UPDATE] Full payload:`, JSON.stringify(updatePayload, null, 2));
                             
                             const result = await dispatch(updateFeatureType({
                                 projectId: selectedProject.id,
@@ -512,15 +565,15 @@ const AssetTypeForm = ({
                                 featureTypeData: updatePayload
                             })).unwrap();
                             
-                            console.log(`[SUBTYPE UPDATE] Success! Response:`, result);
+                            console.log(`[CATEGORY UPDATE] Success! Response:`, result);
                         } else {
-                            console.error(`[SUBTYPE UPDATE] Could not find type with ID ${existingTypeId} in fresh types list`);
+                            console.error(`[CATEGORY UPDATE] Could not find type with ID ${existingTypeId} in fresh types list`);
                             alert(`Could not find the selected type (ID: ${existingTypeId}). Please refresh and try again.`);
                         }
                     } catch (error) {
                         const typeName = freshTypes.find(at => at.id === existingTypeId)?.title || existingTypeId;
-                        console.error(`[SUBTYPE UPDATE] Error updating "${typeName}":`, error);
-                        console.error(`[SUBTYPE UPDATE] Error details:`, error.response?.data || error.message);
+                        console.error(`[CATEGORY UPDATE] Error updating "${typeName}":`, error);
+                        console.error(`[CATEGORY UPDATE] Error details:`, error.response?.data || error.message);
                         alert(`Failed to update "${typeName}" as a subtype. Error: ${error.response?.data?.error || error.message || 'Unknown error'}`);
                     }
                 }
@@ -536,9 +589,9 @@ const AssetTypeForm = ({
                                 name: subTypeName,
                                 description: '',
                                 parent_ids: [],
-                                subtype_of_id: currentAssetTypeId, // Backend will inherit attributes and has_coordinates from parent
+                                category_id: currentAssetTypeId, // Backend will inherit attributes and geometry_type from parent
                                 color: color // Inherit parent's color
-                                // Note: Don't send attributes or has_coordinates - let backend inherit them
+                                // Note: Don't send attributes or geometry_type - let backend inherit them
                             }
                         })).unwrap();
                     } catch (error) {
@@ -557,10 +610,10 @@ const AssetTypeForm = ({
             setIsEditing(false);
             
             // Reset sub-types after successful save
-            setSubTypes([{ id: 1, value: '', existingId: null }]);
-            setSelectedExistingSubTypes([]);
-            setOriginalSubTypes([]);
-            setExistingSubTypeDropdown({ id: 1, value: '' });
+            setNewTypesInCategory([{ id: 1, value: '', existingId: null }]);
+            setSelectedTypesInCategory([]);
+            setOriginalTypesInCategory([]);
+            setTypeSelectorDropdown({ id: 1, value: '' });
             
             // Clear selection if updating
             if (isEditing && selectedAsset && onAssetSelect) {
@@ -577,7 +630,7 @@ const AssetTypeForm = ({
             //     parent_ids: assetTypeData.parent_ids,
             //     attributes: assetTypeData.attributes
             // });
-            // setHasCoordinates(assetTypeData.has_coordinates);
+            // setGeometryType(assetTypeData.geometry_type);
         }
     }
 
@@ -590,15 +643,15 @@ const AssetTypeForm = ({
         });
         setParentDropdowns([{ id: 1, value: '' }]);
         setAttributes([{ id: 1, value: '', type: 'text' }]);
-        setSubTypes([{ id: 1, value: '', existingId: null }]);
-        setSelectedExistingSubTypes([]);
-        setOriginalSubTypes([]);
-        setExistingSubTypeDropdown({ id: 1, value: '' });
-        setHasCoordinates(false);
+        setNewTypesInCategory([{ id: 1, value: '', existingId: null }]);
+        setSelectedTypesInCategory([]);
+        setOriginalTypesInCategory([]);
+        setTypeSelectorDropdown({ id: 1, value: '' });
+        setGeometryType('point');
         
         // Generate a random color for new types
         const existingColors = (assetTypes || [])
-            .filter(at => !at.subtype_of_id) // Only check main types
+            .filter(at => !at.category_id) // Only check main types
             .map(at => at.color)
             .filter(Boolean);
         const randomColor = generateUniqueColor(existingColors);
@@ -616,8 +669,8 @@ const AssetTypeForm = ({
         }
         
         // Add a new sub-type input to the list
-        const newId = Math.max(...subTypes.map(st => st.id), 0) + 1;
-        setSubTypes(prev => [...prev, { id: newId, value: '', existingId: null }]);
+        const newId = Math.max(...newTypesInCategory.map(st => st.id), 0) + 1;
+        setNewTypesInCategory(prev => [...prev, { id: newId, value: '', existingId: null }]);
     }
 
     
@@ -635,9 +688,7 @@ const AssetTypeForm = ({
                     type="text"
                     value={newAssetType.title}
                     onChange={handleNewAssetTypeChange}
-                    placeholder={parentDropdowns.some(d => d.value)
-                        ? `Enter child type name`
-                        : "Enter asset type name (e.g., Location, Position)"}
+                    placeholder={"Enter name"}
                     inputProps={{ name: 'title' }}
                 />
                 
@@ -713,16 +764,96 @@ const AssetTypeForm = ({
                     </button>
                 </div>
                 
-                {/* Coordinates Checkbox */}
-                <div className="checkbox-container">
-                    <input
-                        type="checkbox"
-                        id="hasCoordinates"
-                        checked={hasCoordinates}
-                        onChange={(e) => setHasCoordinates(e.target.checked)}
-                        className="checkbox"
-                    />
-                    <label className="checkbox-label">Has coordinates</label>
+                {/* Children Selection */}
+                <div className="form-group">
+                    <label className="form-label">
+                        Select Children: 
+                        {childrenDropdowns.some(d => d.value) && (
+                            <span style={{ color: '#17a2b8', fontSize: '12px', marginLeft: '8px' }}>
+                                ({childrenDropdowns.filter(d => d.value).length} child type(s) selected)
+                            </span>
+                        )}
+                    </label>
+                    {childrenDropdowns.map((dropdown, index) => {
+                        const selectedChild = assetTypes?.find(at => at.id === dropdown.value);
+                        return (
+                            <div key={dropdown.id} className="parent-dropdown-row">
+                                <select
+                                    value={dropdown.value}
+                                    onChange={(e) => handleChildrenDropdownChange(dropdown.id, e.target.value)}
+                                    className="form-select parent-dropdown"
+                                >
+                                    <option value="">No child selected</option>
+                                    {(assetTypes || []).filter(assetType => {
+                                        // Don't allow self-reference
+                                        if (assetType.id === selectedAsset?.id) {
+                                            return false;
+                                        }
+                                        // Don't allow circular references
+                                        if (selectedAsset && wouldCreateCircularReference(selectedAsset.id, assetType.id)) {
+                                            return false;
+                                        }
+                                        // Don't show already selected children
+                                        if (childrenDropdowns.some(d => d.value === assetType.id && d.id !== dropdown.id)) {
+                                            return false;
+                                        }
+                                        return true;
+                                    }).map(assetType => {
+                                        const hasCategory = assetType.category_id;
+                                        const category = hasCategory ? assetTypes?.find(at => at.id === assetType.category_id) : null;
+                                        const categoryLabel = category ? ` [${category.title}]` : '';
+                                        return (
+                                            <option key={assetType.id} value={assetType.id}>
+                                                {assetType.title}{categoryLabel}
+                                            </option>
+                                        );
+                                    })}
+                                </select>
+                                {selectedChild && selectedChild.category_id && (
+                                    <span style={{ 
+                                        fontSize: '12px', 
+                                        color: '#6c757d', 
+                                        marginLeft: '8px',
+                                        fontStyle: 'italic'
+                                    }}>
+                                        Category: {assetTypes?.find(at => at.id === selectedChild.category_id)?.title || 'Unknown'}
+                                    </span>
+                                )}
+                                {childrenDropdowns.length > 1 && (
+                                    <button
+                                        type="button"
+                                        onClick={() => removeChildrenDropdown(dropdown.id)}
+                                        className="remove-parent-button"
+                                        title="Remove this child selection"
+                                    >
+                                        ×
+                                    </button>
+                                )}
+                            </div>
+                        );
+                    })}
+                    <button
+                        type="button"
+                        onClick={addAnotherChild}
+                        className="add-parent-button"
+                    >
+                        + Add Child
+                    </button>
+                </div>
+                
+                {/* Geometry Type Dropdown */}
+                <div className="form-group">
+                    <label className="form-label">Geometry Type:</label>
+                    <select
+                        value={geometryType}
+                        onChange={(e) => setGeometryType(e.target.value)}
+                        className="form-input"
+                    >
+                        <option value="point">Point</option>
+                        <option value="line">Line</option>
+                        <option value="polygon">Polygon</option>
+                        <option value="no_geometry">No Geometry</option>
+                    </select>
                 </div>
                 
                 {/* Color Picker Section */}
@@ -737,18 +868,17 @@ const AssetTypeForm = ({
                             style={{ 
                                 width: '60px', 
                                 height: '40px', 
-                                cursor: isEditing && selectedAsset?.subtype_of_id ? 'not-allowed' : 'pointer',
-                                opacity: isEditing && selectedAsset?.subtype_of_id ? 0.6 : 1
+                                cursor: isEditing && selectedAsset?.category_id ? 'not-allowed' : 'pointer',
+                                opacity: isEditing && selectedAsset?.category_id ? 0.6 : 1
                             }}
-                            disabled={isEditing && selectedAsset?.subtype_of_id}
-                            title={isEditing && selectedAsset?.subtype_of_id ? 'Subtypes inherit their parent type\'s color' : 'Select a color for this type'}
+                            disabled={isEditing && selectedAsset?.category_id}
+                            title={isEditing && selectedAsset?.category_id ? 'Subtypes inherit their parent type\'s color' : 'Select a color for this type'}
                         />
                         <span style={{ fontSize: '14px', color: '#6c757d' }}>
                             {color}
                         </span>
                         <span style={{ fontSize: '12px', color: '#999', fontStyle: 'italic' }}>
-                            {isEditing && selectedAsset?.subtype_of_id && '(Inherited from parent - cannot be changed)'}
-                            {!isEditing && '(Randomly generated - you can change it)'}
+                            {isEditing && selectedAsset?.category_id && '(Inherited from parent - cannot be changed)'}
                         </span>
                     </div>
                 </div>
@@ -795,129 +925,156 @@ const AssetTypeForm = ({
                     </button>
                 </div>
                 
-                {/* Sub-Types Section - Show when creating or editing */}
+                {/* Types in Category Section - Collapsible */}
                 <div className="form-group">
-                    <label className="form-label">Sub-Types:</label>
-                    
-                    {/* Create New Sub-Types */}
-                    <div style={{ marginBottom: '15px' }}>
-                        <label className="form-label" style={{ fontSize: '13px', marginBottom: '5px', display: 'block' }}>
-                            Create New Sub-Types:
+                    <div 
+                        onClick={() => setIsCategorySectionExpanded(!isCategorySectionExpanded)}
+                        style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            cursor: 'pointer',
+                            userSelect: 'none',
+                            padding: '8px 0',
+                            borderBottom: isCategorySectionExpanded ? '1px solid #e0e0e0' : 'none',
+                            marginBottom: isCategorySectionExpanded ? '15px' : '0'
+                        }}
+                    >
+                        <span style={{ 
+                            marginRight: '8px', 
+                            fontSize: '12px',
+                            transition: 'transform 0.2s',
+                            transform: isCategorySectionExpanded ? 'rotate(90deg)' : 'rotate(0deg)'
+                        }}>
+                            ▶
+                        </span>
+                        <label className="form-label" style={{ margin: 0, cursor: 'pointer' }}>
+                            Convert to category
                         </label>
-                        {subTypes.map((subType, index) => (
-                            <div key={subType.id} className="parent-dropdown-row">
-                                <input
-                                    type="text"
-                                    value={subType.value}
-                                    onChange={(e) => handleSubTypeChange(subType.id, e.target.value)}
-                                    placeholder={subType.existingId ? `Sub-Type ${index + 1} (existing)` : `Sub-Type ${index + 1}`}
-                                    className="form-input parent-dropdown"
-                                    disabled={!!subType.existingId}
-                                    style={subType.existingId ? { backgroundColor: '#f0f0f0', cursor: 'not-allowed' } : {}}
-                                />
-                                {subTypes.length > 1 && (
-                                    <button
-                                        type="button"
-                                        onClick={() => removeSubType(subType.id)}
-                                        className="remove-parent-button"
-                                        title={subType.existingId ? "Existing sub-types cannot be removed here. Delete from tree if needed." : "Remove this sub-type"}
-                                        disabled={!!subType.existingId}
-                                        style={subType.existingId ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
-                                    >
-                                        ×
-                                    </button>
-                                )}
-                            </div>
-                        ))}
-                        <button
-                            type="button"
-                            onClick={addAnotherSubType}
-                            className="add-parent-button"
-                        >
-                            + Add Sub-Type
-                        </button>
-                        <p style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
-                            {subTypes.some(st => st.existingId) 
-                                ? 'Existing sub-types are shown in gray. Add new sub-types below.' 
-                                : isEditing && selectedAsset
-                                ? 'Enter sub-type names. They will be created when you save.'
-                                : 'Enter sub-type names for this new type. They will be created when you save.'}
-                        </p>
                     </div>
                     
-                    {/* Select Existing Types as Sub-Types */}
-                    <div style={{ marginTop: '15px' }}>
-                        <label className="form-label" style={{ fontSize: '13px', marginBottom: '5px', display: 'block' }}>
-                            Or Select Existing Type as Sub-Type:
-                        </label>
-                        
-                        {/* Show selected subtypes above the dropdown */}
-                        {selectedExistingSubTypes.length > 0 && (
-                            <div style={{ marginBottom: '10px' }}>
-                                {selectedExistingSubTypes.map(typeId => {
-                                    const type = assetTypes?.find(at => at.id === typeId);
-                                    return type ? (
-                                        <div key={typeId} className="parent-dropdown-row" style={{ marginBottom: '5px' }}>
-                                            <span className="form-input parent-dropdown" style={{ backgroundColor: '#f0f0f0', cursor: 'default' }}>
-                                                {type.title}
-                                            </span>
+                    {isCategorySectionExpanded && (
+                        <>
+                            {/* Create New Types in Category */}
+                            <div style={{ marginBottom: '15px' }}>
+                                <label className="form-label" style={{ fontSize: '13px', marginBottom: '5px', display: 'block' }}>
+                                    Create New Types in this Category:
+                                </label>
+                                {newTypesInCategory.map((typeEntry, index) => (
+                                    <div key={typeEntry.id} className="parent-dropdown-row">
+                                        <input
+                                            type="text"
+                                            value={typeEntry.value}
+                                            onChange={(e) => handleNewTypeInCategoryChange(typeEntry.id, e.target.value)}
+                                            placeholder={typeEntry.existingId ? `Type ${index + 1} (existing)` : `Type ${index + 1}`}
+                                            className="form-input parent-dropdown"
+                                            disabled={!!typeEntry.existingId}
+                                            style={typeEntry.existingId ? { backgroundColor: '#f0f0f0', cursor: 'not-allowed' } : {}}
+                                        />
+                                        {newTypesInCategory.length > 1 && (
                                             <button
                                                 type="button"
-                                                onClick={() => removeExistingSubType(typeId)}
+                                                onClick={() => removeNewTypeInCategory(typeEntry.id)}
                                                 className="remove-parent-button"
-                                                title="Remove this sub-type"
+                                                title={typeEntry.existingId ? "Existing types cannot be removed here. Delete from tree if needed." : "Remove this type"}
+                                                disabled={!!typeEntry.existingId}
+                                                style={typeEntry.existingId ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
                                             >
                                                 ×
                                             </button>
-                                        </div>
-                                    ) : null;
-                                })}
+                                        )}
+                                    </div>
+                                ))}
+                                <button
+                                    type="button"
+                                    onClick={addAnotherTypeInCategory}
+                                    className="add-parent-button"
+                                >
+                                    + Add Type
+                                </button>
+                                <p style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
+                                    {newTypesInCategory.some(st => st.existingId) 
+                                        ? 'Existing types are shown in gray. Add new types below.' 
+                                        : isEditing && selectedAsset
+                                        ? 'Enter type names. They will be created when you save.'
+                                        : 'Enter type names for this new category. They will be created when you save.'}
+                                </p>
                             </div>
-                        )}
-                        
-                        {/* Dropdown */}
-                        <select
-                            value={existingSubTypeDropdown.value}
-                            onChange={(e) => handleExistingSubTypeDropdownChange(existingSubTypeDropdown.id, e.target.value)}
-                            className="form-select parent-dropdown"
-                        >
-                            <option value="">-- Select an existing type --</option>
-                            {(assetTypes || []).filter(assetType => {
-                                // Filter out invalid types and already selected types
-                                return canBeSubType(assetType.id) && !selectedExistingSubTypes.includes(assetType.id);
-                            }).map(assetType => (
-                                <option key={assetType.id} value={assetType.id}>
-                                    {assetType.title}
-                                    {assetType.subtype_of_id && (
-                                        ` (currently sub-type of ${assetTypes.find(at => at.id === assetType.subtype_of_id)?.title || 'Unknown'})`
+                            
+                            {/* Select Existing Types to Add to Category */}
+                            <div style={{ marginTop: '15px' }}>
+                                <label className="form-label" style={{ fontSize: '13px', marginBottom: '5px', display: 'block' }}>
+                                    Or Add Existing Type to this Category:
+                                </label>
+                                
+                                {/* Show selected types above the dropdown */}
+                                {selectedTypesInCategory.length > 0 && (
+                                    <div style={{ marginBottom: '10px' }}>
+                                        {selectedTypesInCategory.map(typeId => {
+                                            const type = assetTypes?.find(at => at.id === typeId);
+                                            return type ? (
+                                                <div key={typeId} className="parent-dropdown-row" style={{ marginBottom: '5px' }}>
+                                                    <span className="form-input parent-dropdown" style={{ backgroundColor: '#f0f0f0', cursor: 'default' }}>
+                                                        {type.title}
+                                                    </span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removeTypeFromCategory(typeId)}
+                                                        className="remove-parent-button"
+                                                        title="Remove this type from category"
+                                                    >
+                                                        ×
+                                                    </button>
+                                                </div>
+                                            ) : null;
+                                        })}
+                                    </div>
+                                )}
+                                
+                                {/* Dropdown */}
+                                <select
+                                    value={typeSelectorDropdown.value}
+                                    onChange={(e) => handleTypeSelectorChange(typeSelectorDropdown.id, e.target.value)}
+                                    className="form-select parent-dropdown"
+                                >
+                                    <option value="">-- Select an existing type --</option>
+                                    {(assetTypes || []).filter(assetType => {
+                                        // Filter out invalid types and already selected types
+                                        return canBeAddedToCategory(assetType.id) && !selectedTypesInCategory.includes(assetType.id);
+                                    }).map(assetType => (
+                                        <option key={assetType.id} value={assetType.id}>
+                                            {assetType.title}
+                                            {assetType.category_id && (
+                                                ` (currently in category: ${assetTypes.find(at => at.id === assetType.category_id)?.title || 'Unknown'})`
+                                            )}
+                                        </option>
+                                    ))}
+                                </select>
+                                
+                                {/* Button underneath the dropdown */}
+                                <button
+                                    type="button"
+                                    onClick={addTypeToCategory}
+                                    className="add-parent-button"
+                                    disabled={!typeSelectorDropdown.value}
+                                    title="Add this type to the category"
+                                    style={{ 
+                                        marginTop: '8px'
+                                    }}
+                                >
+                                    + Add to Category
+                                </button>
+                                <p style={{ fontSize: '11px', color: '#666', marginTop: '5px' }}>
+                                    {typeSelectorDropdown.value ? (
+                                        <span style={{ color: '#28a745', fontWeight: '500' }}>
+                                            Selected type will be added to this category when you save.
+                                        </span>
+                                    ) : (
+                                        'Invalid types (self, circular references, types already in a category, types that are categories) are filtered out.'
                                     )}
-                                </option>
-                            ))}
-                        </select>
-                        
-                        {/* Button underneath the dropdown */}
-                        <button
-                            type="button"
-                            onClick={addExistingSubType}
-                            className="add-parent-button"
-                            disabled={!existingSubTypeDropdown.value}
-                            title="Add this type to the list for multiple sub-types"
-                            style={{ 
-                                marginTop: '8px'
-                            }}
-                        >
-                            + Add Subtype
-                        </button>
-                        <p style={{ fontSize: '11px', color: '#666', marginTop: '5px' }}>
-                            {existingSubTypeDropdown.value ? (
-                                <span style={{ color: '#28a745', fontWeight: '500' }}>
-                                    Selected type will be set as a sub-type when you save. Click "+ Add Subtype" to select additional sub-types.
-                                </span>
-                            ) : (
-                                'Invalid types (self, circular references, already sub-types, types with subtypes) are filtered out.'
-                            )}
-                        </p>
-                    </div>
+                                </p>
+                            </div>
+                        </>
+                    )}
                 </div>
                 
                 <div style={{ display: 'flex', gap: '10px' }}>

@@ -956,9 +956,9 @@ const MapScreen = () => {
           name: existingAssetType.title || '',
           description: existingAssetType.description || '',
           parent_ids: existingAssetType.parent_ids || [],
-          subtype_of_id: existingAssetType.subtype_of_id || null,
+          category_id: existingAssetType.category_id || null,
           attributes: existingAssetType.attributes || [],
-          has_coordinates: existingAssetType.has_coordinates || false,
+          geometry_type: existingAssetType.geometry_type || 'no_geometry',
           // Note: icon and icon_color are no longer stored on asset types
         };
 

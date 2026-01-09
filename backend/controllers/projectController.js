@@ -605,7 +605,7 @@ const cloneProject = asyncHandler(async (req, res) => {
           .insert({
             title: assetType.title,
             description: assetType.description,
-            has_coordinates: assetType.has_coordinates,
+            geometry_type: assetType.geometry_type || 'point',
             project_id: clonedProject.id
           })
           .select()

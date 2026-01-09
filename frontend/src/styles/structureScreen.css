@@ -170,6 +170,15 @@
     min-height: 0;
 }
 
+.hierarchy-tree-content {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
 .no-hierarchy-selected {
     display: flex;
     flex-direction: column;
@@ -254,6 +263,7 @@
         padding-left: 0;
         padding-top: 15px;
         min-height: 400px;
+        flex: 1;
     }
     
     .hierarchy-title {

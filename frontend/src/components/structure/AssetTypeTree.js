@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
-import '../../styles/structureTree.css'
+import '../../styles/assetTypeTree.css'
 import { useContextMenuSelection } from '../../hooks/useContextMenuSelection'
 import ContextMenu from '../common/ContextMenu'
 
@@ -33,23 +33,21 @@ const TreeNode = ({
     getNodeIndex
 }) => {
     const [isChildrenExpanded, setIsChildrenExpanded] = React.useState(true)
-    const [isSubtypesExpanded, setIsSubtypesExpanded] = React.useState(true)
     const hasChildren = node.children && node.children.length > 0
-    const hasSubTypes = node.subTypes && node.subTypes.length > 0
     const hasMultipleParents = node.parent_ids && node.parent_ids.length > 1
     
-    // Determine node color: use own color, or inherit from parent if it's a subtype
+    // Determine node color: use own color, or inherit from category if it belongs to one
     const nodeColor = React.useMemo(() => {
         if (node.color) {
             return node.color;
         }
-        // If this is a subtype, inherit color from parent
-        if (node.subtype_of_id && assetTypes) {
-            const parentType = assetTypes.find(at => at.id === node.subtype_of_id);
-            return parentType?.color || '#3b82f6'; // Default blue if no parent color
+        // If this type belongs to a category, inherit color from category
+        if (node.category_id && assetTypes) {
+            const category = assetTypes.find(at => at.id === node.category_id);
+            return category?.color || '#3b82f6'; // Default blue if no category color
         }
         return '#3b82f6'; // Default blue
-    }, [node.color, node.subtype_of_id, assetTypes])
+    }, [node.color, node.category_id, assetTypes])
 
     const handleAssetClick = (e) => {
         e.stopPropagation()
@@ -77,21 +75,15 @@ const TreeNode = ({
         setIsChildrenExpanded(!isChildrenExpanded)
     }
 
-    const handleToggleSubtypes = (e) => {
-        e.stopPropagation()
-        setIsSubtypesExpanded(!isSubtypesExpanded)
-    }
-
-
-    const isSubtype = node.subtype_of_id ? true : false
+    // Check if this type belongs to a category
+    const hasCategory = node.category_id ? true : false
     
     return (
-        <div className="tree-node vertical-node">
-            <div className="node-row">
-                {/* Left side: node content + subtypes stacked vertically */}
-                <div className={`node-with-subtypes ${isSubtype ? 'is-subtype' : ''}`}>
+        <div className="type-node">
+            <div className="type-row">
+                <div className="type-container">
                     <div 
-                        className={`node-content ${isSelected ? 'selected' : ''}`}
+                        className={`type-content ${isSelected ? 'selected' : ''}`}
                         onClick={handleAssetClick}
                         onMouseDown={onMouseDown}
                         onContextMenu={handleContextMenuClick}
@@ -104,29 +96,19 @@ const TreeNode = ({
                         }}
                         title="Click to edit, right-click for menu"
                     >
-                        {/* Subtypes expand button on the left */}
-                        {hasSubTypes && (
-                            <button 
-                                className="expand-button expand-button-left"
-                                onClick={handleToggleSubtypes}
-                                title={isSubtypesExpanded ? 'Collapse Subtypes' : 'Expand Subtypes'}
-                            >
-                                {isSubtypesExpanded ? '▼' : '▶'}
-                            </button>
-                        )}
-                        <span className="node-title" title={node.title}>
+                        <span className="type-title" title={node.title}>
                             {node.title}
-                            {node.subtype_of_id && assetTypes && (() => {
-                                const parentType = assetTypes.find(at => at.id === node.subtype_of_id);
-                                // Only show parent name if parent exists in the list
-                                return parentType ? (
+                            {/* Show category name if this type belongs to a category */}
+                            {node.category_id && assetTypes && (() => {
+                                const category = assetTypes.find(at => at.id === node.category_id);
+                                return category ? (
                                     <span style={{ color: '#6c757d', fontSize: '0.9em', fontWeight: 'normal' }}>
-                                        {' '}({parentType.title})
+                                        {' '}({category.title})
                                     </span>
                                 ) : null;
                             })()}
                         </span>
-                        <div className="node-indicators">
+                        <div className="type-indicators">
                             {hasMultipleParents && <span className="multiple-parents-indicator" title="Has multiple parents">🔗</span>}
                             {/* Children expand button on the right */}
                             {hasChildren && (
@@ -140,44 +122,12 @@ const TreeNode = ({
                             )}
                         </div>
                     </div>
-                    
-                    {/* Sub-types appear below parent with same spacing as main types (8px) - collapsible */}
-                    {hasSubTypes && isSubtypesExpanded && (
-                        <div 
-                            className="children vertical-children" 
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            {node.subTypes.map(subType => {
-                                const subTypeIsSelected = checkNodeSelected ? checkNodeSelected(subType) : false
-                                const subTypeIndex = getNodeIndex ? getNodeIndex(subType) : undefined
-                                return (
-                                    <TreeNode 
-                                        key={subType.id} 
-                                        node={subType} 
-                                        level={level + 1} 
-                                        parentCount={parentCount + 1}
-                                        onAssetClick={onAssetClick}
-                                        isTopLevel={false}
-                                        assetTypes={assetTypes}
-                                        treeData={treeData}
-                                        isSelected={subTypeIsSelected}
-                                        onItemSelect={onItemSelect}
-                                        onContextMenu={onContextMenu}
-                                        onMouseDown={onMouseDown}
-                                        itemIndex={subTypeIndex}
-                                        checkNodeSelected={checkNodeSelected}
-                                        getNodeIndex={getNodeIndex}
-                                    />
-                                )
-                            })}
-                        </div>
-                    )}
                 </div>
                 
-                {/* Children types appear horizontally to the right, stack vertically if multiple */}
+                {/* Children appear to the right, stacked vertically if multiple */}
                 {hasChildren && isChildrenExpanded && (
                     <div 
-                        className="children horizontal-children vertical-stack" 
+                        className="children-container" 
                         onClick={(e) => e.stopPropagation()}
                     >
                         {node.children.map(child => {
@@ -229,9 +179,6 @@ const AssetTypeTree = ({ assetTypes = [], onRemoveAssetType, onAssetClick }) => 
             if (node.children && node.children.length > 0) {
                 flattenTree(node.children, result)
             }
-            if (node.subTypes && node.subTypes.length > 0) {
-                flattenTree(node.subTypes, result)
-            }
         })
         return result
     }
@@ -251,7 +198,9 @@ const AssetTypeTree = ({ assetTypes = [], onRemoveAssetType, onAssetClick }) => 
 
     const dynamicStyles = getDynamicStyles()
     
-    // Build tree structure from flat items array with support for multiple parents and sub-types
+    // Build tree structure from flat items array
+    // Supports both parent_ids (child declares parents) and children_ids (parent declares children)
+    // Categories are hidden - types in a category inherit the category's children_ids
     const buildTree = (items) => {
         const itemMap = new Map()
         const rootItems = []
@@ -263,72 +212,222 @@ const AssetTypeTree = ({ assetTypes = [], onRemoveAssetType, onAssetClick }) => 
         }
 
         try {
-            // Create a map of all items with separate arrays for sub-types and children types
+            // First, identify which items are categories (have other items pointing to them via category_id)
+            const categoryIds = new Set()
+            items.forEach(item => {
+                if (item.category_id) {
+                    categoryIds.add(String(item.category_id))
+                }
+            })
+
+            // Create a map of all items
             items.forEach(item => {
                 itemMap.set(item.id, { 
                     ...item, 
-                    subTypes: [],  // Sub-types (subtype_of_id relationship)
-                    children: []    // Children types (parent_ids relationship)
+                    children: []    // Will be populated from both parent_ids and children_ids
                 })
             })
 
-            // Build relationships - process sub-types first, then children types
+            // Track children of categories (via both children_ids and parent_ids)
+            // These items should appear as children of ALL types in that category, not at root
+            const categoryOnlyChildren = new Set()  // Items that are ONLY children of categories
+            const categoryToChildren = new Map()    // Map of category ID -> array of child IDs
+            
+            // Method 1: Track via category's children_ids
             items.forEach(item => {
-                const itemId = String(item.id)
-                
-                // Handle sub-types (subtype_of_id relationship) - nested below parent
-                if (item.subtype_of_id) {
-                    const parentIdStr = String(item.subtype_of_id)
-                    const parent = itemMap.get(parentIdStr)
-                    if (parent && parent.id !== item.id) { // Prevent self-reference
-                        parent.subTypes.push(itemMap.get(itemId))
-                        processedItems.add(itemId)
-                    } else {
-                        // Parent doesn't exist or is self, treat as root
-                        if (!processedItems.has(itemId)) {
-                            rootItems.push(itemMap.get(itemId))
-                            processedItems.add(itemId)
-                        }
+                if (categoryIds.has(String(item.id))) {
+                    const childrenIds = item.children_ids || []
+                    if (!categoryToChildren.has(String(item.id))) {
+                        categoryToChildren.set(String(item.id), [])
                     }
+                    childrenIds.forEach(childId => {
+                        categoryOnlyChildren.add(String(childId))
+                        categoryToChildren.get(String(item.id)).push(childId)
+                    })
                 }
             })
             
-            // Then handle children types (parent_ids relationship)
+            // Method 2: Track via item's parent_ids pointing to categories
+            items.forEach(item => {
+                const parentIds = item.parent_ids || []
+                let hasCategoryParent = false
+                let hasNonCategoryParent = false
+                
+                parentIds.forEach(parentId => {
+                    const parentIdStr = String(parentId)
+                    if (categoryIds.has(parentIdStr)) {
+                        hasCategoryParent = true
+                        // Add this item to the category's children list
+                        if (!categoryToChildren.has(parentIdStr)) {
+                            categoryToChildren.set(parentIdStr, [])
+                        }
+                        if (!categoryToChildren.get(parentIdStr).includes(item.id)) {
+                            categoryToChildren.get(parentIdStr).push(item.id)
+                        }
+                    } else if (itemMap.has(parentIdStr)) {
+                        hasNonCategoryParent = true
+                    }
+                })
+                
+                // If item has category parent(s) but NO non-category parents, mark as category-only child
+                if (hasCategoryParent && !hasNonCategoryParent) {
+                    categoryOnlyChildren.add(String(item.id))
+                }
+            })
+
+            // Build parent-child relationships using BOTH parent_ids and children_ids
             items.forEach(item => {
                 const itemId = String(item.id)
-                // Skip if already processed as a sub-type
+                
+                // Skip categories - they won't be shown in the tree
+                if (categoryIds.has(itemId)) {
+                    processedItems.add(itemId)
+                    return
+                }
+                
+                // Skip items that are only children of categories
+                // (they will be added to types in those categories below)
+                if (categoryOnlyChildren.has(itemId)) {
+                    processedItems.add(itemId)
+                    return
+                }
+                
+                // Get this item's node
+                const itemNode = itemMap.get(item.id)
+                
+                // Add direct children from children_ids (parent declares children)
+                const childrenIds = item.children_ids || []
+                childrenIds.forEach(childId => {
+                    const childNode = itemMap.get(childId)
+                    if (childNode && childId !== item.id && !itemNode.children.some(c => c.id === childId)) {
+                        itemNode.children.push(childNode)
+                    }
+                })
+                
+                // If item belongs to a category, inherit the category's children
+                if (item.category_id) {
+                    const categoryIdStr = String(item.category_id)
+                    const categoryChildrenList = categoryToChildren.get(categoryIdStr) || []
+                    categoryChildrenList.forEach(childId => {
+                        const childNode = itemMap.get(childId)
+                        // Avoid adding duplicate children and self-references
+                        if (childNode && childId !== item.id && !itemNode.children.some(c => c.id === childId)) {
+                            itemNode.children.push(childNode)
+                        }
+                    })
+                }
+            })
+            
+            // Add children from parent_ids (child declares parents) - only for non-category parents
+            items.forEach(item => {
+                const itemId = String(item.id)
+                
+                // Skip categories
+                if (categoryIds.has(itemId)) {
+                    return
+                }
+                
+                // Skip category-only children (already handled above)
+                if (categoryOnlyChildren.has(itemId)) {
+                    return
+                }
+                
+                // Collect all effective parent IDs:
+                // 1. Item's own parent_ids (non-category parents)
+                // 2. If item belongs to a category, also inherit the category's parent_ids
+                const effectiveParentIds = new Set()
+                
+                // Add item's own non-category parents
+                const parentIds = item.parent_ids || []
+                parentIds.forEach(parentId => {
+                    const parentIdStr = String(parentId)
+                    if (!categoryIds.has(parentIdStr)) {
+                        effectiveParentIds.add(parentIdStr)
+                    }
+                })
+                
+                // If item belongs to a category, inherit the category's parents
+                // This makes types in a category become children of the category's parents
+                if (item.category_id) {
+                    const category = itemMap.get(item.category_id)
+                    if (category && category.parent_ids && category.parent_ids.length > 0) {
+                        category.parent_ids.forEach(parentId => {
+                            const parentIdStr = String(parentId)
+                            // Only inherit non-category parents
+                            if (!categoryIds.has(parentIdStr)) {
+                                effectiveParentIds.add(parentIdStr)
+                            }
+                        })
+                    }
+                }
+                
+                // Add this item as a child to all effective parents
+                effectiveParentIds.forEach(parentIdStr => {
+                    if (itemMap.has(parentIdStr) && parentIdStr !== itemId) {
+                        const parentNode = itemMap.get(parentIdStr)
+                        const childNode = itemMap.get(item.id)
+                        // Avoid duplicates
+                        if (childNode && !parentNode.children.some(c => c.id === item.id)) {
+                            parentNode.children.push(childNode)
+                        }
+                    }
+                })
+            })
+            
+            // Determine which items are root items (have no valid parent)
+            items.forEach(item => {
+                const itemId = String(item.id)
+                
+                // Skip categories
+                if (categoryIds.has(itemId)) {
+                    return
+                }
+                
+                // Skip category-only children (they appear under types, not at root)
+                if (categoryOnlyChildren.has(itemId)) {
+                    return
+                }
+                
+                // Skip already processed
                 if (processedItems.has(itemId)) {
                     return
                 }
                 
+                // Check if this item has any non-category parent via parent_ids
                 const parentIds = item.parent_ids || []
-                if (parentIds.length > 0) {
-                    let hasValidParent = false
-                    // Add this item as a child to all its parents
-                    parentIds.forEach(parentId => {
-                        // Convert to string for comparison to handle UUID format issues
-                        const parentIdStr = String(parentId)
-                        
-                        if (itemMap.has(parentIdStr) && parentIdStr !== itemId) { // Prevent self-reference
-                            const parent = itemMap.get(parentIdStr)
-                            parent.children.push(itemMap.get(itemId))
-                            hasValidParent = true
-                        }
-                    })
-                    
-                    // If no valid parent exists, promote to root level
-                    if (!hasValidParent && !processedItems.has(itemId)) {
-                        rootItems.push(itemMap.get(itemId))
-                        processedItems.add(itemId)
-                    } else if (hasValidParent) {
-                        // Mark as processed so it doesn't get added to root
-                        processedItems.add(itemId)
+                let hasParentViaParentIds = parentIds.some(parentId => {
+                    const parentIdStr = String(parentId)
+                    return itemMap.has(parentIdStr) && !categoryIds.has(parentIdStr)
+                })
+                
+                // Also check if item's category has parents (inherited parent relationship)
+                let hasParentViaCategory = false
+                if (item.category_id) {
+                    const category = itemMap.get(item.category_id)
+                    if (category && category.parent_ids && category.parent_ids.length > 0) {
+                        hasParentViaCategory = category.parent_ids.some(parentId => {
+                            const parentIdStr = String(parentId)
+                            return itemMap.has(parentIdStr) && !categoryIds.has(parentIdStr)
+                        })
                     }
-                } else if (!processedItems.has(itemId)) {
-                    // No parents - this is a root item
-                    rootItems.push(itemMap.get(itemId))
-                    processedItems.add(itemId)
                 }
+                
+                // Check if this item is a child of any non-category item via their children_ids
+                let hasParentViaChildrenIds = false
+                items.forEach(potentialParent => {
+                    if (!categoryIds.has(String(potentialParent.id)) && 
+                        potentialParent.children_ids && 
+                        potentialParent.children_ids.includes(item.id)) {
+                        hasParentViaChildrenIds = true
+                    }
+                })
+                
+                // If no non-category parent found via any method, add to root level
+                if (!hasParentViaParentIds && !hasParentViaChildrenIds && !hasParentViaCategory) {
+                    rootItems.push(itemMap.get(item.id))
+                }
+                
+                processedItems.add(itemId)
             })
 
             return rootItems
@@ -371,151 +470,89 @@ const AssetTypeTree = ({ assetTypes = [], onRemoveAssetType, onAssetClick }) => 
     }, [flatItems])
 
     // Calculate and set line positions for children connections
+    // Flexbox with align-items: center handles vertical centering automatically
     useEffect(() => {
         if (!treeContentRef.current) return;
 
         const updateLinePositions = () => {
-            // Find all horizontal vertical stack containers (children types)
-            const horizontalVerticalStacks = treeContentRef.current.querySelectorAll('.horizontal-children.vertical-stack');
+            // Find all children containers (children to the right of parent)
+            const childrenContainers = treeContentRef.current.querySelectorAll('.children-container');
             
-            horizontalVerticalStacks.forEach(stack => {
-                const children = Array.from(stack.querySelectorAll(':scope > .vertical-node'));
-                
-                if (children.length >= 1) {
-                    const firstChild = children[0];
-                    const lastChild = children[children.length - 1];
-                    const stackRect = stack.getBoundingClientRect();
+            childrenContainers.forEach(stack => {
+                try {
+                    const children = Array.from(stack.querySelectorAll(':scope > .type-node'));
                     
-                    // Get the node-content elements to find their actual centers
-                    const firstNodeContent = firstChild.querySelector(':scope > .node-row > .node-with-subtypes > .node-content');
-                    const lastNodeContent = lastChild.querySelector(':scope > .node-row > .node-with-subtypes > .node-content');
-                    
-                    if (firstNodeContent && lastNodeContent) {
+                    if (children.length >= 1) {
+                        const firstChild = children[0];
+                        const lastChild = children[children.length - 1];
+                        const stackRect = stack.getBoundingClientRect();
                         
-                        // Find the parent node to get its center for alignment
-                        const nodeRow = stack.closest('.node-row');
-                        let parentNodeContent = null;
+                        // Get the type-content elements to find their actual centers
+                        const firstNodeContent = firstChild.querySelector(':scope > .type-row > .type-container > .type-content');
+                        const lastNodeContent = lastChild.querySelector(':scope > .type-row > .type-container > .type-content');
                         
-                        if (!nodeRow) return;
-                        
-                        // Find ONLY the parent node-content element (not node-with-subtypes, not subtypes)
-                        parentNodeContent = nodeRow.querySelector(':scope > .node-with-subtypes > .node-content:first-child');
-                        
-                        if (!parentNodeContent) return;
-                        
-                        // Get current offset to check if we need to update
-                        const currentOffset = parseFloat(getComputedStyle(stack).getPropertyValue('--children-offset') || '0');
-                        
-                        // Temporarily set offset to 0 to measure natural (untransformed) positions
-                        stack.style.setProperty('--children-offset', '0px');
-                        
-                        // Force layout recalculation
-                        void stack.offsetHeight;
-                        
-                        // Get natural (untransformed) positions relative to fixed reference (node-row)
-                        const nodeRowRect = nodeRow.getBoundingClientRect();
-                        const firstChildRectNatural = firstChild.getBoundingClientRect();
-                        const lastChildRectNatural = lastChild.getBoundingClientRect();
-                        const stackRectNatural = stack.getBoundingClientRect();
-                        const parentRectNatural = parentNodeContent.getBoundingClientRect();
-                        const firstContentRectNatural = firstNodeContent.getBoundingClientRect();
-                        const lastContentRectNatural = lastNodeContent.getBoundingClientRect();
-                        
-                        // Calculate positions relative to node-row (fixed reference that doesn't change with transform)
-                        const stackTopInRow = stackRectNatural.top - nodeRowRect.top;
-                        const parentTopInRow = parentRectNatural.top - nodeRowRect.top;
-                        const firstChildTopInRow = firstChildRectNatural.top - nodeRowRect.top;
-                        const lastChildBottomInRow = lastChildRectNatural.bottom - nodeRowRect.top;
-                        
-                        // Calculate parent center relative to node-row (fixed reference)
-                        const parentCenterInRow = parentTopInRow + (parentRectNatural.height / 2);
-                        
-                        // Calculate children bounds and center relative to node-row
-                        const childrenTotalHeight = lastChildBottomInRow - firstChildTopInRow;
-                        const childrenCenterInRow = firstChildTopInRow + (childrenTotalHeight / 2);
-                        
-                        // Calculate offset needed: how much to shift children to align their center with parent center
-                        // This offset is relative to the stack's natural position
-                        const offset = parentCenterInRow - childrenCenterInRow;
-                        
-                        // Only update if offset changed significantly (prevent oscillation)
-                        const shouldUpdate = Math.abs(offset - currentOffset) > 0.01;
-                        
-                        if (shouldUpdate) {
-                            // Apply transform via CSS variable
-                            stack.style.setProperty('--children-offset', `${offset}px`);
-                            
-                            // Force reflow to apply transform
-                            void stack.offsetHeight;
-                        } else {
-                            // Restore original offset
-                            stack.style.setProperty('--children-offset', `${currentOffset}px`);
+                        if (!firstNodeContent || !lastNodeContent) {
+                            return;
                         }
                         
-                        // Now recalculate positions with the correct offset applied for line drawing
-                        // Force a layout recalculation
-                        void stack.offsetHeight;
+                        // Find the parent type to get its center for line positioning
+                        const typeRow = stack.closest('.type-row');
+                        if (!typeRow) return;
                         
-                        // Get final positions with transform applied
-                        const firstContentRectFinal = firstNodeContent.getBoundingClientRect();
-                        const lastContentRectFinal = lastNodeContent.getBoundingClientRect();
-                        const stackRectFinal = stack.getBoundingClientRect();
+                        const typeContainer = typeRow.querySelector(':scope > .type-container');
+                        if (!typeContainer) return;
                         
-                        // Calculate child centers relative to transformed stack
-                        const firstCenterFinal = (firstContentRectFinal.top - stackRectFinal.top) + (firstContentRectFinal.height / 2);
-                        const lastCenterFinal = (lastContentRectFinal.top - stackRectFinal.top) + (lastContentRectFinal.height / 2);
+                        const parentTypeContent = typeContainer.querySelector(':scope > .type-content');
+                        if (!parentTypeContent) return;
+                        
+                        // Get positions (flexbox already centers parent with children)
+                        const firstContentRect = firstNodeContent.getBoundingClientRect();
+                        const lastContentRect = lastNodeContent.getBoundingClientRect();
+                        const parentRect = parentTypeContent.getBoundingClientRect();
+                        
+                        // Calculate child centers relative to stack
+                        const firstCenter = Math.round((firstContentRect.top - stackRect.top) + (firstContentRect.height / 2));
+                        const lastCenter = Math.round((lastContentRect.top - stackRect.top) + (lastContentRect.height / 2));
                         
                         // Calculate the vertical line height (distance from first to last child center)
-                        const verticalLineHeight = lastCenterFinal - firstCenterFinal;
+                        const verticalLineHeight = Math.round(lastCenter - firstCenter);
                         
-                        // Position the vertical line such that its center aligns with the parent center
-                        // Parent center relative to transformed stack (should equal children center now)
-                        const parentRectFinal = parentNodeContent.getBoundingClientRect();
-                        const parentCenterFinal = (parentRectFinal.top - stackRectFinal.top) + (parentRectFinal.height / 2);
-                        const verticalLineTop = parentCenterFinal - (verticalLineHeight / 2);
+                        // Vertical line starts at first child center
+                        const verticalLineTop = firstCenter;
                         
-                        // Set vertical line position (centered on parent center)
+                        // Set vertical line position
                         stack.style.setProperty('--vertical-line-top', `${verticalLineTop}px`);
                         stack.style.setProperty('--vertical-line-height', `${verticalLineHeight}px`);
                         
                         // Set the connection point for each child's horizontal line
-                        // These are relative to each child node (transform doesn't affect relative positions within child)
                         children.forEach(child => {
-                            const nodeContent = child.querySelector(':scope > .node-row > .node-with-subtypes > .node-content');
-                            if (nodeContent) {
-                                const nodeContentRect = nodeContent.getBoundingClientRect();
+                            const typeContent = child.querySelector(':scope > .type-row > .type-container > .type-content');
+                            if (typeContent) {
+                                const typeContentRect = typeContent.getBoundingClientRect();
                                 const childRect = child.getBoundingClientRect();
-                                const nodeCenter = (nodeContentRect.top - childRect.top) + (nodeContentRect.height / 2);
-                                child.style.setProperty('--node-center', `${nodeCenter}px`);
+                                const typeCenter = Math.round((typeContentRect.top - childRect.top) + (typeContentRect.height / 2));
+                                child.style.setProperty('--node-center', `${typeCenter}px`);
                             }
                         });
                         
                         // Calculate horizontal line position and width
-                        let horizontalLineLeft = -30; // Default fallback
-                        let horizontalLineWidth = 30; // Default fallback
+                        const stackLeft = stackRect.left;
+                        const parentRight = parentRect.right;
                         
-                        // Get final parent position for horizontal line
-                        const parentRectFinalForLine = parentNodeContent.getBoundingClientRect();
-                        const stackRectFinalForLine = stack.getBoundingClientRect();
-                        const stackLeftFinal = stackRectFinalForLine.left;
-                        const parentRightFinal = parentRectFinalForLine.right;
-                        
-                        // Calculate distance from parent's right edge to branch point (left: 0 of stack)
-                        const distanceFromParentRight = stackLeftFinal - parentRightFinal;
-                        
-                        // Calculate horizontal line width (distance from parent right to branch point)
-                        horizontalLineWidth = Math.max(0, distanceFromParentRight);
-                        
-                        // Set horizontal line position (left offset from stack's left edge)
-                        // This should be negative to extend to the left
-                        horizontalLineLeft = -horizontalLineWidth;
+                        // Distance from parent's right edge to children container's left edge
+                        const horizontalLineWidth = Math.round(Math.max(0, stackLeft - parentRight));
+                        const horizontalLineLeft = -horizontalLineWidth;
                         
                         stack.style.setProperty('--horizontal-line-left', `${horizontalLineLeft}px`);
                         stack.style.setProperty('--horizontal-line-width', `${horizontalLineWidth}px`);
                         
-                        // Set horizontal line vertical position to parent center (which aligns with children center)
-                        stack.style.setProperty('--horizontal-line-top', `${parentCenterFinal}px`);
+                        // Horizontal line should be at parent's vertical center (relative to stack)
+                        // Since flexbox centers parent with children group, find the center point
+                        const parentCenterRelativeToStack = Math.round((parentRect.top - stackRect.top) + (parentRect.height / 2));
+                        stack.style.setProperty('--horizontal-line-top', `${parentCenterRelativeToStack}px`);
                     }
+                } catch (error) {
+                    console.error('Error calculating line positions for container:', error);
                 }
             });
         };
@@ -553,7 +590,7 @@ const AssetTypeTree = ({ assetTypes = [], onRemoveAssetType, onAssetClick }) => 
                 if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
                     // Skip if it's just our CSS variable updates
                     const target = mutation.target;
-                    if (target.classList?.contains('horizontal-children')) {
+                    if (target.classList?.contains('children-container')) {
                         return false; // Skip style changes on our containers
                     }
                 }
@@ -638,15 +675,15 @@ const AssetTypeTree = ({ assetTypes = [], onRemoveAssetType, onAssetClick }) => 
 
     // Handle click on tree container to deselect
     const handleTreeContainerClick = (e) => {
-        // Only deselect if clicking on empty space (not on node-content or interactive elements)
+        // Only deselect if clicking on empty space (not on type-content or interactive elements)
         const clickedElement = e.target;
-        const isNodeContent = clickedElement.closest('.node-content');
+        const isTypeContent = clickedElement.closest('.type-content');
         const isButton = clickedElement.tagName === 'BUTTON' || clickedElement.closest('button');
         const isExpandButton = clickedElement.closest('.expand-button');
         
-        // Deselect if clicking on empty space (not on node-content or buttons)
-        // This includes clicking on node-row empty space, tree-content, or tree-scroll-wrapper
-        if (!isNodeContent && !isButton && !isExpandButton) {
+        // Deselect if clicking on empty space (not on type-content or buttons)
+        // This includes clicking on type-row empty space, tree-content, or tree-scroll-wrapper
+        if (!isTypeContent && !isButton && !isExpandButton) {
             clearSelection()
             if (onAssetClick) {
                 onAssetClick(null);
@@ -655,7 +692,7 @@ const AssetTypeTree = ({ assetTypes = [], onRemoveAssetType, onAssetClick }) => 
     };
 
     return (
-        <div className="hierarchy-tree">
+        <div className="asset-type-tree">
             <div className="tree-controls">
                 <div className="zoom-controls">
                     <button 

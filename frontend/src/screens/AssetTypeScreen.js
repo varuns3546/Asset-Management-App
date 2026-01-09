@@ -51,7 +51,7 @@ const AssetTypeScreen = () => {
                 featureTypeId: assetTypeId
             })).unwrap();
             
-            // Refetch feature types to ensure all updates (like subtype_of_id cleanup) are reflected
+            // Refetch feature types to ensure all updates (like category_id cleanup) are reflected
             await dispatch(getFeatureTypes(selectedProject.id));
             
             // Clear selected item if the deleted item type was selected

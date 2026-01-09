@@ -51,16 +51,17 @@ const HierarchyForm = ({
     const handleNewItemChange = (e) => {
         const { name, value } = e.target;
         
-        // If asset_type_id changes, clear coordinates if new item type doesn't have coordinates
+        // If asset_type_id changes, clear coordinates if new item type doesn't have geometry
         if (name === 'asset_type_id') {
             const selectedItemType = itemTypes.find(type => type.id === value);
+            const hasGeometry = selectedItemType?.geometry_type && selectedItemType.geometry_type !== 'no_geometry';
             setNewItem(prev => ({
                 ...prev,
                 [name]: value,
-                beginning_latitude: selectedItemType?.has_coordinates ? prev.beginning_latitude : '',
-                end_latitude: selectedItemType?.has_coordinates ? prev.end_latitude : '',
-                beginning_longitude: selectedItemType?.has_coordinates ? prev.beginning_longitude : '',
-                end_longitude: selectedItemType?.has_coordinates ? prev.end_longitude : ''
+                beginning_latitude: hasGeometry ? prev.beginning_latitude : '',
+                end_latitude: hasGeometry ? prev.end_latitude : '',
+                beginning_longitude: hasGeometry ? prev.beginning_longitude : '',
+                end_longitude: hasGeometry ? prev.end_longitude : ''
             }));
         } else {
             // For all other fields, including coordinates
@@ -81,7 +82,8 @@ const HierarchyForm = ({
 
         // Check if coordinates are valid (only validate fields that are filled)
         const selectedItemType = itemTypes.find(type => type.id === newItem.asset_type_id);
-        if (selectedItemType?.has_coordinates) {
+        const hasGeometry = selectedItemType?.geometry_type && selectedItemType.geometry_type !== 'no_geometry';
+        if (hasGeometry) {
             const coordError = validateHierarchyCoordinates(newItem);
             if (coordError) {
                 setError(coordError);
@@ -195,10 +197,10 @@ const HierarchyForm = ({
                     inputProps={{ name: 'parent_id' }}
                 />
                 
-                {/* Coordinates fields - only show if item type has coordinates */}
+                {/* Coordinates fields - only show if item type has geometry */}
                 {newItem.asset_type_id && (() => {
                     const selectedItemType = itemTypes.find(type => type.id === newItem.asset_type_id);
-                    return selectedItemType?.has_coordinates;
+                    return selectedItemType?.geometry_type && selectedItemType.geometry_type !== 'no_geometry';
                 })() && (
                     <div className="coordinates-section">
                         <label className="form-label">Coordinates:</label>

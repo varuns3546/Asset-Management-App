@@ -170,7 +170,7 @@ const HierarchyScreen = () => {
                             description: '',
                             parent_ids: [],
                             attributes: attributes,
-                            has_coordinates: config.hasCoordinates || false
+                            geometry_type: config.geometryType || (config.hasCoordinates ? 'point' : 'no_geometry')
                         }
                     })).unwrap();
                     
@@ -192,7 +192,7 @@ const HierarchyScreen = () => {
                             description: '',
                             parent_ids: [],
                             attributes: [], // No attributes for sheet defaults
-                            has_coordinates: config.hasCoordinates || false
+                            geometry_type: config.geometryType || (config.hasCoordinates ? 'point' : 'no_geometry')
                         }
                     })).unwrap();
                     

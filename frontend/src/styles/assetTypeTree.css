@@ -1,0 +1,604 @@
+/* =============================================================================
+   ASSET TYPE TREE STYLES
+   
+   TERMINOLOGY:
+   - Type: An asset type shown in the tree
+   - Category: A type that groups other types (hidden from tree, exists for organization)
+   - Child: A type that is a child of another type (displayed TO THE RIGHT of parent)
+   
+   STRUCTURE:
+   .asset-type-tree                    - Main tree container
+     .tree-controls                    - Zoom and expand controls
+     .tree-scroll-wrapper              - Scrollable area
+       .tree-content                   - Content container with zoom transform
+         .type-node                    - Individual type node wrapper
+           .type-row                   - Row containing type content + children
+             .type-container           - Container for type content
+               .type-content           - The actual clickable type box
+             .children-container       - Container for children (to the right)
+               .type-node              - Child nodes (recursive)
+   ============================================================================= */
+
+
+/* =============================================================================
+   MAIN CONTAINER
+   ============================================================================= */
+
+.asset-type-tree {
+    background: white;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+    flex: 1;
+    min-height: 0; /* Important for nested scroll containers */
+    max-height: 100%;
+    overscroll-behavior: contain;
+    position: relative;
+}
+
+.asset-type-tree::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #1e40af 0%, #3b82f6 100%);
+    z-index: 1;
+}
+
+
+/* =============================================================================
+   TREE CONTROLS (Zoom, Expand/Collapse)
+   ============================================================================= */
+
+.tree-controls {
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border-bottom: 2px solid #e0e0e0;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0; /* Don't shrink controls */
+}
+
+.zoom-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.zoom-button {
+    background: #007bff;
+    color: white;
+    border: 1px solid #007bff;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    min-width: 32px;
+}
+
+.zoom-button:hover:not(:disabled) {
+    background: #0056b3;
+    border-color: #0056b3;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.zoom-button:disabled {
+    background: #6c757d;
+    border-color: #6c757d;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.zoom-level {
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+    min-width: 40px;
+    text-align: center;
+}
+
+.tree-toggle-button {
+    background: #007bff;
+    color: white;
+    border: 1px solid #007bff;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    min-width: 40px;
+}
+
+.tree-toggle-button:hover {
+    background: #0056b3;
+    border-color: #0056b3;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+
+/* =============================================================================
+   SCROLLABLE WRAPPER & CONTENT
+   ============================================================================= */
+
+.tree-scroll-wrapper {
+    width: 100%;
+    flex: 1;
+    overflow-x: auto;
+    overflow-y: auto;
+    position: relative;
+    min-height: 0;
+    padding-bottom: 20px;
+    overscroll-behavior: contain;
+}
+
+.tree-content {
+    padding: 30px 20px 40px 20px;
+    position: relative;
+    
+    /* CSS Variables for dynamic sizing */
+    --node-min-width: 120px;
+    --node-gap: 18px;
+    --node-padding: 8px;
+    --node-font-size: 14px;
+    --vertical-gap: 0px;
+    
+    transform-origin: top left;
+    box-sizing: border-box;
+    min-width: max-content;
+    min-height: max-content;
+    
+    /* Disable transitions for smoother zoom */
+    transition: none !important;
+    width: 100%;
+    height: 100%;
+}
+
+.tree-content * {
+    transition: none !important;
+}
+
+
+/* =============================================================================
+   TYPE NODE - Individual type wrapper
+   ============================================================================= */
+
+.type-node {
+    position: relative;
+    margin-bottom: 2px;
+    min-height: fit-content;
+}
+
+/* Root-level types have more spacing between them */
+.tree-content > .type-node:not(:last-child) {
+    margin-bottom: 8px;
+}
+
+
+/* =============================================================================
+   TYPE ROW - Contains type content + children (horizontally)
+   ============================================================================= */
+
+.type-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center; /* Vertically center parent with children group */
+    position: relative;
+    flex-wrap: nowrap;
+    min-height: fit-content;
+    width: 100%;
+}
+
+
+/* =============================================================================
+   TYPE CONTAINER - Container for type content
+   ============================================================================= */
+
+.type-container {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    width: fit-content;
+}
+
+
+/* =============================================================================
+   TYPE CONTENT - The actual clickable type box
+   ============================================================================= */
+
+.type-content {
+    display: flex;
+    align-items: center;
+    padding: var(--node-padding);
+    border: 3px solid #e5e7eb;
+    border-radius: 10px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    justify-content: space-between;
+    position: relative;
+    z-index: 2;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    gap: 8px;
+    box-sizing: border-box;
+    width: 180px;
+}
+
+.type-content.selected {
+    border: 3px solid #007bff !important;
+}
+
+.type-content.selected .type-title {
+    color: #007bff;
+    font-weight: 600;
+}
+
+.type-content:hover {
+    border-width: 3px;
+    box-shadow: 0 4px 8px rgba(30, 64, 175, 0.12);
+    filter: brightness(1.05);
+}
+
+.type-content:hover .type-title {
+    color: #007bff;
+}
+
+.type-title {
+    font-weight: 500;
+    color: #333;
+    font-size: var(--node-font-size);
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.type-indicators {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.multiple-parents-indicator {
+    color: #007bff;
+    font-size: 12px;
+    background: #e7f3ff;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #007bff;
+}
+
+
+/* =============================================================================
+   EXPAND BUTTON - For expanding/collapsing children
+   ============================================================================= */
+
+.expand-button {
+    background: #1e40af;
+    color: white;
+    border: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    flex-shrink: 0;
+    padding: 0;
+    line-height: 1;
+    box-shadow: 0 1px 3px rgba(30, 64, 175, 0.2);
+}
+
+.expand-button-left {
+    margin-right: 8px;
+}
+
+.expand-button-right {
+    margin-left: 8px;
+    margin-right: 0;
+}
+
+.expand-button:hover {
+    background: #1e3a8a;
+    transform: scale(1.1);
+    box-shadow: 0 2px 6px rgba(30, 64, 175, 0.3);
+}
+
+.expand-button:active {
+    transform: scale(0.95);
+}
+
+
+/* =============================================================================
+   CHILDREN CONTAINER - Children displayed TO THE RIGHT of parent type
+   These are types that have the parent as their parent_id
+   The children are stacked vertically to the right of the parent
+   ============================================================================= */
+
+.children-container {
+    flex-direction: column;
+    gap: 0;
+    margin-left: 30px;
+    padding-left: 0;
+    position: relative;
+    display: flex;
+    align-items: stretch;
+    /* No transform needed - flexbox align-items: center on parent handles vertical centering */
+}
+
+/* Each child node */
+.children-container > .type-node {
+    position: relative;
+    padding-left: 30px;
+    flex-shrink: 0;
+    width: 100%;
+    min-height: fit-content;
+    margin-top: 1px;
+}
+
+/* First child has no top margin */
+.children-container > .type-node:first-child {
+    margin-top: 0;
+}
+
+
+/* =============================================================================
+   CONNECTING LINES - Lines connecting parents to children
+   ============================================================================= */
+
+/* Horizontal line from parent to children branch point */
+/* Position is calculated via JS and set as CSS variables */
+.children-container::before {
+    content: '';
+    position: absolute;
+    left: var(--horizontal-line-left, -30px);
+    top: var(--horizontal-line-top, 16px);
+    width: var(--horizontal-line-width, 30px);
+    height: 2px;
+    background-color: #dee2e6;
+    z-index: 0;
+    pointer-events: none;
+}
+
+/* Vertical line connecting all children (from first child to last child) */
+/* Position and height are calculated via JS and set as CSS variables */
+.children-container::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: var(--vertical-line-top, 16px);
+    height: var(--vertical-line-height, 0px);
+    width: 2px;
+    background-color: #dee2e6;
+    z-index: 0;
+    pointer-events: none;
+}
+
+/* Horizontal line from vertical branch to each child */
+/* Position is calculated via JS and set as --node-center CSS variable */
+.children-container > .type-node::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: var(--node-center, 16px);
+    width: 30px;
+    height: 2px;
+    background-color: #dee2e6;
+    z-index: 1;
+    pointer-events: none;
+}
+
+/* For single child: hide vertical branch (no need to connect multiple children) */
+.children-container:has(> .type-node:only-child)::after {
+    display: none;
+}
+
+
+/* =============================================================================
+   RESPONSIVE STYLES
+   ============================================================================= */
+
+@media (max-width: 1024px) {
+    .tree-controls {
+        padding: 14px 18px;
+    }
+    
+    .zoom-button {
+        padding: 5px 11px;
+        font-size: 15px;
+    }
+    
+    .tree-toggle-button {
+        padding: 7px 11px;
+        font-size: 13px;
+    }
+    
+    .tree-content {
+        padding: 18px;
+    }
+    
+    .type-content {
+        padding: 7px 11px;
+    }
+    
+    .type-title {
+        font-size: 13.5px;
+    }
+}
+
+@media (max-width: 900px) {
+    .tree-controls {
+        padding: 12px 16px;
+    }
+    
+    .zoom-button {
+        padding: 5px 10px;
+        font-size: 14px;
+    }
+    
+    .tree-toggle-button {
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 768px) {
+    .tree-controls {
+        padding: 12px 15px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .zoom-controls {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .zoom-button {
+        padding: 5px 10px;
+        font-size: 14px;
+    }
+    
+    .zoom-level {
+        font-size: 13px;
+    }
+    
+    .tree-toggle-button {
+        padding: 7px 10px;
+        font-size: 13px;
+        width: 100%;
+    }
+    
+    .tree-content {
+        padding: 15px;
+    }
+    
+    .type-content {
+        padding: 6px 10px;
+        width: 150px;
+    }
+    
+    .type-title {
+        font-size: 13px;
+    }
+    
+    .expand-button {
+        width: 18px;
+        height: 18px;
+        font-size: 12px;
+        margin-right: 6px;
+    }
+    
+    .type-content {
+        min-width: auto;
+    }
+    
+    .multiple-parents-indicator {
+        width: 16px;
+        height: 16px;
+        font-size: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .tree-controls {
+        padding: 10px 12px;
+        gap: 8px;
+    }
+    
+    .zoom-button {
+        padding: 4px 8px;
+        font-size: 13px;
+        min-width: 28px;
+    }
+    
+    .zoom-level {
+        font-size: 12px;
+        min-width: 35px;
+    }
+    
+    .tree-toggle-button {
+        padding: 6px 8px;
+        font-size: 12px;
+    }
+    
+    .tree-content {
+        padding: 12px;
+    }
+    
+    .type-content {
+        padding: 5px 8px;
+        width: 120px;
+    }
+    
+    .type-title {
+        font-size: 12px;
+    }
+    
+    .expand-button {
+        width: 16px;
+        height: 16px;
+        font-size: 11px;
+        margin-right: 4px;
+    }
+    
+    .multiple-parents-indicator {
+        width: 14px;
+        height: 14px;
+        font-size: 9px;
+    }
+}
+
+@media (max-width: 375px) {
+    .zoom-button {
+        padding: 3px 6px;
+        font-size: 12px;
+        min-width: 24px;
+    }
+    
+    .zoom-level {
+        font-size: 11px;
+        min-width: 30px;
+    }
+    
+    .tree-toggle-button {
+        padding: 5px 6px;
+        font-size: 11px;
+    }
+    
+    .type-content {
+        width: 108px;
+    }
+    
+    .type-title {
+        font-size: 11px;
+    }
+    
+    .expand-button {
+        width: 14px;
+        height: 14px;
+        font-size: 10px;
+        margin-right: 3px;
+    }
+}
