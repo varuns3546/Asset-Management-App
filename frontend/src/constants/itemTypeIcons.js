@@ -3,10 +3,6 @@ export const ITEM_TYPE_ICON_MAP = {
     label: 'Filled Circle',
     preview: '●'
   },
-  circle: {
-    label: 'Hollow Circle',
-    preview: '○'
-  },
   square: {
     label: 'Square',
     preview: '■'

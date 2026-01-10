@@ -486,6 +486,51 @@
     font-weight: 500;
 }
 
+/* Collapsible Section Styles */
+.collapsible-section {
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    background: #fafafa;
+}
+
+.collapsible-header {
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.2s ease;
+}
+
+.collapsible-header:hover {
+    background-color: #f0f0f0;
+}
+
+.collapse-arrow {
+    font-size: 10px;
+    margin-right: 10px;
+    transition: transform 0.2s ease;
+    color: #6c757d;
+}
+
+.collapse-arrow.expanded {
+    transform: rotate(90deg);
+}
+
+.collapsible-title {
+    font-weight: 600;
+    font-size: 14px;
+    color: #495057;
+}
+
+.collapsible-content {
+    padding: 15px;
+    border-top: 1px solid #e9ecef;
+    background: white;
+    border-radius: 0 0 8px 8px;
+}
+
 .attribute-row {
     display: flex;
     align-items: center;

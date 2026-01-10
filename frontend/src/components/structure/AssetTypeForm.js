@@ -88,6 +88,7 @@ const AssetTypeForm = ({
     const [geometryType, setGeometryType] = useState('point'); // Options: point, line, polygon, no_geometry
     const [color, setColor] = useState('#3b82f6'); // Default blue color
     const [isCategorySectionExpanded, setIsCategorySectionExpanded] = useState(false); // Collapsed by default
+    const [isLineageSectionExpanded, setIsLineageSectionExpanded] = useState(false); // Collapsed by default
     const [isEditing, setIsEditing] = useState(false);
 
     // Update form when selectedItem changes
@@ -803,207 +804,227 @@ const AssetTypeForm = ({
                     inputProps={{ name: 'title' }}
                 />
                 
-                <div className="form-group">
-                    <label className="form-label">
-                        Parents: 
-                        {(existingParents.length > 0 || parentDropdowns.some(d => d.value)) && (
-                            <span style={{ color: '#28a745', fontSize: '12px', marginLeft: '8px' }}>
-                                ({existingParents.length + parentDropdowns.filter(d => d.value).length} parent(s))
+                {/* Lineage Section - Collapsible */}
+                <div className="collapsible-section">
+                    <div 
+                        className="collapsible-header"
+                        onClick={() => setIsLineageSectionExpanded(!isLineageSectionExpanded)}
+                    >
+                        <span className={`collapse-arrow ${isLineageSectionExpanded ? 'expanded' : ''}`}>▶</span>
+                        <span className="collapsible-title">Lineage</span>
+                        {(existingParents.length > 0 || parentDropdowns.some(d => d.value) || existingChildren.length > 0 || childrenDropdowns.some(d => d.value)) && (
+                            <span style={{ color: '#6c757d', fontSize: '12px', marginLeft: '8px' }}>
+                                ({existingParents.length + parentDropdowns.filter(d => d.value).length} parent(s), {existingChildren.length + childrenDropdowns.filter(d => d.value).length} child(ren))
                             </span>
                         )}
-                    </label>
+                    </div>
                     
-                    {/* Display existing parents as static items */}
-                    {existingParents.map(parentId => {
-                        const parent = assetTypes?.find(at => at.id === parentId);
-                        if (!parent) return null;
-                        return (
-                            <div key={parentId} className="existing-item-row">
-                                <span className="existing-item-name">{parent.title}</span>
+                    {isLineageSectionExpanded && (
+                        <div className="collapsible-content">
+                            <div className="form-group">
+                                <label className="form-label">
+                                    Parents: 
+                                    {(existingParents.length > 0 || parentDropdowns.some(d => d.value)) && (
+                                        <span style={{ color: '#28a745', fontSize: '12px', marginLeft: '8px' }}>
+                                            ({existingParents.length + parentDropdowns.filter(d => d.value).length} parent(s))
+                                        </span>
+                                    )}
+                                </label>
+                                
+                                {/* Display existing parents as static items */}
+                                {existingParents.map(parentId => {
+                                    const parent = assetTypes?.find(at => at.id === parentId);
+                                    if (!parent) return null;
+                                    return (
+                                        <div key={parentId} className="existing-item-row">
+                                            <span className="existing-item-name">{parent.title}</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => removeExistingParent(parentId)}
+                                                className="remove-parent-button"
+                                                title="Remove this parent"
+                                            >
+                                                ×
+                                            </button>
+                                        </div>
+                                    );
+                                })}
+                                
+                                {/* Dropdown for adding new parents */}
+                                {parentDropdowns.map((dropdown, index) => {
+                                    const selectedParent = assetTypes?.find(at => at.id === dropdown.value);
+                                    return (
+                                        <div key={dropdown.id} className="parent-dropdown-row">
+                                            <select
+                                                value={dropdown.value}
+                                                onChange={(e) => handleParentDropdownChange(dropdown.id, e.target.value)}
+                                                className="form-select parent-dropdown"
+                                            >
+                                                <option value="">Select a parent to add...</option>
+                                                {(assetTypes || []).filter(assetType => {
+                                                    // Don't allow self-reference
+                                                    if (assetType.id === selectedAsset?.id) {
+                                                        return false;
+                                                    }
+                                                    // Don't allow circular references when editing
+                                                    if (selectedAsset && wouldCreateCircularReference(assetType.id, selectedAsset.id)) {
+                                                        return false;
+                                                    }
+                                                    // Don't allow selecting own category as parent
+                                                    if (selectedAsset && selectedAsset.category_id === assetType.id) {
+                                                        return false;
+                                                    }
+                                                    // Don't show already existing parents
+                                                    if (existingParents.includes(assetType.id)) {
+                                                        return false;
+                                                    }
+                                                    // Don't show already selected in other dropdowns
+                                                    if (parentDropdowns.some(d => d.value === assetType.id && d.id !== dropdown.id)) {
+                                                        return false;
+                                                    }
+                                                    return true;
+                                                }).map(assetType => {
+                                                    // Check if this is a category (has types in it)
+                                                    const isCategory = (assetTypes || []).some(at => at.category_id === assetType.id);
+                                                    // Show category label if type belongs to one
+                                                    const category = assetType.category_id ? assetTypes?.find(at => at.id === assetType.category_id) : null;
+                                                    const categoryLabel = category ? ` [${category.title}]` : '';
+                                                    const categoryMarker = isCategory ? ' (Category)' : '';
+                                                    return (
+                                                        <option key={assetType.id} value={assetType.id}>
+                                                            {assetType.title}{categoryLabel}{categoryMarker}
+                                                        </option>
+                                                    );
+                                                })}
+                                            </select>
+                                            {selectedParent && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeParentDropdown(dropdown.id)}
+                                                    className="remove-parent-button"
+                                                    title="Remove this parent"
+                                                >
+                                                    ×
+                                                </button>
+                                            )}
+                                        </div>
+                                    );
+                                })}
                                 <button
                                     type="button"
-                                    onClick={() => removeExistingParent(parentId)}
-                                    className="remove-parent-button"
-                                    title="Remove this parent"
+                                    onClick={addAnotherParent}
+                                    className="add-parent-button"
                                 >
-                                    ×
+                                    + Add Parent
                                 </button>
                             </div>
-                        );
-                    })}
-                    
-                    {/* Dropdown for adding new parents */}
-                    {parentDropdowns.map((dropdown, index) => {
-                        const selectedParent = assetTypes?.find(at => at.id === dropdown.value);
-                        return (
-                            <div key={dropdown.id} className="parent-dropdown-row">
-                                <select
-                                    value={dropdown.value}
-                                    onChange={(e) => handleParentDropdownChange(dropdown.id, e.target.value)}
-                                    className="form-select parent-dropdown"
-                                >
-                                    <option value="">Select a parent to add...</option>
-                                    {(assetTypes || []).filter(assetType => {
-                                        // Don't allow self-reference
-                                        if (assetType.id === selectedAsset?.id) {
-                                            return false;
-                                        }
-                                        // Don't allow circular references when editing
-                                        if (selectedAsset && wouldCreateCircularReference(assetType.id, selectedAsset.id)) {
-                                            return false;
-                                        }
-                                        // Don't allow selecting own category as parent
-                                        if (selectedAsset && selectedAsset.category_id === assetType.id) {
-                                            return false;
-                                        }
-                                        // Don't show already existing parents
-                                        if (existingParents.includes(assetType.id)) {
-                                            return false;
-                                        }
-                                        // Don't show already selected in other dropdowns
-                                        if (parentDropdowns.some(d => d.value === assetType.id && d.id !== dropdown.id)) {
-                                            return false;
-                                        }
-                                        return true;
-                                    }).map(assetType => {
-                                        // Check if this is a category (has types in it)
-                                        const isCategory = (assetTypes || []).some(at => at.category_id === assetType.id);
-                                        // Show category label if type belongs to one
-                                        const category = assetType.category_id ? assetTypes?.find(at => at.id === assetType.category_id) : null;
-                                        const categoryLabel = category ? ` [${category.title}]` : '';
-                                        const categoryMarker = isCategory ? ' (Category)' : '';
-                                        return (
-                                            <option key={assetType.id} value={assetType.id}>
-                                                {assetType.title}{categoryLabel}{categoryMarker}
-                                            </option>
-                                        );
-                                    })}
-                                </select>
-                                {selectedParent && (
-                                    <button
-                                        type="button"
-                                        onClick={() => removeParentDropdown(dropdown.id)}
-                                        className="remove-parent-button"
-                                        title="Remove this parent"
-                                    >
-                                        ×
-                                    </button>
-                                )}
-                            </div>
-                        );
-                    })}
-                    <button
-                        type="button"
-                        onClick={addAnotherParent}
-                        className="add-parent-button"
-                    >
-                        + Add Parent
-                    </button>
-                </div>
-                
-                {/* Children Selection */}
-                <div className="form-group">
-                    <label className="form-label">
-                        Children: 
-                        {(existingChildren.length > 0 || childrenDropdowns.some(d => d.value)) && (
-                            <span style={{ color: '#17a2b8', fontSize: '12px', marginLeft: '8px' }}>
-                                ({existingChildren.length + childrenDropdowns.filter(d => d.value).length} child(ren))
-                            </span>
-                        )}
-                    </label>
-                    
-                    {/* Display existing children as static items */}
-                    {existingChildren.map(childId => {
-                        const child = assetTypes?.find(at => at.id === childId);
-                        if (!child) return null;
-                        return (
-                            <div key={childId} className="existing-item-row">
-                                <span className="existing-item-name">{child.title}</span>
+                            
+                            {/* Children Selection */}
+                            <div className="form-group">
+                                <label className="form-label">
+                                    Children: 
+                                    {(existingChildren.length > 0 || childrenDropdowns.some(d => d.value)) && (
+                                        <span style={{ color: '#17a2b8', fontSize: '12px', marginLeft: '8px' }}>
+                                            ({existingChildren.length + childrenDropdowns.filter(d => d.value).length} child(ren))
+                                        </span>
+                                    )}
+                                </label>
+                                
+                                {/* Display existing children as static items */}
+                                {existingChildren.map(childId => {
+                                    const child = assetTypes?.find(at => at.id === childId);
+                                    if (!child) return null;
+                                    return (
+                                        <div key={childId} className="existing-item-row">
+                                            <span className="existing-item-name">{child.title}</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => removeExistingChild(childId)}
+                                                className="remove-parent-button"
+                                                title="Remove this child"
+                                            >
+                                                ×
+                                            </button>
+                                        </div>
+                                    );
+                                })}
+                                
+                                {/* Dropdown for adding new children */}
+                                {childrenDropdowns.map((dropdown, index) => {
+                                    const selectedChild = assetTypes?.find(at => at.id === dropdown.value);
+                                    return (
+                                        <div key={dropdown.id} className="parent-dropdown-row">
+                                            <select
+                                                value={dropdown.value}
+                                                onChange={(e) => handleChildrenDropdownChange(dropdown.id, e.target.value)}
+                                                className="form-select parent-dropdown"
+                                            >
+                                                <option value="">Select a child to add...</option>
+                                                {(assetTypes || []).filter(assetType => {
+                                                    // Don't allow self-reference
+                                                    if (assetType.id === selectedAsset?.id) {
+                                                        return false;
+                                                    }
+                                                    // Don't allow circular references
+                                                    if (selectedAsset && wouldCreateCircularReference(selectedAsset.id, assetType.id)) {
+                                                        return false;
+                                                    }
+                                                    // Don't show already selected children in dropdowns
+                                                    if (childrenDropdowns.some(d => d.value === assetType.id && d.id !== dropdown.id)) {
+                                                        return false;
+                                                    }
+                                                    // Don't show already existing children
+                                                    if (existingChildren.includes(assetType.id)) {
+                                                        return false;
+                                                    }
+                                                    // Don't allow selecting own category as child
+                                                    if (selectedAsset && selectedAsset.category_id === assetType.id) {
+                                                        return false;
+                                                    }
+                                                    // Don't allow selecting types that have current type as their category
+                                                    if (selectedAsset && assetType.category_id === selectedAsset.id) {
+                                                        return false;
+                                                    }
+                                                    // Don't allow selecting categories (types that have types in them) as children
+                                                    const isCategory = (assetTypes || []).some(at => at.category_id === assetType.id);
+                                                    if (isCategory) {
+                                                        return false;
+                                                    }
+                                                    return true;
+                                                }).map(assetType => {
+                                                    const hasCategory = assetType.category_id;
+                                                    const category = hasCategory ? assetTypes?.find(at => at.id === assetType.category_id) : null;
+                                                    const categoryLabel = category ? ` [${category.title}]` : '';
+                                                    return (
+                                                        <option key={assetType.id} value={assetType.id}>
+                                                            {assetType.title}{categoryLabel}
+                                                        </option>
+                                                    );
+                                                })}
+                                            </select>
+                                            {selectedChild && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeChildrenDropdown(dropdown.id)}
+                                                    className="remove-parent-button"
+                                                    title="Remove this child"
+                                                >
+                                                    ×
+                                                </button>
+                                            )}
+                                        </div>
+                                    );
+                                })}
                                 <button
                                     type="button"
-                                    onClick={() => removeExistingChild(childId)}
-                                    className="remove-parent-button"
-                                    title="Remove this child"
+                                    onClick={addAnotherChild}
+                                    className="add-parent-button"
                                 >
-                                    ×
+                                    + Add Child
                                 </button>
                             </div>
-                        );
-                    })}
-                    
-                    {/* Dropdown for adding new children */}
-                    {childrenDropdowns.map((dropdown, index) => {
-                        const selectedChild = assetTypes?.find(at => at.id === dropdown.value);
-                        return (
-                            <div key={dropdown.id} className="parent-dropdown-row">
-                                <select
-                                    value={dropdown.value}
-                                    onChange={(e) => handleChildrenDropdownChange(dropdown.id, e.target.value)}
-                                    className="form-select parent-dropdown"
-                                >
-                                    <option value="">Select a child to add...</option>
-                                    {(assetTypes || []).filter(assetType => {
-                                        // Don't allow self-reference
-                                        if (assetType.id === selectedAsset?.id) {
-                                            return false;
-                                        }
-                                        // Don't allow circular references
-                                        if (selectedAsset && wouldCreateCircularReference(selectedAsset.id, assetType.id)) {
-                                            return false;
-                                        }
-                                        // Don't show already selected children in dropdowns
-                                        if (childrenDropdowns.some(d => d.value === assetType.id && d.id !== dropdown.id)) {
-                                            return false;
-                                        }
-                                        // Don't show already existing children
-                                        if (existingChildren.includes(assetType.id)) {
-                                            return false;
-                                        }
-                                        // Don't allow selecting own category as child
-                                        if (selectedAsset && selectedAsset.category_id === assetType.id) {
-                                            return false;
-                                        }
-                                        // Don't allow selecting types that have current type as their category
-                                        if (selectedAsset && assetType.category_id === selectedAsset.id) {
-                                            return false;
-                                        }
-                                        // Don't allow selecting categories (types that have types in them) as children
-                                        const isCategory = (assetTypes || []).some(at => at.category_id === assetType.id);
-                                        if (isCategory) {
-                                            return false;
-                                        }
-                                        return true;
-                                    }).map(assetType => {
-                                        const hasCategory = assetType.category_id;
-                                        const category = hasCategory ? assetTypes?.find(at => at.id === assetType.category_id) : null;
-                                        const categoryLabel = category ? ` [${category.title}]` : '';
-                                        return (
-                                            <option key={assetType.id} value={assetType.id}>
-                                                {assetType.title}{categoryLabel}
-                                            </option>
-                                        );
-                                    })}
-                                </select>
-                                {selectedChild && (
-                                    <button
-                                        type="button"
-                                        onClick={() => removeChildrenDropdown(dropdown.id)}
-                                        className="remove-parent-button"
-                                        title="Remove this child"
-                                    >
-                                        ×
-                                    </button>
-                                )}
-                            </div>
-                        );
-                    })}
-                    <button
-                        type="button"
-                        onClick={addAnotherChild}
-                        className="add-parent-button"
-                    >
-                        + Add Child
-                    </button>
+                        </div>
+                    )}
                 </div>
                 
                 {/* Geometry Type Dropdown */}

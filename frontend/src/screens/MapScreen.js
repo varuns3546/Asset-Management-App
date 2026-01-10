@@ -9,7 +9,7 @@ import AddFeatureModal from '../components/map/AddFeatureModal';
 import StyleLayerModal from '../components/map/StyleLayerModal';
 import ExportLayersModal from '../components/map/ExportLayersModal';
 import ErrorMessage from '../components/forms/ErrorMessage';
-import { getHierarchy, getFeatureTypes, updateFeatureType, getProject } from '../features/projects/projectSlice';
+import { getHierarchy, getFeatureTypes, getProject } from '../features/projects/projectSlice';
 import * as gisLayerService from '../services/gisLayerService';
 import { getRandomUnusedStyle } from '../constants/itemTypeIcons';
 import '../styles/map.css';
@@ -939,97 +939,27 @@ const MapScreen = () => {
     setError('');
 
     try {
-      // If it's an asset type layer, update the asset type's icon and icon_color
-      if (selectedLayerForStyle.isAssetTypeLayer && selectedLayerForStyle.assetTypeId) {
-        // Map style properties to asset type properties
-        // symbol -> icon, color -> icon_color
-        const existingAssetType = currentFeatureTypes.find(ft => ft.id === selectedLayerForStyle.assetTypeId);
-        
-        if (!existingAssetType) {
-          if (isRouteMounted()) {
-            setError('Asset type not found');
-          }
-          return;
-        }
+      // Update the GIS layer's style in the database (works for both asset type layers and regular layers)
+      const response = await gisLayerService.updateGisLayer(
+        selectedProject.id,
+        selectedLayerForStyle.id,
+        { style: styleData }
+      );
 
-        const assetTypeUpdate = {
-          name: existingAssetType.title || '',
-          description: existingAssetType.description || '',
-          parent_ids: existingAssetType.parent_ids || [],
-          category_id: existingAssetType.category_id || null,
-          attributes: existingAssetType.attributes || [],
-          geometry_type: existingAssetType.geometry_type || 'no_geometry',
-          // Note: icon and icon_color are no longer stored on asset types
-        };
-
-        console.log('Updating asset type style:', {
-          assetTypeId: selectedLayerForStyle.assetTypeId,
-          styleData,
-          assetTypeUpdate
-        });
-
-        const updateResult = await dispatch(updateFeatureType({
-          projectId: selectedProject.id,
-          featureTypeId: selectedLayerForStyle.assetTypeId,
-          featureTypeData: assetTypeUpdate
-        })).unwrap();
-
-        console.log('Update result:', updateResult);
-
-        if (updateResult.success) {
-          // Update the layer style in state immediately for instant feedback
-          setLayers(prev => prev.map(l => {
-            if (l.id === selectedLayerForStyle.id && l.isAssetTypeLayer) {
-              return {
-                ...l,
-                style: {
-                  ...l.style,
-                  symbol: styleData.symbol !== undefined ? styleData.symbol : l.style.symbol,
-                  color: styleData.color !== undefined ? styleData.color : l.style.color,
-                  opacity: styleData.opacity !== undefined ? styleData.opacity : l.style.opacity,
-                  weight: styleData.weight !== undefined ? styleData.weight : l.style.weight
-                }
-              };
-            }
-            return l;
-          }));
-          
-          // Refresh feature types to get updated icon/color from database
-          await dispatch(getFeatureTypes(selectedProject.id));
-          // Wait a moment for state to update
-          await new Promise(resolve => setTimeout(resolve, 100));
-          // Reload layers to reflect the changes from database (don't show spinner on reload)
-          await loadLayersFromDatabase(false);
-          setShowStyleLayerModal(false);
-          setSelectedLayerForStyle(null);
-        } else {
-          if (isRouteMounted()) {
-            setError('Failed to update asset type style');
-          }
-        }
+      if (response.success) {
+        // Update the layer in state immediately for instant feedback
+        setLayers(prev => prev.map(l => 
+          l.id === selectedLayerForStyle.id 
+            ? { ...l, style: { ...l.style, ...styleData } }
+            : l
+        ));
+        // Reload layers to ensure database changes are reflected (don't show spinner on reload)
+        await loadLayersFromDatabase(false);
+        setShowStyleLayerModal(false);
+        setSelectedLayerForStyle(null);
       } else {
-        // Regular layer - update GIS layer style
-        const response = await gisLayerService.updateGisLayer(
-          selectedProject.id,
-          selectedLayerForStyle.id,
-          { style: styleData }
-        );
-
-        if (response.success) {
-          // Update the layer in state
-          setLayers(prev => prev.map(l => 
-            l.id === selectedLayerForStyle.id 
-              ? { ...l, style: { ...l.style, ...styleData } }
-              : l
-          ));
-          // Reload layers to ensure database changes are reflected (don't show spinner on reload)
-          await loadLayersFromDatabase(false);
-          setShowStyleLayerModal(false);
-          setSelectedLayerForStyle(null);
-        } else {
-          if (isRouteMounted()) {
-            setError('Failed to update layer style');
-          }
+        if (isRouteMounted()) {
+          setError('Failed to update layer style');
         }
       }
     } catch (error) {
