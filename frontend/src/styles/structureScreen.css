@@ -466,6 +466,26 @@
     width: 100%;
 }
 
+.existing-item-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    padding: 8px 12px;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.existing-item-name {
+    flex: 1;
+    font-size: 14px;
+    color: #495057;
+    font-weight: 500;
+}
+
 .attribute-row {
     display: flex;
     align-items: center;

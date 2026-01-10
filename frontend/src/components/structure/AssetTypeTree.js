@@ -199,8 +199,8 @@ const AssetTypeTree = ({ assetTypes = [], onRemoveAssetType, onAssetClick }) => 
     const dynamicStyles = getDynamicStyles()
     
     // Build tree structure from flat items array
-    // Supports both parent_ids (child declares parents) and children_ids (parent declares children)
-    // Categories are hidden - types in a category inherit the category's children_ids
+    // Uses parent_ids to establish parent-child relationships
+    // Categories are hidden - types in a category inherit the category's parent relationships
     const buildTree = (items) => {
         const itemMap = new Map()
         const rootItems = []
@@ -224,30 +224,16 @@ const AssetTypeTree = ({ assetTypes = [], onRemoveAssetType, onAssetClick }) => 
             items.forEach(item => {
                 itemMap.set(item.id, { 
                     ...item, 
-                    children: []    // Will be populated from both parent_ids and children_ids
+                    children: []    // Will be populated from parent_ids relationships
                 })
             })
 
-            // Track children of categories (via both children_ids and parent_ids)
+            // Track children of categories (items with parent_ids pointing to categories)
             // These items should appear as children of ALL types in that category, not at root
             const categoryOnlyChildren = new Set()  // Items that are ONLY children of categories
             const categoryToChildren = new Map()    // Map of category ID -> array of child IDs
             
-            // Method 1: Track via category's children_ids
-            items.forEach(item => {
-                if (categoryIds.has(String(item.id))) {
-                    const childrenIds = item.children_ids || []
-                    if (!categoryToChildren.has(String(item.id))) {
-                        categoryToChildren.set(String(item.id), [])
-                    }
-                    childrenIds.forEach(childId => {
-                        categoryOnlyChildren.add(String(childId))
-                        categoryToChildren.get(String(item.id)).push(childId)
-                    })
-                }
-            })
-            
-            // Method 2: Track via item's parent_ids pointing to categories
+            // Track via item's parent_ids pointing to categories
             items.forEach(item => {
                 const parentIds = item.parent_ids || []
                 let hasCategoryParent = false
@@ -275,7 +261,7 @@ const AssetTypeTree = ({ assetTypes = [], onRemoveAssetType, onAssetClick }) => 
                 }
             })
 
-            // Build parent-child relationships using BOTH parent_ids and children_ids
+            // Build parent-child relationships using parent_ids
             items.forEach(item => {
                 const itemId = String(item.id)
                 
@@ -294,15 +280,6 @@ const AssetTypeTree = ({ assetTypes = [], onRemoveAssetType, onAssetClick }) => 
                 
                 // Get this item's node
                 const itemNode = itemMap.get(item.id)
-                
-                // Add direct children from children_ids (parent declares children)
-                const childrenIds = item.children_ids || []
-                childrenIds.forEach(childId => {
-                    const childNode = itemMap.get(childId)
-                    if (childNode && childId !== item.id && !itemNode.children.some(c => c.id === childId)) {
-                        itemNode.children.push(childNode)
-                    }
-                })
                 
                 // If item belongs to a category, inherit the category's children
                 if (item.category_id) {
@@ -412,18 +389,8 @@ const AssetTypeTree = ({ assetTypes = [], onRemoveAssetType, onAssetClick }) => 
                     }
                 }
                 
-                // Check if this item is a child of any non-category item via their children_ids
-                let hasParentViaChildrenIds = false
-                items.forEach(potentialParent => {
-                    if (!categoryIds.has(String(potentialParent.id)) && 
-                        potentialParent.children_ids && 
-                        potentialParent.children_ids.includes(item.id)) {
-                        hasParentViaChildrenIds = true
-                    }
-                })
-                
                 // If no non-category parent found via any method, add to root level
-                if (!hasParentViaParentIds && !hasParentViaChildrenIds && !hasParentViaCategory) {
+                if (!hasParentViaParentIds && !hasParentViaCategory) {
                     rootItems.push(itemMap.get(item.id))
                 }
                 

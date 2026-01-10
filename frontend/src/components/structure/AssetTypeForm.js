@@ -75,7 +75,11 @@ const AssetTypeForm = ({
     });
 
     const [parentDropdowns, setParentDropdowns] = useState([{ id: 1, value: '' }]);
-    const [childrenDropdowns, setChildrenDropdowns] = useState([{ id: 1, value: '' }]); // For children_ids
+    const [existingParents, setExistingParents] = useState([]); // Parents already saved in database
+    const [childrenDropdowns, setChildrenDropdowns] = useState([{ id: 1, value: '' }]); // For selecting children (will update their parent_ids)
+    const [existingChildren, setExistingChildren] = useState([]); // Children already saved in database
+    const [originalChildren, setOriginalChildren] = useState([]); // Track original children for removal detection
+    const [originalParents, setOriginalParents] = useState([]); // Track original parents for removal detection
     const [attributes, setAttributes] = useState([{ id: 1, value: '', type: 'text' }]);
     const [newTypesInCategory, setNewTypesInCategory] = useState([{ id: 1, value: '', existingId: null }]);
     const [selectedTypesInCategory, setSelectedTypesInCategory] = useState([]);
@@ -96,27 +100,30 @@ const AssetTypeForm = ({
                 attributes: []
             });
             
-            // Set up parent dropdowns
+            // Set up existing parents (display as static items)
             if (selectedAsset.parent_ids && selectedAsset.parent_ids.length > 0) {
-                const parentDropdownsData = selectedAsset.parent_ids.map((parentId, index) => ({
-                    id: index + 1,
-                    value: parentId
-                }));
-                setParentDropdowns(parentDropdownsData);
+                setExistingParents(selectedAsset.parent_ids);
+                setOriginalParents(selectedAsset.parent_ids);
             } else {
-                setParentDropdowns([{ id: 1, value: '' }]);
+                setExistingParents([]);
+                setOriginalParents([]);
             }
+            // Reset dropdown for adding new parents
+            setParentDropdowns([{ id: 1, value: '' }]);
             
-            // Set up children dropdowns
-            if (selectedAsset.children_ids && selectedAsset.children_ids.length > 0) {
-                const childrenDropdownsData = selectedAsset.children_ids.map((childId, index) => ({
-                    id: index + 1,
-                    value: childId
-                }));
-                setChildrenDropdowns(childrenDropdownsData);
+            // Set up existing children (find types that have this asset in their parent_ids)
+            const childrenOfAsset = assetTypes.filter(at => 
+                at.parent_ids && at.parent_ids.includes(selectedAsset.id)
+            );
+            if (childrenOfAsset.length > 0) {
+                setExistingChildren(childrenOfAsset.map(c => c.id));
+                setOriginalChildren(childrenOfAsset.map(c => c.id)); // Track for removal detection
             } else {
-                setChildrenDropdowns([{ id: 1, value: '' }]);
+                setExistingChildren([]);
+                setOriginalChildren([]);
             }
+            // Reset dropdown for adding new children
+            setChildrenDropdowns([{ id: 1, value: '' }])
             
             
             // Load existing attributes for this item type
@@ -157,7 +164,11 @@ const AssetTypeForm = ({
                 attributes: []
             });
             setParentDropdowns([{ id: 1, value: '' }]);
+            setExistingParents([]);
+            setOriginalParents([]);
             setChildrenDropdowns([{ id: 1, value: '' }]);
+            setExistingChildren([]);
+            setOriginalChildren([]);
             setAttributes([{ id: 1, value: '', type: 'text' }]);
             setNewTypesInCategory([{ id: 1, value: '', existingId: null }]);
             setSelectedTypesInCategory([]);
@@ -250,6 +261,10 @@ const AssetTypeForm = ({
         }
     }
 
+    const removeExistingParent = (parentId) => {
+        setExistingParents(prev => prev.filter(id => id !== parentId));
+    }
+
     // Children dropdown handlers
     const handleChildrenDropdownChange = (dropdownId, selectedValue) => {
         // Validate that this selection won't create a circular reference
@@ -278,6 +293,10 @@ const AssetTypeForm = ({
         if (childrenDropdowns.length > 1) {
             setChildrenDropdowns(prev => prev.filter(dropdown => dropdown.id !== dropdownId));
         }
+    }
+
+    const removeExistingChild = (childId) => {
+        setExistingChildren(prev => prev.filter(id => id !== childId));
     }
 
     const handleAttributeChange = (attributeId, field, value) => {
@@ -375,15 +394,25 @@ const AssetTypeForm = ({
             return;
         }
         
-        // Collect selected parent IDs from dropdowns
-        const selectedParentIds = parentDropdowns
+        // Collect selected parent IDs: existing parents + new from dropdowns
+        const newParentIds = parentDropdowns
             .map(dropdown => dropdown.value)
             .filter(value => value !== '');
+        const selectedParentIds = [...new Set([...existingParents, ...newParentIds])];
 
-        // Collect selected children IDs from dropdowns
-        const selectedChildrenIds = childrenDropdowns
+        // Collect selected children IDs: existing children + new from dropdowns
+        const newChildrenIds = childrenDropdowns
             .map(dropdown => dropdown.value)
             .filter(value => value !== '');
+        const selectedChildrenIds = [...new Set([...existingChildren, ...newChildrenIds])];
+
+        // Detect removed children (compare with original)
+        const removedChildrenIds = originalChildren.filter(id => !selectedChildrenIds.includes(id));
+        // Detect added children
+        const addedChildrenIds = selectedChildrenIds.filter(id => !originalChildren.includes(id));
+        
+        // Detect removed parents (compare with original)
+        const removedParentIds = originalParents.filter(id => !selectedParentIds.includes(id));
 
         // Collect attribute values with types
         const attributeValues = attributes
@@ -403,7 +432,6 @@ const AssetTypeForm = ({
             name: newAssetType.title,
             description: newAssetType.description,
             parent_ids: selectedParentIds,
-            children_ids: selectedChildrenIds,
             category_id: isEditing && selectedAsset ? (selectedAsset.category_id || null) : null, // Preserve existing subtype relationship
             attributes: attributeValues,
             geometry_type: geometryType,
@@ -421,11 +449,15 @@ const AssetTypeForm = ({
             attributes: []
         });
 
-        // Reset parent dropdowns to single empty dropdown
+        // Reset parent dropdowns and existing parents
         setParentDropdowns([{ id: 1, value: '' }]);
+        setExistingParents([]);
+        setOriginalParents([]);
         
-        // Reset children dropdowns to single empty dropdown
+        // Reset children dropdowns and existing children
         setChildrenDropdowns([{ id: 1, value: '' }]);
+        setExistingChildren([]);
+        setOriginalChildren([]);
         
         // Reset attributes to single empty attribute
         setAttributes([{ id: 1, value: '', type: 'text' }]);
@@ -600,8 +632,78 @@ const AssetTypeForm = ({
                 }
             }
             
-            // Refresh again to show the updated sub-types (including removed ones)
-            if ((allSelectedSubTypes.length > 0 || newSubTypes.length > 0 || removedSubTypes.length > 0) && currentAssetTypeId) {
+            // Update children's parent_ids (add this type as parent for added children, remove for removed children)
+            if ((addedChildrenIds.length > 0 || removedChildrenIds.length > 0) && currentAssetTypeId) {
+                // Refetch current feature types to ensure we have fresh data
+                const refreshedTypesResult = await dispatch(getFeatureTypes(selectedProject.id)).unwrap();
+                const freshTypes = refreshedTypesResult?.data || currentFeatureTypes || [];
+                
+                // Add current type as parent for newly added children
+                for (const childId of addedChildrenIds) {
+                    try {
+                        const childType = freshTypes.find(at => at.id === childId);
+                        if (childType) {
+                            const existingParentIds = childType.parent_ids || [];
+                            // Only add if not already a parent
+                            if (!existingParentIds.includes(currentAssetTypeId)) {
+                                const updatePayload = {
+                                    name: childType.title,
+                                    description: childType.description || '',
+                                    parent_ids: [...existingParentIds, currentAssetTypeId],
+                                    category_id: childType.category_id || null,
+                                    attributes: childType.attributes || [],
+                                    geometry_type: childType.geometry_type || 'point',
+                                    color: childType.color
+                                };
+                                
+                                console.log(`[CHILDREN UPDATE] Adding ${currentAssetTypeId} as parent of "${childType.title}"`);
+                                
+                                await dispatch(updateFeatureType({
+                                    projectId: selectedProject.id,
+                                    featureTypeId: childId,
+                                    featureTypeData: updatePayload
+                                })).unwrap();
+                            }
+                        }
+                    } catch (error) {
+                        console.error(`Error adding parent to child:`, error);
+                    }
+                }
+                
+                // Remove current type from parent_ids of removed children
+                for (const childId of removedChildrenIds) {
+                    try {
+                        const childType = freshTypes.find(at => at.id === childId);
+                        if (childType) {
+                            const existingParentIds = childType.parent_ids || [];
+                            const updatedParentIds = existingParentIds.filter(id => id !== currentAssetTypeId);
+                            
+                            const updatePayload = {
+                                name: childType.title,
+                                description: childType.description || '',
+                                parent_ids: updatedParentIds,
+                                category_id: childType.category_id || null,
+                                attributes: childType.attributes || [],
+                                geometry_type: childType.geometry_type || 'point',
+                                color: childType.color
+                            };
+                            
+                            console.log(`[CHILDREN UPDATE] Removing ${currentAssetTypeId} from parents of "${childType.title}"`);
+                            
+                            await dispatch(updateFeatureType({
+                                projectId: selectedProject.id,
+                                featureTypeId: childId,
+                                featureTypeData: updatePayload
+                            })).unwrap();
+                        }
+                    } catch (error) {
+                        console.error(`Error removing parent from child:`, error);
+                    }
+                }
+            }
+            
+            // Refresh again to show the updated sub-types and children
+            if ((allSelectedSubTypes.length > 0 || newSubTypes.length > 0 || removedSubTypes.length > 0 || addedChildrenIds.length > 0 || removedChildrenIds.length > 0) && currentAssetTypeId) {
                 const finalRefresh = await dispatch(getFeatureTypes(selectedProject.id)).unwrap();
                 console.log('[handleAddAssetType] Final refresh, main type color:', 
                     finalRefresh?.data?.find(t => t.id === currentAssetTypeId)?.color);
@@ -614,6 +716,10 @@ const AssetTypeForm = ({
             setSelectedTypesInCategory([]);
             setOriginalTypesInCategory([]);
             setTypeSelectorDropdown({ id: 1, value: '' });
+            
+            // Reset children after successful save
+            setChildrenDropdowns([{ id: 1, value: '' }]);
+            setOriginalChildren([]);
             
             // Clear selection if updating
             if (isEditing && selectedAsset && onAssetSelect) {
@@ -642,6 +748,11 @@ const AssetTypeForm = ({
             attributes: []
         });
         setParentDropdowns([{ id: 1, value: '' }]);
+        setExistingParents([]);
+        setOriginalParents([]);
+        setChildrenDropdowns([{ id: 1, value: '' }]);
+        setExistingChildren([]);
+        setOriginalChildren([]);
         setAttributes([{ id: 1, value: '', type: 'text' }]);
         setNewTypesInCategory([{ id: 1, value: '', existingId: null }]);
         setSelectedTypesInCategory([]);
@@ -694,13 +805,34 @@ const AssetTypeForm = ({
                 
                 <div className="form-group">
                     <label className="form-label">
-                        Select Parent(s): 
-                        {parentDropdowns.some(d => d.value) && (
+                        Parents: 
+                        {(existingParents.length > 0 || parentDropdowns.some(d => d.value)) && (
                             <span style={{ color: '#28a745', fontSize: '12px', marginLeft: '8px' }}>
-                                (Creating child type)
+                                ({existingParents.length + parentDropdowns.filter(d => d.value).length} parent(s))
                             </span>
                         )}
                     </label>
+                    
+                    {/* Display existing parents as static items */}
+                    {existingParents.map(parentId => {
+                        const parent = assetTypes?.find(at => at.id === parentId);
+                        if (!parent) return null;
+                        return (
+                            <div key={parentId} className="existing-item-row">
+                                <span className="existing-item-name">{parent.title}</span>
+                                <button
+                                    type="button"
+                                    onClick={() => removeExistingParent(parentId)}
+                                    className="remove-parent-button"
+                                    title="Remove this parent"
+                                >
+                                    ×
+                                </button>
+                            </div>
+                        );
+                    })}
+                    
+                    {/* Dropdown for adding new parents */}
                     {parentDropdowns.map((dropdown, index) => {
                         const selectedParent = assetTypes?.find(at => at.id === dropdown.value);
                         return (
@@ -710,7 +842,7 @@ const AssetTypeForm = ({
                                     onChange={(e) => handleParentDropdownChange(dropdown.id, e.target.value)}
                                     className="form-select parent-dropdown"
                                 >
-                                    <option value="">No parent (root item)</option>
+                                    <option value="">Select a parent to add...</option>
                                     {(assetTypes || []).filter(assetType => {
                                         // Don't allow self-reference
                                         if (assetType.id === selectedAsset?.id) {
@@ -720,34 +852,39 @@ const AssetTypeForm = ({
                                         if (selectedAsset && wouldCreateCircularReference(assetType.id, selectedAsset.id)) {
                                             return false;
                                         }
+                                        // Don't allow selecting own category as parent
+                                        if (selectedAsset && selectedAsset.category_id === assetType.id) {
+                                            return false;
+                                        }
+                                        // Don't show already existing parents
+                                        if (existingParents.includes(assetType.id)) {
+                                            return false;
+                                        }
+                                        // Don't show already selected in other dropdowns
+                                        if (parentDropdowns.some(d => d.value === assetType.id && d.id !== dropdown.id)) {
+                                            return false;
+                                        }
                                         return true;
                                     }).map(assetType => {
-                                        // Show hierarchy depth if it has parents
-                                        const hasParents = assetType.parent_ids && assetType.parent_ids.length > 0;
-                                        const indent = hasParents ? '  └─ ' : '';
+                                        // Check if this is a category (has types in it)
+                                        const isCategory = (assetTypes || []).some(at => at.category_id === assetType.id);
+                                        // Show category label if type belongs to one
+                                        const category = assetType.category_id ? assetTypes?.find(at => at.id === assetType.category_id) : null;
+                                        const categoryLabel = category ? ` [${category.title}]` : '';
+                                        const categoryMarker = isCategory ? ' (Category)' : '';
                                         return (
                                             <option key={assetType.id} value={assetType.id}>
-                                                {indent}{assetType.title}
+                                                {assetType.title}{categoryLabel}{categoryMarker}
                                             </option>
                                         );
                                     })}
                                 </select>
                                 {selectedParent && (
-                                    <span style={{ 
-                                        fontSize: '12px', 
-                                        color: '#6c757d', 
-                                        marginLeft: '8px',
-                                        fontStyle: 'italic'
-                                    }}>
-                                        Sub-type of: {selectedParent.title}
-                                    </span>
-                                )}
-                                {parentDropdowns.length > 1 && (
                                     <button
                                         type="button"
                                         onClick={() => removeParentDropdown(dropdown.id)}
                                         className="remove-parent-button"
-                                        title="Remove this parent selection"
+                                        title="Remove this parent"
                                     >
                                         ×
                                     </button>
@@ -767,13 +904,34 @@ const AssetTypeForm = ({
                 {/* Children Selection */}
                 <div className="form-group">
                     <label className="form-label">
-                        Select Children: 
-                        {childrenDropdowns.some(d => d.value) && (
+                        Children: 
+                        {(existingChildren.length > 0 || childrenDropdowns.some(d => d.value)) && (
                             <span style={{ color: '#17a2b8', fontSize: '12px', marginLeft: '8px' }}>
-                                ({childrenDropdowns.filter(d => d.value).length} child type(s) selected)
+                                ({existingChildren.length + childrenDropdowns.filter(d => d.value).length} child(ren))
                             </span>
                         )}
                     </label>
+                    
+                    {/* Display existing children as static items */}
+                    {existingChildren.map(childId => {
+                        const child = assetTypes?.find(at => at.id === childId);
+                        if (!child) return null;
+                        return (
+                            <div key={childId} className="existing-item-row">
+                                <span className="existing-item-name">{child.title}</span>
+                                <button
+                                    type="button"
+                                    onClick={() => removeExistingChild(childId)}
+                                    className="remove-parent-button"
+                                    title="Remove this child"
+                                >
+                                    ×
+                                </button>
+                            </div>
+                        );
+                    })}
+                    
+                    {/* Dropdown for adding new children */}
                     {childrenDropdowns.map((dropdown, index) => {
                         const selectedChild = assetTypes?.find(at => at.id === dropdown.value);
                         return (
@@ -783,7 +941,7 @@ const AssetTypeForm = ({
                                     onChange={(e) => handleChildrenDropdownChange(dropdown.id, e.target.value)}
                                     className="form-select parent-dropdown"
                                 >
-                                    <option value="">No child selected</option>
+                                    <option value="">Select a child to add...</option>
                                     {(assetTypes || []).filter(assetType => {
                                         // Don't allow self-reference
                                         if (assetType.id === selectedAsset?.id) {
@@ -793,8 +951,25 @@ const AssetTypeForm = ({
                                         if (selectedAsset && wouldCreateCircularReference(selectedAsset.id, assetType.id)) {
                                             return false;
                                         }
-                                        // Don't show already selected children
+                                        // Don't show already selected children in dropdowns
                                         if (childrenDropdowns.some(d => d.value === assetType.id && d.id !== dropdown.id)) {
+                                            return false;
+                                        }
+                                        // Don't show already existing children
+                                        if (existingChildren.includes(assetType.id)) {
+                                            return false;
+                                        }
+                                        // Don't allow selecting own category as child
+                                        if (selectedAsset && selectedAsset.category_id === assetType.id) {
+                                            return false;
+                                        }
+                                        // Don't allow selecting types that have current type as their category
+                                        if (selectedAsset && assetType.category_id === selectedAsset.id) {
+                                            return false;
+                                        }
+                                        // Don't allow selecting categories (types that have types in them) as children
+                                        const isCategory = (assetTypes || []).some(at => at.category_id === assetType.id);
+                                        if (isCategory) {
                                             return false;
                                         }
                                         return true;
@@ -809,22 +984,12 @@ const AssetTypeForm = ({
                                         );
                                     })}
                                 </select>
-                                {selectedChild && selectedChild.category_id && (
-                                    <span style={{ 
-                                        fontSize: '12px', 
-                                        color: '#6c757d', 
-                                        marginLeft: '8px',
-                                        fontStyle: 'italic'
-                                    }}>
-                                        Category: {assetTypes?.find(at => at.id === selectedChild.category_id)?.title || 'Unknown'}
-                                    </span>
-                                )}
-                                {childrenDropdowns.length > 1 && (
+                                {selectedChild && (
                                     <button
                                         type="button"
                                         onClick={() => removeChildrenDropdown(dropdown.id)}
                                         className="remove-parent-button"
-                                        title="Remove this child selection"
+                                        title="Remove this child"
                                     >
                                         ×
                                     </button>

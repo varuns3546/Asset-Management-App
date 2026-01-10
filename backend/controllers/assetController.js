@@ -686,14 +686,13 @@ const getAssetTypes = asyncHandler(async (req, res) => {
 });
 
 const createAssetType = asyncHandler(async (req, res) => {
-  const { name, description, parent_ids, children_ids, category_id, attributes, geometry_type, color } = req.body;
+  const { name, description, parent_ids, category_id, attributes, geometry_type, color } = req.body;
   const { id: project_id } = req.params;
 
   console.log('[createAssetType] Request body:', { 
     name, 
     category_id,
     parent_ids,
-    children_ids,
     geometry_type, 
     color,
     attributes_count: attributes?.length || 0 
@@ -795,14 +794,64 @@ const createAssetType = asyncHandler(async (req, res) => {
       }
     }
 
+    // If parent_ids includes any categories, expand to include all types of those categories
+    // and REMOVE the category IDs so relationships are explicit and individually removable
+    let expandedParentIds = parent_ids || [];
+    if (expandedParentIds.length > 0) {
+      // Fetch all asset types to find categories and their types
+      const { data: allTypes, error: fetchError } = await req.supabase
+        .from('asset_types')
+        .select('id, category_id')
+        .eq('project_id', project_id);
+      
+      if (!fetchError && allTypes) {
+        // Find which parent_ids are categories (have types pointing to them)
+        const categoryIds = new Set();
+        allTypes.forEach(type => {
+          if (type.category_id) {
+            categoryIds.add(type.category_id);
+          }
+        });
+        
+        // For each parent that is a category, add all types of that category
+        const additionalParentIds = new Set();
+        const categoriesToRemove = new Set();
+        
+        expandedParentIds.forEach(parentId => {
+          if (categoryIds.has(parentId)) {
+            // This parent is a category - find all types in this category
+            categoriesToRemove.add(parentId); // Mark category for removal
+            allTypes.forEach(type => {
+              if (type.category_id === parentId) {
+                additionalParentIds.add(type.id);
+              }
+            });
+          }
+        });
+        
+        // Add the types as parents and REMOVE category IDs
+        if (additionalParentIds.size > 0) {
+          // Filter out category IDs and add individual type IDs
+          const filteredParentIds = expandedParentIds.filter(id => !categoriesToRemove.has(id));
+          const newParentIds = [...new Set([...filteredParentIds, ...additionalParentIds])];
+          console.log(`[createAssetType] Expanding parent_ids to include category types:`, {
+            original: expandedParentIds,
+            categoriesRemoved: [...categoriesToRemove],
+            typesAdded: [...additionalParentIds],
+            final: newParentIds
+          });
+          expandedParentIds = newParentIds;
+        }
+      }
+    }
+
     const { data: assetType, error } = await req.supabase
       .from('asset_types')
       .insert({
         title: name.trim(),
         description: description || null,
         project_id: project_id,
-        parent_ids: parent_ids || null,
-        children_ids: children_ids || null,
+        parent_ids: expandedParentIds.length > 0 ? expandedParentIds : null,
         category_id: category_id || null,
         geometry_type: inheritedGeometryType,
         color: inheritedColor
@@ -848,6 +897,36 @@ const createAssetType = asyncHandler(async (req, res) => {
         console.error('Full error details:', JSON.stringify(attributesError, null, 2));
         // Note: We don't return an error here since the asset type was created successfully
         // The attributes can be added later if needed
+      }
+    }
+
+    // If this new type belongs to a category, update all children of that category 
+    // to include this new type as a parent
+    if (category_id) {
+      // Find all types that have the category in their parent_ids (children of the category)
+      const { data: categoryChildren, error: childrenError } = await req.supabase
+        .from('asset_types')
+        .select('id, parent_ids')
+        .eq('project_id', project_id)
+        .contains('parent_ids', [category_id]);
+      
+      if (!childrenError && categoryChildren && categoryChildren.length > 0) {
+        console.log(`[createAssetType] Found ${categoryChildren.length} children of category ${category_id} to update`);
+        
+        for (const child of categoryChildren) {
+          const existingParentIds = child.parent_ids || [];
+          // Add the new type as a parent if not already present
+          if (!existingParentIds.includes(assetType.id)) {
+            const updatedParentIds = [...existingParentIds, assetType.id];
+            
+            await req.supabase
+              .from('asset_types')
+              .update({ parent_ids: updatedParentIds })
+              .eq('id', child.id);
+            
+            console.log(`[createAssetType] Added ${assetType.id} as parent of child ${child.id}`);
+          }
+        }
       }
     }
 
@@ -924,7 +1003,7 @@ const deleteAssetType = asyncHandler(async (req, res) => {
       });
     }
 
-    // Update all asset types that have this asset type in their parent_ids, children_ids, or category_id
+    // Update all asset types that have this asset type in their parent_ids or category_id
     const updatePromises = [];
     for (const assetType of allAssetTypes) {
       // Handle parent_ids cleanup
@@ -935,19 +1014,6 @@ const deleteAssetType = asyncHandler(async (req, res) => {
         const updatePromise = req.supabase
           .from('asset_types')
           .update({ parent_ids: updatedParentIds.length > 0 ? updatedParentIds : null })
-          .eq('id', assetType.id);
-        
-        updatePromises.push(updatePromise);
-      }
-      
-      // Handle children_ids cleanup
-      if (assetType.children_ids && Array.isArray(assetType.children_ids) && assetType.children_ids.includes(featureTypeId)) {
-        // Remove the deleted asset type ID from children_ids
-        const updatedChildrenIds = assetType.children_ids.filter(id => id !== featureTypeId);
-        
-        const updatePromise = req.supabase
-          .from('asset_types')
-          .update({ children_ids: updatedChildrenIds.length > 0 ? updatedChildrenIds : null })
           .eq('id', assetType.id);
         
         updatePromises.push(updatePromise);
@@ -1248,7 +1314,7 @@ const deleteAsset = asyncHandler(async (req, res) => {
 });
 
 const updateAssetType = asyncHandler(async (req, res) => {
-  const { name, description, parent_ids, children_ids, category_id, attributes, geometry_type, color } = req.body;
+  const { name, description, parent_ids, category_id, attributes, geometry_type, color } = req.body;
   const { id: project_id, featureTypeId } = req.params;
 
   console.log('[updateAssetType] Received request:');
@@ -1257,7 +1323,6 @@ const updateAssetType = asyncHandler(async (req, res) => {
   console.log('  Name:', name);
   console.log('  category_id:', category_id);
   console.log('  parent_ids:', parent_ids);
-  console.log('  children_ids:', children_ids);
   console.log('  geometry_type:', geometry_type);
   console.log('  color:', color);
   console.log('  Full body:', JSON.stringify(req.body, null, 2));
@@ -1364,12 +1429,62 @@ const updateAssetType = asyncHandler(async (req, res) => {
       }
     }
 
+    // If parent_ids includes any categories, expand to include all types of those categories
+    // and REMOVE the category IDs so relationships are explicit and individually removable
+    let expandedParentIds = parent_ids || [];
+    if (expandedParentIds.length > 0) {
+      // Fetch all asset types to find categories and their types
+      const { data: allTypes, error: fetchError } = await req.supabase
+        .from('asset_types')
+        .select('id, category_id')
+        .eq('project_id', project_id);
+      
+      if (!fetchError && allTypes) {
+        // Find which parent_ids are categories (have types pointing to them)
+        const categoryIds = new Set();
+        allTypes.forEach(type => {
+          if (type.category_id) {
+            categoryIds.add(type.category_id);
+          }
+        });
+        
+        // For each parent that is a category, add all types of that category
+        const additionalParentIds = new Set();
+        const categoriesToRemove = new Set();
+        
+        expandedParentIds.forEach(parentId => {
+          if (categoryIds.has(parentId)) {
+            // This parent is a category - find all types in this category
+            categoriesToRemove.add(parentId); // Mark category for removal
+            allTypes.forEach(type => {
+              if (type.category_id === parentId && type.id !== featureTypeId) {
+                additionalParentIds.add(type.id);
+              }
+            });
+          }
+        });
+        
+        // Add the types as parents and REMOVE category IDs
+        if (additionalParentIds.size > 0) {
+          // Filter out category IDs and add individual type IDs
+          const filteredParentIds = expandedParentIds.filter(id => !categoriesToRemove.has(id));
+          const newParentIds = [...new Set([...filteredParentIds, ...additionalParentIds])];
+          console.log(`[updateAssetType] Expanding parent_ids to include category types:`, {
+            original: expandedParentIds,
+            categoriesRemoved: [...categoriesToRemove],
+            typesAdded: [...additionalParentIds],
+            final: newParentIds
+          });
+          expandedParentIds = newParentIds;
+        }
+      }
+    }
+
     // Update the asset type
     const updateData = {
       title: name.trim(),
       description: description || null,
-      parent_ids: parent_ids || null,
-      children_ids: children_ids || null,
+      parent_ids: expandedParentIds.length > 0 ? expandedParentIds : null,
       category_id: category_id || null,
       geometry_type: inheritedGeometryType,
       color: inheritedColor
@@ -1425,6 +1540,39 @@ const updateAssetType = asyncHandler(async (req, res) => {
       if (attributesError) {
         console.error('Error creating attributes:', attributesError);
         console.error('Full error details:', JSON.stringify(attributesError, null, 2));
+      }
+    }
+
+    // If this type now belongs to a category, update all children of that category 
+    // to include this type as a parent
+    if (category_id) {
+      // Find all types that have the category in their parent_ids (children of the category)
+      const { data: categoryChildren, error: childrenError } = await req.supabase
+        .from('asset_types')
+        .select('id, parent_ids')
+        .eq('project_id', project_id)
+        .contains('parent_ids', [category_id]);
+      
+      if (!childrenError && categoryChildren && categoryChildren.length > 0) {
+        console.log(`[updateAssetType] Found ${categoryChildren.length} children of category ${category_id} to update`);
+        
+        for (const child of categoryChildren) {
+          // Don't update self
+          if (child.id === featureTypeId) continue;
+          
+          const existingParentIds = child.parent_ids || [];
+          // Add this type as a parent if not already present
+          if (!existingParentIds.includes(featureTypeId)) {
+            const updatedParentIds = [...existingParentIds, featureTypeId];
+            
+            await req.supabase
+              .from('asset_types')
+              .update({ parent_ids: updatedParentIds })
+              .eq('id', child.id);
+            
+            console.log(`[updateAssetType] Added ${featureTypeId} as parent of child ${child.id}`);
+          }
+        }
       }
     }
 
